@@ -1,131 +1,190 @@
-
-{% extends 'pgr_gestao/base.html' %}
+{# Cronograma de Ações - Formulário de Criação/Edição #}
+{% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 {% load widget_tweaks %}
 
-{% block title %}Item do Cronograma{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Ação do Cronograma{% endblock %}
 
 {% block breadcrumb_items %}
+{% if pgr_documento %}
 <li class="breadcrumb-item"><a href="{% url 'pgr_gestao:documento_list' %}">Documentos PGR</a></li>
-<li class="breadcrumb-item"><a href="{{ pgr_documento.get_absolute_url }}">{{ pgr_documento.codigo_documento }}</a></li>
-<li class="breadcrumb-item active">Editar Cronograma</li>
+<li class="breadcrumb-item">
+    <a href="{{ pgr_documento.get_absolute_url }}">{{ pgr_documento.codigo_documento }}</a>
+</li>
+{% else %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:cronograma_list' %}">Cronograma</a></li>
+{% endif %}
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Ação</li>
 {% endblock %}
 
-{% block content %}
+{% block pgr_content %}
 <div class="page-header">
-    <h1>
-        <i class="fas fa-calendar-alt"></i>
-        Editar Item do Cronograma
-    </h1>
-    <p class="mb-0">Ajuste os detalhes da ação planejada para o documento <strong>{{ pgr_documento.codigo_documento }}</strong>.</p>
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+            <h1>
+                <i class="bi bi-calendar-event-fill"></i>
+                {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Ação do Cronograma
+            </h1>
+            {% if pgr_documento %}
+            <p class="mb-0">
+                Documento: <strong>{{ pgr_documento.codigo_documento }}</strong>
+            </p>
+            {% else %}
+            <p class="mb-0">Programação de atividade do PGR</p>
+            {% endif %}
+        </div>
+        <a href="{% url 'pgr_gestao:cronograma_list' %}" class="btn btn-light">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
 </div>
 
 <div class="card">
+    <div class="card-header bg-primary text-white">
+        <i class="bi bi-pencil-square"></i> Dados da Ação
+    </div>
     <div class="card-body">
         <form method="post" novalidate>
-        {% csrf_token %}
+            {% csrf_token %}
 
-        {% if form.errors %}
-        <div class="alert alert-danger">
-            <h5><i class="fas fa-exclamation-triangle"></i> Corrija os erros abaixo:</h5>
-            <ul class="mb-0">
-                {% for field, errors in form.errors.items %}
-                    {% for error in errors %}
-                    <li><strong>{{ field }}:</strong> {{ error }}</li>
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <h6 class="alert-heading">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Corrija os erros abaixo:
+                </h6>
+                <ul class="mb-0 small">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                        <li><strong>{{ field }}:</strong> {{ error }}</li>
+                        {% endfor %}
                     {% endfor %}
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-
-        <!-- DOCUMENTO PGR -->
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.pgr_documento.id_for_label }}" class="form-label fw-bold">
-                    Documento PGR <span class="text-danger">*</span>
-                </label>
-                {% render_field form.pgr_documento class="form-select" %}
-                {% if form.pgr_documento.errors %}
-                <div class="text-danger small">{{ form.pgr_documento.errors }}</div>
-                {% endif %}
+                </ul>
             </div>
-            <div class="col-md-3 mb-3">
-                <label for="{{ form.numero_item.id_for_label }}" class="form-label fw-bold">
-                    Item Nº <span class="text-danger">*</span>
-                </label>
-                {% render_field form.numero_item class="form-control" %}
-                {% if form.numero_item.errors %}
-                <div class="text-danger small">{{ form.numero_item.errors }}</div>
-                {% endif %}
-            </div>
-            <div class="col-md-3 mb-3">
-                <label for="{{ form.status.id_for_label }}" class="form-label fw-bold">
-                    Status
-                </label>
-                {% render_field form.status class="form-select" %}
-            </div>
-        </div>
-
-        <!-- AÇÃO NECESSÁRIA -->
-        <div class="mb-3">
-            <label for="{{ form.acao_necessaria.id_for_label }}" class="form-label fw-bold">
-                Ação Necessária <span class="text-danger">*</span>
-            </label>
-            {% render_field form.acao_necessaria class="form-control" rows="3" %}
-            {% if form.acao_necessaria.errors %}
-            <div class="text-danger small">{{ form.acao_necessaria.errors }}</div>
             {% endif %}
-        </div>
 
-        <!-- PÚBLICO ALVO / PERIODICIDADE -->
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.publico_alvo.id_for_label }}" class="form-label fw-bold">Público Alvo</label>
-                {% render_field form.publico_alvo class="form-control" %}
+            <!-- Identificação -->
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                <i class="bi bi-card-heading"></i> Identificação
+            </h6>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label for="{{ form.pgr_documento.id_for_label }}" class="form-label fw-semibold required-field">
+                        Documento PGR
+                    </label>
+                    {% render_field form.pgr_documento class="form-select" %}
+                    {% if form.pgr_documento.errors %}
+                    <div class="text-danger small mt-1">{{ form.pgr_documento.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ form.numero_item.id_for_label }}" class="form-label fw-semibold required-field">
+                        Item Nº
+                    </label>
+                    {% render_field form.numero_item class="form-control" type="number" min="1" %}
+                    {% if form.numero_item.errors %}
+                    <div class="text-danger small mt-1">{{ form.numero_item.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ form.status.id_for_label }}" class="form-label fw-semibold">Status</label>
+                    {% render_field form.status class="form-select" %}
+                    {% if form.status.errors %}
+                    <div class="text-danger small mt-1">{{ form.status.errors }}</div>
+                    {% endif %}
+                </div>
             </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.periodicidade.id_for_label }}" class="form-label fw-bold">
-                    Periodicidade <span class="text-danger">*</span>
+
+            <!-- Ação -->
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                <i class="bi bi-card-text"></i> Detalhes da Ação
+            </h6>
+            <div class="mb-3">
+                <label for="{{ form.acao_necessaria.id_for_label }}" class="form-label fw-semibold required-field">
+                    Ação Necessária
                 </label>
-                {% render_field form.periodicidade class="form-select" %}
+                {% render_field form.acao_necessaria class="form-control" rows="3" placeholder="Descreva a ação que precisa ser realizada..." %}
+                {% if form.acao_necessaria.errors %}
+                <div class="text-danger small mt-1">{{ form.acao_necessaria.errors }}</div>
+                {% endif %}
             </div>
-        </div>
 
-        <!-- RESPONSÁVEL / DATAS -->
-        <div class="row">
-            <div class="col-md-4 mb-3">
-                <label for="{{ form.responsavel.id_for_label }}" class="form-label fw-bold">Responsável</label>
-                {% render_field form.responsavel class="form-control" %}
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label for="{{ form.publico_alvo.id_for_label }}" class="form-label fw-semibold">
+                        Público Alvo
+                    </label>
+                    {% render_field form.publico_alvo class="form-control" placeholder="Ex: Todos os colaboradores" %}
+                    {% if form.publico_alvo.errors %}
+                    <div class="text-danger small mt-1">{{ form.publico_alvo.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.periodicidade.id_for_label }}" class="form-label fw-semibold required-field">
+                        Periodicidade
+                    </label>
+                    {% render_field form.periodicidade class="form-select" %}
+                    {% if form.periodicidade.errors %}
+                    <div class="text-danger small mt-1">{{ form.periodicidade.errors }}</div>
+                    {% endif %}
+                </div>
             </div>
-            <div class="col-md-4 mb-3">
-                <label for="{{ form.data_proxima_avaliacao.id_for_label }}" class="form-label fw-bold">Próxima Avaliação</label>
-                {% render_field form.data_proxima_avaliacao class="form-control" %}
+
+            <!-- Responsável e Datas -->
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                <i class="bi bi-person-badge"></i> Responsável e Prazos
+            </h6>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label for="{{ form.responsavel.id_for_label }}" class="form-label fw-semibold">
+                        Responsável
+                    </label>
+                    {% render_field form.responsavel class="form-control" placeholder="Nome do responsável" %}
+                    {% if form.responsavel.errors %}
+                    <div class="text-danger small mt-1">{{ form.responsavel.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.data_proxima_avaliacao.id_for_label }}" class="form-label fw-semibold">
+                        Próxima Avaliação
+                    </label>
+                    {% render_field form.data_proxima_avaliacao class="form-control" type="date" %}
+                    {% if form.data_proxima_avaliacao.errors %}
+                    <div class="text-danger small mt-1">{{ form.data_proxima_avaliacao.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.data_realizacao.id_for_label }}" class="form-label fw-semibold">
+                        Data Realização
+                    </label>
+                    {% render_field form.data_realizacao class="form-control" type="date" %}
+                    {% if form.data_realizacao.errors %}
+                    <div class="text-danger small mt-1">{{ form.data_realizacao.errors }}</div>
+                    {% endif %}
+                    <small class="text-muted">Preencher quando concluído</small>
+                </div>
             </div>
-            <div class="col-md-4 mb-3">
-                <label for="{{ form.data_realizacao.id_for_label }}" class="form-label fw-bold">Data Realização</label>
-                {% render_field form.data_realizacao class="form-control" %}
+
+            <!-- Observações -->
+            <div class="mb-4">
+                <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">
+                    Observações
+                </label>
+                {% render_field form.observacoes class="form-control" rows="3" placeholder="Informações adicionais..." %}
+                {% if form.observacoes.errors %}
+                <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
+                {% endif %}
             </div>
-        </div>
 
-        <!-- OBSERVAÇÕES -->
-        <div class="mb-3">
-            <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-bold">Observações</label>
-            {% render_field form.observacoes class="form-control" rows="3" %}
-        </div>
-
-        <hr>
-        <div class="d-flex justify-content-between">
-            <a href="{% url 'pgr_gestao:cronograma_list' %}" class="btn btn-secondary">
-                <i class="fas fa-times"></i> Cancelar
-            </a>
-            <button type="submit" class="btn btn-primary btn-lg">
-                <i class="fas fa-save"></i> {{ botao }}
-            </button>
-        </div>
-    </form>
-
+            <hr>
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+                <a href="{% url 'pgr_gestao:cronograma_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-save"></i> {{ botao|default:"Salvar" }}
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
-
-

@@ -83,7 +83,7 @@
          Ordem de carregamento:
          1. jQuery
          2. Bootstrap Bundle
-         3. Form Media JS
+
          4. HTMX
          5. SignaturePad Lib
          6. JS Global
@@ -98,8 +98,10 @@
     <!-- 2. Bootstrap Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- 3. Form Media JS (Select2, FilteredSelectMultiple, etc.) -->
+    <!-- 3. Form Media JS -->
     {% if form %}{{ form.media.js }}{% endif %}
+    {% block form_media_js %}{% endblock %}   
+
 
     <!-- 4. HTMX -->
     <script src="{% static 'js/htmx.min.js' %}"></script>

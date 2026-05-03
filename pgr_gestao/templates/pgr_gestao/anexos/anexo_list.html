@@ -1,5 +1,5 @@
 ﻿
-{% extends 'pgr_gestao/base.html' %}
+{% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
 {% block title %}Anexos - {{ documento.codigo_documento }}{% endblock %}
@@ -11,19 +11,19 @@
 {% endblock %}
 
 {% load secure_url %}
-{% block content %}
+{% block pgr_content %}
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-start">
         <div>
-            <h1><i class="fas fa-paperclip"></i> Anexos do PGR</h1>
+            <h1><i class="bi bi-paperclip"></i> Anexos do PGR</h1>
             <p class="mb-0">{{ documento.codigo_documento }} — {{ documento.empresa.razao_social }}</p>
         </div>
         <div class="btn-group">
             <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left"></i> Voltar
+                <i class="bi bi-arrow-left"></i> Voltar
             </a>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUploadAnexo">
-                <i class="fas fa-upload"></i> Novo Anexo
+                <i class="bi bi-upload"></i> Novo Anexo
             </button>
         </div>
     </div>
@@ -32,7 +32,7 @@
 <!-- Lista de Anexos -->
 <div class="card">
     <div class="card-header bg-dark text-white">
-        <i class="fas fa-paperclip"></i> Anexos Cadastrados
+        <i class="bi bi-paperclip"></i> Anexos Cadastrados
         {% if anexos %}
         <span class="badge bg-light text-dark ms-2">{{ anexos|length }}</span>
         {% endif %}
@@ -57,7 +57,7 @@
                     {% for anexo in anexos %}
                     <tr data-id="{{ anexo.pk }}">
                         <td class="text-center text-muted" style="cursor: grab;" title="Arrastar para reordenar">
-                            <i class="fas fa-grip-vertical"></i>
+                            <i class="bi bi-grip-vertical"></i>
                         </td>
                         <td>
                             <strong>ANEXO {{ anexo.numero_romano }}</strong><br>
@@ -69,16 +69,16 @@
                         <td>
                             {% secure_url anexo "arquivo" as arquivo_url %}
                         <a href="{{ arquivo_url }}" target="_blank" class="text-decoration-none">
-                                <i class="fas {{ anexo.icone_tipo }}"></i>
+                                <i class="bi {{ anexo.icone_tipo }}"></i>
                                 {{ anexo.nome_arquivo_original|default:anexo.arquivo.name|truncatechars:35 }}
                             </a>
                         </td>
                         <td>{{ anexo.tamanho_formatado }}</td>
                         <td class="text-center">
                             {% if anexo.incluir_no_pdf %}
-                                <i class="fas fa-check-circle text-success" title="Incluído no PDF"></i>
+                                <i class="bi bi-check-circle text-success" title="Incluído no PDF"></i>
                             {% else %}
-                                <i class="fas fa-times-circle text-muted" title="Não incluído no PDF"></i>
+                                <i class="bi bi-times-circle text-muted" title="Não incluído no PDF"></i>
                             {% endif %}
                         </td>
                         <td>
@@ -89,13 +89,13 @@
                             <div class="btn-group btn-group-sm">
                                 <a href="{{ arquivo_url }}" target="_blank"
                                    class="btn btn-outline-primary" title="Download">
-                                    <i class="fas fa-download"></i>
+                                    <i class="bi bi-download"></i>
                                 </a>
                                 {% if perms.pgr_gestao.change_anexopgr %}
                                 <button type="button" class="btn btn-outline-warning btn-editar-anexo"
                                         data-url="{% url 'pgr_gestao:anexo_editar' pk=anexo.pk %}"
                                         title="Editar">
-                                    <i class="fas fa-edit"></i>
+                                    <i class="bi bi-pencil-square"></i>
                                 </button>
                                 {% endif %}
                                 {% if perms.pgr_gestao.delete_anexopgr %}
@@ -104,7 +104,7 @@
                                       onsubmit="return confirm('Excluir ANEXO {{ anexo.numero_romano }} – {{ anexo.titulo }}?')">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-outline-danger" title="Excluir">
-                                        <i class="fas fa-trash"></i>
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
                                 {% endif %}
@@ -117,10 +117,10 @@
         </div>
         {% else %}
         <div class="text-center py-5">
-            <i class="fas fa-paperclip fa-3x text-muted mb-3"></i>
+            <i class="bi bi-paperclip fa-3x text-muted mb-3"></i>
             <p class="text-muted mb-3">Nenhum anexo cadastrado para este documento PGR.</p>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUploadAnexo">
-                <i class="fas fa-upload"></i> Enviar Primeiro Anexo
+                <i class="bi bi-upload"></i> Enviar Primeiro Anexo
             </button>
         </div>
         {% endif %}
@@ -136,7 +136,7 @@
                 {% csrf_token %}
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="modalUploadAnexoLabel">
-                        <i class="fas fa-upload"></i> Novo Anexo do PGR
+                        <i class="bi bi-upload"></i> Novo Anexo do PGR
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -224,7 +224,7 @@
                         <div class="col-12">
                             <div id="dropZone" class="border border-2 rounded p-4 text-center bg-light"
                                  style="border-style: dashed !important; border-color: #dee2e6 !important; cursor: pointer; transition: all 0.3s;">
-                                <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                <i class="bi bi-cloud-upload-alt fa-2x text-muted mb-2"></i>
                                 <p class="text-muted mb-1">Arraste e solte arquivos aqui</p>
                                 <small class="text-muted">ou clique no campo acima para selecionar</small>
                             </div>
@@ -240,7 +240,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary" id="btnEnviarAnexo">
-                        <i class="fas fa-upload"></i> Enviar Anexo
+                        <i class="bi bi-upload"></i> Enviar Anexo
                     </button>
                 </div>
             </form>
@@ -253,7 +253,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-warning text-dark">
-                <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Anexo</h5>
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Editar Anexo</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="editarAnexoBody">
@@ -344,14 +344,14 @@ function updatePreview(files) {
                 : (f.size / 1048576).toFixed(1) + ' MB';
             const ext = f.name.split('.').pop().toLowerCase();
             const icons = {
-                'pdf': 'fa-file-pdf text-danger', 'doc': 'fa-file-word text-primary',
-                'docx': 'fa-file-word text-primary', 'xls': 'fa-file-excel text-success',
-                'xlsx': 'fa-file-excel text-success', 'jpg': 'fa-file-image text-warning',
-                'jpeg': 'fa-file-image text-warning', 'png': 'fa-file-image text-warning',
+                'pdf': 'bi-file-pdf text-danger', 'doc': 'bi-file-word text-primary',
+                'docx': 'bi-file-word text-primary', 'xls': 'bi-file-excel text-success',
+                'xlsx': 'bi-file-excel text-success', 'jpg': 'bi-file-image text-warning',
+                'jpeg': 'bi-file-image text-warning', 'png': 'bi-file-image text-warning',
             };
             previewList.innerHTML += `
                 <div class="d-flex align-items-center gap-2 p-2 border rounded mb-1">
-                    <i class="fas ${icons[ext] || 'fa-file text-secondary'} fa-lg"></i>
+                    <i class="bi ${icons[ext] || 'bi-file text-secondary'} bi-lg"></i>
                     <span>${f.name}</span>
                     <span class="badge bg-secondary">${size}</span>
                 </div>`;

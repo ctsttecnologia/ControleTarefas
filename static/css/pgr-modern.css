@@ -1,0 +1,301 @@
+
+/* =================================================================
+   PGR GESTÃO — Estilos Modernos Adaptativos (claro/escuro)
+   Usa variáveis globais do global.css
+   ================================================================= */
+
+/* ═══════════════════════════════════════════════════════════════
+   1. PAGE HEADER
+═══════════════════════════════════════════════════════════════ */
+.page-header {
+    background: linear-gradient(135deg,
+        var(--bs-primary) 0%,
+        var(--bs-primary-hover) 100%);
+    color: #ffffff;
+    padding: 1.5rem 2rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 16px rgba(var(--bs-primary-rgb), 0.2);
+}
+
+.page-header h1 {
+    color: #ffffff;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.page-header p {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.page-header .btn {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2. STATS CARDS
+═══════════════════════════════════════════════════════════════ */
+.stats-card {
+    background-color: var(--surface-elevated);
+    border: 1px solid var(--bs-border-color);
+    border-top: 4px solid var(--bs-primary);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.stats-card.danger { border-top-color: #dc3545; }
+.stats-card.success { border-top-color: #28a745; }
+.stats-card.warning { border-top-color: #ffc107; }
+.stats-card.info { border-top-color: #17a2b8; }
+
+.stats-card h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: var(--text-strong);
+}
+
+[data-bs-theme="dark"] .stats-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3. BADGES DE RISCO (semânticos — funcionam nos 2 temas)
+═══════════════════════════════════════════════════════════════ */
+.badge-risco-critico,
+.badge-risco-muito_grave,
+.badge-risco-moderado,
+.badge-risco-marginal,
+.badge-risco-negligenciavel {
+    font-weight: 600;
+    padding: 0.4em 0.85em;
+    border-radius: 50rem;
+    color: #ffffff;
+}
+
+.badge-risco-critico { background-color: #c82333; }
+.badge-risco-muito_grave { background-color: #dc3545; }
+.badge-risco-moderado { background-color: #ffc107; color: #1a202c; }
+.badge-risco-marginal { background-color: #17a2b8; }
+.badge-risco-negligenciavel { background-color: #28a745; }
+
+/* ═══════════════════════════════════════════════════════════════
+   4. BADGES DE PRIORIDADE
+═══════════════════════════════════════════════════════════════ */
+.badge.bg-critica { background-color: #dc3545 !important; color: #fff; }
+.badge.bg-alta { background-color: #fd7e14 !important; color: #fff; }
+.badge.bg-media { background-color: #ffc107 !important; color: #1a202c; }
+.badge.bg-baixa { background-color: #6c757d !important; color: #fff; }
+
+/* Status de Plano */
+.badge.bg-pendente { background-color: #6c757d !important; color: #fff; }
+.badge.bg-em_andamento { background-color: var(--bs-primary) !important; color: #fff; }
+.badge.bg-concluido { background-color: #28a745 !important; color: #fff; }
+.badge.bg-atrasado { background-color: #dc3545 !important; color: #fff; }
+.badge.bg-cancelado { background-color: #495057 !important; color: #fff; }
+
+/* ═══════════════════════════════════════════════════════════════
+   5. CARD HEADERS COLORIDOS (adaptados ao tema)
+═══════════════════════════════════════════════════════════════ */
+.card-header.bg-primary {
+    background-color: var(--bs-primary) !important;
+    color: #fff;
+}
+
+.card-header.bg-danger {
+    background-color: #dc3545 !important;
+    color: #fff;
+}
+
+.card-header.bg-warning {
+    background-color: #ffc107 !important;
+    color: #1a202c;
+}
+
+.card-header.bg-success {
+    background-color: #28a745 !important;
+    color: #fff;
+}
+
+.card-header.bg-info {
+    background-color: var(--bs-primary) !important;
+    color: #fff;
+}
+
+[data-bs-theme="dark"] .card-header.bg-info {
+    background-color: var(--bs-primary) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   6. FORM SECTIONS
+═══════════════════════════════════════════════════════════════ */
+.form-section {
+    background-color: var(--surface-subtle);
+    padding: 1rem 1.25rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.25rem;
+    border-left: 4px solid var(--bs-primary);
+    color: var(--bs-body-color);
+}
+
+.matriz-avaliacao {
+    background-color: var(--surface-subtle);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    color: var(--bs-body-color);
+}
+
+.required-field::after {
+    content: " *";
+    color: #dc3545;
+    font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7. MATRIZ DE AVALIAÇÃO (boxes com fator G/E/S/P)
+═══════════════════════════════════════════════════════════════ */
+.matriz-fator-box {
+    background-color: var(--surface-elevated);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.matriz-fator-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.matriz-fator-box h6 {
+    color: var(--bs-text-muted);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.matriz-fator-box h2 {
+    color: var(--bs-primary);
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   8. TABELA CLICÁVEL (linha = link)
+═══════════════════════════════════════════════════════════════ */
+.table-clickable tbody tr {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.table-clickable tbody tr:hover {
+    background-color: var(--surface-hover);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   9. TABS NAV
+═══════════════════════════════════════════════════════════════ */
+.nav-tabs .nav-link i {
+    margin-right: 0.35rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   10. SIDEBAR DE AJUDA
+═══════════════════════════════════════════════════════════════ */
+.help-sidebar h6 {
+    color: var(--text-strong);
+    font-weight: 600;
+    margin-top: 0.75rem;
+}
+
+.help-sidebar ul.small li {
+    color: var(--text-soft);
+    padding: 0.15rem 0;
+}
+
+.help-sidebar ul.small li strong {
+    color: var(--bs-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   11. EMPTY STATE EM TABELAS
+═══════════════════════════════════════════════════════════════ */
+.table-empty-state {
+    padding: 3rem 1rem;
+    color: var(--bs-text-muted);
+}
+
+.table-empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   12. ALERTAS NO TEMA ESCURO
+═══════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .alert-info {
+    background-color: rgba(var(--bs-primary-rgb), 0.12);
+    border-color: rgba(var(--bs-primary-rgb), 0.3);
+    color: #6edff6;
+}
+
+[data-bs-theme="dark"] .alert-secondary {
+    background-color: var(--surface-subtle);
+    border-color: var(--bs-border-color);
+    color: var(--text-soft);
+}
+
+[data-bs-theme="dark"] .alert-danger {
+    background-color: rgba(220, 53, 69, 0.12);
+    border-color: rgba(220, 53, 69, 0.3);
+    color: #ea868f;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   13. IMPRESSÃO
+═══════════════════════════════════════════════════════════════ */
+@media print {
+    .no-print, .btn-group, .pagination { display: none !important; }
+    .page-header {
+        background: #003366 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+}
+
+/* Help sidebar (forms com sidebar de ajuda) */
+.help-sidebar {
+    z-index: 100;
+}
+
+@media (max-width: 991.98px) {
+    .help-sidebar {
+        position: relative !important;
+        top: 0 !important;
+    }
+}
+
+/* GES status box adaptativo */
+.ges-status-box {
+    background-color: var(--bs-tertiary-bg);
+    transition: border-color 0.3s ease;
+}
+
+.ges-status-box.border-success {
+    border-color: var(--bs-success) !important;
+}
+
+.ges-status-box.border-danger {
+    border-color: var(--bs-danger) !important;
+}
+

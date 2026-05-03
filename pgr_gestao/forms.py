@@ -188,6 +188,7 @@ class PGRDocumentoForm(forms.ModelForm):
         
         #Chame o __init__ da classe pai, agora SEM o 'request' nos kwargs.
         super().__init__(*args, **kwargs)
+        
 
         # Verificamos se o formulário está sendo usado para editar um objeto existente
         # (se a instância já tem uma chave primária/pk)
@@ -553,36 +554,89 @@ class PGRRevisaoForm(forms.ModelForm):
 # FORMULÁRIO DE AVALIAÇÃO QUANTITATIVA
 # ========================================
 
+# forms.py
 class AvaliacaoQuantitativaForm(forms.ModelForm):
-    """Formulário para avaliações quantitativas"""
-
     class Meta:
         model = AvaliacaoQuantitativa
         fields = [
-            'risco_identificado', 'tipo_avaliacao', 'data_avaliacao',
-            'resultado_medido', 'unidade_medida', 'limite_tolerancia_nr',
-            'conforme', 'metodologia_utilizada', 'equipamento_utilizado',
-            'responsavel_avaliacao', 'observacoes'
+            'risco_identificado',
+            'tipo_avaliacao',
+            'data_avaliacao',
+            'resultado_medido',
+            'unidade_medida',
+            'limite_tolerancia_nr',
+            'conforme',
+            'metodologia_utilizada',
+            'equipamento_utilizado',
+            'responsavel_avaliacao',
+            'laudo_tecnico',
+            'observacoes',
         ]
         widgets = {
-            'risco_identificado': forms.Select(attrs={'class': 'form-select'}),
-            'tipo_avaliacao': forms.Select(attrs={'class': 'form-select'}),
-            'data_avaliacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'resultado_medido': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
+            'risco_identificado': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'tipo_avaliacao': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'data_avaliacao': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+            'resultado_medido': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': '0.00',
+            }),
+            'unidade_medida': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'dB(A), ppm, mg/m³...',
+                'maxlength': 20,
+            }),
             'limite_tolerancia_nr': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ex: 85 dB(A) para 8h'
+                'placeholder': 'Ex: 85 dB(A) - NR-15',
             }),
-            'conforme': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'metodologia_utilizada': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'conforme': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+                'role': 'switch',
+            }),
+            'metodologia_utilizada': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: NHO-01 / NHO-06 / NR-15 Anexo X',
+            }),
             'equipamento_utilizado': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ex: Dosímetro de Ruído, marca X, modelo Y, nº de série Z'
+                'placeholder': 'Marca / modelo / nº série',
             }),
-            'responsavel_avaliacao': forms.TextInput(attrs={'class': 'form-control'}),
-            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'responsavel_avaliacao': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome do responsável técnico',
+            }),
+            'laudo_tecnico': forms.ClearableFileInput(attrs={
+                'class': 'form-control',
+            }),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Notas adicionais, condições da medição, etc.',
+            }),
         }
+        labels = {
+            'risco_identificado': 'Risco Identificado',
+            'tipo_avaliacao': 'Tipo de Avaliação',
+            'data_avaliacao': 'Data da Avaliação',
+            'resultado_medido': 'Resultado Medido',
+            'unidade_medida': 'Unidade de Medida',
+            'limite_tolerancia_nr': 'Limite de Tolerância (NR)',
+            'conforme': 'Está conforme?',
+            'metodologia_utilizada': 'Metodologia Utilizada',
+            'equipamento_utilizado': 'Equipamento Utilizado',
+            'responsavel_avaliacao': 'Responsável pela Avaliação',
+            'laudo_tecnico': 'Laudo Técnico (PDF)',
+            'observacoes': 'Observações',
+        }
+
 
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)

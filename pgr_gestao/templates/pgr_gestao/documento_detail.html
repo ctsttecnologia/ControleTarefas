@@ -1,6 +1,7 @@
-﻿
-{% extends 'pgr_gestao/base.html' %}
+﻿{# Detalhes do Documento PGR #}
+{% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
+{% load secure_url %}
 
 {% block title %}{{ documento.codigo_documento }} - Detalhes{% endblock %}
 
@@ -9,28 +10,76 @@
 <li class="breadcrumb-item active">{{ documento.codigo_documento }}</li>
 {% endblock %}
 
-{% load secure_url %}
-{% block content %}
+{% block extra_pgr_css %}
+<style>
+    /* Drop zone adaptativa */
+    #dropZone {
+        border: 2px dashed var(--bs-border-color) !important;
+        background-color: var(--bs-tertiary-bg);
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    #dropZone.dragover {
+        border-color: var(--bs-primary) !important;
+        background-color: var(--bs-primary-bg-subtle);
+    }
+
+    /* File preview adaptativo */
+    .file-preview-item {
+        background-color: var(--bs-body-bg);
+        border-color: var(--bs-border-color) !important;
+    }
+
+    /* Drag handle */
+    .drag-handle {
+        cursor: grab;
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+
+    /* Tabela de anexos: cabeçalho adaptativo */
+    #tabelaAnexos thead {
+        background-color: var(--bs-tertiary-bg);
+    }
+</style>
+{% endblock %}
+
+{% block pgr_content %}
 <div class="page-header">
-    <div class="d-flex justify-content-between align-items-start">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div>
-            <h1><i class="fas fa-file-alt"></i> {{ documento.codigo_documento }}</h1>
-            <p class="mb-0">{{ documento.empresa.razao_social }}</p>
+            <h1>
+                <i class="bi bi-file-earmark-text-fill"></i>
+                {{ documento.codigo_documento }}
+            </h1>
+            <p class="mb-0">
+                <i class="bi bi-building"></i> {{ documento.empresa.razao_social }}
+                {% if documento.status == 'vigente' %}
+                <span class="badge badge-status-vigente ms-2">Vigente</span>
+                {% elif documento.status == 'vencido' %}
+                <span class="badge badge-status-vencido ms-2">Vencido</span>
+                {% elif documento.status == 'em_revisao' %}
+                <span class="badge badge-status-em-revisao ms-2">Em Revisão</span>
+                {% endif %}
+            </p>
         </div>
-        <div class="btn-group">
+        <div class="btn-group flex-wrap">
             {% if perms.pgr_gestao.change_pgrdocumento %}
             <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-warning">
-                <i class="fas fa-edit"></i> Editar
+                <i class="bi bi-pencil-square"></i> Editar
             </a>
             {% endif %}
             <a href="{% url 'pgr_gestao:relatorio_completo_pdf' documento.pk %}" class="btn btn-danger" target="_blank">
-                <i class="fas fa-file-pdf"></i> Gerar PDF
+                <i class="bi bi-file-earmark-pdf"></i> Gerar PDF
             </a>
             <a href="{% url 'pgr_gestao:exportar_inventario_excel' documento.pk %}" class="btn btn-success">
-                <i class="fas fa-file-excel"></i> Excel
+                <i class="bi bi-file-earmark-excel"></i> Excel
             </a>
             <a href="{% url 'pgr_gestao:verificar_conformidade' documento.pk %}" class="btn btn-info">
-                <i class="fas fa-check-circle"></i> Verificar Conformidade
+                <i class="bi bi-check-circle"></i> Conformidade
             </a>
         </div>
     </div>
@@ -38,145 +87,195 @@
 
 <!-- Informações Principais -->
 <div class="row mb-4">
-    <!-- ============================================ -->
-    <!-- COLUNA DA ESQUERDA (8 de 12 colunas)         -->
-    <!-- ============================================ -->
-    <div class="col-md-8">
-        <!-- Card: Informações do Documento -->
+    <!-- Coluna Esquerda -->
+    <div class="col-lg-8">
+        <!-- Informações do Documento -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="fas fa-info-circle"></i> Informações do Documento
+                <i class="bi bi-info-circle"></i> Informações do Documento
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <p><strong>Código:</strong> {{ documento.codigo_documento }}</p>
-                        <p><strong>Empresa:</strong> {{ documento.empresa.razao_social }}</p>
-                        <p><strong>CNPJ:</strong> {{ documento.empresa.cnpj }}</p>
-                        <p><strong>Local de Prestação:</strong> {{ documento.local_prestacao.razao_social|default:"N/A" }}</p>
-                        <p><strong>Endereço:</strong> {{ documento.local_prestacao.endereco }}</p>
-                        <p><strong>Cidade:</strong> {{ documento.local_prestacao.cidade }}</p>
-                        <p><strong>UF:</strong> {{ documento.local_prestacao.uf }}</p>
-                        <p><strong>CEP:</strong> {{ documento.local_prestacao.cep }}</p>
-                        <p><strong>Telefone:</strong> {{ documento.local_prestacao.telefone }}</p>
-                        <p><strong>E-mail:</strong> {{ documento.local_prestacao.email }}</p>
+                        <h6 class="text-muted text-uppercase small fw-bold mb-2">
+                            <i class="bi bi-building"></i> Identificação
+                        </h6>
+                        <p class="mb-2"><strong>Código:</strong> {{ documento.codigo_documento }}</p>
+                        <p class="mb-2"><strong>Empresa:</strong> {{ documento.empresa.razao_social }}</p>
+                        <p class="mb-2"><strong>CNPJ:</strong> {{ documento.empresa.cnpj }}</p>
+
+                        {% if documento.local_prestacao %}
+                        <hr class="my-3">
+                        <h6 class="text-muted text-uppercase small fw-bold mb-2">
+                            <i class="bi bi-geo-alt"></i> Local de Prestação
+                        </h6>
+                        <p class="mb-1"><strong>Razão Social:</strong> {{ documento.local_prestacao.razao_social|default:"N/A" }}</p>
+                        {% if documento.local_prestacao.endereco %}
+                        <p class="mb-1"><strong>Endereço:</strong>
+                            {{ documento.local_prestacao.endereco }}{% if documento.local_prestacao.numero %}, {{ documento.local_prestacao.numero }}{% endif %}
+                        </p>
+                        {% endif %}
+                        {% if documento.local_prestacao.bairro %}
+                        <p class="mb-1"><strong>Bairro:</strong> {{ documento.local_prestacao.bairro }}</p>
+                        {% endif %}
+                        {% if documento.local_prestacao.cidade %}
+                        <p class="mb-1">
+                            <strong>Cidade/UF:</strong>
+                            {{ documento.local_prestacao.cidade }}{% if documento.local_prestacao.estado %}/{{ documento.local_prestacao.estado }}{% endif %}
+                        </p>
+                        {% endif %}
+                        {% if documento.local_prestacao.cep %}
+                        <p class="mb-1"><strong>CEP:</strong> {{ documento.local_prestacao.cep }}</p>
+                        {% endif %}
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Status:</strong> 
+                        <h6 class="text-muted text-uppercase small fw-bold mb-2">
+                            <i class="bi bi-calendar3"></i> Datas e Status
+                        </h6>
+                        <p class="mb-2"><strong>Status:</strong>
                             {% if documento.status == 'vigente' %}
                             <span class="badge badge-status-vigente">Vigente</span>
                             {% elif documento.status == 'vencido' %}
                             <span class="badge badge-status-vencido">Vencido</span>
                             {% elif documento.status == 'em_revisao' %}
                             <span class="badge badge-status-em-revisao">Em Revisão</span>
-                            {% endif %}
-                        </p>
-                        <p><strong>Data de Elaboração:</strong> {{ documento.data_elaboracao|date:"d/m/Y" }}</p>
-                        <p><strong>Última Revisão:</strong> {{ documento.data_ultima_revisao|date:"d/m/Y"|default:"N/A" }}</p>
-                        <p><strong>Data de Vencimento:</strong> {{ documento.data_vencimento|date:"d/m/Y" }}
-                            {% if documento.dias_para_vencimento < 0 %}
-                            <br><small class="text-danger">Vencido há {{ documento.dias_vencido }} dias</small>
-                            {% elif documento.dias_para_vencimento <= 30 %}
-                            <br><small class="text-warning">Vence em {{ documento.dias_para_vencimento }} dias</small>
                             {% else %}
-                            <br><small class="text-success">Vence em {{ documento.dias_para_vencimento }} dias</small>
+                            <span class="badge bg-secondary">{{ documento.get_status_display }}</span>
                             {% endif %}
                         </p>
-                        <p><strong>Versão:</strong> {{ documento.versao_atual }}</p>
+                        <p class="mb-2"><strong>Versão:</strong> {{ documento.versao_atual }}</p>
+                        <p class="mb-2">
+                            <i class="bi bi-calendar-plus text-info"></i>
+                            <strong>Elaboração:</strong> {{ documento.data_elaboracao|date:"d/m/Y" }}
+                        </p>
+                        <p class="mb-2">
+                            <i class="bi bi-arrow-clockwise text-warning"></i>
+                            <strong>Última Revisão:</strong> {{ documento.data_ultima_revisao|date:"d/m/Y"|default:"N/A" }}
+                        </p>
+                        <p class="mb-2">
+                            <i class="bi bi-flag text-danger"></i>
+                            <strong>Vencimento:</strong> {{ documento.data_vencimento|date:"d/m/Y" }}
+                            {% if documento.dias_para_vencimento < 0 %}
+                            <br><small class="text-danger ms-3">
+                                <i class="bi bi-exclamation-circle-fill"></i>
+                                Vencido há {{ documento.dias_para_vencimento|stringformat:"d"|slice:"1:" }} dias
+                            </small>
+                            {% elif documento.dias_para_vencimento <= 30 %}
+                            <br><small class="text-warning ms-3">
+                                <i class="bi bi-clock-history"></i>
+                                Vence em {{ documento.dias_para_vencimento }} dias
+                            </small>
+                            {% else %}
+                            <br><small class="text-success ms-3">
+                                <i class="bi bi-check-circle"></i>
+                                Vence em {{ documento.dias_para_vencimento }} dias
+                            </small>
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
+
+                {% if documento.objetivo %}
+                <hr>
+                <h6><i class="bi bi-bullseye"></i> Objetivo</h6>
+                <p>{{ documento.objetivo|linebreaks }}</p>
+                {% endif %}
+
+                {% if documento.escopo %}
+                <hr>
+                <h6><i class="bi bi-bounding-box"></i> Escopo</h6>
+                <p>{{ documento.escopo|linebreaks }}</p>
+                {% endif %}
+
                 {% if documento.observacoes %}
                 <hr>
-                <p><strong>Observações:</strong></p>
+                <h6><i class="bi bi-chat-left-text"></i> Observações</h6>
                 <p>{{ documento.observacoes|linebreaks }}</p>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Card: Responsáveis pela Elaboração (Com Formulário) -->
+        <!-- Responsáveis pela Elaboração -->
         <form method="post">
             {% csrf_token %}
             <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><i class="fas fa-user-tie"></i> Responsáveis pela Elaboração</span>
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span><i class="bi bi-person-badge"></i> Responsáveis pela Elaboração</span>
                     <button type="submit" class="btn btn-success btn-sm">
-                        <i class="fas fa-save"></i> Salvar Responsáveis
+                        <i class="bi bi-save"></i> Salvar Responsáveis
                     </button>
                 </div>
                 <div class="card-body">
                     {{ responsaveis_formset.management_form }}
 
-                    <!-- Cabeçalhos das colunas (exibidos apenas em telas médias e grandes) -->
-                    <div class="row mb-2 d-none d-md-flex">
-                        <div class="col-md-5"><strong>Profissional</strong></div>
-                        <div class="col-md-5"><strong>Tipo de Responsabilidade</strong></div>
-                        <div class="col-md-2 text-center"><strong>Ações</strong></div>
+                    <!-- Cabeçalhos (desktop) -->
+                    <div class="row mb-2 d-none d-md-flex fw-semibold text-muted small text-uppercase">
+                        <div class="col-md-5">Profissional</div>
+                        <div class="col-md-5">Tipo de Responsabilidade</div>
+                        <div class="col-md-2 text-center">Ações</div>
                     </div>
 
                     <div id="responsaveis-form-list">
                         {% for form in responsaveis_formset %}
-                            <div class="row align-items-center mb-3 form-row-item">
-                                <div class="d-none">{{ form.id }}</div>
-                                <div class="col-md-5">
-                                    <!-- Label mobile (oculto em desktop) -->
-                                    <label class="form-label d-md-none">Profissional</label>
-                                    {{ form.profissional }}
-                                    {% for error in form.profissional.errors %}
-                                        <div class="invalid-feedback d-block">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                                <div class="col-md-5">
-                                    <!-- Label mobile (oculto em desktop) -->
-                                    <label class="form-label d-md-none">Tipo de Responsabilidade</label>
-                                    {{ form.tipo_responsabilidade }}
-                                    {% for error in form.tipo_responsabilidade.errors %}
-                                        <div class="invalid-feedback d-block">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                                <div class="col-md-2 text-center align-self-center">
-                                    {% if form.instance.pk %}
-                                        <div class="form-check">
-                                            {{ form.DELETE }}
-                                            <label class="form-check-label" for="{{ form.DELETE.id_for_label }}">Excluir</label>
-                                        </div>
-                                    {% endif %}
-                                </div>
+                        <div class="row align-items-center mb-3 form-row-item">
+                            <div class="d-none">{{ form.id }}</div>
+                            <div class="col-md-5 mb-2 mb-md-0">
+                                <label class="form-label d-md-none small fw-semibold">Profissional</label>
+                                {{ form.profissional }}
+                                {% for error in form.profissional.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
                             </div>
+                            <div class="col-md-5 mb-2 mb-md-0">
+                                <label class="form-label d-md-none small fw-semibold">Tipo de Responsabilidade</label>
+                                {{ form.tipo_responsabilidade }}
+                                {% for error in form.tipo_responsabilidade.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-2 text-center">
+                                {% if form.instance.pk %}
+                                <div class="form-check d-inline-flex">
+                                    {{ form.DELETE }}
+                                    <label class="form-check-label ms-2" for="{{ form.DELETE.id_for_label }}">
+                                        <small>Excluir</small>
+                                    </label>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
                         {% endfor %}
                     </div>
 
-                    <button type="button" id="add-form" class="btn btn-primary btn-sm mt-3">
-                        <i class="fas fa-plus"></i> Adicionar Responsável
+                    <button type="button" id="add-form" class="btn btn-outline-primary btn-sm mt-2">
+                        <i class="bi bi-plus-lg"></i> Adicionar Responsável
                     </button>
                 </div>
             </div>
         </form>
-
     </div>
-    <!-- FIM DA COLUNA DA ESQUERDA -->
 
-    <!-- ============================================ -->
-    <!-- COLUNA DA DIREITA (4 de 12 colunas)          -->
-    <!-- ============================================ -->
-    <div class="col-md-4">
-        <!-- Card: Conclusão do PGR -->
+    <!-- Coluna Direita -->
+    <div class="col-lg-4">
+        <!-- Conclusão -->
         <div class="card mb-3">
             <div class="card-header bg-primary text-white">
-                <i class="fas fa-chart-pie"></i> Conclusão do PGR
+                <i class="bi bi-pie-chart-fill"></i> Conclusão do PGR
             </div>
             <div class="card-body text-center">
-                <div class="mb-3">
+                <div class="mb-3" style="position: relative; height: 200px; max-width: 200px; margin: 0 auto;">
                     <canvas id="chartConclusao"></canvas>
                 </div>
-                <h2>{{ documento.percentual_conclusao|floatformat:0 }}%</h2>
+                <h2 class="fw-bold mb-0">{{ documento.percentual_conclusao|floatformat:0 }}%</h2>
                 <small class="text-muted">Percentual de Conclusão</small>
             </div>
         </div>
 
-        <!-- Card: Estatísticas de Riscos -->
+        <!-- Estatísticas de Riscos -->
         <div class="card mb-3">
             <div class="card-header">
-                <i class="fas fa-exclamation-triangle"></i> Riscos Identificados
+                <i class="bi bi-exclamation-triangle"></i> Riscos Identificados
             </div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
@@ -184,13 +283,14 @@
                     <strong>{{ total_riscos }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
-                    <span>Riscos Críticos:</span>
+                    <span>Críticos:</span>
                     <strong class="text-danger">{{ riscos_criticos }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
                     <span>Controlados:</span>
                     <strong class="text-success">{{ riscos_controlados }}</strong>
                 </div>
+                {% if riscos_stats %}
                 <hr>
                 {% for stat in riscos_stats %}
                 <div class="d-flex justify-content-between mb-2">
@@ -200,13 +300,14 @@
                     <strong>{{ stat.total }}</strong>
                 </div>
                 {% endfor %}
+                {% endif %}
             </div>
         </div>
 
-        <!-- Card: Planos de Ação -->
+        <!-- Planos de Ação (estatísticas) -->
         <div class="card">
             <div class="card-header">
-                <i class="fas fa-tasks"></i> Planos de Ação
+                <i class="bi bi-list-task"></i> Planos de Ação
             </div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
@@ -215,55 +316,54 @@
                 </div>
                 <div class="d-flex justify-content-between mb-2">
                     <span>Pendentes:</span>
-                    <strong class="text-warning">{{ planos_acao|dictsort:"status"|length }}</strong>
+                    <strong class="text-warning">{{ planos_pendentes|default:0 }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
                     <span>Em Andamento:</span>
-                    <strong class="text-info">{{ planos_acao|dictsort:"status"|length }}</strong>
+                    <strong class="text-info">{{ planos_em_andamento|default:0 }}</strong>
                 </div>
                 <div class="d-flex justify-content-between">
                     <span>Concluídos:</span>
-                    <strong class="text-success">{{ planos_acao|dictsort:"status"|length }}</strong>
+                    <strong class="text-success">{{ planos_concluidos|default:0 }}</strong>
                 </div>
             </div>
         </div>
     </div>
-    <!-- FIM DA COLUNA DA DIREITA -->
 </div>
 
-<!-- Template oculto para novos formulários (usado pelo JavaScript) -->
+<!-- Template oculto para novos formulários -->
 <div id="empty-form" class="d-none">
     <div class="row align-items-center mb-3 form-row-item">
         <div class="d-none">{{ responsaveis_formset.empty_form.id }}</div>
-        <div class="col-md-5">
-            <label class="form-label d-md-none">Profissional</label>
+        <div class="col-md-5 mb-2 mb-md-0">
+            <label class="form-label d-md-none small fw-semibold">Profissional</label>
             {{ responsaveis_formset.empty_form.profissional }}
         </div>
-        <div class="col-md-5">
-            <label class="form-label d-md-none">Tipo de Responsabilidade</label>
+        <div class="col-md-5 mb-2 mb-md-0">
+            <label class="form-label d-md-none small fw-semibold">Tipo de Responsabilidade</label>
             {{ responsaveis_formset.empty_form.tipo_responsabilidade }}
         </div>
-        <div class="col-md-2 text-center align-self-center"></div>
+        <div class="col-md-2 text-center"></div>
     </div>
 </div>
 
-<!-- Card: Histórico de Revisões -->
+<!-- Histórico de Revisões -->
 <div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="fas fa-history"></i> Histórico de Revisões</span>
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="bi bi-clock-history"></i> Histórico de Revisões</span>
         {% if perms.pgr_gestao.add_pgrrevisao %}
         <a href="{% url 'pgr_gestao:revisao_create' documento.pk %}" class="btn btn-sm btn-primary">
-            <i class="fas fa-plus"></i> Nova Revisão
+            <i class="bi bi-plus-lg"></i> Nova Revisão
         </a>
         {% endif %}
     </div>
     <div class="card-body">
         {% if revisoes %}
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
                     <tr>
-                        <th>Revisão</th>
+                        <th class="text-center">#</th>
                         <th>Descrição</th>
                         <th>Data</th>
                         <th>Realizada Por</th>
@@ -273,47 +373,54 @@
                 <tbody>
                     {% for revisao in revisoes %}
                     <tr>
-                        <td><strong>{{ revisao.numero_revisao|stringformat:"02d" }}</strong></td>
+                        <td class="text-center"><strong>{{ revisao.numero_revisao|stringformat:"02d" }}</strong></td>
                         <td>{{ revisao.descricao_revisao }}</td>
                         <td>{{ revisao.data_realizacao|date:"d/m/Y" }}</td>
                         <td>{{ revisao.realizada_por }}</td>
-                        <td>{{ revisao.motivo|default:"N/A" }}</td>
+                        <td><small>{{ revisao.motivo|default:"N/A" }}</small></td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% else %}
-        <p class="text-muted text-center">Nenhuma revisão registrada.</p>
+        <p class="text-muted text-center mb-0 py-3">
+            <i class="bi bi-clock-history d-block mb-2" style="font-size: 2rem; opacity: 0.4;"></i>
+            Nenhuma revisão registrada.
+        </p>
         {% endif %}
     </div>
 </div>
 
-<!-- Tabs: GES, Riscos, Planos de Ação, Cronograma -->
+<!-- Tabs -->
 <ul class="nav nav-tabs mb-3" id="pgrTabs" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active" id="ges-tab" data-bs-toggle="tab" data-bs-target="#ges" type="button">
-            <i class="fas fa-users"></i> GES ({{ grupos_exposicao.count }})
+            <i class="bi bi-people-fill"></i> GES
+            <span class="badge bg-secondary ms-1">{{ grupos_exposicao.count }}</span>
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="riscos-tab" data-bs-toggle="tab" data-bs-target="#riscos" type="button">
-            <i class="fas fa-exclamation-triangle"></i> Riscos ({{ riscos.count }})
+            <i class="bi bi-exclamation-triangle-fill"></i> Riscos
+            <span class="badge bg-secondary ms-1">{{ riscos.count }}</span>
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="planos-tab" data-bs-toggle="tab" data-bs-target="#planos" type="button">
-            <i class="fas fa-tasks"></i> Planos de Ação ({{ planos_acao.count }})
+            <i class="bi bi-list-task"></i> Planos de Ação
+            <span class="badge bg-secondary ms-1">{{ planos_acao.count }}</span>
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="cronograma-tab" data-bs-toggle="tab" data-bs-target="#cronograma" type="button">
-            <i class="fas fa-calendar-alt"></i> Cronograma ({{ cronograma.count }})
+            <i class="bi bi-calendar-event"></i> Cronograma
+            <span class="badge bg-secondary ms-1">{{ cronograma.count }}</span>
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="anexos-tab" data-bs-toggle="tab" data-bs-target="#anexos" type="button">
-            <i class="fas fa-paperclip"></i> Anexos
+            <i class="bi bi-paperclip"></i> Anexos
             {% if anexos_pgr %}<span class="badge bg-secondary ms-1">{{ anexos_pgr|length }}</span>{% endif %}
         </button>
     </li>
@@ -326,30 +433,32 @@
             <div class="card-body">
                 {% if grupos_exposicao %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover table-clickable align-middle">
+                        <thead class="table-light">
                             <tr>
                                 <th>Código</th>
                                 <th>Nome</th>
                                 <th>Cargo</th>
                                 <th>Função</th>
-                                <th>Trabalhadores</th>
-                                <th>Riscos</th>
+                                <th class="text-center">Trabalhadores</th>
+                                <th class="text-center">Riscos</th>
                                 <th class="text-center">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for ges in grupos_exposicao %}
-                            <tr onclick="window.location='{% url 'pgr_gestao:ges_detail' ges.pk %}'" style="cursor: pointer;">
+                            <tr onclick="window.location='{% url 'pgr_gestao:ges_detail' ges.pk %}'">
                                 <td><strong>{{ ges.codigo }}</strong></td>
-                                <td>{{ ges.nome }}</td>
+                                <td>{{ ges.nome|truncatewords:5 }}</td>
                                 <td>{{ ges.cargo.nome|default:"N/A" }}</td>
                                 <td>{{ ges.funcao.nome|default:"N/A" }}</td>
-                                <td>{{ ges.numero_trabalhadores|default:0 }}</td>
-                                <td><span class="badge bg-primary">{{ ges.riscos.count }}</span></td>
+                                <td class="text-center">{{ ges.numero_trabalhadores|default:0 }}</td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary">{{ ges.riscos.count }}</span>
+                                </td>
                                 <td class="text-center" onclick="event.stopPropagation();">
-                                    <a href="{% url 'pgr_gestao:ges_detail' ges.pk %}" class="btn btn-sm btn-info">
-                                        <i class="fas fa-eye"></i>
+                                    <a href="{% url 'pgr_gestao:ges_detail' ges.pk %}" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-eye"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -358,11 +467,14 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center py-4">Nenhum GES cadastrado para este documento.</p>
+                <div class="table-empty-state d-flex align-items-center flex-wrap py-5 text-center">
+                    <i class="bi bi-doc d-block opacity: 0.4;"></i>  
+                    <p>Nenhum GES cadastrado para este documento.</p>
+                </div>
                 {% endif %}
             </div>
         </div>
-    </div>
+    </div>  
 
     <!-- Tab: Riscos -->
     <div class="tab-pane fade" id="riscos" role="tabpanel">
@@ -370,8 +482,8 @@
             <div class="card-body">
                 {% if riscos %}
                 <div class="table-responsive">
-                    <table class="table table-hover table-sm">
-                        <thead>
+                    <table class="table table-hover table-sm table-clickable align-middle">
+                        <thead class="table-light">
                             <tr>
                                 <th>Código</th>
                                 <th>Tipo</th>
@@ -385,20 +497,18 @@
                         </thead>
                         <tbody>
                             {% for risco in riscos %}
-                            <tr onclick="window.location='{% url 'pgr_gestao:risco_detail' risco.pk %}'" style="cursor: pointer;">
+                            <tr onclick="window.location='{% url 'pgr_gestao:risco_detail' risco.pk %}'">
                                 <td>{{ risco.codigo_risco|default:"N/A" }}</td>
-                                <td>{{ risco.tipo_risco.nome }}</td>
-                                <td>{{ risco.agente }}</td>
-                                <td>{{ risco.ges.nome|default:"N/A" }}</td>
+                                <td><small>{{ risco.tipo_risco.nome }}</small></td>
+                                <td>{{ risco.agente|truncatewords:4 }}</td>
+                                <td><small>{{ risco.ges.nome|default:"N/A"|truncatewords:3 }}</small></td>
                                 <td>
                                     <span class="badge badge-risco-{{ risco.classificacao_risco }}">
                                         {{ risco.get_classificacao_risco_display }}
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary">
-                                        {{ risco.get_status_controle_display }}
-                                    </span>
+                                    <span class="badge bg-secondary">{{ risco.get_status_controle_display }}</span>
                                 </td>
                                 <td>
                                     <span class="badge bg-{{ risco.prioridade_acao }}">
@@ -406,8 +516,8 @@
                                     </span>
                                 </td>
                                 <td class="text-center" onclick="event.stopPropagation();">
-                                    <a href="{% url 'pgr_gestao:risco_detail' risco.pk %}" class="btn btn-sm btn-info">
-                                        <i class="fas fa-eye"></i>
+                                    <a href="{% url 'pgr_gestao:risco_detail' risco.pk %}" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-eye"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -416,7 +526,10 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center py-4">Nenhum risco identificado para este documento.</p>
+                <div class="table-empty-state">
+                    <i class="bi bi-shield-slash d-block"></i>
+                    <p>Nenhum risco identificado para este documento.</p>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -428,8 +541,8 @@
             <div class="card-body">
                 {% if planos_acao %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover table-clickable align-middle">
+                        <thead class="table-light">
                             <tr>
                                 <th>Descrição</th>
                                 <th>Risco</th>
@@ -442,9 +555,9 @@
                         </thead>
                         <tbody>
                             {% for plano in planos_acao %}
-                            <tr onclick="window.location='{% url 'pgr_gestao:plano_acao_detail' plano.pk %}'" style="cursor: pointer;">
+                            <tr onclick="window.location='{% url 'pgr_gestao:plano_acao_detail' plano.pk %}'">
                                 <td>{{ plano.descricao_acao|truncatewords:8 }}</td>
-                                <td>{{ plano.risco_identificado.agente|truncatewords:5 }}</td>
+                                <td><small>{{ plano.risco_identificado.agente|truncatewords:5 }}</small></td>
                                 <td>
                                     <span class="badge bg-{{ plano.prioridade }}">
                                         {{ plano.get_prioridade_display }}
@@ -458,13 +571,15 @@
                                 <td>
                                     {{ plano.data_prevista|date:"d/m/Y" }}
                                     {% if plano.esta_atrasado %}
-                                    <br><small class="text-danger">ATRASADO</small>
+                                    <br><small class="text-danger">
+                                        <i class="bi bi-exclamation-circle"></i> ATRASADO
+                                    </small>
                                     {% endif %}
                                 </td>
-                                <td>{{ plano.responsavel }}</td>
+                                <td><small>{{ plano.responsavel|truncatechars:25 }}</small></td>
                                 <td class="text-center" onclick="event.stopPropagation();">
-                                    <a href="{% url 'pgr_gestao:plano_acao_detail' plano.pk %}" class="btn btn-sm btn-info">
-                                        <i class="fas fa-eye"></i>
+                                    <a href="{% url 'pgr_gestao:plano_acao_detail' plano.pk %}" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-eye"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -473,7 +588,10 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center py-4">Nenhum plano de ação cadastrado para este documento.</p>
+                <div class="table-empty-state">
+                    <i class="bi bi-list-task d-block"></i>
+                    <p>Nenhum plano de ação cadastrado para este documento.</p>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -483,12 +601,20 @@
     <div class="tab-pane fade" id="cronograma" role="tabpanel">
         <div class="card">
             <div class="card-body">
+                {% if perms.pgr_gestao.add_cronogramaacaopgr %}
+                <div class="d-flex justify-content-end mb-3">
+                    <a href="{% url 'pgr_gestao:cronograma_create' pgr_pk=documento.pk %}" class="btn btn-success btn-sm">
+                        <i class="bi bi-plus-lg"></i> Nova Ação
+                    </a>
+                </div>
+                {% endif %}
+
                 {% if cronograma %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
-                                <th>Item</th>
+                                <th class="text-center">#</th>
                                 <th>Ação Necessária</th>
                                 <th>Público Alvo</th>
                                 <th>Periodicidade</th>
@@ -500,34 +626,28 @@
                         <tbody>
                             {% for acao in cronograma %}
                             <tr>
-                                <td><strong>{{ acao.numero_item|stringformat:"02d" }}</strong></td>
-                                <td>{{ acao.acao_necessaria }}</td>
-                                <td>{{ acao.publico_alvo|default:"Todos os colaboradores" }}</td>
+                                <td class="text-center"><strong>{{ acao.numero_item|stringformat:"02d" }}</strong></td>
+                                <td>{{ acao.acao_necessaria|truncatewords:10 }}</td>
+                                <td><small>{{ acao.publico_alvo|default:"Todos os colaboradores" }}</small></td>
                                 <td>{{ acao.get_periodicidade_display }}</td>
                                 <td>
                                     {% if acao.status %}
-                                    <span class="badge bg-{{ acao.status }}">
-                                        {{ acao.get_status_display }}
-                                    </span>
+                                    <span class="badge bg-{{ acao.status }}">{{ acao.get_status_display }}</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ acao.data_proxima_avaliacao|date:"d/m/Y"|default:"N/A" }}</td>
+                                <td><small>{{ acao.data_proxima_avaliacao|date:"d/m/Y"|default:"N/A" }}</small></td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
                                         {% if perms.pgr_gestao.change_cronogramaacaopgr %}
                                         <a href="{% url 'pgr_gestao:cronograma_update_pgr' pgr_pk=documento.pk pk=acao.pk %}"
-                                        class="btn btn-warning btn-sm" title="Editar">
-                                            <i class="fas fa-edit"></i>
+                                           class="btn btn-outline-warning" title="Editar">
+                                            <i class="bi bi-pencil-square"></i>
                                         </a>
                                         {% endif %}
                                         {% if perms.pgr_gestao.delete_cronogramaacaopgr %}
                                         <a href="{% url 'pgr_gestao:cronograma_delete_pgr' pgr_pk=documento.pk pk=acao.pk %}"
-                                        class="btn btn-danger btn-sm" title="Excluir">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                        <a href="{% url 'pgr_gestao:cronograma_create' pgr_pk=documento.pk %}"
-                                        class="btn btn-success btn-sm">
-                                            <i class="fas fa-plus"></i> Nova Ação
+                                           class="btn btn-outline-danger" title="Excluir">
+                                            <i class="bi bi-trash"></i>
                                         </a>
                                         {% endif %}
                                     </div>
@@ -538,253 +658,241 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center py-4">Nenhuma ação no cronograma para este documento.</p>
+                <div class="table-empty-state">
+                    <i class="bi bi-calendar-x d-block"></i>
+                    <p>Nenhuma ação no cronograma para este documento.</p>
+                    {% if perms.pgr_gestao.add_cronogramaacaopgr %}
+                    <a href="{% url 'pgr_gestao:cronograma_create' pgr_pk=documento.pk %}" class="btn btn-success">
+                        <i class="bi bi-plus-lg"></i> Adicionar Primeira Ação
+                    </a>
+                    {% endif %}
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
 
-        <!-- Tab: Anexos do PGR -->
+    <!-- Tab: Anexos -->
     <div class="tab-pane fade" id="anexos" role="tabpanel">
-        <div class="card-body">
-
-            <!-- Botão Upload -->
-            {% if perms.pgr_gestao.add_anexopgr %}
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="mb-0"><i class="fas fa-paperclip"></i> Anexos do PGR</h6>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalUploadAnexo">
-                    <i class="fas fa-upload"></i> Novo Anexo
-                </button>
-            </div>
-            {% endif %}
-
-            {% if anexos_pgr %}
-            <div class="table-responsive">
-                <table class="table table-hover align-middle" id="tabelaAnexos">
-                    <thead class="table-dark">
-                        <tr>
-                            <th style="width:40px"></th>
-                            <th>Anexo</th>
-                            <th>Tipo</th>
-                            <th>Arquivo</th>
-                            <th>Tamanho</th>
-                            <th>PDF</th>
-                            <th>Enviado</th>
-                            <th style="width:120px">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sortableAnexos">
-                        {% for anexo in anexos_pgr %}
-                        <tr data-id="{{ anexo.pk }}">
-                            <td class="text-center text-muted" style="cursor: grab;" title="Arrastar para reordenar">
-                                <i class="fas fa-grip-vertical"></i>
-                            </td>
-                            <td>
-                                <strong>ANEXO {{ anexo.numero_romano }}</strong><br>
-                                <small class="text-muted">{{ anexo.titulo }}</small>
-                            </td>
-                            <td>
-                                <span class="badge bg-info">{{ anexo.get_tipo_anexo_display }}</span>
-                            </td>
-                            <td>
-                                {% secure_url anexo "arquivo" as arquivo_url %}
-                        <a href="{{ arquivo_url }}" target="_blank" class="text-decoration-none">
-                                    <i class="fas {{ anexo.icone_tipo }}"></i>
-                                    {{ anexo.nome_arquivo_original|default:anexo.arquivo.name|truncatechars:30 }}
-                                </a>
-                            </td>
-                            <td>{{ anexo.tamanho_formatado }}</td>
-                            <td class="text-center">
-                                {% if anexo.incluir_no_pdf %}
-                                    <i class="fas fa-check-circle text-success" title="Incluído no PDF"></i>
-                                {% else %}
-                                    <i class="fas fa-times-circle text-muted" title="Não incluído no PDF"></i>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <small>{{ anexo.criado_em|date:"d/m/Y H:i" }}</small><br>
-                                <small class="text-muted">{{ anexo.criado_por }}</small>
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{{ arquivo_url }}" target="_blank"
-                                       class="btn btn-outline-primary" title="Visualizar/Download">
-                                        <i class="fas fa-download"></i>
-                                    </a>
-                                    {% if perms.pgr_gestao.change_anexopgr %}
-                                    <button type="button" class="btn btn-outline-warning btn-editar-anexo"
-                                            data-url="{% url 'pgr_gestao:anexo_editar' pk=anexo.pk %}"
-                                            title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    {% endif %}
-                                    {% if perms.pgr_gestao.delete_anexopgr %}
-                                    <form method="post" action="{% url 'pgr_gestao:anexo_delete' pk=anexo.pk %}"
-                                          class="d-inline"
-                                          onsubmit="return confirm('Excluir ANEXO {{ anexo.numero_romano }} – {{ anexo.titulo }}?')">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-outline-danger" title="Excluir">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="text-center py-5">
-                <i class="fas fa-paperclip fa-3x text-muted mb-3"></i>
-                <p class="text-muted">Nenhum anexo cadastrado para este documento PGR.</p>
+        <div class="card">
+            <div class="card-body">
                 {% if perms.pgr_gestao.add_anexopgr %}
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUploadAnexo">
-                    <i class="fas fa-upload"></i> Enviar Primeiro Anexo
-                </button>
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <h6 class="mb-0"><i class="bi bi-paperclip"></i> Anexos do PGR</h6>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalUploadAnexo">
+                        <i class="bi bi-cloud-upload"></i> Novo Anexo
+                    </button>
+                </div>
+                {% endif %}
+
+                {% if anexos_pgr %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="tabelaAnexos">
+                        <thead>
+                            <tr>
+                                <th style="width:40px"></th>
+                                <th>Anexo</th>
+                                <th>Tipo</th>
+                                <th>Arquivo</th>
+                                <th>Tamanho</th>
+                                <th class="text-center">PDF</th>
+                                <th>Enviado</th>
+                                <th style="width:140px">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sortableAnexos">
+                            {% for anexo in anexos_pgr %}
+                            <tr data-id="{{ anexo.pk }}">
+                                <td class="text-center text-muted drag-handle" title="Arrastar para reordenar">
+                                    <i class="bi bi-grip-vertical"></i>
+                                </td>
+                                <td>
+                                    <strong>ANEXO {{ anexo.numero_romano }}</strong>
+                                    <br><small class="text-muted">{{ anexo.titulo }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ anexo.get_tipo_anexo_display }}</span>
+                                </td>
+                                <td>
+                                    {% secure_url anexo "arquivo" as arquivo_url %}
+                                    <a href="{{ arquivo_url }}" target="_blank" class="text-decoration-none">
+                                        <i class="bi bi-file-earmark"></i>
+                                        {{ anexo.nome_arquivo_original|default:anexo.arquivo.name|truncatechars:30 }}
+                                    </a>
+                                </td>
+                                <td><small>{{ anexo.tamanho_formatado }}</small></td>
+                                <td class="text-center">
+                                    {% if anexo.incluir_no_pdf %}
+                                    <i class="bi bi-check-circle-fill text-success" title="Incluído no PDF"></i>
+                                    {% else %}
+                                    <i class="bi bi-x-circle text-muted" title="Não incluído no PDF"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ anexo.criado_em|date:"d/m/Y H:i" }}</small>
+                                    <br><small class="text-muted">{{ anexo.criado_por }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ arquivo_url }}" target="_blank"
+                                           class="btn btn-outline-primary" title="Download">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        {% if perms.pgr_gestao.change_anexopgr %}
+                                        <button type="button" class="btn btn-outline-warning btn-editar-anexo"
+                                                data-url="{% url 'pgr_gestao:anexo_editar' pk=anexo.pk %}"
+                                                title="Editar">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% if perms.pgr_gestao.delete_anexopgr %}
+                                        <form method="post" action="{% url 'pgr_gestao:anexo_delete' pk=anexo.pk %}"
+                                              class="d-inline"
+                                              onsubmit="return confirm('Excluir ANEXO {{ anexo.numero_romano }} – {{ anexo.titulo }}?')">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-danger" title="Excluir">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="table-empty-state text-center py-5">
+                    <p>Nenhum anexo cadastrado para este documento PGR.</p>
+                </div>
                 {% endif %}
             </div>
-            {% endif %}
         </div>
     </div>
+</div>
 
-    <!-- ========== MODAL: Upload de Anexo ========== -->
-    <div class="modal fade" id="modalUploadAnexo" tabindex="-1" aria-labelledby="modalUploadAnexoLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <form method="post" action="{% url 'pgr_gestao:anexo_upload' pgr_id=documento.pk %}"
-                      enctype="multipart/form-data" id="formUploadAnexo">
-                    {% csrf_token %}
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title" id="modalUploadAnexoLabel">
-                            <i class="fas fa-upload"></i> Novo Anexo do PGR
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <!-- Tipo -->
-                            <div class="col-md-6">
-                                <label for="id_tipo_anexo" class="form-label fw-bold">Tipo de Anexo *</label>
-                                <select name="tipo_anexo" id="id_tipo_anexo" class="form-select" required>
-                                    <option value="">-- Selecione --</option>
-                                    <option value="analise_ruido">Análise Quantitativa de Ruído</option>
-                                    <option value="analise_calor">Análise Quantitativa de Calor</option>
-                                    <option value="analise_quimica">Análise Quantitativa de Agentes Químicos</option>
-                                    <option value="analise_vibração">Análise Quantitativa de Vibração</option>
-                                    <option value="analise_iluminacao">Análise de Iluminância</option>
-                                    <option value="analise_biologica">Análise de Agentes Biológicos</option>
-                                    <option value="laudo_insalubridade">Laudo de Insalubridade</option>
-                                    <option value="laudo_periculosidade">Laudo de Periculosidade</option>
-                                    <option value="laudo_ergonomico">Laudo Ergonômico</option>
-                                    <option value="aet">Análise Ergonômica do Trabalho (AET)</option>
-                                    <option value="ppra">PPRA</option>
-                                    <option value="pcmso">PCMSO</option>
-                                    <option value="ltcat">LTCAT</option>
-                                    <option value="certificado_calibracao">Certificado de Calibração</option>
-                                    <option value="art">ART – Anotação de Responsabilidade Técnica</option>
-                                    <option value="mapa_risco">Mapa de Risco</option>
-                                    <option value="planta_baixa">Planta Baixa / Layout</option>
-                                    <option value="fotografias">Registro Fotográfico</option>
-                                    <option value="treinamento">Certificado / Registro de Treinamento</option>
-                                    <option value="outro">Outro</option>
-                                </select>
-                            </div>
+<!-- Modal: Upload de Anexo -->
+<div class="modal fade" id="modalUploadAnexo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{% url 'pgr_gestao:anexo_upload' pgr_id=documento.pk %}"
+                  enctype="multipart/form-data" id="formUploadAnexo">
+                {% csrf_token %}
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-cloud-upload"></i> Novo Anexo do PGR
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="id_tipo_anexo" class="form-label fw-semibold required-field">Tipo de Anexo</label>
+                            <select name="tipo_anexo" id="id_tipo_anexo" class="form-select" required>
+                                <option value="">-- Selecione --</option>
+                                <option value="analise_ruido">Análise Quantitativa de Ruído</option>
+                                <option value="analise_calor">Análise Quantitativa de Calor</option>
+                                <option value="analise_quimica">Análise Quantitativa de Agentes Químicos</option>
+                                <option value="analise_vibracao">Análise Quantitativa de Vibração</option>
+                                <option value="analise_iluminacao">Análise de Iluminância</option>
+                                <option value="analise_biologica">Análise de Agentes Biológicos</option>
+                                <option value="laudo_insalubridade">Laudo de Insalubridade</option>
+                                <option value="laudo_periculosidade">Laudo de Periculosidade</option>
+                                <option value="laudo_ergonomico">Laudo Ergonômico</option>
+                                <option value="aet">Análise Ergonômica do Trabalho (AET)</option>
+                                <option value="ppra">PPRA</option>
+                                <option value="pcmso">PCMSO</option>
+                                <option value="ltcat">LTCAT</option>
+                                <option value="certificado_calibracao">Certificado de Calibração</option>
+                                <option value="art">ART – Anotação de Responsabilidade Técnica</option>
+                                <option value="mapa_risco">Mapa de Risco</option>
+                                <option value="planta_baixa">Planta Baixa / Layout</option>
+                                <option value="fotografias">Registro Fotográfico</option>
+                                <option value="treinamento">Certificado / Registro de Treinamento</option>
+                                <option value="outro">Outro</option>
+                            </select>
+                        </div>
 
-                            <!-- Número Romano -->
-                            <div class="col-md-2">
-                                <label for="id_numero_romano" class="form-label fw-bold">Nº Anexo</label>
-                                <input type="text" name="numero_romano" id="id_numero_romano"
-                                       class="form-control" placeholder="Auto">
-                                <small class="text-muted">Ex: I, II, III</small>
-                            </div>
+                        <div class="col-md-2">
+                            <label for="id_numero_romano" class="form-label fw-semibold">Nº</label>
+                            <input type="text" name="numero_romano" id="id_numero_romano"
+                                   class="form-control" placeholder="Auto">
+                            <small class="text-muted">I, II...</small>
+                        </div>
 
-                            <!-- Ordem -->
-                            <div class="col-md-2">
-                                <label for="id_ordem" class="form-label fw-bold">Ordem</label>
-                                <input type="number" name="ordem" id="id_ordem"
-                                       class="form-control" min="0" placeholder="Auto">
-                            </div>
+                        <div class="col-md-2">
+                            <label for="id_ordem" class="form-label fw-semibold">Ordem</label>
+                            <input type="number" name="ordem" id="id_ordem"
+                                   class="form-control" min="0" placeholder="Auto">
+                        </div>
 
-                            <!-- Incluir no PDF -->
-                            <div class="col-md-2 d-flex align-items-end">
-                                <div class="form-check">
-                                    <input type="checkbox" name="incluir_no_pdf" id="id_incluir_pdf"
-                                           class="form-check-input" checked>
-                                    <label for="id_incluir_pdf" class="form-check-label">
-                                        No PDF
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Título -->
-                            <div class="col-12">
-                                <label for="id_titulo_anexo" class="form-label fw-bold">Título do Anexo</label>
-                                <input type="text" name="titulo" id="id_titulo_anexo"
-                                       class="form-control"
-                                       placeholder="Preenchido automaticamente pelo tipo selecionado">
-                            </div>
-
-                            <!-- Descrição -->
-                            <div class="col-12">
-                                <label for="id_descricao" class="form-label">Descrição / Observações</label>
-                                <textarea name="descricao" id="id_descricao" class="form-control"
-                                          rows="2" placeholder="Opcional"></textarea>
-                            </div>
-
-                            <!-- Upload de Arquivo -->
-                            <div class="col-12">
-                                <label for="id_arquivo" class="form-label fw-bold">Arquivo *</label>
-                                <input type="file" name="arquivo" id="id_arquivo"
-                                       class="form-control" required
-                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
-                                <small class="text-muted">
-                                    PDF, DOC, DOCX, XLS, XLSX, JPG, PNG — Máx. 50MB
-                                </small>
-                            </div>
-
-                            <!-- Zona de Drop -->
-                            <div class="col-12">
-                                <div id="dropZone" class="border border-2 border-dashed rounded p-4 text-center bg-light"
-                                     style="border-color: #dee2e6 !important; cursor: pointer; transition: all 0.3s;">
-                                    <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
-                                    <p class="text-muted mb-1">Arraste e solte arquivos aqui</p>
-                                    <small class="text-muted">ou clique no campo acima para selecionar</small>
-                                </div>
-                            </div>
-
-                            <!-- Preview dos arquivos selecionados -->
-                            <div class="col-12" id="filePreviewContainer" style="display:none;">
-                                <label class="form-label fw-bold">Arquivo(s) selecionado(s):</label>
-                                <div id="filePreviewList"></div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="incluir_no_pdf" id="id_incluir_pdf"
+                                       class="form-check-input" role="switch" checked>
+                                <label for="id_incluir_pdf" class="form-check-label">No PDF</label>
                             </div>
                         </div>
+
+                        <div class="col-12">
+                            <label for="id_titulo_anexo" class="form-label fw-semibold">Título do Anexo</label>
+                            <input type="text" name="titulo" id="id_titulo_anexo"
+                                   class="form-control"
+                                   placeholder="Preenchido automaticamente pelo tipo selecionado">
+                        </div>
+
+                        <div class="col-12">
+                            <label for="id_descricao" class="form-label fw-semibold">Descrição / Observações</label>
+                            <textarea name="descricao" id="id_descricao" class="form-control"
+                                      rows="2" placeholder="Opcional"></textarea>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="id_arquivo" class="form-label fw-semibold required-field">Arquivo</label>
+                            <input type="file" name="arquivo" id="id_arquivo"
+                                   class="form-control" required
+                                   accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+                            <small class="text-muted">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG — Máx. 50MB</small>
+                        </div>
+
+                        <div class="col-12">
+                            <div id="dropZone" class="rounded p-4 text-center">
+                                <i class="bi bi-cloud-arrow-up-fill text-muted" style="font-size: 2.5rem;"></i>
+                                <p class="text-muted mb-1 mt-2">Arraste e solte arquivos aqui</p>
+                                <small class="text-muted">ou clique no campo acima para selecionar</small>
+                            </div>
+                        </div>
+
+                        <div class="col-12" id="filePreviewContainer" style="display:none;">
+                            <label class="form-label fw-semibold">Arquivo(s) selecionado(s):</label>
+                            <div id="filePreviewList"></div>
+                        </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary" id="btnEnviarAnexo">
-                            <i class="fas fa-upload"></i> Enviar Anexo
-                        </button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnEnviarAnexo">
+                        <i class="bi bi-cloud-upload"></i> Enviar Anexo
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
-    <!-- ========== MODAL: Editar Anexo ========== -->
-    <div class="modal fade" id="modalEditarAnexo" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Anexo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="editarAnexoBody">
-                    <div class="text-center py-4">
-                        <div class="spinner-border" role="status"></div>
-                        <p class="mt-2">Carregando...</p>
-                    </div>
+<!-- Modal: Editar Anexo -->
+<div class="modal fade" id="modalEditarAnexo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Editar Anexo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="editarAnexoBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-warning" role="status"></div>
+                    <p class="mt-2">Carregando...</p>
                 </div>
             </div>
         </div>
@@ -792,61 +900,72 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block extra_pgr_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
-// Gráfico de Conclusão (Donut)
-const ctxConclusao = document.getElementById('chartConclusao').getContext('2d');
-const percentual = {{ documento.percentual_conclusao }};
-new Chart(ctxConclusao, {
-    type: 'doughnut',
-    data: {
-        labels: ['Concluído', 'Pendente'],
-        datasets: [{
-            data: [percentual, 100 - percentual],
-            backgroundColor: [
-                percentual >= 90 ? '#28a745' : percentual >= 70 ? '#17a2b8' : percentual >= 50 ? '#ffc107' : '#dc3545',
-                '#e9ecef'
-            ],
-            borderWidth: 0
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        cutout: '70%',
-        plugins: {
-            legend: {
-                display: false
-            }
-        }
-    }
-});
-
-// JavaScript para Adicionar Formulários Dinamicamente
 document.addEventListener('DOMContentLoaded', function() {
+    // ═══════════════════════════════════════════════════════
+    // Gráfico de Conclusão (adaptativo ao tema)
+    // ═══════════════════════════════════════════════════════
+    const ctxConclusao = document.getElementById('chartConclusao');
+    if (ctxConclusao) {
+        const rootStyles = getComputedStyle(document.documentElement);
+        const surfaceColor = rootStyles.getPropertyValue('--bs-tertiary-bg').trim() || '#e9ecef';
+        const percentual = {{ documento.percentual_conclusao|default:0 }};
+
+        const cor = percentual >= 90 ? '#198754'
+                  : percentual >= 70 ? '#0dcaf0'
+                  : percentual >= 50 ? '#ffc107'
+                  : '#dc3545';
+
+        new Chart(ctxConclusao, {
+            type: 'doughnut',
+            data: {
+                labels: ['Concluído', 'Pendente'],
+                datasets: [{
+                    data: [percentual, 100 - percentual],
+                    backgroundColor: [cor, surfaceColor],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '70%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.label}: ${ctx.parsed}%`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Formset dinâmico de Responsáveis
+    // ═══════════════════════════════════════════════════════
     const addFormButton = document.getElementById('add-form');
     const formList = document.getElementById('responsaveis-form-list');
-    const emptyFormTemplate = document.getElementById('empty-form').innerHTML;
-    
-    // CORREÇÃO: Usar o prefixo correto do formset
+    const emptyFormTemplate = document.getElementById('empty-form');
     const formPrefix = '{{ responsaveis_formset.prefix }}';
     const totalFormsInput = document.querySelector(`#id_${formPrefix}-TOTAL_FORMS`);
 
-    if (addFormButton && totalFormsInput) {
+    if (addFormButton && totalFormsInput && emptyFormTemplate) {
         addFormButton.addEventListener('click', function() {
             let formNum = parseInt(totalFormsInput.value);
-            let newFormHtml = emptyFormTemplate.replace(/__prefix__/g, formNum);
-            
+            let newFormHtml = emptyFormTemplate.innerHTML.replace(/__prefix__/g, formNum);
             formList.insertAdjacentHTML('beforeend', newFormHtml);
-            
             totalFormsInput.value = formNum + 1;
         });
     }
-    // ═══════════════════════════════════════════════════════
-    // ANEXOS PGR - Upload, Drag & Drop, Reordenação
-    // ═══════════════════════════════════════════════════════
 
-    // Auto-preencher título baseado no tipo de anexo
+    // ═══════════════════════════════════════════════════════
+    // Auto-preencher título do anexo
+    // ═══════════════════════════════════════════════════════
     const tipoAnexoSelect = document.getElementById('id_tipo_anexo');
     const tituloAnexoInput = document.getElementById('id_titulo_anexo');
 
@@ -855,7 +974,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'analise_ruido': 'ANÁLISE QUANTITATIVA DE RUÍDO',
             'analise_calor': 'ANÁLISE QUANTITATIVA DE CALOR',
             'analise_quimica': 'ANÁLISE QUANTITATIVA DE AGENTES QUÍMICOS',
-            'analise_vibração': 'ANÁLISE QUANTITATIVA DE VIBRAÇÃO',
+            'analise_vibracao': 'ANÁLISE QUANTITATIVA DE VIBRAÇÃO',
             'analise_iluminacao': 'ANÁLISE DE ILUMINÂNCIA',
             'analise_biologica': 'ANÁLISE DE AGENTES BIOLÓGICOS',
             'laudo_insalubridade': 'LAUDO DE INSALUBRIDADE',
@@ -881,7 +1000,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Drag & Drop na zona de upload
+    // ═══════════════════════════════════════════════════════
+    // Drag & Drop Upload
+    // ═══════════════════════════════════════════════════════
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('id_arquivo');
     const previewContainer = document.getElementById('filePreviewContainer');
@@ -889,22 +1010,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (dropZone && fileInput) {
         ['dragenter', 'dragover'].forEach(evt => {
-            dropZone.addEventListener(evt, (e) => {
+            dropZone.addEventListener(evt, e => {
                 e.preventDefault();
-                dropZone.style.borderColor = '#0d6efd';
-                dropZone.style.backgroundColor = '#e8f0fe';
+                dropZone.classList.add('dragover');
             });
         });
 
         ['dragleave', 'drop'].forEach(evt => {
-            dropZone.addEventListener(evt, (e) => {
+            dropZone.addEventListener(evt, e => {
                 e.preventDefault();
-                dropZone.style.borderColor = '#dee2e6';
-                dropZone.style.backgroundColor = '';
+                dropZone.classList.remove('dragover');
             });
         });
 
-        dropZone.addEventListener('drop', (e) => {
+        dropZone.addEventListener('drop', e => {
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 fileInput.files = files;
@@ -913,7 +1032,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         dropZone.addEventListener('click', () => fileInput.click());
-
         fileInput.addEventListener('change', function() {
             updateFilePreview(this.files);
         });
@@ -923,71 +1041,82 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!previewContainer || !previewList) return;
         previewList.innerHTML = '';
 
-        if (files.length > 0) {
-            previewContainer.style.display = 'block';
-
-            Array.from(files).forEach(file => {
-                const size = file.size < 1048576
-                    ? (file.size / 1024).toFixed(1) + ' KB'
-                    : (file.size / 1048576).toFixed(1) + ' MB';
-
-                const ext = file.name.split('.').pop().toLowerCase();
-                const iconMap = {
-                    'pdf': 'fa-file-pdf text-danger',
-                    'doc': 'fa-file-word text-primary',
-                    'docx': 'fa-file-word text-primary',
-                    'xls': 'fa-file-excel text-success',
-                    'xlsx': 'fa-file-excel text-success',
-                    'jpg': 'fa-file-image text-warning',
-                    'jpeg': 'fa-file-image text-warning',
-                    'png': 'fa-file-image text-warning',
-                };
-                const icon = iconMap[ext] || 'fa-file text-secondary';
-
-                previewList.innerHTML += `
-                    <div class="d-flex align-items-center gap-2 p-2 border rounded mb-1">
-                        <i class="fas ${icon} fa-lg"></i>
-                        <span>${file.name}</span>
-                        <span class="badge bg-secondary">${size}</span>
-                    </div>
-                `;
-            });
-        } else {
+        if (files.length === 0) {
             previewContainer.style.display = 'none';
+            return;
         }
+
+        previewContainer.style.display = 'block';
+
+        const iconMap = {
+            'pdf': 'bi-file-earmark-pdf-fill text-danger',
+            'doc': 'bi-file-earmark-word-fill text-primary',
+            'docx': 'bi-file-earmark-word-fill text-primary',
+            'xls': 'bi-file-earmark-excel-fill text-success',
+            'xlsx': 'bi-file-earmark-excel-fill text-success',
+            'jpg': 'bi-file-earmark-image-fill text-warning',
+            'jpeg': 'bi-file-earmark-image-fill text-warning',
+            'png': 'bi-file-earmark-image-fill text-warning',
+        };
+
+        Array.from(files).forEach(file => {
+            const size = file.size < 1048576
+                ? (file.size / 1024).toFixed(1) + ' KB'
+                : (file.size / 1048576).toFixed(1) + ' MB';
+            const ext = file.name.split('.').pop().toLowerCase();
+            const icon = iconMap[ext] || 'bi-file-earmark text-secondary';
+
+            previewList.innerHTML += `
+                <div class="d-flex align-items-center gap-2 p-2 rounded mb-1 file-preview-item border">
+                    <i class="bi ${icon} fs-4"></i>
+                    <span class="flex-grow-1">${file.name}</span>
+                    <span class="badge bg-secondary">${size}</span>
+                </div>
+            `;
+        });
     }
 
-    // Editar Anexo (modal)
+    // ═══════════════════════════════════════════════════════
+    // Editar Anexo (modal AJAX)
+    // ═══════════════════════════════════════════════════════
     document.querySelectorAll('.btn-editar-anexo').forEach(btn => {
         btn.addEventListener('click', function() {
             const url = this.dataset.url;
             const modalBody = document.getElementById('editarAnexoBody');
             const modal = new bootstrap.Modal(document.getElementById('modalEditarAnexo'));
 
-            modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border"></div></div>';
+            modalBody.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-warning"></div>
+                    <p class="mt-2">Carregando...</p>
+                </div>
+            `;
             modal.show();
 
-            fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    modalBody.innerHTML = data.html;
-                }
-            })
-            .catch(() => {
-                modalBody.innerHTML = '<p class="text-danger">Erro ao carregar formulário.</p>';
-            });
+            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        modalBody.innerHTML = data.html;
+                    } else {
+                        modalBody.innerHTML = '<p class="text-danger">Erro ao carregar formulário.</p>';
+                    }
+                })
+                .catch(() => {
+                    modalBody.innerHTML = '<p class="text-danger">Erro ao carregar formulário.</p>';
+                });
         });
     });
 
-    // Reordenação com SortableJS (se disponível)
+    // ═══════════════════════════════════════════════════════
+    // Reordenação com SortableJS
+    // ═══════════════════════════════════════════════════════
     const sortableContainer = document.getElementById('sortableAnexos');
     if (sortableContainer && typeof Sortable !== 'undefined') {
         new Sortable(sortableContainer, {
-            handle: '.fa-grip-vertical',
+            handle: '.drag-handle',
             animation: 150,
+            ghostClass: 'bg-primary-subtle',
             onEnd: function() {
                 const ordem = Array.from(sortableContainer.querySelectorAll('tr[data-id]'))
                     .map(tr => tr.dataset.id);
@@ -1004,17 +1133,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(r => r.json())
                 .then(data => {
                     if (data.success) {
-                        // Recarregar para atualizar numeração romana
                         location.reload();
                     }
                 });
             }
         });
     }
-
 });
 </script>
 {% endblock %}
-
 
 

@@ -1,5 +1,5 @@
-
-{% extends 'pgr_gestao/base.html' %}
+{# GES - Lista de Grupos de Exposição Similar #}
+{% extends "pgr_gestao/pgr_base.html" %}
 {% load static %}
 
 {% block title %}GES - Grupos de Exposição Similar{% endblock %}
@@ -8,49 +8,49 @@
 <li class="breadcrumb-item active">GES</li>
 {% endblock %}
 
-{% block content %}
+{% block pgr_content %}
 <div class="page-header">
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h1><i class="fas fa-users"></i> GES - Grupos de Exposição Similar</h1>
+            <h1><i class="bi bi-people-fill"></i> GES - Grupos de Exposição Similar</h1>
             <p class="mb-0">Gerenciamento de Grupos Homogêneos de Exposição</p>
         </div>
         {% if perms.pgr_gestao.add_gesgrupoexposicaosimilar %}
-        <a href="{% url 'pgr_gestao:ges_create' %}" class="btn btn-primary btn-lg">
-            <i class="fas fa-plus"></i> Novo GES
+        <a href="{% url 'pgr_gestao:ges_create' %}" class="btn btn-light btn-lg">
+            <i class="bi bi-plus-lg"></i> Novo GES
         </a>
         {% endif %}
     </div>
 </div>
 
 <!-- Estatísticas -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stats-card text-center">
+<div class="row mb-4 g-3">
+    <div class="col-md-3 col-6">
+        <div class="card stats-card text-center h-100">
             <div class="card-body">
                 <h3>{{ total_ges }}</h3>
                 <small class="text-muted">Total de GES</small>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stats-card info text-center">
+    <div class="col-md-3 col-6">
+        <div class="card stats-card info text-center h-100">
             <div class="card-body">
                 <h3 class="text-info">{{ total_trabalhadores }}</h3>
                 <small class="text-muted">Trabalhadores</small>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stats-card warning text-center">
+    <div class="col-md-3 col-6">
+        <div class="card stats-card warning text-center h-100">
             <div class="card-body">
                 <h3 class="text-warning">{{ total_riscos }}</h3>
                 <small class="text-muted">Riscos Identificados</small>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stats-card success text-center">
+    <div class="col-md-3 col-6">
+        <div class="card stats-card success text-center h-100">
             <div class="card-body">
                 <h3 class="text-success">{{ ges_ativos }}</h3>
                 <small class="text-muted">GES Ativos</small>
@@ -62,7 +62,7 @@
 <!-- Filtros -->
 <div class="card mb-4">
     <div class="card-header">
-        <i class="fas fa-filter"></i> Filtros
+        <i class="bi bi-funnel"></i> Filtros de Pesquisa
     </div>
     <div class="card-body">
         <form method="get" class="row g-3">
@@ -88,58 +88,58 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
-                <div class="form-check mt-4">
-                    <input class="form-check-input" type="checkbox" name="ativo" value="true" 
-                           {% if request.GET.ativo == 'true' %}checked{% endif %} id="filtroAtivo">
-                    <label class="form-check-label" for="filtroAtivo">
-                        Apenas Ativos
-                    </label>
+            <div class="col-md-2 d-flex align-items-end">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="ativo" value="true"
+                           {% if request.GET.ativo == 'true' %}checked{% endif %} id="filtroAtivo" role="switch">
+                    <label class="form-check-label" for="filtroAtivo">Apenas Ativos</label>
                 </div>
             </div>
             <div class="col-md-2">
                 <label class="form-label">Buscar</label>
-                <input type="text" name="search" class="form-control" placeholder="Código, nome..." 
+                <input type="text" name="search" class="form-control" placeholder="Código, nome..."
                        value="{{ request.GET.search }}">
             </div>
             <div class="col-md-1 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-search"></i>
+                <button type="submit" class="btn btn-primary w-100" title="Filtrar">
+                    <i class="bi bi-search"></i>
                 </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Tabela de GES -->
+<!-- Tabela GES -->
 <div class="card">
     <div class="card-header">
-        <i class="fas fa-list"></i> Lista de GES
+        <i class="bi bi-list-ul"></i> Lista de GES
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
+            <table class="table table-hover table-clickable align-middle">
+                <thead class="table-light">
                     <tr>
                         <th>Código</th>
                         <th>Nome</th>
                         <th>Cargo/Função</th>
                         <th>Ambiente</th>
-                        <th>Trabalhadores</th>
-                        <th>Riscos</th>
+                        <th class="text-center">Trabalhadores</th>
+                        <th class="text-center">Riscos</th>
                         <th>Jornada</th>
-                        <th>Status</th>
+                        <th class="text-center">Status</th>
                         <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for ges in grupos_exposicao %}
-                    <tr onclick="window.location='{% url 'pgr_gestao:ges_detail' ges.pk %}'" style="cursor: pointer;">
+                    <tr onclick="window.location='{% url 'pgr_gestao:ges_detail' ges.pk %}'">
                         <td><strong>{{ ges.codigo }}</strong></td>
                         <td>{{ ges.nome|truncatewords:5 }}</td>
                         <td>
-                            {{ ges.cargo.nome|default:"N/A" }}<br>
-                            <small class="text-muted">{{ ges.funcao.nome|default:"" }}</small>
+                            {{ ges.cargo.nome|default:"N/A" }}
+                            {% if ges.funcao.nome %}
+                            <br><small class="text-muted">{{ ges.funcao.nome }}</small>
+                            {% endif %}
                         </td>
                         <td>{{ ges.ambiente_trabalho.nome|default:"N/A"|truncatewords:3 }}</td>
                         <td class="text-center">
@@ -148,47 +148,46 @@
                         <td class="text-center">
                             <span class="badge bg-warning text-dark">{{ ges.riscos.count }}</span>
                         </td>
-                        <td>{{ ges.jornada_trabalho|truncatewords:3 }}</td>
-                        <td onclick="event.stopPropagation();">
-                            <button type="button" 
-                                    class="btn btn-sm btn-toggle-ges {% if ges.ativo %}btn-success{% else %}btn-outline-danger{% endif %}"
+                        <td><small>{{ ges.jornada_trabalho|truncatewords:3 }}</small></td>
+                        <td class="text-center" onclick="event.stopPropagation();">
+                            <button type="button"
+                                    class="btn btn-sm btn-toggle-ges {% if ges.ativo %}btn-success{% else %}btn-outline-secondary{% endif %}"
                                     data-ges-id="{{ ges.pk }}"
                                     data-ges-nome="{{ ges.nome }}"
                                     data-ativo="{{ ges.ativo|yesno:'true,false' }}"
                                     data-url="{% url 'pgr_gestao:ges_toggle_ativo' ges.pk %}"
                                     title="{% if ges.ativo %}Clique para inativar{% else %}Clique para ativar{% endif %}">
-                                <i class="fas {% if ges.ativo %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
+                                <i class="bi bi-toggle-{% if ges.ativo %}on{% else %}off{% endif %}"></i>
                                 {% if ges.ativo %}Ativo{% else %}Inativo{% endif %}
                             </button>
                         </td>
-
                         <td class="text-center" onclick="event.stopPropagation();">
                             <div class="btn-group btn-group-sm">
-                                <a href="{% url 'pgr_gestao:ges_detail' ges.pk %}" 
-                                   class="btn btn-info" title="Visualizar">
-                                    <i class="fas fa-eye"></i>
+                                <a href="{% url 'pgr_gestao:ges_detail' ges.pk %}"
+                                   class="btn btn-outline-info" title="Visualizar">
+                                    <i class="bi bi-eye"></i>
                                 </a>
                                 {% if perms.pgr_gestao.change_gesgrupoexposicaosimilar %}
-                                <a href="{% url 'pgr_gestao:ges_update' ges.pk %}" 
-                                   class="btn btn-warning" title="Editar">
-                                    <i class="fas fa-edit"></i>
+                                <a href="{% url 'pgr_gestao:ges_update' ges.pk %}"
+                                   class="btn btn-outline-warning" title="Editar">
+                                    <i class="bi bi-pencil-square"></i>
                                 </a>
                                 {% endif %}
-                                <a href="{% url 'pgr_gestao:risco_create' %}?ges={{ ges.pk }}" 
-                                   class="btn btn-danger" title="Adicionar Risco">
-                                    <i class="fas fa-plus"></i>
+                                <a href="{% url 'pgr_gestao:risco_create' %}?ges={{ ges.pk }}"
+                                   class="btn btn-outline-danger" title="Adicionar Risco">
+                                    <i class="bi bi-plus-lg"></i>
                                 </a>
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="text-center text-muted py-5">
-                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <td colspan="9" class="text-center table-empty-state">
+                            <i class="bi bi-inbox d-block"></i>
                             <p>Nenhum GES cadastrado.</p>
                             {% if perms.pgr_gestao.add_gesgrupoexposicaosimilar %}
                             <a href="{% url 'pgr_gestao:ges_create' %}" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Criar Primeiro GES
+                                <i class="bi bi-plus-lg"></i> Criar Primeiro GES
                             </a>
                             {% endif %}
                         </td>
@@ -201,11 +200,11 @@
         <!-- Paginação -->
         {% if grupos_exposicao.has_other_pages %}
         <nav class="mt-4">
-            <ul class="pagination justify-content-center">
+            <ul class="pagination justify-content-center mb-0">
                 {% if grupos_exposicao.has_previous %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ grupos_exposicao.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        <i class="fas fa-chevron-left"></i>
+                        <i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
                 {% endif %}
@@ -225,7 +224,7 @@
                 {% if grupos_exposicao.has_next %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ grupos_exposicao.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        <i class="fas fa-chevron-right"></i>
+                        <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>
                 {% endif %}
@@ -235,5 +234,4 @@
     </div>
 </div>
 {% endblock %}
-
 

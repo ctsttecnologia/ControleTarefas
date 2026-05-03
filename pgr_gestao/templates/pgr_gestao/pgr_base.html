@@ -1,0 +1,544 @@
+{# ═══════════════════════════════════════════════════════════════════
+   Base do módulo PGR — Layout flexbox sólido sidebar + main
+   HERDA do base global do sistema (base.html)
+
+   📌 Bibliotecas como Select2/DAL/jQuery/Bootstrap são carregadas
+      pelo base.html via {{ form.media.js }} — NÃO duplicar aqui.
+═══════════════════════════════════════════════════════════════════ #}
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% block pgr_title %}PGR - Sistema de Gestão de Riscos{% endblock %}{% endblock %}
+
+
+{# ═══════════════════════════════════════════════════════════════════
+   CSS — Estilos específicos do módulo PGR
+═══════════════════════════════════════════════════════════════════ #}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pgr-modern.css' %}">
+
+<style>
+    /* ───────────────────────────────────────────────
+       LAYOUT — Container Flex sidebar + main
+    ─────────────────────────────────────────────── */
+    .pgr-layout {
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        min-height: calc(100vh - 60px);
+        position: relative;
+    }
+
+    /* ───────────────────────────────────────────────
+       SIDEBAR PGR — Adaptativa claro/escuro
+    ─────────────────────────────────────────────── */
+    .pgr-sidebar {
+        flex: 0 0 250px;
+        width: 250px;
+        max-width: 250px;
+        min-height: calc(100vh - 60px);
+        max-height: calc(100vh - 60px);
+        background-color: var(--bs-tertiary-bg);
+        border-right: 1px solid var(--bs-border-color);
+        padding: 1.25rem 0;
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+        position: sticky;
+        top: 60px;
+        align-self: stretch;
+        overflow-y: auto;
+    }
+
+    [data-bs-theme="dark"] .pgr-sidebar {
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .pgr-sidebar .nav {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+
+    .pgr-sidebar .nav-link {
+        color: var(--bs-body-color);
+        padding: 0.6rem 1rem;
+        margin: 0.15rem 0.65rem;
+        border-radius: 0.5rem;
+        font-size: 0.92rem;
+        font-weight: 500;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        text-decoration: none;
+    }
+
+    .pgr-sidebar .nav-link:hover {
+        background-color: var(--surface-hover);
+        color: var(--bs-primary);
+        transform: translateX(3px);
+    }
+
+    .pgr-sidebar .nav-link.active {
+        background-color: var(--bs-primary);
+        color: #ffffff;
+        box-shadow: 0 4px 10px rgba(var(--bs-primary-rgb), 0.25);
+    }
+
+    .pgr-sidebar .nav-link.active:hover {
+        background-color: var(--bs-primary-hover);
+        color: #ffffff;
+        transform: translateX(3px);
+    }
+
+    .pgr-sidebar .nav-link i {
+        width: 20px;
+        font-size: 0.95rem;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .pgr-sidebar-section {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--bs-text-muted);
+        padding: 1rem 1.5rem 0.4rem;
+        margin: 0;
+        list-style: none;
+    }
+
+    /* ───────────────────────────────────────────────
+       BREADCRUMB
+    ─────────────────────────────────────────────── */
+    .pgr-main-content .breadcrumb {
+        background-color: transparent;
+        padding: 0;
+        margin-bottom: 1.25rem;
+        font-size: 0.88rem;
+    }
+
+    .pgr-main-content .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+        color: var(--bs-text-muted);
+    }
+
+    .pgr-main-content .breadcrumb-item a {
+        color: var(--bs-primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .pgr-main-content .breadcrumb-item a:hover {
+        text-decoration: underline;
+    }
+
+    .pgr-main-content .breadcrumb-item.active {
+        color: var(--bs-text-muted);
+    }
+
+    /* ───────────────────────────────────────────────
+       MAIN CONTENT
+    ─────────────────────────────────────────────── */
+    .pgr-main-content {
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 1.5rem 1.75rem 2rem;
+        max-width: 100%;
+    }
+
+    /* ───────────────────────────────────────────────
+       MOBILE — Sidebar colapsável
+    ─────────────────────────────────────────────── */
+    .pgr-sidebar-toggle {
+        display: none;
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        z-index: 1030;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background-color: var(--bs-primary);
+        color: #fff;
+        border: none;
+        box-shadow: 0 4px 14px rgba(var(--bs-primary-rgb), 0.4);
+        font-size: 1.3rem;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pgr-sidebar-overlay {
+        display: none;
+    }
+
+    @media (max-width: 991.98px) {
+        .pgr-layout {
+            display: block;
+        }
+
+        .pgr-sidebar {
+            position: fixed;
+            top: 60px;
+            left: -280px;
+            width: 270px;
+            max-width: 270px;
+            height: calc(100vh - 60px);
+            max-height: calc(100vh - 60px);
+            z-index: 1025;
+            overflow-y: auto;
+            transition: left 0.3s ease;
+            flex: none;
+        }
+
+        .pgr-sidebar.show {
+            left: 0;
+        }
+
+        .pgr-main-content {
+            padding: 1rem 1rem 2rem;
+            width: 100%;
+        }
+
+        .pgr-sidebar-toggle {
+            display: flex;
+        }
+
+        .pgr-sidebar-overlay {
+            position: fixed;
+            inset: 60px 0 0 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1024;
+            display: none;
+        }
+
+        .pgr-sidebar-overlay.show {
+            display: block;
+        }
+    }
+
+    /* ───────────────────────────────────────────────
+       AJUSTE: zera padding do #main-content do base global
+    ─────────────────────────────────────────────── */
+    #main-content:has(.pgr-layout) {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    /* ───────────────────────────────────────────────
+       IMPRESSÃO
+    ─────────────────────────────────────────────── */
+    @media print {
+        .pgr-sidebar,
+        .pgr-sidebar-toggle,
+        .pgr-sidebar-overlay,
+        .pgr-main-content .breadcrumb,
+        .no-print {
+            display: none !important;
+        }
+
+        .pgr-layout {
+            display: block;
+        }
+
+        .pgr-main-content {
+            padding: 0 !important;
+        }
+    }
+</style>
+
+{% block extra_pgr_css %}{% endblock %}
+{% endblock extra_css %}
+
+
+{# ═══════════════════════════════════════════════════════════════════
+   CONTEÚDO PRINCIPAL — Layout flexbox: sidebar + área de conteúdo
+═══════════════════════════════════════════════════════════════════ #}
+{% block content %}
+
+{# CSRF Token global para AJAX #}
+<script>window.CSRF_TOKEN = '{{ csrf_token }}';</script>
+
+<div class="pgr-layout">
+
+    {# ═══════════════════════════════════════════ #}
+    {# SIDEBAR PGR                                  #}
+    {# ═══════════════════════════════════════════ #}
+    <aside class="pgr-sidebar" id="pgrSidebar">
+        <ul class="nav flex-column">
+
+            {# Dashboard #}
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                   href="{% url 'pgr_gestao:dashboard' %}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            {# CADASTROS #}
+            <li class="pgr-sidebar-section">Cadastros</li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'empresa' in request.path %}active{% endif %}"
+                   href="{% url 'pgr_gestao:empresa_list' %}">
+                    <i class="bi bi-building"></i>
+                    <span>Empresas</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'profissional' in request.path %}active{% endif %}"
+                   href="{% url 'pgr_gestao:profissional_list' %}">
+                    <i class="bi bi-person-badge"></i>
+                    <span>Profissionais</span>
+                </a>
+            </li>
+
+            {# PGR #}
+            <li class="pgr-sidebar-section">PGR</li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'documento' in request.path %}active{% endif %}"
+                   href="{% url 'pgr_gestao:documento_list' %}">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Documentos PGR</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'ges' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'pgr_gestao:ges_list' %}">
+                    <i class="bi bi-people"></i>
+                    <span>GES</span>
+                </a>
+            </li>
+
+            {# RISCOS #}
+            <li class="pgr-sidebar-section">Riscos</li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'risco' in request.path and 'plano' not in request.path %}active{% endif %}"
+                   href="{% url 'pgr_gestao:risco_list' %}">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>Riscos</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'avaliacao' in request.path %}active{% endif %}"
+                   href="{% url 'pgr_gestao:avaliacao_list' %}">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Avaliações</span>
+                </a>
+            </li>
+
+            {# AÇÕES #}
+            <li class="pgr-sidebar-section">Ações</li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'plano-acao' in request.path %}active{% endif %}"
+                   href="{% url 'pgr_gestao:plano_acao_list' %}">
+                    <i class="bi bi-list-task"></i>
+                    <span>Planos de Ação</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'cronograma' in request.path %}active{% endif %}"
+                   href="{% url 'pgr_gestao:cronograma_list' %}">
+                    <i class="bi bi-calendar-week"></i>
+                    <span>Cronograma</span>
+                </a>
+            </li>
+
+            {# RELATÓRIOS #}
+            <li class="pgr-sidebar-section">Relatórios</li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'relatorio' in request.path %}active{% endif %}"
+                   href="{% url 'pgr_gestao:relatorios' %}">
+                    <i class="bi bi-bar-chart"></i>
+                    <span>Relatórios</span>
+                </a>
+            </li>
+
+        </ul>
+    </aside>
+
+    {# Overlay para mobile #}
+    <div class="pgr-sidebar-overlay" id="pgrSidebarOverlay"></div>
+
+    {# ═══════════════════════════════════════════ #}
+    {# CONTEÚDO PRINCIPAL                          #}
+    {# ═══════════════════════════════════════════ #}
+    <main class="pgr-main-content">
+
+        {# Breadcrumb #}
+        {% block breadcrumb %}
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'pgr_gestao:dashboard' %}">
+                        <i class="bi bi-house-door"></i> Home
+                    </a>
+                </li>
+                {% block breadcrumb_items %}{% endblock %}
+            </ol>
+        </nav>
+        {% endblock breadcrumb %}
+
+        {# Conteúdo da página #}
+        {% block pgr_content %}{% endblock %}
+
+    </main>
+</div>
+
+{# Botão flutuante para abrir sidebar no mobile #}
+<button class="pgr-sidebar-toggle" id="pgrSidebarToggle" aria-label="Abrir menu PGR">
+    <i class="bi bi-list"></i>
+</button>
+
+{% endblock content %}
+
+
+{# ═══════════════════════════════════════════════════════════════════
+   JS — Bibliotecas e scripts globais do PGR
+═══════════════════════════════════════════════════════════════════ #}
+{% block extra_js %}
+
+{# Sortable — usado para reordenação drag-and-drop #}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<script>
+(function() {
+    'use strict';
+
+    // ═══════════════════════════════════════════════
+    // 1. HELPER: CSRF Token (via cookie ou variável global)
+    // ═══════════════════════════════════════════════
+    function getCookie(name) {
+        if (!document.cookie) return null;
+        const cookies = document.cookie.split(';');
+        for (const raw of cookies) {
+            const cookie = raw.trim();
+            if (cookie.startsWith(name + '=')) {
+                return decodeURIComponent(cookie.substring(name.length + 1));
+            }
+        }
+        return null;
+    }
+
+    window.getCSRFToken = function() {
+        return getCookie('csrftoken') || window.CSRF_TOKEN || '';
+    };
+
+    // ═══════════════════════════════════════════════
+    // 2. CORREÇÃO: Configura idioma padrão do Select2
+    //    (elimina warnings de "pt"/"pt-br" not found)
+    // ═══════════════════════════════════════════════
+    if (typeof $ !== 'undefined' && $.fn.select2) {
+        $.fn.select2.defaults.set('language', 'pt-BR');
+    }
+
+    // ═══════════════════════════════════════════════
+    // 3. INICIALIZAÇÕES NO DOM READY
+    // ═══════════════════════════════════════════════
+    $(document).ready(function() {
+
+        // ─── Sidebar mobile toggle ───
+        const $sidebar = $('#pgrSidebar');
+        const $overlay = $('#pgrSidebarOverlay');
+        const $toggle  = $('#pgrSidebarToggle');
+
+        $toggle.on('click', function() {
+            $sidebar.toggleClass('show');
+            $overlay.toggleClass('show');
+        });
+
+        $overlay.on('click', function() {
+            $sidebar.removeClass('show');
+            $overlay.removeClass('show');
+        });
+
+        // Fecha sidebar mobile ao clicar em um link
+        $sidebar.find('.nav-link').on('click', function() {
+            if (window.innerWidth < 992) {
+                $sidebar.removeClass('show');
+                $overlay.removeClass('show');
+            }
+        });
+
+        // ─── Confirmação de exclusão genérica ───
+        $('.confirm-delete').on('click', function(e) {
+            if (!confirm('Tem certeza que deseja excluir este item?')) {
+                e.preventDefault();
+            }
+        });
+
+        // ─── Tooltips Bootstrap ───
+        document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            .forEach(el => new bootstrap.Tooltip(el));
+
+        // ═══════════════════════════════════════════
+        // 4. GES — TOGGLE ATIVO/INATIVO (AJAX)
+        // ═══════════════════════════════════════════
+        $(document).on('click', '.btn-toggle-ges', function(e) {
+            e.preventDefault();
+
+            const $btn    = $(this);
+            const gesNome = $btn.data('ges-nome');
+            const ativo   = $btn.data('ativo') === true || $btn.data('ativo') === 'true';
+
+            const mensagem = ativo
+                ? `Deseja INATIVAR o GES "${gesNome}"?\n\nEle não será incluído no relatório PDF do PGR.`
+                : `Deseja REATIVAR o GES "${gesNome}"?\n\nEle voltará a aparecer no relatório PDF do PGR.`;
+
+            if (!confirm(mensagem)) return;
+
+            const textoOriginal = $btn.html();
+            $btn.prop('disabled', true)
+                .html('<i class="bi bi-arrow-repeat"></i> Processando...');
+
+            $.ajax({
+                url: $btn.data('url'),
+                method: 'POST',
+                headers: { 'X-CSRFToken': window.getCSRFToken() },
+                success: function(data) {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Erro: ' + (data.error || 'Erro desconhecido'));
+                        $btn.prop('disabled', false).html(textoOriginal);
+                    }
+                },
+                error: function(xhr) {
+                    const msg = xhr.responseJSON?.error || 'Erro ao processar a requisição.';
+                    alert(msg);
+                    $btn.prop('disabled', false).html(textoOriginal);
+                }
+            });
+        });
+
+        // ═══════════════════════════════════════════
+        // 5. GES — TOGGLE VISUAL NO FORMULÁRIO
+        // ═══════════════════════════════════════════
+        $('#id_ativo').on('change', function() {
+            const isAtivo   = $(this).is(':checked');
+            const $container = $(this).closest('.border');
+            const $badge    = $('#statusBadge');
+
+            if (isAtivo) {
+                $container.removeClass('border-danger').addClass('border-success');
+                $badge.html(
+                    '<span class="badge bg-success fs-6">' +
+                    '<i class="bi bi-check-circle-fill"></i> Ativo</span>'
+                );
+            } else {
+                $container.removeClass('border-success').addClass('border-danger');
+                $badge.html(
+                    '<span class="badge bg-danger fs-6">' +
+                    '<i class="bi bi-slash-circle-fill"></i> Inativo</span>'
+                );
+            }
+        });
+
+    }); // end document.ready
+})();
+</script>
+
+{% block extra_pgr_js %}{% endblock %}
+{% endblock extra_js %}
+

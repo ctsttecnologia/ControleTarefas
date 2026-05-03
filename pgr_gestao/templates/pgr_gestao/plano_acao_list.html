@@ -1,5 +1,5 @@
-
-{% extends 'pgr_gestao/base.html' %}
+{# Lista de Planos de Ação #}
+{% extends "pgr_gestao/pgr_base.html" %}
 {% load static %}
 
 {% block title %}Planos de Ação{% endblock %}
@@ -8,49 +8,49 @@
 <li class="breadcrumb-item active">Planos de Ação</li>
 {% endblock %}
 
-{% block content %}
+{% block pgr_content %}
 <div class="page-header">
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h1><i class="fas fa-tasks"></i> Planos de Ação PGR</h1>
+            <h1><i class="bi bi-list-task"></i> Planos de Ação PGR</h1>
             <p class="mb-0">Gerenciamento de ações para controle de riscos</p>
         </div>
         {% if perms.pgr_gestao.add_planoacaopgr %}
-        <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-primary btn-lg">
-            <i class="fas fa-plus"></i> Novo Plano de Ação
+        <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-light btn-lg">
+            <i class="bi bi-plus-lg"></i> Novo Plano de Ação
         </a>
         {% endif %}
     </div>
 </div>
 
 <!-- Estatísticas -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stats-card text-center">
+<div class="row mb-4 g-3">
+    <div class="col-md-3 col-6">
+        <div class="card stats-card text-center h-100">
             <div class="card-body">
                 <h3>{{ total_planos }}</h3>
                 <small class="text-muted">Total de Planos</small>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stats-card warning text-center">
+    <div class="col-md-3 col-6">
+        <div class="card stats-card warning text-center h-100">
             <div class="card-body">
                 <h3 class="text-warning">{{ planos_pendentes }}</h3>
                 <small class="text-muted">Pendentes</small>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stats-card info text-center">
+    <div class="col-md-3 col-6">
+        <div class="card stats-card info text-center h-100">
             <div class="card-body">
                 <h3 class="text-info">{{ planos_em_andamento }}</h3>
                 <small class="text-muted">Em Andamento</small>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stats-card danger text-center">
+    <div class="col-md-3 col-6">
+        <div class="card stats-card danger text-center h-100">
             <div class="card-body">
                 <h3 class="text-danger">{{ planos_atrasados }}</h3>
                 <small class="text-muted">Atrasados</small>
@@ -62,7 +62,7 @@
 <!-- Filtros -->
 <div class="card mb-4">
     <div class="card-header">
-        <i class="fas fa-filter"></i> Filtros
+        <i class="bi bi-funnel"></i> Filtros de Pesquisa
     </div>
     <div class="card-body">
         <form method="get" class="row g-3">
@@ -92,8 +92,8 @@
                     <option value="">Todos</option>
                     <option value="eliminacao" {% if request.GET.tipo_acao == 'eliminacao' %}selected{% endif %}>Eliminação</option>
                     <option value="substituicao" {% if request.GET.tipo_acao == 'substituicao' %}selected{% endif %}>Substituição</option>
-                    <option value="controle_engenharia" {% if request.GET.tipo_acao == 'controle_engenharia' %}selected{% endif %}>Controle de Engenharia</option>
-                    <option value="controle_administrativo" {% if request.GET.tipo_acao == 'controle_administrativo' %}selected{% endif %}>Controle Administrativo</option>
+                    <option value="controle_engenharia" {% if request.GET.tipo_acao == 'controle_engenharia' %}selected{% endif %}>Controle Engenharia</option>
+                    <option value="controle_administrativo" {% if request.GET.tipo_acao == 'controle_administrativo' %}selected{% endif %}>Controle Adm.</option>
                     <option value="epi" {% if request.GET.tipo_acao == 'epi' %}selected{% endif %}>EPI</option>
                 </select>
             </div>
@@ -106,12 +106,12 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Buscar</label>
-                <input type="text" name="search" class="form-control" placeholder="Descrição, responsável..." 
+                <input type="text" name="search" class="form-control" placeholder="Descrição, responsável..."
                        value="{{ request.GET.search }}">
             </div>
             <div class="col-md-1 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-search"></i>
+                <button type="submit" class="btn btn-primary w-100" title="Filtrar">
+                    <i class="bi bi-search"></i>
                 </button>
             </div>
         </form>
@@ -121,12 +121,12 @@
 <!-- Tabela de Planos -->
 <div class="card">
     <div class="card-header">
-        <i class="fas fa-list"></i> Lista de Planos de Ação
+        <i class="bi bi-list-ul"></i> Lista de Planos de Ação
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
+            <table class="table table-hover table-clickable align-middle">
+                <thead class="table-light">
                     <tr>
                         <th>Descrição da Ação</th>
                         <th>Risco Relacionado</th>
@@ -135,27 +135,23 @@
                         <th>Status</th>
                         <th>Data Prevista</th>
                         <th>Responsável</th>
-                        <th>Custo</th>
+                        <th class="text-end">Custo</th>
                         <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for plano in planos %}
-                    <tr onclick="window.location='{% url 'pgr_gestao:plano_acao_detail' plano.pk %}'" style="cursor: pointer;">
+                    <tr onclick="window.location='{% url 'pgr_gestao:plano_acao_detail' plano.pk %}'">
                         <td>
                             {{ plano.descricao_acao|truncatewords:10 }}
                             {% if plano.esta_atrasado %}
-                            <br><span class="badge bg-danger">ATRASADO</span>
+                            <br><span class="badge bg-danger mt-1">
+                                <i class="bi bi-clock-history"></i> ATRASADO
+                            </span>
                             {% endif %}
                         </td>
-                        <td>
-                            <small>{{ plano.risco_identificado.agente|truncatewords:5 }}</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary">
-                                {{ plano.get_tipo_acao_display }}
-                            </span>
-                        </td>
+                        <td><small>{{ plano.risco_identificado.agente|truncatewords:5 }}</small></td>
+                        <td><span class="badge bg-secondary">{{ plano.get_tipo_acao_display }}</span></td>
                         <td>
                             {% if plano.prioridade == 'critica' %}
                             <span class="badge bg-danger">Crítica</span>
@@ -171,40 +167,38 @@
                             {% if plano.status == 'concluido' %}
                             <span class="badge bg-success">Concluído</span>
                             {% elif plano.status == 'em_andamento' %}
-                            <span class="badge bg-info">Em Andamento</span>
+                            <span class="badge bg-primary">Em Andamento</span>
                             {% elif plano.status == 'cancelado' %}
-                            <span class="badge bg-dark">Cancelado</span>
+                            <span class="badge bg-secondary">Cancelado</span>
                             {% else %}
                             <span class="badge bg-warning text-dark">Pendente</span>
                             {% endif %}
                         </td>
-                        <td>
-                            {{ plano.data_prevista|date:"d/m/Y" }}
-                        </td>
-                        <td>{{ plano.responsavel }}</td>
-                        <td>
+                        <td>{{ plano.data_prevista|date:"d/m/Y" }}</td>
+                        <td>{{ plano.responsavel|truncatechars:25 }}</td>
+                        <td class="text-end">
                             {% if plano.custo_estimado %}
-                            R$ {{ plano.custo_estimado|floatformat:2 }}
+                            <small>R$ {{ plano.custo_estimado|floatformat:2 }}</small>
                             {% else %}
-                            -
+                            <small class="text-muted">—</small>
                             {% endif %}
                         </td>
                         <td class="text-center" onclick="event.stopPropagation();">
                             <div class="btn-group btn-group-sm">
-                                <a href="{% url 'pgr_gestao:plano_acao_detail' plano.pk %}" 
-                                   class="btn btn-info" title="Visualizar">
-                                    <i class="fas fa-eye"></i>
+                                <a href="{% url 'pgr_gestao:plano_acao_detail' plano.pk %}"
+                                   class="btn btn-outline-info" title="Visualizar">
+                                    <i class="bi bi-eye"></i>
                                 </a>
                                 {% if perms.pgr_gestao.change_planoacaopgr %}
-                                <a href="{% url 'pgr_gestao:plano_acao_update' plano.pk %}" 
-                                   class="btn btn-warning" title="Editar">
-                                    <i class="fas fa-edit"></i>
+                                <a href="{% url 'pgr_gestao:plano_acao_update' plano.pk %}"
+                                   class="btn btn-outline-warning" title="Editar">
+                                    <i class="bi bi-pencil-square"></i>
                                 </a>
                                 {% endif %}
                                 {% if plano.status != 'concluido' and perms.pgr_gestao.change_planoacaopgr %}
-                                <a href="{% url 'pgr_gestao:concluir_plano_acao' plano.pk %}" 
-                                   class="btn btn-success" title="Concluir">
-                                    <i class="fas fa-check"></i>
+                                <a href="{% url 'pgr_gestao:concluir_plano_acao' plano.pk %}"
+                                   class="btn btn-outline-success" title="Concluir">
+                                    <i class="bi bi-check-lg"></i>
                                 </a>
                                 {% endif %}
                             </div>
@@ -212,12 +206,12 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="text-center text-muted py-5">
-                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <td colspan="9" class="text-center table-empty-state">
+                            <i class="bi bi-inbox d-block"></i>
                             <p>Nenhum plano de ação encontrado.</p>
                             {% if perms.pgr_gestao.add_planoacaopgr %}
                             <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Criar Primeiro Plano
+                                <i class="bi bi-plus-lg"></i> Criar Primeiro Plano
                             </a>
                             {% endif %}
                         </td>
@@ -230,11 +224,11 @@
         <!-- Paginação -->
         {% if planos.has_other_pages %}
         <nav class="mt-4">
-            <ul class="pagination justify-content-center">
+            <ul class="pagination justify-content-center mb-0">
                 {% if planos.has_previous %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ planos.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        <i class="fas fa-chevron-left"></i>
+                        <i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
                 {% endif %}
@@ -254,7 +248,7 @@
                 {% if planos.has_next %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ planos.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        <i class="fas fa-chevron-right"></i>
+                        <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>
                 {% endif %}
@@ -264,5 +258,4 @@
     </div>
 </div>
 {% endblock %}
-
 

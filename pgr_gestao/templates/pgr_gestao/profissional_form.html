@@ -1,4 +1,5 @@
-{% extends 'pgr_gestao/base.html' %}
+{# Profissional — Formulário de criação/edição #}
+{% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 {% load widget_tweaks %}
 
@@ -9,126 +10,167 @@
 <li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Novo{% endif %}</li>
 {% endblock %}
 
-{% block content %}
+{% block pgr_content %}
 <div class="page-header">
-    <h1>
-        <i class="fas fa-user-tie"></i>
-        {{ page_title }}
-    </h1>
-    <p class="mb-0">Gerenciamento de Profissionais Responsáveis pelo PGR</p>
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+            <h1>
+                <i class="bi bi-person-badge"></i>
+                {{ page_title|default:"Formulário de Profissional" }}
+            </h1>
+            <p class="mb-0">Gerenciamento de Profissionais Responsáveis pelo PGR</p>
+        </div>
+        <a href="{% url 'pgr_gestao:profissional_list' %}" class="btn btn-light">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
 </div>
 
 <div class="card">
+    <div class="card-header bg-primary text-white">
+        <i class="bi bi-pencil-square"></i> Dados do Profissional
+    </div>
     <div class="card-body">
-        <form method="post">
+        <form method="post" novalidate>
             {% csrf_token %}
 
             {% if form.non_field_errors %}
             <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 {{ form.non_field_errors }}
             </div>
             {% endif %}
 
-            <div class="row">
+            <!-- Identificação -->
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                <i class="bi bi-person-vcard"></i> Identificação
+            </h6>
+            <div class="row g-3 mb-4">
                 <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.nome_completo.id_for_label }}" class="form-label">Nome Completo</label>
-                        {% render_field form.nome_completo class="form-control" %}
-                        {% if form.nome_completo.errors %}
-                        <div class="text-danger">{{ form.nome_completo.errors }}</div>
-                        {% endif %}
-                    </div>
+                    <label for="{{ form.nome_completo.id_for_label }}" class="form-label fw-semibold required-field">
+                        Nome Completo
+                    </label>
+                    {% render_field form.nome_completo class="form-control" placeholder="Ex: João da Silva Santos" %}
+                    {% if form.nome_completo.errors %}
+                    <div class="text-danger small mt-1">{{ form.nome_completo.errors }}</div>
+                    {% endif %}
                 </div>
                 <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.funcao.id_for_label }}" class="form-label">Função/Cargo</label>
-                        {% render_field form.funcao class="form-control" %}
-                        {% if form.funcao.errors %}
-                        <div class="text-danger">{{ form.funcao.errors }}</div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.registro_classe.id_for_label }}" class="form-label">Registro de Classe</label>
-                        {% render_field form.registro_classe class="form-control" %}
-                        {% if form.registro_classe.errors %}
-                        <div class="text-danger">{{ form.registro_classe.errors }}</div>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.orgao_classe.id_for_label }}" class="form-label">Órgão de Classe</label>
-                        {% render_field form.orgao_classe class="form-control" %}
-                        {% if form.orgao_classe.errors %}
-                        <div class="text-danger">{{ form.orgao_classe.errors }}</div>
-                        {% endif %}
-                    </div>
+                    <label for="{{ form.funcao.id_for_label }}" class="form-label fw-semibold required-field">
+                        Função / Cargo
+                    </label>
+                    {% render_field form.funcao class="form-control" placeholder="Ex: Engenheiro de Segurança" %}
+                    {% if form.funcao.errors %}
+                    <div class="text-danger small mt-1">{{ form.funcao.errors }}</div>
+                    {% endif %}
                 </div>
             </div>
 
-            <div class="mb-3">
-                <label for="{{ form.especialidade.id_for_label }}" class="form-label">Especialidade</label>
-                {% render_field form.especialidade class="form-control" %}
-                {% if form.especialidade.errors %}
-                <div class="text-danger">{{ form.especialidade.errors }}</div>
-                {% endif %}
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.telefone.id_for_label }}" class="form-label">Telefone</label>
-                        {% render_field form.telefone class="form-control" %}
-                        {% if form.telefone.errors %}
-                        <div class="text-danger">{{ form.telefone.errors }}</div>
-                        {% endif %}
-                    </div>
+            <!-- Registro Profissional -->
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                <i class="bi bi-award"></i> Registro Profissional
+            </h6>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label for="{{ form.orgao_classe.id_for_label }}" class="form-label fw-semibold">
+                        Órgão de Classe
+                    </label>
+                    {% render_field form.orgao_classe class="form-control" placeholder="Ex: CREA, MTE, CRM" %}
+                    {% if form.orgao_classe.errors %}
+                    <div class="text-danger small mt-1">{{ form.orgao_classe.errors }}</div>
+                    {% endif %}
                 </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.email.id_for_label }}" class="form-label">E-mail</label>
-                        {% render_field form.email class="form-control" %}
-                        {% if form.email.errors %}
-                        <div class="text-danger">{{ form.email.errors }}</div>
-                        {% endif %}
-                    </div>
+                <div class="col-md-4">
+                    <label for="{{ form.registro_classe.id_for_label }}" class="form-label fw-semibold">
+                        Registro de Classe
+                    </label>
+                    {% render_field form.registro_classe class="form-control" placeholder="Nº do registro" %}
+                    {% if form.registro_classe.errors %}
+                    <div class="text-danger small mt-1">{{ form.registro_classe.errors }}</div>
+                    {% endif %}
                 </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.filial.id_for_label }}" class="form-label">Filial:</label>
-                        <label for="{{ form.filial.id_for_label }}" class="form-label">{{ request.user.filial_ativa }}</label>
-                        {% if form.filial.errors %}
-                        <div class="form-label">Usuario não possui filial ativa</div>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-6">
-                     <div class="form-check mt-4">
-                        {% render_field form.ativo class="form-check-input" %}
-                        <label for="{{ form.ativo.id_for_label }}" class="form-check-label">Ativo</label>
-                        {% if form.ativo.errors %}
-                        <div class="text-danger">{{ form.ativo.errors }}</div>
-                        {% endif %}
-                    </div>
+                <div class="col-md-4">
+                    <label for="{{ form.especialidade.id_for_label }}" class="form-label fw-semibold">
+                        Especialidade
+                    </label>
+                    {% render_field form.especialidade class="form-control" placeholder="Ex: Segurança do Trabalho" %}
+                    {% if form.especialidade.errors %}
+                    <div class="text-danger small mt-1">{{ form.especialidade.errors }}</div>
+                    {% endif %}
                 </div>
             </div>
 
+            <!-- Contato -->
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                <i class="bi bi-telephone"></i> Contato
+            </h6>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label for="{{ form.telefone.id_for_label }}" class="form-label fw-semibold">
+                        Telefone
+                    </label>
+                    {% render_field form.telefone class="form-control" placeholder="(11) 99999-9999" %}
+                    {% if form.telefone.errors %}
+                    <div class="text-danger small mt-1">{{ form.telefone.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">
+                        E-mail
+                    </label>
+                    {% render_field form.email class="form-control" type="email" placeholder="email@exemplo.com" %}
+                    {% if form.email.errors %}
+                    <div class="text-danger small mt-1">{{ form.email.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Vinculação -->
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                <i class="bi bi-building"></i> Vinculação e Status
+            </h6>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Filial</label>
+                    <div class="form-control bg-body-tertiary">
+                        {% if request.user.filial_ativa %}
+                            <i class="bi bi-building text-primary me-1"></i>
+                            <strong>{{ request.user.filial_ativa }}</strong>
+                        {% else %}
+                            <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+                            <span class="text-warning">Usuário sem filial ativa</span>
+                        {% endif %}
+                    </div>
+                    {% if form.filial %}
+                        {{ form.filial.as_hidden }}
+                    {% endif %}
+                    {% if form.filial.errors %}
+                    <div class="text-danger small mt-1">{{ form.filial.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold d-block">Status do Profissional</label>
+                    <div class="form-check form-switch mt-2">
+                        {% render_field form.ativo class="form-check-input" role="switch" %}
+                        <label for="{{ form.ativo.id_for_label }}" class="form-check-label">
+                            <span id="status-label">Ativo</span>
+                        </label>
+                    </div>
+                    {% if form.ativo.errors %}
+                    <div class="text-danger small mt-1">{{ form.ativo.errors }}</div>
+                    {% endif %}
+                    <small class="text-muted">Profissionais inativos não aparecem como opção em novos PGRs.</small>
+                </div>
+            </div>
 
             <hr>
-            <div class="d-flex justify-content-between">
-                <a href="{% url 'pgr_gestao:profissional_list' %}" class="btn btn-secondary">
-                    <i class="fas fa-times"></i> Cancelar
+            <div class="d-flex justify-content-between gap-2">
+                <a href="{% url 'pgr_gestao:profissional_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i> Cancelar
                 </a>
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Salvar
+                    <i class="bi bi-save"></i>
+                    {% if form.instance.pk %}Salvar Alterações{% else %}Cadastrar Profissional{% endif %}
                 </button>
             </div>
         </form>
@@ -136,4 +178,22 @@
 </div>
 {% endblock %}
 
+{% block extra_pgr_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle dinâmico do label de status
+    const ativoCheck = document.getElementById('{{ form.ativo.id_for_label }}');
+    const statusLabel = document.getElementById('status-label');
+
+    if (ativoCheck && statusLabel) {
+        function updateLabel() {
+            statusLabel.textContent = ativoCheck.checked ? 'Ativo' : 'Inativo';
+            statusLabel.className = ativoCheck.checked ? 'text-success fw-semibold' : 'text-muted fw-semibold';
+        }
+        ativoCheck.addEventListener('change', updateLabel);
+        updateLabel();
+    }
+});
+</script>
+{% endblock %}
 

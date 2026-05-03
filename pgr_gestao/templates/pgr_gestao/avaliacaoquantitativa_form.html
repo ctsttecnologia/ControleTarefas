@@ -1,170 +1,461 @@
-
-{% extends 'pgr_gestao/base.html' %}
+{# Formulário de Avaliação Quantitativa - Criar/Editar #}
+{% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
-{% load widget_tweaks %}
 
-{% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação{% endblock %}
+{% block title %}
+    {% if object %}Editar Avaliação{% else %}Nova Avaliação Quantitativa{% endif %}
+{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">Avaliações</a></li>
-<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %}</li>
+<li class="breadcrumb-item active">
+    {% if object %}Editar{% else %}Nova{% endif %}
+</li>
 {% endblock %}
 
-{% block content %}
-<div class="page-header">
-    <h1>
-        <i class="fas fa-chart-line"></i>
-        {% if form.instance.pk %}Editar Avaliação Quantitativa{% else %}Nova Avaliação Quantitativa{% endif %}
-    </h1>
-    <p class="mb-0">Formulário para registro de medições e avaliações</p>
+{% block extra_pgr_css %}
+<style>
+    /* Header gradiente do form */
+    .form-hero {
+        background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
+        color: white;
+        padding: 2rem 1.5rem;
+        border-radius: 0.75rem 0.75rem 0 0;
+        margin-bottom: 0;
+    }
+
+    .form-hero h1 {
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .form-hero p {
+        opacity: 0.95;
+        margin-bottom: 0;
+    }
+
+    /* Card do formulário */
+    .form-card {
+        border: none;
+        border-radius: 0 0 0.75rem 0.75rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Section headers */
+    .form-section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--bs-primary);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--bs-primary-bg-subtle);
+    }
+
+    .form-section-title i {
+        font-size: 1.1rem;
+    }
+
+    /* Card header com ícone */
+    .form-card-header {
+        background: var(--bs-primary);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 0.5rem 0.5rem 0 0;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Required asterisk */
+    .required-mark {
+        color: var(--bs-danger);
+        font-weight: 700;
+    }
+
+    /* Form switch maior */
+    .conformidade-switch {
+        transform: scale(1.5);
+        margin-left: 0.5rem;
+    }
+
+    /* Botões de ação */
+    .form-actions {
+        background: var(--bs-tertiary-bg);
+        padding: 1rem 1.5rem;
+        border-radius: 0 0 0.5rem 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    /* Erros */
+    .invalid-feedback {
+        display: block;
+    }
+
+    .field-error {
+        color: var(--bs-danger);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    /* Espaçamento entre seções */
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-section:last-child {
+        margin-bottom: 0;
+    }
+</style>
+{% endblock %}
+
+{% block pgr_content %}
+
+<!-- Hero Header -->
+<div class="form-hero d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div>
+        <h1>
+            <i class="bi bi-graph-up-arrow"></i>
+            {% if object %}Editar Avaliação{% else %}Nova Avaliação Quantitativa{% endif %}
+        </h1>
+        <p>Registro de medição e avaliação de risco</p>
+    </div>
+    <a href="{% url 'pgr_gestao:avaliacao_list' %}" class="btn btn-light">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            
+<!-- Card do Formulário -->
+<div class="card form-card">
+    <div class="form-card-header">
+        <i class="bi bi-pencil-square"></i> Formulário de Avaliação
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate id="avaliacaoForm">
+        {% csrf_token %}
+
+        <div class="card-body p-4">
+
+            {# Erros não-de-campo #}
             {% if form.non_field_errors %}
             <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill"></i>
                 {{ form.non_field_errors }}
             </div>
             {% endif %}
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.risco_identificado.id_for_label }}" class="form-label required">
-                            Risco Associado
+            <!-- ======================================== -->
+            <!-- SEÇÃO 1: IDENTIFICAÇÃO -->
+            <!-- ======================================== -->
+            <div class="form-section">
+                <div class="form-section-title">
+                    <i class="bi bi-card-list"></i> Identificação
+                </div>
+
+                <div class="row g-3">
+                    <!-- Risco Identificado -->
+                    <div class="col-md-6">
+                        <label for="{{ form.risco_identificado.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-shield-exclamation"></i>
+                            Risco Identificado <span class="required-mark">*</span>
                         </label>
-                        {% render_field form.risco_identificado class="form-select" %}
+                        {{ form.risco_identificado }}
                         {% if form.risco_identificado.errors %}
-                        <div class="text-danger">{{ form.risco_identificado.errors }}</div>
+                            <div class="field-error">{{ form.risco_identificado.errors|join:", " }}</div>
+                        {% endif %}
+                        {% if form.risco_identificado.help_text %}
+                            <small class="form-text text-muted">{{ form.risco_identificado.help_text }}</small>
                         {% endif %}
                     </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.tipo_avaliacao.id_for_label }}" class="form-label required">
-                            Tipo de Avaliação
+
+                    <!-- Tipo de Avaliação -->
+                    <div class="col-md-3">
+                        <label for="{{ form.tipo_avaliacao.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-tag"></i>
+                            Tipo de Avaliação <span class="required-mark">*</span>
                         </label>
-                        {% render_field form.tipo_avaliacao class="form-select" %}
+                        {{ form.tipo_avaliacao }}
                         {% if form.tipo_avaliacao.errors %}
-                        <div class="text-danger">{{ form.tipo_avaliacao.errors }}</div>
+                            <div class="field-error">{{ form.tipo_avaliacao.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Data da Avaliação -->
+                    <div class="col-md-3">
+                        <label for="{{ form.data_avaliacao.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-calendar3"></i>
+                            Data da Avaliação <span class="required-mark">*</span>
+                        </label>
+                        {{ form.data_avaliacao }}
+                        {% if form.data_avaliacao.errors %}
+                            <div class="field-error">{{ form.data_avaliacao.errors|join:", " }}</div>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.resultado_medido.id_for_label }}" class="form-label required">
-                            Resultado Medido
+            <!-- ======================================== -->
+            <!-- SEÇÃO 2: MEDIÇÃO -->
+            <!-- ======================================== -->
+            <div class="form-section">
+                <div class="form-section-title">
+                    <i class="bi bi-rulers"></i> Medição
+                </div>
+
+                <div class="row g-3">
+                    <!-- Resultado Medido -->
+                    <div class="col-md-4">
+                        <label for="{{ form.resultado_medido.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-speedometer2"></i>
+                            Resultado Medido <span class="required-mark">*</span>
                         </label>
-                        {% render_field form.resultado_medido class="form-control" type="number" step="0.01" %}
+                        <div class="input-group">
+                            {{ form.resultado_medido }}
+                            {{ form.unidade_medida }}
+                        </div>
                         {% if form.resultado_medido.errors %}
-                        <div class="text-danger">{{ form.resultado_medido.errors }}</div>
+                            <div class="field-error">{{ form.resultado_medido.errors|join:", " }}</div>
                         {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.unidade_medida.id_for_label }}" class="form-label required">
-                            Unidade de Medida
-                        </label>
-                        {% render_field form.unidade_medida class="form-select" %}
                         {% if form.unidade_medida.errors %}
-                        <div class="text-danger">{{ form.unidade_medida.errors }}</div>
+                            <div class="field-error">{{ form.unidade_medida.errors|join:", " }}</div>
                         {% endif %}
+                        <small class="form-text text-muted">Ex: 85.5 dB(A)</small>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.limite_tolerancia_nr.id_for_label }}" class="form-label">
+
+                    <!-- Limite de Tolerância -->
+                    <div class="col-md-4">
+                        <label for="{{ form.limite_tolerancia_nr.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-bookmark-check"></i>
                             Limite de Tolerância (NR)
                         </label>
-                        {% render_field form.limite_tolerancia_nr class="form-control" placeholder="Conforme NR-15" %}
+                        {{ form.limite_tolerancia_nr }}
                         {% if form.limite_tolerancia_nr.errors %}
-                        <div class="text-danger">{{ form.limite_tolerancia_nr.errors }}</div>
+                            <div class="field-error">{{ form.limite_tolerancia_nr.errors|join:", " }}</div>
                         {% endif %}
+                        <small class="form-text text-muted">Ex: 85 dB(A) - NR-15</small>
                     </div>
-                </div>
-            </div>
 
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.data_avaliacao.id_for_label }}" class="form-label required">
-                            Data da Avaliação
+                    <!-- Conformidade -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-check2-circle"></i>
+                            Conformidade
                         </label>
-                        {% render_field form.data_avaliacao class="form-control" type="date" %}
-                        {% if form.data_avaliacao.errors %}
-                        <div class="text-danger">{{ form.data_avaliacao.errors }}</div>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3 pt-4">
-                        <div class="form-check form-switch">
-                            {% render_field form.conforme class="form-check-input" %}
-                            <label class="form-check-label" for="{{ form.conforme.id_for_label }}">
-                                Em conformidade com o limite?
+                        <div class="form-check form-switch d-flex align-items-center mt-2 ps-5">
+                            {{ form.conforme }}
+                            <label for="{{ form.conforme.id_for_label }}" class="form-check-label ms-3" id="conformeLabel">
+                                <span class="text-muted">Está conforme?</span>
                             </label>
                         </div>
                         {% if form.conforme.errors %}
-                        <div class="text-danger">{{ form.conforme.errors }}</div>
+                            <div class="field-error">{{ form.conforme.errors|join:", " }}</div>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
-            <hr>
+            <!-- ======================================== -->
+            <!-- SEÇÃO 3: METODOLOGIA E EQUIPAMENTO -->
+            <!-- ======================================== -->
+            <div class="form-section">
+                <div class="form-section-title">
+                    <i class="bi bi-tools"></i> Metodologia e Equipamento
+                </div>
 
-            <div class="mb-3">
-                <label for="{{ form.equipamento_utilizado.id_for_label }}" class="form-label">
-                    Equipamento Utilizado
-                </label>
-                {% render_field form.equipamento_utilizado class="form-control" placeholder="Ex: Dosímetro, Bomba de amostragem, etc." %}
-                {% if form.equipamento_utilizado.errors %}
-                <div class="text-danger">{{ form.equipamento_utilizado.errors }}</div>
-                {% endif %}
+                <div class="row g-3">
+                    <!-- Metodologia -->
+                    <div class="col-md-12">
+                        <label for="{{ form.metodologia_utilizada.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-diagram-3"></i>
+                            Metodologia Utilizada
+                        </label>
+                        {{ form.metodologia_utilizada }}
+                        {% if form.metodologia_utilizada.errors %}
+                            <div class="field-error">{{ form.metodologia_utilizada.errors|join:", " }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Ex: NHO-01 / NHO-06 / NR-15 Anexo X</small>
+                    </div>
+
+                    <!-- Equipamento -->
+                    <div class="col-md-6">
+                        <label for="{{ form.equipamento_utilizado.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-cpu"></i>
+                            Equipamento Utilizado
+                        </label>
+                        {{ form.equipamento_utilizado }}
+                        {% if form.equipamento_utilizado.errors %}
+                            <div class="field-error">{{ form.equipamento_utilizado.errors|join:", " }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Marca/modelo/nº de série</small>
+                    </div>
+
+                    <!-- Responsável -->
+                    <div class="col-md-6">
+                        <label for="{{ form.responsavel_avaliacao.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-person-badge"></i>
+                            Responsável pela Avaliação
+                        </label>
+                        {{ form.responsavel_avaliacao }}
+                        {% if form.responsavel_avaliacao.errors %}
+                            <div class="field-error">{{ form.responsavel_avaliacao.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Laudo Técnico -->
+                    <div class="col-md-12">
+                        <label for="{{ form.laudo_tecnico.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                            Laudo Técnico
+                        </label>
+                        {{ form.laudo_tecnico }}
+                        {% if form.laudo_tecnico.errors %}
+                            <div class="field-error">{{ form.laudo_tecnico.errors|join:", " }}</div>
+                        {% endif %}
+                        {% if object.laudo_tecnico %}
+                            <small class="form-text text-muted d-block mt-1">
+                                <i class="bi bi-paperclip"></i>
+                                Arquivo atual:
+                                <a href="{{ object.laudo_tecnico.url }}" target="_blank">
+                                    {{ object.laudo_tecnico.name }}
+                                </a>
+                            </small>
+                        {% endif %}
+                        <small class="form-text text-muted">Anexe o laudo em PDF (opcional)</small>
+                    </div>
+                </div>    
             </div>
 
-            <div class="mb-3">
-                <label for="{{ form.certificado_calibracao.id_for_label }}" class="form-label">
-                    Certificado de Calibração
-                </label>
-                {% render_field form.certificado_calibracao class="form-control" %}
-                {% if form.certificado_calibracao.errors %}
-                <div class="text-danger">{{ form.certificado_calibracao.errors }}</div>
-                {% endif %}
-                {% if form.instance.certificado_calibracao %}
-                <small class="form-text">
-                    Arquivo atual: <a href="{{ form.instance.certificado_calibracao.url }}">{{ form.instance.certificado_calibracao.name }}</a>
-                </small>
-                {% endif %}
+            <!-- ======================================== -->
+            <!-- SEÇÃO 4: OBSERVAÇÕES -->
+            <!-- ======================================== -->
+            <div class="form-section">
+                <div class="form-section-title">
+                    <i class="bi bi-chat-left-text"></i> Observações
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold visually-hidden">
+                            Observações
+                        </label>
+                        {{ form.observacoes }}
+                        {% if form.observacoes.errors %}
+                            <div class="field-error">{{ form.observacoes.errors|join:", " }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Notas adicionais, condições da medição, etc.</small>
+                    </div>
+                </div>
             </div>
 
-            <div class="mb-3">
-                <label for="{{ form.observacoes.id_for_label }}" class="form-label">
-                    Observações
-                </label>
-                {% render_field form.observacoes class="form-control" rows="4" placeholder="Detalhes sobre a medição, condições do ambiente, etc." %}
-                {% if form.observacoes.errors %}
-                <div class="text-danger">{{ form.observacoes.errors }}</div>
-                {% endif %}
-            </div>
+        </div>
 
-            <div class="d-flex justify-content-between mt-4">
-                <a href="{% url 'pgr_gestao:avaliacao_list' %}" class="btn btn-secondary">
-                    <i class="fas fa-times"></i> Cancelar
-                </a>
-                <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="fas fa-save"></i> Salvar Avaliação
-                </button>
-            </div>
-        </form>
-    </div>
+        <!-- ======================================== -->
+        <!-- AÇÕES DO FORMULÁRIO -->
+        <!-- ======================================== -->
+        <div class="form-actions">
+            <a href="{% url 'pgr_gestao:avaliacao_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-download"></i>
+                {% if object %}Atualizar Avaliação{% else %}Salvar Avaliação{% endif %}
+            </button>
+        </div>
+    </form>
 </div>
+
 {% endblock %}
 
+{% block extra_pgr_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ===== Aplica classes Bootstrap aos campos do form =====
+    // (caso o forms.py não defina widgets com classes)
+    document.querySelectorAll('#avaliacaoForm input:not([type=checkbox]):not([type=file]):not([type=hidden])').forEach(el => {
+        if (!el.classList.contains('form-control')) el.classList.add('form-control');
+    });
+    document.querySelectorAll('#avaliacaoForm select').forEach(el => {
+        if (!el.classList.contains('form-select')) el.classList.add('form-select');
+    });
+    document.querySelectorAll('#avaliacaoForm textarea').forEach(el => {
+        if (!el.classList.contains('form-control')) el.classList.add('form-control');
+    });
+    document.querySelectorAll('#avaliacaoForm input[type=file]').forEach(el => {
+        if (!el.classList.contains('form-control')) el.classList.add('form-control');
+    });
+    document.querySelectorAll('#avaliacaoForm input[type=checkbox]').forEach(el => {
+        if (!el.classList.contains('form-check-input')) {
+            el.classList.add('form-check-input', 'conformidade-switch');
+            el.setAttribute('role', 'switch');
+        }
+    });
+
+    // ===== Auto-preenche conformidade ao comparar valores =====
+    const resultadoInput = document.querySelector('[name="resultado_medido"]');
+    const limiteInput = document.querySelector('[name="limite_tolerancia_nr"]');
+    const conformeCheckbox = document.querySelector('[name="conforme"]');
+    const conformeLabel = document.getElementById('conformeLabel');
+
+    function atualizarLabelConformidade() {
+        if (!conformeCheckbox || !conformeLabel) return;
+        if (conformeCheckbox.checked) {
+            conformeLabel.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> CONFORME</span>';
+        } else {
+            conformeLabel.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> NÃO CONFORME</span>';
+        }
+    }
+
+    function tentarCalcularConformidade() {
+        if (!resultadoInput || !limiteInput || !conformeCheckbox) return;
+
+        const resultado = parseFloat(resultadoInput.value.replace(',', '.'));
+        const limite = parseFloat(limiteInput.value.replace(',', '.'));
+
+        if (!isNaN(resultado) && !isNaN(limite)) {
+            conformeCheckbox.checked = resultado <= limite;
+            atualizarLabelConformidade();
+        }
+    }
+
+    if (resultadoInput) resultadoInput.addEventListener('blur', tentarCalcularConformidade);
+    if (limiteInput)    limiteInput.addEventListener('blur', tentarCalcularConformidade);
+    if (conformeCheckbox) conformeCheckbox.addEventListener('change', atualizarLabelConformidade);
+
+    // Estado inicial do label
+    atualizarLabelConformidade();
+
+    // ===== Validação visual ao submeter =====
+    const form = document.getElementById('avaliacaoForm');
+    form.addEventListener('submit', function (e) {
+        let valido = true;
+        form.querySelectorAll('[required]').forEach(campo => {
+            if (!campo.value.trim()) {
+                campo.classList.add('is-invalid');
+                valido = false;
+            } else {
+                campo.classList.remove('is-invalid');
+            }
+        });
+
+        if (!valido) {
+            e.preventDefault();
+            const primeiroErro = form.querySelector('.is-invalid');
+            if (primeiroErro) {
+                primeiroErro.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                primeiroErro.focus();
+            }
+        }
+    });
+
+});
+</script>
+{% endblock %}
