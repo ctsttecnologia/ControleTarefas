@@ -17,7 +17,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import permission_required
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
-from django.db.models import Q, Count, Sum
 from django.db.models.functions import TruncMonth
 from django.http import JsonResponse, HttpResponse
 from django.urls import reverse_lazy, reverse
@@ -59,6 +58,8 @@ from .forms import (
 )
 from .utils.cont_seguranca import validar_acesso_documento
 from cliente.models import Cliente
+from django.db.models import Count, Q, Sum, Avg, F, ExpressionWrapper, DurationField
+
 
 
 # =============================================================================
@@ -130,15 +131,27 @@ class ClienteAutocomplete(autocomplete.Select2QuerySetView):
 
 
 # =============================================================================
-# DASHBOARD
+# DASHBOARD GERENCIAL — VERSÃO ANALÍTICA AVANÇADA
 # =============================================================================
 
 @funcionario_required
 @permission_required('pgr_gestao.view_pgrdocumento', raise_exception=True)
 def dashboard_gerencial_view(request):
-    """Dashboard gerencial unificado — PGR completo, filtrado por filial e técnico."""
+    """
+    Dashboard gerencial com análise estatística avançada:
+    - KPIs e indicadores de performance
+    - Tendências temporais (12 meses)
+    - Heatmap de riscos
+    - Top empresas/GES com mais riscos
+    - Taxa de eficácia de controles
+    - SLA de planos de ação
+    """
     user = request.user
+    hoje = date.today()
 
+    # =========================================================================
+    # 1. QUERYSETS BASE COM FILTROS
+    # =========================================================================
     documentos_qs, is_tecnico = _aplicar_filtro_filial_e_tecnico(request, PGRDocumento)
     riscos_qs = _safe_for_request(RiscoIdentificado, request)
     planos_qs = _safe_for_request(PlanoAcaoPGR, request)
@@ -152,27 +165,50 @@ def dashboard_gerencial_view(request):
         ges_qs = ges_qs.filter(pgr_documento__criado_por=user)
         revisoes_qs = revisoes_qs.filter(pgr_documento__criado_por=user)
 
-    # Documentos
+    # =========================================================================
+    # 2. ESTATÍSTICAS DE DOCUMENTOS
+    # =========================================================================
     total_documentos = documentos_qs.count()
-    docs_por_status = documentos_qs.values('status').annotate(total=Count('status'))
+    docs_por_status = documentos_qs.values('status').annotate(total=Count('id'))
     status_docs_data = {item['status']: item['total'] for item in docs_por_status}
 
     documentos_vigentes = status_docs_data.get('vigente', 0)
     documentos_vencidos = status_docs_data.get('vencido', 0)
     documentos_em_revisao = status_docs_data.get('em_revisao', 0)
 
-    data_alerta = date.today() + timedelta(days=60)
-    documentos_a_vencer = documentos_qs.filter(
-        data_vencimento__lte=data_alerta,
-        data_vencimento__gte=date.today(),
-    ).select_related('empresa').order_by('data_vencimento')
+    # 🆕 Taxa de conformidade documental
+    taxa_conformidade_docs = (
+        round((documentos_vigentes / total_documentos) * 100, 1)
+        if total_documentos > 0 else 0
+    )
 
-    # Riscos
+    # 🆕 Faixas de vencimento (alertas escalonados)
+    docs_vencendo_30 = documentos_qs.filter(
+        data_vencimento__lte=hoje + timedelta(days=30),
+        data_vencimento__gte=hoje,
+    ).count()
+    docs_vencendo_60 = documentos_qs.filter(
+        data_vencimento__lte=hoje + timedelta(days=60),
+        data_vencimento__gt=hoje + timedelta(days=30),
+    ).count()
+    docs_vencendo_90 = documentos_qs.filter(
+        data_vencimento__lte=hoje + timedelta(days=90),
+        data_vencimento__gt=hoje + timedelta(days=60),
+    ).count()
+
+    documentos_a_vencer = documentos_qs.filter(
+        data_vencimento__lte=hoje + timedelta(days=60),
+        data_vencimento__gte=hoje,
+    ).select_related('empresa').order_by('data_vencimento')[:10]
+
+    # =========================================================================
+    # 3. ESTATÍSTICAS DE RISCOS
+    # =========================================================================
     total_riscos = riscos_qs.count()
     CLASSIFICACAO_DISPLAY = dict(CLASSIFICACAO_RISCO_CHOICES)
 
     riscos_por_classificacao_qs = riscos_qs.values('classificacao_risco').annotate(
-        total=Count('classificacao_risco')
+        total=Count('id')
     ).order_by('classificacao_risco')
 
     riscos_por_classificacao = [
@@ -186,15 +222,67 @@ def dashboard_gerencial_view(request):
         for item in riscos_por_classificacao_qs
     ]
 
-    riscos_por_status = riscos_qs.values('status_controle').annotate(total=Count('id'))
+    # 🆕 Contadores específicos por nível
+    riscos_criticos_count = riscos_qs.filter(classificacao_risco='critico').count()
+    riscos_muito_graves_count = riscos_qs.filter(classificacao_risco='muito_grave').count()
+    riscos_moderados_count = riscos_qs.filter(classificacao_risco='moderado').count()
+    riscos_marginais_count = riscos_qs.filter(classificacao_risco='marginal').count()
+    riscos_negligenciaveis_count = riscos_qs.filter(classificacao_risco='negligenciavel').count()
+
+    # 🆕 Índice de severidade ponderado (0-100)
+    # Pesos: crítico=10, muito_grave=7, moderado=4, marginal=2, negligenciavel=1
+    if total_riscos > 0:
+        severidade_total = (
+            riscos_criticos_count * 10 +
+            riscos_muito_graves_count * 7 +
+            riscos_moderados_count * 4 +
+            riscos_marginais_count * 2 +
+            riscos_negligenciaveis_count * 1
+        )
+        indice_severidade = round((severidade_total / (total_riscos * 10)) * 100, 1)
+    else:
+        indice_severidade = 0
+
+    riscos_por_status = list(
+        riscos_qs.values('status_controle').annotate(total=Count('id'))
+    )
+    status_riscos_data = {item['status_controle']: item['total'] for item in riscos_por_status}
+
+    riscos_controlados = status_riscos_data.get('controlado', 0)
+    riscos_em_controle = status_riscos_data.get('em_controle', 0)
+    riscos_identificados = status_riscos_data.get('identificado', 0)
+
+    # 🆕 Taxa de eficácia de controle (% controlados)
+    taxa_controle_riscos = (
+        round((riscos_controlados / total_riscos) * 100, 1)
+        if total_riscos > 0 else 0
+    )
+
     riscos_criticos_pendentes = riscos_qs.filter(
         classificacao_risco__in=['critico', 'muito_grave'],
         status_controle__in=['identificado', 'em_controle']
     ).select_related('tipo_risco', 'ges', 'pgr_documento').order_by('-classificacao_risco')[:10]
 
-    # Planos
+    # 🆕 TOP 5 tipos de risco mais frequentes
+    top_tipos_risco = list(
+        riscos_qs.values('tipo_risco__nome', 'tipo_risco__categoria')
+        .annotate(total=Count('id'))
+        .order_by('-total')[:5]
+    )
+
+    # 🆕 TOP 5 GES com mais riscos críticos
+    top_ges_criticos = list(
+        riscos_qs.filter(classificacao_risco__in=['critico', 'muito_grave'])
+        .values('ges__nome', 'ges__pgr_documento__empresa__razao_social')
+        .annotate(total=Count('id'))
+        .order_by('-total')[:5]
+    )
+
+    # =========================================================================
+    # 4. ESTATÍSTICAS DE PLANOS DE AÇÃO
+    # =========================================================================
     total_planos = planos_qs.count()
-    planos_por_status = planos_qs.values('status').annotate(total=Count('status'))
+    planos_por_status = planos_qs.values('status').annotate(total=Count('id'))
     status_planos_data = {item['status']: item['total'] for item in planos_por_status}
 
     planos_pendentes = status_planos_data.get('pendente', 0)
@@ -203,12 +291,85 @@ def dashboard_gerencial_view(request):
 
     planos_atrasados = planos_qs.filter(
         status__in=['pendente', 'em_andamento'],
-        data_prevista__lt=date.today()
+        data_prevista__lt=hoje
     ).count()
     status_planos_data['atrasado'] = planos_atrasados
 
-    # Complementos
+    # 🆕 Taxa de conclusão de planos
+    taxa_conclusao_planos = (
+        round((planos_concluidos / total_planos) * 100, 1)
+        if total_planos > 0 else 0
+    )
+
+    # 🆕 Taxa de atraso
+    taxa_atraso_planos = (
+        round((planos_atrasados / total_planos) * 100, 1)
+        if total_planos > 0 else 0
+    )
+
+    # 🆕 SLA: tempo médio de execução (dias) — para planos concluídos
+    planos_concluidos_qs = planos_qs.filter(
+        status='concluido',
+        data_conclusao__isnull=False,
+        criado_em__isnull=False
+    ).annotate(
+        tempo_execucao=ExpressionWrapper(
+            F('data_conclusao') - F('criado_em__date'),
+            output_field=DurationField()
+        )
+    )
+    tempo_medio_execucao = planos_concluidos_qs.aggregate(
+        media=Avg('tempo_execucao')
+    )['media']
+    tempo_medio_dias = (
+        tempo_medio_execucao.days if tempo_medio_execucao else 0
+    )
+
+    # =========================================================================
+    # 5. TENDÊNCIAS TEMPORAIS (12 MESES)
+    # =========================================================================
+    doze_meses_atras = hoje - timedelta(days=365)
+
+    # 🆕 Riscos identificados por mês (12 meses)
+    riscos_por_mes_qs = riscos_qs.filter(
+        data_identificacao__gte=doze_meses_atras
+    ).annotate(mes=TruncMonth('data_identificacao')).values('mes').annotate(
+        total=Count('id'),
+        criticos=Count('id', filter=Q(classificacao_risco__in=['critico', 'muito_grave']))
+    ).order_by('mes')
+
+    riscos_por_mes_labels = []
+    riscos_por_mes_total = []
+    riscos_por_mes_criticos = []
+    for item in riscos_por_mes_qs:
+        if item['mes']:
+            riscos_por_mes_labels.append(item['mes'].strftime('%b/%y'))
+            riscos_por_mes_total.append(item['total'])
+            riscos_por_mes_criticos.append(item['criticos'])
+
+    # 🆕 Planos concluídos vs criados por mês
+    planos_evolucao_qs = planos_qs.filter(
+        criado_em__gte=doze_meses_atras
+    ).annotate(mes=TruncMonth('criado_em')).values('mes').annotate(
+        criados=Count('id'),
+        concluidos=Count('id', filter=Q(status='concluido'))
+    ).order_by('mes')
+
+    planos_evolucao_labels = []
+    planos_evolucao_criados = []
+    planos_evolucao_concluidos = []
+    for item in planos_evolucao_qs:
+        if item['mes']:
+            planos_evolucao_labels.append(item['mes'].strftime('%b/%y'))
+            planos_evolucao_criados.append(item['criados'])
+            planos_evolucao_concluidos.append(item['concluidos'])
+
+    # =========================================================================
+    # 6. COMPLEMENTOS
+    # =========================================================================
     total_ges = ges_qs.filter(ativo=True).count()
+    total_revisoes = revisoes_qs.count()
+
     ultimas_revisoes = revisoes_qs.select_related(
         'pgr_documento', 'pgr_documento__empresa'
     ).order_by('-data_realizacao')[:5]
@@ -217,38 +378,103 @@ def dashboard_gerencial_view(request):
         'risco_identificado', 'risco_identificado__pgr_documento'
     ).order_by('-criado_em')[:5]
 
-    seis_meses_atras = date.today() - timedelta(days=180)
-    riscos_por_mes = riscos_qs.filter(
-        data_identificacao__gte=seis_meses_atras
-    ).annotate(mes=TruncMonth('data_identificacao')).values('mes').annotate(
-        total=Count('id')
-    ).order_by('mes')
+    # 🆕 Saúde geral do sistema (score 0-100)
+    # Composição: 40% conformidade docs + 30% controle riscos + 30% conclusão planos
+    saude_geral = round(
+        (taxa_conformidade_docs * 0.4) +
+        (taxa_controle_riscos * 0.3) +
+        (taxa_conclusao_planos * 0.3),
+        1
+    )
+
+    # 🆕 Classificação da saúde
+    if saude_geral >= 80:
+        saude_status = 'excelente'
+        saude_cor = 'success'
+        saude_icone = 'bi-emoji-smile'
+    elif saude_geral >= 60:
+        saude_status = 'boa'
+        saude_cor = 'info'
+        saude_icone = 'bi-emoji-neutral'
+    elif saude_geral >= 40:
+        saude_status = 'regular'
+        saude_cor = 'warning'
+        saude_icone = 'bi-emoji-expressionless'
+    else:
+        saude_status = 'crítica'
+        saude_cor = 'danger'
+        saude_icone = 'bi-emoji-frown'
 
     filial_info, acesso_global = _get_filial_info(request)
 
+    # =========================================================================
+    # 7. CONTEXTO
+    # =========================================================================
     context = {
+        # Documentos
         'total_documentos': total_documentos,
         'documentos_vigentes': documentos_vigentes,
         'documentos_vencidos': documentos_vencidos,
         'documentos_em_revisao': documentos_em_revisao,
         'status_docs_data': status_docs_data,
+        'taxa_conformidade_docs': taxa_conformidade_docs,
+        'docs_vencendo_30': docs_vencendo_30,
+        'docs_vencendo_60': docs_vencendo_60,
+        'docs_vencendo_90': docs_vencendo_90,
         'documentos_a_vencer': documentos_a_vencer,
         'documentos_proximo_vencimento': documentos_a_vencer,
+
+        # Riscos
         'total_riscos': total_riscos,
         'riscos_por_classificacao': riscos_por_classificacao,
+        'riscos_criticos_count': riscos_criticos_count,
+        'riscos_muito_graves_count': riscos_muito_graves_count,
+        'riscos_moderados_count': riscos_moderados_count,
+        'riscos_marginais_count': riscos_marginais_count,
+        'riscos_negligenciaveis_count': riscos_negligenciaveis_count,
+        'indice_severidade': indice_severidade,
         'riscos_por_status': riscos_por_status,
+        'riscos_controlados': riscos_controlados,
+        'riscos_em_controle': riscos_em_controle,
+        'riscos_identificados': riscos_identificados,
+        'taxa_controle_riscos': taxa_controle_riscos,
         'riscos_criticos': riscos_criticos_pendentes,
         'riscos_criticos_pendentes': riscos_criticos_pendentes,
+        'top_tipos_risco': top_tipos_risco,
+        'top_ges_criticos': top_ges_criticos,
+
+        # Planos
         'total_planos': total_planos,
         'planos_pendentes': planos_pendentes,
         'planos_em_andamento': planos_em_andamento,
         'planos_concluidos': planos_concluidos,
         'planos_atrasados': planos_atrasados,
         'status_planos_data': status_planos_data,
+        'taxa_conclusao_planos': taxa_conclusao_planos,
+        'taxa_atraso_planos': taxa_atraso_planos,
+        'tempo_medio_dias': tempo_medio_dias,
+
+        # Tendências
+        'riscos_por_mes_labels': riscos_por_mes_labels,
+        'riscos_por_mes_total': riscos_por_mes_total,
+        'riscos_por_mes_criticos': riscos_por_mes_criticos,
+        'planos_evolucao_labels': planos_evolucao_labels,
+        'planos_evolucao_criados': planos_evolucao_criados,
+        'planos_evolucao_concluidos': planos_evolucao_concluidos,
+
+        # Complementos
         'total_ges': total_ges,
+        'total_revisoes': total_revisoes,
         'ultimas_revisoes': ultimas_revisoes,
         'ultimos_planos': ultimos_planos,
-        'riscos_por_mes': riscos_por_mes,
+
+        # Saúde geral
+        'saude_geral': saude_geral,
+        'saude_status': saude_status,
+        'saude_cor': saude_cor,
+        'saude_icone': saude_icone,
+
+        # Contexto
         'filial_info': filial_info,
         'acesso_global': acesso_global,
     }
