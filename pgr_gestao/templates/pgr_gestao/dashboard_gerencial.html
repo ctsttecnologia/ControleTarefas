@@ -1,4 +1,5 @@
-<!-- Dashboard Gerencial - Template HTML-->
+
+<!-- Dashboard Gerencial - VERSÃO ANALÍTICA AVANÇADA -->
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
@@ -8,84 +9,423 @@
 <li class="breadcrumb-item active">Dashboard Gerencial</li>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+    .kpi-card {
+        border-left: 4px solid #0d6efd;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    .kpi-card.success { border-left-color: #198754; }
+    .kpi-card.warning { border-left-color: #ffc107; }
+    .kpi-card.danger  { border-left-color: #dc3545; }
+    .kpi-card.info    { border-left-color: #0dcaf0; }
+
+    .kpi-icon {
+        font-size: 2.5rem;
+        opacity: 0.3;
+    }
+
+    .gauge-container {
+        position: relative;
+        text-align: center;
+    }
+    .gauge-value {
+        position: absolute;
+        top: 60%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
+    .severity-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(to right, #28a745 0%, #ffc107 50%, #dc3545 100%);
+        position: relative;
+    }
+    .severity-marker {
+        position: absolute;
+        top: -6px;
+        width: 4px;
+        height: 20px;
+        background: #000;
+        transform: translateX(-50%);
+    }
+
+    .badge-risco-critico        { background-color: #6f0000; color: white; }
+    .badge-risco-muito_grave    { background-color: #dc3545; color: white; }
+    .badge-risco-moderado       { background-color: #fd7e14; color: white; }
+    .badge-risco-marginal       { background-color: #ffc107; color: black; }
+    .badge-risco-negligenciavel { background-color: #28a745; color: white; }
+
+    .alert-vencimento {
+        border-left: 4px solid;
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+    }
+    .alert-vencimento.urgent  { border-color: #dc3545; background: #f8d7da33; }
+    .alert-vencimento.warning { border-color: #ffc107; background: #fff3cd33; }
+    .alert-vencimento.info    { border-color: #0dcaf0; background: #cff4fc33; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="page-header">
+<!-- HEADER -->
+<div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="mb-1"><i class="bi bi-chart-line"></i> Dashboard Gerencial</h1>
+            <p class="mb-0 text-muted"><i class="bi bi-info-circle"> </i> Visão geral e consolidada de todos os PGRs</p>
+        </div>
 
-        <h1><i class="bi bi-chart-line"></i> Dashboard Gerencial</h1>
-        <p class="mb-0">Visão geral e consolidada de todos os Programas de Gerenciamento de Riscos</p>
-
-    <div class="d-flex justify-content-between align-items-center">
         {% if perms.pgr_gestao.add_pgrdocumento %}
             <a href="{% url 'pgr_gestao:documento_create' %}" class="btn btn-primary btn-lg">
-                <i class="bi bi-plus"></i> Novo Documento
+                <i class="bi bi-plus-lg"></i> Novo Documento
             </a>
         {% endif %}
     </div>
+    <hr class="mt-3">
 </div>
- 
-<!-- Estatísticas Gerais -->
+
+<!-- ============================================================ -->
+<!-- 1. SAÚDE GERAL DO SISTEMA + ÍNDICE DE SEVERIDADE              -->
+<!-- ============================================================ -->
 <div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stats-card">
-            <div class="card-body">
-                <h6 class="text-muted mb-2">Total de Documentos</h6>
-                <h2 class="mb-0">{{ total_documentos }}</h2>
+    <div class="col-md-6">
+        <div class="card border-{{ saude_cor }}">
+            <div class="card-body text-center">
+                <h6 class="text-muted mb-3"><i class="bi bi-heart-pulse"></i> Saúde Geral do Sistema</h6>
+                <div class="d-flex justify-content-center align-items-center gap-3">
+                    <i class="bi {{ saude_icone }} text-{{ saude_cor }}" style="font-size: 4rem;"></i>
+                    <div>
+                        <h1 class="mb-0 text-{{ saude_cor }}">{{ saude_geral }}%</h1>
+                        <span class="badge bg-{{ saude_cor }} text-uppercase">{{ saude_status }}</span>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 12px;">
+                    <div class="progress-bar bg-{{ saude_cor }}" role="progressbar"
+                         style="width: {{ saude_geral }}%"
+                         aria-valuenow="{{ saude_geral }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <small class="text-muted mt-2 d-block">
+                    Composto por: 40% Conformidade Documental + 30% Controle de Riscos + 30% Conclusão de Planos
+                </small>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stats-card">
+    <div class="col-md-6">
+        <div class="card">
             <div class="card-body">
-                <h6 class="text-muted mb-2">Total de Riscos</h6>
-                <h2 class="mb-0">{{ total_riscos }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card">
-            <div class="card-body">
-                <h6 class="text-muted mb-2">Total de Planos de Ação</h6>
-                <h2 class="mb-0">{{ total_planos }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card danger">
-            <div class="card-body">
-                <h6 class="text-muted mb-2">Planos Atrasados</h6>
-                <h2 class="mb-0 text-danger">{{ status_planos_data.atrasado|default:0 }}</h2>
+                <h6 class="text-muted mb-3"><i class="bi bi-thermometer-half"></i> Índice de Severidade dos Riscos</h6>
+                <div class="text-center mb-3">
+                    <h1 class="mb-0">{{ indice_severidade }}<small class="text-muted">/100</small></h1>
+                </div>
+                <div class="severity-bar">
+                    <div class="severity-marker" style="left: {{ indice_severidade }}%;"></div>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <small class="text-success"><i class="bi bi-shield-check"></i> Baixo</small>
+                    <small class="text-warning"><i class="bi bi-exclamation-triangle"></i> Moderado</small>
+                    <small class="text-danger"><i class="bi bi-exclamation-octagon"></i> Crítico</small>
+                </div>
+                <small class="text-muted mt-3 d-block text-center">
+                    Ponderação: Crítico×10 + Muito Grave×7 + Moderado×4 + Marginal×2 + Negligenciável×1
+                </small>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Gráficos -->
+<!-- ============================================================ -->
+<!-- 2. KPIs PRINCIPAIS                                            -->
+<!-- ============================================================ -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card kpi-card info h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted mb-1">Conformidade Doc.</h6>
+                    <h2 class="mb-0">{{ taxa_conformidade_docs }}%</h2>
+                    <small class="text-muted">{{ documentos_vigentes }}/{{ total_documentos }} vigentes</small>
+                </div>
+                <i class="bi bi-file-earmark-check kpi-icon text-info"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card kpi-card success h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted mb-1">Controle de Riscos</h6>
+                    <h2 class="mb-0">{{ taxa_controle_riscos }}%</h2>
+                    <small class="text-muted">{{ riscos_controlados }}/{{ total_riscos }} controlados</small>
+                </div>
+                <i class="bi bi-shield-check kpi-icon text-success"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card kpi-card warning h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted mb-1">Conclusão Planos</h6>
+                    <h2 class="mb-0">{{ taxa_conclusao_planos }}%</h2>
+                    <small class="text-muted">{{ planos_concluidos }}/{{ total_planos }} concluídos</small>
+                </div>
+                <i class="bi bi-check2-circle kpi-icon text-warning"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card kpi-card danger h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted mb-1">Taxa de Atraso</h6>
+                    <h2 class="mb-0 text-danger">{{ taxa_atraso_planos }}%</h2>
+                    <small class="text-muted">{{ planos_atrasados }} planos atrasados</small>
+                </div>
+                <i class="bi bi-clock-history kpi-icon text-danger"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 3. CONTADORES DETALHADOS                                      -->
+<!-- ============================================================ -->
+<div class="row mb-4">
+    <div class="col-md-2 col-6 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-file-earmark-text text-primary" style="font-size: 2rem;"></i>
+                <h3 class="mb-0 mt-2">{{ total_documentos }}</h3>
+                <small class="text-muted">Documentos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                <h3 class="mb-0 mt-2">{{ total_riscos }}</h3>
+                <small class="text-muted">Riscos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-list-task text-info" style="font-size: 2rem;"></i>
+                <h3 class="mb-0 mt-2">{{ total_planos }}</h3>
+                <small class="text-muted">Planos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-people text-success" style="font-size: 2rem;"></i>
+                <h3 class="mb-0 mt-2">{{ total_ges }}</h3>
+                <small class="text-muted">GES Ativos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-arrow-repeat text-secondary" style="font-size: 2rem;"></i>
+                <h3 class="mb-0 mt-2">{{ total_revisoes }}</h3>
+                <small class="text-muted">Revisões</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-stopwatch text-primary" style="font-size: 2rem;"></i>
+                <h3 class="mb-0 mt-2">{{ tempo_medio_dias }}</h3>
+                <small class="text-muted">Dias médios/plano</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 4. ALERTAS DE VENCIMENTO ESCALONADOS                          -->
+<!-- ============================================================ -->
 <div class="row mb-4">
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-header"><i class="fas fa-file-alt"></i> Documentos por Status</div>
+        <div class="alert-vencimento urgent">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <strong><i class="bi bi-alarm"></i> Vencendo em 30 dias</strong>
+                    <p class="mb-0 small text-muted">Ação urgente necessária</p>
+                </div>
+                <h2 class="mb-0 text-danger">{{ docs_vencendo_30 }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="alert-vencimento warning">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <strong><i class="bi bi-clock"></i> Vencendo em 31-60 dias</strong>
+                    <p class="mb-0 small text-muted">Planejar revisão</p>
+                </div>
+                <h2 class="mb-0 text-warning">{{ docs_vencendo_60 }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="alert-vencimento info">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <strong><i class="bi bi-calendar3"></i> Vencendo em 61-90 dias</strong>
+                    <p class="mb-0 small text-muted">Monitoramento</p>
+                </div>
+                <h2 class="mb-0 text-info">{{ docs_vencendo_90 }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 5. GRÁFICOS PRINCIPAIS                                        -->
+<!-- ============================================================ -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-pie-chart"></i> Documentos por Status</div>
             <div class="card-body"><canvas id="chartDocsStatus"></canvas></div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-header"><i class="fas fa-exclamation-triangle"></i> Riscos por Classificação</div>
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-exclamation-diamond"></i> Riscos por Classificação</div>
             <div class="card-body"><canvas id="chartRiscosClassificacao"></canvas></div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-header"><i class="fas fa-tasks"></i> Planos por Status</div>
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-bar-chart"></i> Planos por Status</div>
             <div class="card-body"><canvas id="chartPlanosStatus"></canvas></div>
         </div>
     </div>
 </div>
 
-<!-- Alertas e Listas -->
-<div class="row">
+<!-- ============================================================ -->
+<!-- 6. TENDÊNCIAS TEMPORAIS (12 MESES)                            -->
+<!-- ============================================================ -->
+<div class="row mb-4">
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-warning text-dark"><i class="fas fa-clock"></i> Documentos a Vencer (próximos 60 dias)</div>
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-graph-up"></i> Evolução de Riscos Identificados (12 meses)
+            </div>
+            <div class="card-body"><canvas id="chartRiscosEvolucao"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-graph-up"></i> Planos: Criados vs Concluídos (12 meses)
+            </div>
+            <div class="card-body"><canvas id="chartPlanosEvolucao"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 7. TOP RANKINGS                                               -->
+<!-- ============================================================ -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-trophy"></i> TOP 5 Tipos de Risco Mais Frequentes
+            </div>
+            <div class="card-body">
+                {% if top_tipos_risco %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Tipo de Risco</th>
+                                <th>Categoria</th>
+                                <th class="text-end">Ocorrências</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tipo in top_tipos_risco %}
+                            <tr>
+                                <td><span class="badge bg-secondary">{{ forloop.counter }}</span></td>
+                                <td>{{ tipo.tipo_risco__nome|default:"—" }}</td>
+                                <td><small class="text-muted">{{ tipo.tipo_risco__categoria|default:"—" }}</small></td>
+                                <td class="text-end"><strong>{{ tipo.total }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0">Sem dados para exibir.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-radioactive"></i> TOP 5 GES com Mais Riscos Críticos
+            </div>
+            <div class="card-body">
+                {% if top_ges_criticos %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>GES</th>
+                                <th>Empresa</th>
+                                <th class="text-end">Riscos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ges in top_ges_criticos %}
+                            <tr>
+                                <td><span class="badge bg-danger">{{ forloop.counter }}</span></td>
+                                <td>{{ ges.ges__nome|default:"—" }}</td>
+                                <td><small class="text-muted">{{ ges.ges__pgr_documento__empresa__razao_social|default:"—"|truncatechars:30 }}</small></td>
+                                <td class="text-end"><strong class="text-danger">{{ ges.total }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0">Nenhum GES com riscos críticos.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 8. ALERTAS E LISTAS (ORIGINAIS MELHORADAS)                    -->
+<!-- ============================================================ -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-warning text-dark">
+                <i class="bi bi-clock-history"></i> Documentos a Vencer (próximos 60 dias)
+            </div>
             <div class="card-body">
                 {% if documentos_a_vencer %}
                 <ul class="list-group list-group-flush">
@@ -93,34 +433,46 @@
                     <a href="{% url 'pgr_gestao:documento_detail' doc.pk %}" class="list-group-item list-group-item-action">
                         <div class="d-flex w-100 justify-content-between">
                             <h6 class="mb-1">{{ doc.codigo_documento }}</h6>
-                            <small>Vence em {{ doc.dias_para_vencimento }} dias</small>
+                            <small class="{% if doc.dias_para_vencimento <= 30 %}text-danger fw-bold{% else %}text-warning{% endif %}">
+                                Vence em {{ doc.dias_para_vencimento }} dias
+                            </small>
                         </div>
-                        <p class="mb-1">{{ doc.empresa.razao_social }}</p>
+                        <p class="mb-1 small">{{ doc.empresa.razao_social }}</p>
                     </a>
                     {% endfor %}
                 </ul>
                 {% else %}
-                <p class="text-muted text-center">Nenhum documento com vencimento próximo.</p>
+                <p class="text-muted text-center mb-0">Nenhum documento com vencimento próximo. ✅</p>
                 {% endif %}
             </div>
         </div>
     </div>
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-danger text-white"><i class="fas fa-radiation"></i> Riscos Críticos e Muito Graves Pendentes</div>
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-exclamation-octagon"></i> Riscos Críticos Pendentes
+            </div>
             <div class="card-body">
                 {% if riscos_criticos_pendentes %}
                 <div class="table-responsive">
-                    <table class="table table-sm table-hover">
-                        <thead><tr><th>Agente</th><th>Class.</th><th>PGR</th><th>Ações</th></tr></thead>
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr><th>Agente</th><th>Class.</th><th>PGR</th><th>Ações</th></tr>
+                        </thead>
                         <tbody>
                         {% for risco in riscos_criticos_pendentes|slice:":5" %}
                             <tr>
-                                <td>{{ risco.agente }}</td>
-                                <td><span class="badge badge-risco-{{ risco.classificacao_risco }}">{{ risco.get_classificacao_risco_display }}</span></td>
-                                <td>{{ risco.pgr_documento.codigo_documento }}</td>
+                                <td><small>{{ risco.agente|truncatechars:25 }}</small></td>
                                 <td>
-                                    <a href="{% url 'pgr_gestao:risco_detail' risco.pk %}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
+                                    <span class="badge badge-risco-{{ risco.classificacao_risco }}">
+                                        {{ risco.get_classificacao_risco_display }}
+                                    </span>
+                                </td>
+                                <td><small>{{ risco.pgr_documento.codigo_documento }}</small></td>
+                                <td>
+                                    <a href="{% url 'pgr_gestao:risco_detail' risco.pk %}" class="btn btn-sm btn-info">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -128,7 +480,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center">Nenhum risco crítico pendente de controle.</p>
+                <p class="text-muted text-center mb-0">Nenhum risco crítico pendente. ✅</p>
                 {% endif %}
             </div>
         </div>
@@ -139,10 +491,18 @@
 
 {% block extra_js %}
 <script>
-// Chart 1: Documentos por Status
-const ctxDocs = document.getElementById('chartDocsStatus').getContext('2d');
-new Chart(ctxDocs, {
-    type: 'pie',
+// =================================================================
+// CONFIGURAÇÃO GLOBAL DO CHART.JS
+// =================================================================
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.plugins.legend.position = 'bottom';
+
+// =================================================================
+// CHART 1: Documentos por Status (Pie)
+// =================================================================
+new Chart(document.getElementById('chartDocsStatus'), {
+    type: 'doughnut',
     data: {
         labels: ['Vigente', 'Vencido', 'Em Revisão'],
         datasets: [{
@@ -151,57 +511,75 @@ new Chart(ctxDocs, {
                 {{ status_docs_data.vencido|default:0 }},
                 {{ status_docs_data.em_revisao|default:0 }}
             ],
-            backgroundColor: ['#28a745', '#dc3545', '#ffc107']
+            backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
+            borderWidth: 2,
+            borderColor: '#fff'
         }]
     },
     options: {
         responsive: true,
+        maintainAspectRatio: true,
         plugins: {
-            legend: { position: 'top' }
+            tooltip: {
+                callbacks: {
+                    label: (ctx) => {
+                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                        const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+                        return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                    }
+                }
+            }
         }
     }
 });
 
-// Chart 2: Riscos por Classificação
-const ctxRiscos = document.getElementById('chartRiscosClassificacao').getContext('2d');
-new Chart(ctxRiscos, {
+// =================================================================
+// CHART 2: Riscos por Classificação (Doughnut)
+// =================================================================
+new Chart(document.getElementById('chartRiscosClassificacao'), {
     type: 'doughnut',
     data: {
         labels: [
-            {% for item in riscos_por_classificacao %}
-                '{{ item.label }}'{% if not forloop.last %},{% endif %}
-            {% endfor %}
+            {% for item in riscos_por_classificacao %}'{{ item.label }}'{% if not forloop.last %},{% endif %}{% endfor %}
         ],
         datasets: [{
             data: [
-                {% for item in riscos_por_classificacao %}
-                    {{ item.total }}{% if not forloop.last %},{% endif %}
-                {% endfor %}
+                {% for item in riscos_por_classificacao %}{{ item.total }}{% if not forloop.last %},{% endif %}{% endfor %}
             ],
             backgroundColor: [
                 {% for item in riscos_por_classificacao %}
-                    {% if item.classificacao_risco == 'critico'%}'#6f0000'
-                    {% elif item.classificacao_risco == 'muito_grave'%}'#dc3545'
-                    {% elif item.classificacao_risco == 'moderado'%}'#fd7e14'
-                    {% elif item.classificacao_risco == 'marginal'%}'#ffc107'
-                    {% elif item.classificacao_risco == 'negligenciavel'%}'#28a745'
-                    {% else %}'#808080'
-                    {% endif %}{% if not forloop.last %},{% endif %}
+                    {% if item.classificacao_risco == 'critico' %}'#6f0000'
+                    {% elif item.classificacao_risco == 'muito_grave' %}'#dc3545'
+                    {% elif item.classificacao_risco == 'moderado' %}'#fd7e14'
+                    {% elif item.classificacao_risco == 'marginal' %}'#ffc107'
+                    {% elif item.classificacao_risco == 'negligenciavel' %}'#28a745'
+                    {% else %}'#808080'{% endif %}{% if not forloop.last %},{% endif %}
                 {% endfor %}
-            ]
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
         }]
     },
     options: {
         responsive: true,
         plugins: {
-            legend: { position: 'bottom' }
+            tooltip: {
+                callbacks: {
+                    label: (ctx) => {
+                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                        const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+                        return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                    }
+                }
+            }
         }
     }
 });
 
-// Chart 3: Planos por Status
-const ctxPlanos = document.getElementById('chartPlanosStatus').getContext('2d');
-new Chart(ctxPlanos, {
+// =================================================================
+// CHART 3: Planos por Status (Bar)
+// =================================================================
+new Chart(document.getElementById('chartPlanosStatus'), {
     type: 'bar',
     data: {
         labels: ['Pendentes', 'Em Andamento', 'Concluídos', 'Atrasados'],
@@ -213,20 +591,91 @@ new Chart(ctxPlanos, {
                 {{ status_planos_data.concluido|default:0 }},
                 {{ status_planos_data.atrasado|default:0 }}
             ],
-            backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#dc3545']
+            backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#dc3545'],
+            borderRadius: 6
         }]
     },
     options: {
         responsive: true,
         plugins: { legend: { display: false } },
         scales: {
-            y: {
-                beginAtZero: true,
-                ticks: { stepSize: 1 }
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+        }
+    }
+});
+
+// =================================================================
+// CHART 4: Evolução de Riscos (Line - 12 meses)
+// =================================================================
+new Chart(document.getElementById('chartRiscosEvolucao'), {
+    type: 'line',
+    data: {
+        labels: {{ riscos_por_mes_labels|safe }},
+        datasets: [
+            {
+                label: 'Total de Riscos',
+                data: {{ riscos_por_mes_total|safe }},
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                fill: true,
+                tension: 0.3,
+                borderWidth: 2
+            },
+            {
+                label: 'Riscos Críticos',
+                data: {{ riscos_por_mes_criticos|safe }},
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                fill: true,
+                tension: 0.3,
+                borderWidth: 2
             }
+        ]
+    },
+    options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+        }
+    }
+});
+
+// =================================================================
+// CHART 5: Evolução de Planos (Line - 12 meses)
+// =================================================================
+new Chart(document.getElementById('chartPlanosEvolucao'), {
+    type: 'line',
+    data: {
+        labels: {{ planos_evolucao_labels|safe }},
+        datasets: [
+            {
+                label: 'Criados',
+                data: {{ planos_evolucao_criados|safe }},
+                borderColor: '#0dcaf0',
+                backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                fill: true,
+                tension: 0.3,
+                borderWidth: 2
+            },
+            {
+                label: 'Concluídos',
+                data: {{ planos_evolucao_concluidos|safe }},
+                borderColor: '#198754',
+                backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                fill: true,
+                tension: 0.3,
+                borderWidth: 2
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
         }
     }
 });
 </script>
 {% endblock %}
-
