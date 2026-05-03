@@ -1,121 +1,204 @@
-
-{% extends 'pgr_gestao/base.html' %}
+{# Local de Prestação de Serviços — Formulário #}
+{% extends "pgr_gestao/pgr_base.html" %}
 {% load widget_tweaks %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}{{ title|default:"Local de Prestação" }}{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item"><a href="{{ form.instance.empresa.get_absolute_url }}">{{ form.instance.empresa.razao_social|default:'Empresas' }}</a></li>
+{% if form.instance.empresa %}
+<li class="breadcrumb-item">
+    <a href="{{ form.instance.empresa.get_absolute_url }}">
+        {{ form.instance.empresa.razao_social|truncatewords:5 }}
+    </a>
+</li>
+{% else %}
+<li class="breadcrumb-item">
+    <a href="{% url 'pgr_gestao:empresa_list' %}">Empresas</a>
+</li>
+{% endif %}
 <li class="breadcrumb-item active">{{ title }}</li>
 {% endblock %}
 
-{% block content %}
+{% block pgr_content %}
 <div class="page-header">
-    <h1><i class="fas fa-map-pin"></i> {{ title }}</h1>
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+            <h1><i class="bi bi-geo-alt-fill"></i> {{ title }}</h1>
+            <p class="mb-0">Cadastro de local de prestação de serviços</p>
+        </div>
+        <a href="{% if object %}{{ object.empresa.get_absolute_url }}{% else %}{% url 'pgr_gestao:empresa_list' %}{% endif %}"
+           class="btn btn-light">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
 </div>
 
 <div class="card">
+    <div class="card-header bg-primary text-white">
+        <i class="bi bi-pencil-square"></i> Dados do Local
+    </div>
     <div class="card-body">
-        <form method="post">
+        <form method="post" novalidate>
             {% csrf_token %}
-            
+
             {% if form.non_field_errors %}
             <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 {{ form.non_field_errors }}
             </div>
             {% endif %}
 
-            <div class="row">
+            <!-- Identificação -->
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                <i class="bi bi-building"></i> Identificação
+            </h6>
+            <div class="row g-3 mb-4">
                 <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.empresa.id_for_label }}" class="form-label">Empresa Contratante</label>
-                        {% render_field form.empresa class="form-select" %}
-                        {% if form.empresa.errors %}<div class="text-danger">{{ form.empresa.errors }}</div>{% endif %}
-                    </div>
+                    <label for="{{ form.empresa.id_for_label }}" class="form-label fw-semibold required-field">
+                        Empresa Contratante
+                    </label>
+                    {% render_field form.empresa class="form-select" %}
+                    {% if form.empresa.errors %}
+                    <div class="text-danger small mt-1">{{ form.empresa.errors }}</div>
+                    {% endif %}
                 </div>
                 <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.razao_social.id_for_label }}" class="form-label">Razão Social do Local</label>
-                        {% render_field form.razao_social class="form-control" %}
-                        {% if form.razao_social.errors %}<div class="text-danger">{{ form.razao_social.errors }}</div>{% endif %}
-                    </div>
+                    <label for="{{ form.razao_social.id_for_label }}" class="form-label fw-semibold required-field">
+                        Razão Social do Local
+                    </label>
+                    {% render_field form.razao_social class="form-control" placeholder="Ex: Filial São Paulo Ltda." %}
+                    {% if form.razao_social.errors %}
+                    <div class="text-danger small mt-1">{{ form.razao_social.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.cnpj.id_for_label }}" class="form-label fw-semibold">
+                        CNPJ <small class="text-muted fw-normal">(opcional)</small>
+                    </label>
+                    {% render_field form.cnpj class="form-control" placeholder="00.000.000/0000-00" %}
+                    {% if form.cnpj.errors %}
+                    <div class="text-danger small mt-1">{{ form.cnpj.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.cep.id_for_label }}" class="form-label fw-semibold">
+                        CEP
+                    </label>
+                    {% render_field form.cep class="form-control" placeholder="00000-000" id="cepInput" %}
+                    {% if form.cep.errors %}
+                    <div class="text-danger small mt-1">{{ form.cep.errors }}</div>
+                    {% endif %}
+                    <small class="text-muted">Preenchimento automático ao digitar</small>
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.cnpj.id_for_label }}" class="form-label">CNPJ (Opcional)</label>
-                        {% render_field form.cnpj class="form-control" %}
-                        {% if form.cnpj.errors %}<div class="text-danger">{{ form.cnpj.errors }}</div>{% endif %}
-                    </div>
+            <!-- Endereço -->
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                <i class="bi bi-geo-alt"></i> Endereço
+            </h6>
+            <div class="row g-3 mb-4">
+                <div class="col-md-9">
+                    <label for="{{ form.endereco.id_for_label }}" class="form-label fw-semibold">
+                        Endereço (Logradouro)
+                    </label>
+                    {% render_field form.endereco class="form-control" placeholder="Rua, Avenida, etc." %}
+                    {% if form.endereco.errors %}
+                    <div class="text-danger small mt-1">{{ form.endereco.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">
+                        Número
+                    </label>
+                    {% render_field form.numero class="form-control" placeholder="Nº" %}
+                    {% if form.numero.errors %}
+                    <div class="text-danger small mt-1">{{ form.numero.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.bairro.id_for_label }}" class="form-label fw-semibold">
+                        Bairro
+                    </label>
+                    {% render_field form.bairro class="form-control" placeholder="Nome do bairro" %}
+                    {% if form.bairro.errors %}
+                    <div class="text-danger small mt-1">{{ form.bairro.errors }}</div>
+                    {% endif %}
                 </div>
                 <div class="col-md-6">
-                     <div class="mb-3">
-                        <label for="{{ form.cep.id_for_label }}" class="form-label">CEP</label>
-                        {% render_field form.cep class="form-control" %}
-                        {% if form.cep.errors %}<div class="text-danger">{{ form.cep.errors }}</div>{% endif %}
-                    </div>
+                    <label for="{{ form.cidade.id_for_label }}" class="form-label fw-semibold">
+                        Cidade
+                    </label>
+                    {% render_field form.cidade class="form-control" placeholder="Nome da cidade" %}
+                    {% if form.cidade.errors %}
+                    <div class="text-danger small mt-1">{{ form.cidade.errors }}</div>
+                    {% endif %}
                 </div>
-            </div>
-            
-            <div class="row">
-                 <div class="col-md-9">
-                    <div class="mb-3">
-                        <label for="{{ form.endereco.id_for_label }}" class="form-label">Endereço</label>
-                        {% render_field form.endereco class="form-control" %}
-                        {% if form.endereco.errors %}<div class="text-danger">{{ form.endereco.errors }}</div>{% endif %}
-                    </div>
-                </div>
-                 <div class="col-md-3">
-                    <div class="mb-3">
-                        <label for="{{ form.numero.id_for_label }}" class="form-label">Número</label>
-                        {% render_field form.numero class="form-control" %}
-                        {% if form.numero.errors %}<div class="text-danger">{{ form.numero.errors }}</div>{% endif %}
-                    </div>
+                <div class="col-md-2">
+                    <label for="{{ form.estado.id_for_label }}" class="form-label fw-semibold">
+                        UF
+                    </label>
+                    {% render_field form.estado class="form-control text-uppercase" maxlength="2" placeholder="SP" %}
+                    {% if form.estado.errors %}
+                    <div class="text-danger small mt-1">{{ form.estado.errors }}</div>
+                    {% endif %}
                 </div>
             </div>
 
-            <div class="row">
-                 <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.bairro.id_for_label }}" class="form-label">Bairro</label>
-                        {% render_field form.bairro class="form-control" %}
-                        {% if form.bairro.errors %}<div class="text-danger">{{ form.bairro.errors }}</div>{% endif %}
-                    </div>
-                </div>
-                 <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.cidade.id_for_label }}" class="form-label">Cidade</label>
-                        {% render_field form.cidade class="form-control" %}
-                        {% if form.cidade.errors %}<div class="text-danger">{{ form.cidade.errors }}</div>{% endif %}
-                    </div>
-                </div>
-                 <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="{{ form.estado.id_for_label }}" class="form-label">Estado (UF)</label>
-                        {% render_field form.estado class="form-control" %}
-                        {% if form.estado.errors %}<div class="text-danger">{{ form.estado.errors }}</div>{% endif %}
-                    </div>
-                </div>
+            <!-- Descrição -->
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                <i class="bi bi-card-text"></i> Informações Adicionais
+            </h6>
+            <div class="mb-4">
+                <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">Descrição</label>
+                {% render_field form.descricao class="form-control" rows="3" placeholder="Atividades realizadas neste local, observações relevantes..." %}
+                {% if form.descricao.errors %}
+                <div class="text-danger small mt-1">{{ form.descricao.errors }}</div>
+                {% endif %}
             </div>
 
-            <div class="mb-3">
-                <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição</label>
-                {% render_field form.descricao class="form-control" %}
-                {% if form.descricao.errors %}<div class="text-danger">{{ form.descricao.errors }}</div>{% endif %}
-            </div>
-
-            <div class="d-flex justify-content-between mt-4">
-                <a href="{% if object %}{{ object.empresa.get_absolute_url }}{% else %}{% url 'pgr_gestao:empresa_list' %}{% endif %}" class="btn btn-secondary">
-                    <i class="fas fa-times"></i> Cancelar
+            <hr>
+            <div class="d-flex justify-content-between gap-2">
+                <a href="{% if object %}{{ object.empresa.get_absolute_url }}{% else %}{% url 'pgr_gestao:empresa_list' %}{% endif %}"
+                   class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i> Cancelar
                 </a>
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Salvar
+                    <i class="bi bi-save"></i>
+                    {% if form.instance.pk %}Salvar Alterações{% else %}Cadastrar Local{% endif %}
                 </button>
             </div>
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_pgr_js %}
+<script>
+// 🔍 Auto-preenchimento via ViaCEP
+document.addEventListener('DOMContentLoaded', function() {
+    const cepInput = document.getElementById('cepInput');
+    if (!cepInput) return;
+
+    cepInput.addEventListener('blur', function() {
+        const cep = this.value.replace(/\D/g, '');
+        if (cep.length !== 8) return;
+
+        fetch(`https://viacep.com.br/ws/${cep}/json/`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.erro) return;
+                const set = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el && val && !el.value) el.value = val;
+                };
+                set('id_endereco', data.logradouro);
+                set('id_bairro', data.bairro);
+                set('id_cidade', data.localidade);
+                set('id_estado', data.uf);
+            })
+            .catch(err => console.warn('ViaCEP indisponível:', err));
+    });
+});
+</script>
 {% endblock %}
 

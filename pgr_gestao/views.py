@@ -1,11 +1,12 @@
 """
 Views completas para o módulo PGR.
 
-Refatorado (Sprint 5E):
+Refatorado (Sprint 5E + Fix bug Avaliação Quantitativa):
   - PGRBaseMixin / PGRTecnicoBaseMixin (consolidam SSTPermissionMixin + ViewFilialScopedMixin + TecnicoScopeMixin)
   - PGRRequestFormKwargsMixin (DRY para forms filtrados)
   - FBVs protegidas com @funcionario_required + @permission_required
   - Filtro por filial em TODAS as operações de anexos
+  - Removida classe duplicada AvaliacaoQuantitativaForm que sobrescrevia o form importado
 """
 import json
 import openpyxl
@@ -21,7 +22,9 @@ from django.db.models.functions import TruncMonth
 from django.http import JsonResponse, HttpResponse
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import (
+    ListView, DetailView, CreateView, UpdateView, DeleteView,
+)
 from django.views.decorators.http import require_POST
 from django.forms import inlineformset_factory
 
@@ -113,6 +116,7 @@ def _get_filial_info(request):
 
 class ClienteAutocomplete(autocomplete.Select2QuerySetView):
     """Autocomplete de clientes — exige autenticação."""
+
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Cliente.objects.none()
@@ -362,6 +366,11 @@ class PGRDocumentoListView(PGRTecnicoBaseMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['empresas'] = Empresa.objects.for_request(self.request).filter(ativo=True)
         context['status_choices'] = STATUS_PGR_CHOICES
+        queryset = self.get_queryset()
+
+        context['total_documentos'] = queryset.count()
+        context['docs_vigentes'] = queryset.filter(status='vigente').count()
+
         return context
 
 
@@ -814,6 +823,10 @@ class RiscoIdentificadoDeleteView(PGRBaseMixin, DeleteView):
 # =============================================================================
 # AVALIAÇÕES QUANTITATIVAS
 # =============================================================================
+# 🔧 BUG FIX: Removida classe duplicada `AvaliacaoQuantitativaForm` que sobrescrevia
+# o form importado de .forms. Agora usa apenas as views Create/Update/List/Detail/Delete
+# que referenciam corretamente o form importado.
+# =============================================================================
 
 class AvaliacaoQuantitativaListView(PGRTecnicoBaseMixin, ListView):
     model = AvaliacaoQuantitativa
@@ -866,8 +879,9 @@ class AvaliacaoQuantitativaDetailView(PGRBaseMixin, DetailView):
 
 class AvaliacaoQuantitativaCreateView(PGRBaseMixin, PGRRequestFormKwargsMixin, FilialCreateMixin, CreateView):
     model = AvaliacaoQuantitativa
-    form_class = AvaliacaoQuantitativaForm
+    form_class = AvaliacaoQuantitativaForm  # ✅ Agora referencia o FORM correto
     template_name = 'pgr_gestao/avaliacao_form.html'
+    context_object_name = 'avaliacao'
     permission_required = 'pgr_gestao.add_avaliacaoquantitativa'
 
     def get_initial(self):
@@ -902,7 +916,7 @@ class AvaliacaoQuantitativaCreateView(PGRBaseMixin, PGRRequestFormKwargsMixin, F
 
 class AvaliacaoQuantitativaUpdateView(PGRBaseMixin, PGRRequestFormKwargsMixin, UpdateView):
     model = AvaliacaoQuantitativa
-    form_class = AvaliacaoQuantitativaForm
+    form_class = AvaliacaoQuantitativaForm  # ✅ Corrigido (estava referenciando o MODEL)
     template_name = 'pgr_gestao/avaliacao_form.html'
     permission_required = 'pgr_gestao.change_avaliacaoquantitativa'
 
@@ -1116,6 +1130,30 @@ def concluir_plano_acao(request, pk):
     return render(request, 'pgr_gestao/plano_acao_concluir.html', {'plano': plano})
 
 
+@funcionario_required
+@permission_required('pgr_gestao.change_planoacaopgr', raise_exception=True)
+def adicionar_anexo_plano(request, pk):
+    """Adiciona anexo a um plano de ação."""
+    plano = get_object_or_404(PlanoAcaoPGR.objects.for_request(request), pk=pk)
+
+    if request.method == 'POST':
+        nome = request.POST.get('nome_arquivo')
+        arquivo = request.FILES.get('arquivo')
+
+        if nome and arquivo:
+            AnexoPlanoAcao.objects.create(
+                plano_acao=plano,
+                nome_arquivo=nome,
+                arquivo=arquivo,
+                criado_por=request.user
+            )
+            messages.success(request, 'Anexo adicionado com sucesso!')
+        else:
+            messages.error(request, 'Preencha todos os campos.')
+
+    return redirect('pgr_gestao:plano_acao_detail', pk=pk)
+
+
 # =============================================================================
 # CRONOGRAMA DE AÇÕES
 # =============================================================================
@@ -1245,6 +1283,7 @@ class CronogramaAcaoDeleteView(PGRBaseMixin, DeleteView):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = 'Excluir Ação'
         context['mensagem'] = f"Confirma exclusão da ação '{self.object.acao_necessaria}'?"
+        context['pgr_documento'] = self.object.pgr_documento
         return context
 
     def delete(self, request, *args, **kwargs):
@@ -1276,30 +1315,6 @@ def atualizar_status_acao(request, pk):
             messages.error(request, 'Status inválido!')
 
     return redirect('pgr_gestao:cronograma_detail', pk=pk)
-
-
-@funcionario_required
-@permission_required('pgr_gestao.change_planoacaopgr', raise_exception=True)
-def adicionar_anexo_plano(request, pk):
-    """Adiciona anexo a um plano de ação."""
-    plano = get_object_or_404(PlanoAcaoPGR.objects.for_request(request), pk=pk)
-
-    if request.method == 'POST':
-        nome = request.POST.get('nome_arquivo')
-        arquivo = request.FILES.get('arquivo')
-
-        if nome and arquivo:
-            AnexoPlanoAcao.objects.create(
-                plano_acao=plano,
-                nome_arquivo=nome,
-                arquivo=arquivo,
-                criado_por=request.user
-            )
-            messages.success(request, 'Anexo adicionado com sucesso!')
-        else:
-            messages.error(request, 'Preencha todos os campos.')
-
-    return redirect('pgr_gestao:plano_acao_detail', pk=pk)
 
 
 # =============================================================================
@@ -1364,6 +1379,67 @@ class ProfissionalResponsavelDeleteView(PGRBaseMixin, DeleteView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = f'Confirmar Exclusão: {self.object.nome_completo}'
         context['cancel_url'] = reverse_lazy('pgr_gestao:profissional_list')
+        return context
+
+
+# =============================================================================
+# LOCAL DE PRESTAÇÃO DE SERVIÇOS
+# =============================================================================
+
+class LocalPrestacaoCreateView(PGRBaseMixin, FilialCreateMixin, CreateView):
+    model = LocalPrestacaoServico
+    form_class = LocalPrestacaoServicoForm
+    template_name = 'pgr_gestao/local_prestacao_form.html'
+    permission_required = 'pgr_gestao.add_localprestacaoservico'
+
+    def form_valid(self, form):
+        # FilialCreateMixin já seta a filial, então só usamos o save padrão.
+        messages.success(self.request, 'Local de Prestação cadastrado com sucesso!')
+        response = super().form_valid(form)
+
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'id': self.object.id,
+                'razao_social': self.object.razao_social,
+            })
+        return response
+
+    def form_invalid(self, form):
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+        return super().form_invalid(form)
+
+    def get_initial(self):
+        initial = super().get_initial()
+        empresa_id = self.request.GET.get('empresa')
+        if empresa_id:
+            initial['empresa'] = get_object_or_404(
+                Empresa.objects.for_request(self.request), pk=empresa_id
+            )
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Novo Local de Prestação'
+        return context
+
+    def get_success_url(self):
+        return reverse_lazy('pgr_gestao:empresa_detail', kwargs={'pk': self.object.empresa.pk})
+
+
+class LocalPrestacaoUpdateView(PGRBaseMixin, UpdateView):
+    model = LocalPrestacaoServico
+    form_class = LocalPrestacaoServicoForm
+    template_name = 'pgr_gestao/local_prestacao_form.html'
+    permission_required = 'pgr_gestao.change_localprestacaoservico'
+
+    def get_success_url(self):
+        return reverse_lazy('pgr_gestao:empresa_detail', kwargs={'pk': self.object.empresa.pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Editar Local de Prestação'
         return context
 
 
@@ -1963,67 +2039,6 @@ def exportar_cronograma_acoes(request, pk):
     filename = f"Cronograma_PGR_{documento.codigo_documento}.xlsx"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
-
-
-# =============================================================================
-# LOCAL DE PRESTAÇÃO DE SERVIÇOS
-# =============================================================================
-
-class LocalPrestacaoCreateView(PGRBaseMixin, FilialCreateMixin, CreateView):
-    model = LocalPrestacaoServico
-    form_class = LocalPrestacaoServicoForm
-    template_name = 'pgr_gestao/local_prestacao_form.html'
-    permission_required = 'pgr_gestao.add_localprestacaoservico'
-
-    def form_valid(self, form):
-        # FilialCreateMixin já seta a filial, então só usamos o save padrão.
-        messages.success(self.request, 'Local de Prestação cadastrado com sucesso!')
-        response = super().form_valid(form)
-
-        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': True,
-                'id': self.object.id,
-                'razao_social': self.object.razao_social,
-            })
-        return response
-
-    def form_invalid(self, form):
-        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-        return super().form_invalid(form)
-
-    def get_initial(self):
-        initial = super().get_initial()
-        empresa_id = self.request.GET.get('empresa')
-        if empresa_id:
-            initial['empresa'] = get_object_or_404(
-                Empresa.objects.for_request(self.request), pk=empresa_id
-            )
-        return initial
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Novo Local de Prestação'
-        return context
-
-    def get_success_url(self):
-        return reverse_lazy('pgr_gestao:empresa_detail', kwargs={'pk': self.object.empresa.pk})
-
-
-class LocalPrestacaoUpdateView(PGRBaseMixin, UpdateView):
-    model = LocalPrestacaoServico
-    form_class = LocalPrestacaoServicoForm
-    template_name = 'pgr_gestao/local_prestacao_form.html'
-    permission_required = 'pgr_gestao.change_localprestacaoservico'
-
-    def get_success_url(self):
-        return reverse_lazy('pgr_gestao:empresa_detail', kwargs={'pk': self.object.empresa.pk})
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Editar Local de Prestação'
-        return context
 
 
 # =============================================================================

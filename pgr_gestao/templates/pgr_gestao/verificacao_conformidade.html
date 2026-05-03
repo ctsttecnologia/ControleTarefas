@@ -1,5 +1,5 @@
 <!-- Página de Verificação de Conformidade do PGR -->
-{% extends 'pgr_gestao/base.html' %}
+{% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
 {% block title %}Verificação de Conformidade - {{ documento.codigo_documento }}{% endblock %}
@@ -11,46 +11,95 @@
 {% endblock %}
 
 {% block extra_css %}
+
 <style>
-    /* ═══ CHECKLIST ═══ */
+    /* ═══════════════════════════════════════════════════════════════
+       Verificação de Conformidade — CSS ADAPTATIVO (claro/escuro)
+       Usa variáveis globais: --bs-primary, --surface-*, --bs-border-color
+    ═══════════════════════════════════════════════════════════════ */
+
+    /* ═══ CHECKLIST ITEMS ═══ */
     .checklist-item {
         padding: 1.25rem;
-        border-left: 4px solid #6c757d;
+        border-left: 4px solid var(--bs-border-color);
         margin-bottom: 1rem;
-        background-color: #f8f9fa;
+        background-color: var(--surface-subtle);
         border-radius: 0 0.5rem 0.5rem 0;
-        transition: all 0.3s;
+        color: var(--bs-body-color);
+        transition: all 0.3s ease;
     }
-    .checklist-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    .checklist-item.conforme      { border-left-color: #28a745; background-color: #d4edda; }
-    .checklist-item.nao-conforme  { border-left-color: #dc3545; background-color: #f8d7da; }
-    .checklist-item.parcial       { border-left-color: #ffc107; background-color: #fff3cd; }
 
-    .checklist-item h5 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .checklist-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transform: translateX(2px);
+    }
 
-    .status-badge { font-size: 0.85rem; padding: 0.3rem 0.85rem; border-radius: 50rem; }
+    /* Estados de conformidade — usa cores semânticas com transparência */
+    .checklist-item.conforme {
+        border-left-color: #28a745;
+        background-color: rgba(40, 167, 69, 0.08);
+    }
 
-    /* ═══ SECTION HEADER ═══ */
+    .checklist-item.nao-conforme {
+        border-left-color: #dc3545;
+        background-color: rgba(220, 53, 69, 0.08);
+    }
+
+    .checklist-item.parcial {
+        border-left-color: #ffc107;
+        background-color: rgba(255, 193, 7, 0.08);
+    }
+
+    .checklist-item h5 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--text-strong);
+    }
+
+    /* ═══ STATUS BADGE ═══ */
+    .status-badge {
+        font-size: 0.85rem;
+        padding: 0.3rem 0.85rem;
+        border-radius: 50rem;
+    }
+
+    /* ═══ SECTION HEADER — usa cor primária do tema ═══ */
     .section-header {
-        background: linear-gradient(135deg, #003366 0%, #0066cc 100%);
-        color: white;
+        background: linear-gradient(135deg,
+            var(--bs-primary) 0%,
+            var(--bs-primary-hover) 100%);
+        color: #ffffff;
         padding: 1rem 1.5rem;
         border-radius: 0.625rem 0.625rem 0 0;
         margin-top: 2rem;
     }
-    .section-header h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 0; }
-    .section-header small { opacity: 0.8; }
 
-    /* ═══ SUMMARY ═══ */
+    .section-header h3 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 0;
+        color: #ffffff;
+    }
+
+    .section-header small {
+        opacity: 0.85;
+    }
+
+    /* ═══ SUMMARY CARD ═══ */
     .conformidade-summary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: linear-gradient(135deg,
+            var(--bs-primary) 0%,
+            var(--bs-primary-hover) 100%);
+        color: #ffffff;
         padding: 2rem;
         border-radius: 1rem;
         margin-bottom: 2rem;
         position: relative;
         overflow: hidden;
+        box-shadow: 0 8px 24px rgba(var(--bs-primary-rgb), 0.25);
     }
+
     .conformidade-summary::after {
         content: '';
         position: absolute;
@@ -58,42 +107,65 @@
         right: -8%;
         width: 250px;
         height: 250px;
-        background: rgba(255,255,255,0.06);
+        background: rgba(255, 255, 255, 0.08);
         border-radius: 50%;
         pointer-events: none;
     }
-    .conformidade-summary h1 { position: relative; }
-    .conformidade-summary h2 { position: relative; }
 
-    /* ═══ NR REFERENCE ═══ */
+    .conformidade-summary h1,
+    .conformidade-summary h2 {
+        position: relative;
+        color: #ffffff;
+    }
+
+    .conformidade-summary .bg-white.bg-opacity-25 {
+        background-color: rgba(255, 255, 255, 0.18) !important;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    /* ═══ NR REFERENCE BOX ═══ */
     .nr-reference {
-        background-color: #e7f3ff;
+        background-color: rgba(var(--bs-primary-rgb), 0.08);
         padding: 0.75rem 1rem;
-        border-left: 3px solid #0066cc;
+        border-left: 3px solid var(--bs-primary);
         margin: 0.75rem 0;
         font-size: 0.85rem;
+        color: var(--bs-body-color);
         border-radius: 0 0.375rem 0.375rem 0;
         line-height: 1.6;
     }
 
-    /* ═══ ACTION NEEDED ═══ */
+    .nr-reference strong {
+        color: var(--text-strong);
+    }
+
+    /* ═══ ACTION NEEDED BOX ═══ */
     .action-needed {
-        background-color: #fff3cd;
+        background-color: rgba(255, 193, 7, 0.12);
         padding: 0.75rem 1rem;
         border-left: 3px solid #ffc107;
         margin-top: 0.75rem;
         border-radius: 0 0.375rem 0.375rem 0;
+        color: var(--bs-body-color);
     }
-    .action-needed .btn { margin-top: 0.5rem; }
 
-    /* ═══ CHART ═══ */
+    .action-needed strong {
+        color: var(--text-strong);
+    }
+
+    .action-needed .btn {
+        margin-top: 0.5rem;
+    }
+
+    /* ═══ CHART WRAPPER ═══ */
     .chart-wrapper {
         position: relative;
         height: 300px;
         width: 100%;
     }
 
-    /* ═══ LINK ACTION ═══ */
+    /* ═══ ACTION LINKS ═══ */
     .action-link {
         display: inline-flex;
         align-items: center;
@@ -101,27 +173,119 @@
         font-size: 0.82rem;
         font-weight: 600;
         margin-top: 0.5rem;
+        text-decoration: none;
+        transition: opacity 0.2s ease;
     }
 
-    /* ═══ DARK MODE ═══ */
-    [data-bs-theme="dark"] .checklist-item { background-color: rgba(255,255,255,0.03); }
-    [data-bs-theme="dark"] .checklist-item.conforme { background-color: rgba(40,167,69,0.1); }
-    [data-bs-theme="dark"] .checklist-item.nao-conforme { background-color: rgba(220,53,69,0.1); }
-    [data-bs-theme="dark"] .checklist-item.parcial { background-color: rgba(255,193,7,0.1); }
-    [data-bs-theme="dark"] .nr-reference { background-color: rgba(0,102,204,0.1); }
-    [data-bs-theme="dark"] .action-needed { background-color: rgba(255,193,7,0.1); }
+    .action-link:hover {
+        opacity: 0.8;
+        text-decoration: underline;
+    }
 
-    /* ═══ PRINT ═══ */
+    /* ═══════════════════════════════════════════════════════════════
+       AJUSTES TEMA ESCURO
+    ═══════════════════════════════════════════════════════════════ */
+    [data-bs-theme="dark"] .checklist-item {
+        background-color: var(--surface-subtle);
+        border-color: var(--bs-border-color);
+    }
+
+    [data-bs-theme="dark"] .checklist-item.conforme {
+        background-color: rgba(40, 167, 69, 0.12);
+    }
+
+    [data-bs-theme="dark"] .checklist-item.nao-conforme {
+        background-color: rgba(220, 53, 69, 0.12);
+    }
+
+    [data-bs-theme="dark"] .checklist-item.parcial {
+        background-color: rgba(255, 193, 7, 0.10);
+    }
+
+    [data-bs-theme="dark"] .checklist-item:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-bs-theme="dark"] .nr-reference {
+        background-color: rgba(var(--bs-primary-rgb), 0.12);
+        color: var(--text-soft);
+    }
+
+    [data-bs-theme="dark"] .action-needed {
+        background-color: rgba(255, 193, 7, 0.10);
+        color: var(--text-soft);
+    }
+
+    [data-bs-theme="dark"] .conformidade-summary {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    /* List-group items adaptativos no escuro */
+    [data-bs-theme="dark"] .list-group-item-danger {
+        background-color: rgba(220, 53, 69, 0.15);
+        color: #ea868f;
+        border-color: rgba(220, 53, 69, 0.3);
+    }
+
+    [data-bs-theme="dark"] .list-group-item-warning {
+        background-color: rgba(255, 193, 7, 0.12);
+        color: #ffda6a;
+        border-color: rgba(255, 193, 7, 0.3);
+    }
+
+    [data-bs-theme="dark"] .list-group-item-info {
+        background-color: rgba(var(--bs-primary-rgb), 0.12);
+        color: #6edff6;
+        border-color: rgba(var(--bs-primary-rgb), 0.3);
+    }
+
+    /* Alerts no escuro (caso global.css ainda não cubra) */
+    [data-bs-theme="dark"] .alert-warning {
+        background-color: rgba(255, 193, 7, 0.12);
+        border-color: rgba(255, 193, 7, 0.3);
+        color: #ffda6a;
+    }
+
+    [data-bs-theme="dark"] .alert-success {
+        background-color: rgba(40, 167, 69, 0.12);
+        border-color: rgba(40, 167, 69, 0.3);
+        color: #75b798;
+    }
+
+    /* Card header info no escuro */
+    [data-bs-theme="dark"] .card-header.bg-info {
+        background-color: var(--bs-primary) !important;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       IMPRESSÃO
+    ═══════════════════════════════════════════════════════════════ */
     @media print {
-        .no-print { display: none !important; }
-        .card { break-inside: avoid; border: 1px solid #ddd !important; box-shadow: none !important; }
-        .conformidade-summary, .section-header {
+        .no-print {
+            display: none !important;
+        }
+
+        .card {
+            break-inside: avoid;
+            border: 1px solid #ddd !important;
+            box-shadow: none !important;
+        }
+
+        .conformidade-summary,
+        .section-header {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
+
         .checklist-item.conforme,
         .checklist-item.nao-conforme,
         .checklist-item.parcial {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .nr-reference,
+        .action-needed {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -133,15 +297,15 @@
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-start">
         <div>
-            <h1><i class="fas fa-check-circle"></i> Verificação de Conformidade NR-01</h1>
+            <h1><i class="bi bi-check-circle"></i> Verificação de Conformidade NR-01</h1>
             <p class="mb-0">{{ documento.codigo_documento }} - {{ documento.empresa.razao_social }}</p>
         </div>
         <div class="btn-group">
             <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Voltar
+                <i class="bi bi-arrow-left"></i> Voltar
             </a>
             <button onclick="window.print()" class="btn btn-info">
-                <i class="fas fa-print"></i> Imprimir
+                <i class="bi bi-print"></i> Imprimir
             </button>
         </div><!-- ✅ FIX: era </div sem > -->
     </div>
@@ -153,7 +317,7 @@
 <div class="conformidade-summary">
     <div class="row align-items-center">
         <div class="col-md-8">
-            <h2><i class="fas fa-clipboard-check"></i> Resumo da Conformidade</h2>
+            <h2><i class="bi bi-clipboard-check"></i> Resumo da Conformidade</h2>
             <p class="mb-0">Avaliação baseada nos requisitos da NR-01 (Portaria SEPRT nº 6.730/2020)</p>
         </div>
         <div class="col-md-4 text-center">
@@ -172,19 +336,19 @@
         <div class="col-md-3 text-center">
             <div class="bg-white bg-opacity-25 rounded p-3">
                 <h3 class="mb-0">{{ itens_conformes }}</h3>
-                <small><i class="fas fa-check-circle me-1"></i>Conformes</small>
+                <small><i class="bi bi-check-circle me-1"></i>Conformes</small>
             </div>
         </div>
         <div class="col-md-3 text-center">
             <div class="bg-white bg-opacity-25 rounded p-3">
                 <h3 class="mb-0">{{ itens_parciais }}</h3>
-                <small><i class="fas fa-exclamation-circle me-1"></i>Parcialmente</small>
+                <small><i class="bi bi-exclamation-circle me-1"></i>Parcialmente</small>
             </div>
         </div>
         <div class="col-md-3 text-center">
             <div class="bg-white bg-opacity-25 rounded p-3">
                 <h3 class="mb-0">{{ itens_nao_conformes }}</h3>
-                <small><i class="fas fa-times-circle me-1"></i>Não Conformes</small>
+                <small><i class="bi bi-times-circle me-1"></i>Não Conformes</small>
             </div>
         </div>
     </div>
@@ -195,7 +359,7 @@
 <!-- ═══════════════════════════════════════════ -->
 <div class="card mb-4 no-print">
     <div class="card-header">
-        <i class="fas fa-chart-bar"></i> Conformidade por Seção
+        <i class="bi bi-bar-chart"></i> Conformidade por Seção
     </div>
     <div class="card-body">
         <!-- ✅ FIX: wrapper com position relative + height fixa -->
@@ -210,7 +374,7 @@
 <!-- ═══════════════════════════════════════════ -->
 <div class="card mb-4">
     <div class="section-header">
-        <h3><i class="fas fa-cogs"></i> 1. GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO)</h3>
+        <h3><i class="bi bi-cogs"></i> 1. GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO)</h3>
         <small>NR-01, item 1.5</small>
     </div>
     <div class="card-body">
@@ -220,9 +384,9 @@
             <div class="flex-grow-1">
                 <h5>
                     {% if checklist.pgr_implementado %}
-                    <i class="fas fa-check-circle text-success"></i>
+                    <i class="bi bi-check-circle text-success"></i>
                     {% else %}
-                    <i class="fas fa-times-circle text-danger"></i>
+                    <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
                     1.1 Programa de Gerenciamento de Riscos (PGR) Implementado
                 </h5>
@@ -237,16 +401,16 @@
                     <br><small class="text-muted">PGR implementado e vigente desde {{ documento.data_elaboracao|date:"d/m/Y" }}</small>
                     <br>
                     <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="action-link text-success">
-                        <i class="fas fa-eye"></i> Ver documento PGR
+                        <i class="bi bi-eye"></i> Ver documento PGR
                     </a>
                     {% else %}
                     <span class="badge bg-danger status-badge">NÃO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Implementar o Programa de Gerenciamento de Riscos conforme requisitos da NR-01.
                         <br>
                         <a href="{% url 'pgr_gestao:documento_create' %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="fas fa-plus-circle me-1"></i> Criar Documento PGR
+                            <i class="bi bi-plus-circle me-1"></i> Criar Documento PGR
                         </a>
                     </div>
                     {% endif %}
@@ -259,11 +423,11 @@
             <div class="flex-grow-1">
                 <h5>
                     {% if checklist.riscos_identificados %}
-                    <i class="fas fa-check-circle text-success"></i>
+                    <i class="bi bi-check-circle text-success"></i>
                     {% elif checklist.riscos_parcial %}
-                    <i class="fas fa-exclamation-circle text-warning"></i>
+                    <i class="bi bi-exclamation-circle text-warning"></i>
                     {% else %}
-                    <i class="fas fa-times-circle text-danger"></i>
+                    <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
                     1.2 Identificação de Perigos e Avaliação de Riscos
                 </h5>
@@ -278,27 +442,27 @@
                     <br><small class="text-muted">{{ total_riscos }} riscos identificados e avaliados</small>
                     <br>
                     <a href="{% url 'pgr_gestao:risco_list' %}" class="action-link text-success">
-                        <i class="fas fa-list"></i> Ver inventário de riscos ({{ total_riscos }})
+                        <i class="bi bi-list"></i> Ver inventário de riscos ({{ total_riscos }})
                     </a>
                     {% elif checklist.riscos_parcial %}
                     <span class="badge bg-warning status-badge">PARCIALMENTE CONFORME</span>
                     <br><small class="text-muted">{{ total_riscos }} riscos identificados, mas algumas avaliações pendentes</small>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Completar avaliações quantitativas dos riscos críticos e muito graves.
                         <br>
                         <a href="{% url 'pgr_gestao:risco_list' %}" class="btn btn-sm btn-warning mt-2">
-                            <i class="fas fa-edit me-1"></i> Revisar Riscos Pendentes
+                            <i class="bi bi-edit me-1"></i> Revisar Riscos Pendentes
                         </a>
                     </div>
                     {% else %}
                     <span class="badge bg-danger status-badge">NÃO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Realizar levantamento e identificação de riscos ocupacionais.
                         <br>
                         <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="fas fa-plus-circle me-1"></i> Cadastrar Riscos
+                            <i class="bi bi-plus-circle me-1"></i> Cadastrar Riscos
                         </a>
                     </div>
                     {% endif %}
@@ -311,9 +475,9 @@
             <div class="flex-grow-1">
                 <h5>
                     {% if checklist.ges_definidos %}
-                    <i class="fas fa-check-circle text-success"></i>
+                    <i class="bi bi-check-circle text-success"></i>
                     {% else %}
-                    <i class="fas fa-times-circle text-danger"></i>
+                    <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
                     1.3 Grupos de Exposição Similar (GES) Definidos
                 </h5>
@@ -329,16 +493,16 @@
                     <br><small class="text-muted">{{ total_ges }} GES definidos e caracterizados</small>
                     <br>
                     <a href="{% url 'pgr_gestao:ges_list' %}" class="action-link text-success">
-                        <i class="fas fa-users"></i> Ver GES cadastrados ({{ total_ges }})
+                        <i class="bi bi-users"></i> Ver GES cadastrados ({{ total_ges }})
                     </a>
                     {% else %}
                     <span class="badge bg-danger status-badge">NÃO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Definir Grupos de Exposição Similar para os trabalhadores.
                         <br>
                         <a href="{% url 'pgr_gestao:ges_create' %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="fas fa-plus-circle me-1"></i> Cadastrar GES
+                            <i class="bi bi-plus-circle me-1"></i> Cadastrar GES
                         </a>
                     </div>
                     {% endif %}
@@ -351,11 +515,11 @@
             <div class="flex-grow-1">
                 <h5>
                     {% if checklist.plano_acao_existe %}
-                    <i class="fas fa-check-circle text-success"></i>
+                    <i class="bi bi-check-circle text-success"></i>
                     {% elif checklist.plano_acao_parcial %}
-                    <i class="fas fa-exclamation-circle text-warning"></i>
+                    <i class="bi bi-exclamation-circle text-warning"></i>
                     {% else %}
-                    <i class="fas fa-times-circle text-danger"></i>
+                    <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
                     1.4 Plano de Ação para Riscos Identificados
                 </h5>
@@ -370,32 +534,32 @@
                     <br><small class="text-muted">{{ total_planos_acao }} planos de ação criados</small>
                     <br>
                     <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="action-link text-success">
-                        <i class="fas fa-tasks"></i> Ver planos de ação ({{ total_planos_acao }})
+                        <i class="bi bi-tasks"></i> Ver planos de ação ({{ total_planos_acao }})
                     </a>
                     {% elif checklist.plano_acao_parcial %}
                     <span class="badge bg-warning status-badge">PARCIALMENTE CONFORME</span>
                     <br><small class="text-muted">Planos de ação existentes, mas {{ riscos_sem_plano }} riscos sem plano</small>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Criar planos de ação para todos os riscos críticos e muito graves identificados.
                         <br>
                         <div class="d-flex gap-2 flex-wrap">
                             <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="btn btn-sm btn-outline-warning mt-2">
-                                <i class="fas fa-list me-1"></i> Ver Planos Existentes
+                                <i class="bi bi-list me-1"></i> Ver Planos Existentes
                             </a>
                             <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-warning mt-2">
-                                <i class="fas fa-plus-circle me-1"></i> Criar Plano de Ação
+                                <i class="bi bi-plus-circle me-1"></i> Criar Plano de Ação
                             </a>
                         </div>
                     </div>
                     {% else %}
                     <span class="badge bg-danger status-badge">NÃO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Elaborar planos de ação para controle dos riscos identificados.
                         <br>
                         <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="fas fa-plus-circle me-1"></i> Criar Plano de Ação
+                            <i class="bi bi-plus-circle me-1"></i> Criar Plano de Ação
                         </a>
                     </div>
                     {% endif %}
@@ -410,7 +574,7 @@
 <!-- ═══════════════════════════════════════════ -->
 <div class="card mb-4">
     <div class="section-header">
-        <h3><i class="fas fa-shield-alt"></i> 2. MEDIDAS DE PREVENÇÃO</h3>
+        <h3><i class="bi bi-shield-alt"></i> 2. MEDIDAS DE PREVENÇÃO</h3>
         <small>NR-01, item 1.4</small>
     </div>
     <div class="card-body">
@@ -420,11 +584,11 @@
             <div class="flex-grow-1">
                 <h5>
                     {% if checklist.hierarquia_controles %}
-                    <i class="fas fa-check-circle text-success"></i>
+                    <i class="bi bi-check-circle text-success"></i>
                     {% elif checklist.hierarquia_parcial %}
-                    <i class="fas fa-exclamation-circle text-warning"></i>
+                    <i class="bi bi-exclamation-circle text-warning"></i>
                     {% else %}
-                    <i class="fas fa-times-circle text-danger"></i>
+                    <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
                     2.1 Hierarquia de Medidas de Prevenção
                 </h5>
@@ -450,21 +614,21 @@
                     <span class="badge bg-warning status-badge">PARCIALMENTE CONFORME</span>
                     <br><small class="text-muted">Alguns controles implementados, mas priorização pode melhorar</small>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Revisar medidas de controle seguindo a hierarquia de prevenção.
                         <br>
                         <a href="{% url 'pgr_gestao:risco_list' %}" class="btn btn-sm btn-warning mt-2">
-                            <i class="fas fa-edit me-1"></i> Revisar Controles
+                            <i class="bi bi-edit me-1"></i> Revisar Controles
                         </a>
                     </div>
                     {% else %}
                     <span class="badge bg-danger status-badge">NÃO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Implementar medidas de controle seguindo a hierarquia de prevenção.
                         <br>
                         <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="fas fa-plus-circle me-1"></i> Criar Plano de Ação
+                            <i class="bi bi-plus-circle me-1"></i> Criar Plano de Ação
                         </a>
                     </div>
                     {% endif %}
@@ -477,9 +641,9 @@
             <div class="flex-grow-1">
                 <h5>
                     {% if checklist.epi_definidos %}
-                    <i class="fas fa-check-circle text-success"></i>
+                    <i class="bi bi-check-circle text-success"></i>
                     {% else %}
-                    <i class="fas fa-times-circle text-danger"></i>
+                    <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
                     2.2 Equipamentos de Proteção Individual (EPI)
                 </h5>
@@ -495,24 +659,24 @@
                     <br>
                     <div class="d-flex gap-2 flex-wrap">
                         <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="action-link text-success">
-                            <i class="fas fa-hard-hat"></i> Catálogo de EPIs
+                            <i class="bi bi-hard-hat"></i> Catálogo de EPIs
                         </a>
                         <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="action-link text-success ms-3">
-                            <i class="fas fa-th"></i> Matriz de EPIs
+                            <i class="bi bi-th"></i> Matriz de EPIs
                         </a>
                     </div>
                     {% else %}
                     <span class="badge bg-danger status-badge">NÃO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Especificar EPIs adequados para os riscos que não podem ser eliminados ou controlados.
                         <br>
                         <div class="d-flex gap-2 flex-wrap">
                             <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="btn btn-sm btn-outline-danger mt-2">
-                                <i class="fas fa-hard-hat me-1"></i> Catálogo de EPIs
+                                <i class="bi bi-hard-hat me-1"></i> Catálogo de EPIs
                             </a>
                             <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="btn btn-sm btn-danger mt-2">
-                                <i class="fas fa-th me-1"></i> Configurar Matriz de EPIs
+                                <i class="bi bi-th me-1"></i> Configurar Matriz de EPIs
                             </a>
                         </div>
                     </div>
@@ -528,7 +692,7 @@
 <!-- ═══════════════════════════════════════════ -->
 <div class="card mb-4">
     <div class="section-header">
-        <h3><i class="fas fa-graduation-cap"></i> 3. CAPACITAÇÃO E TREINAMENTO</h3>
+        <h3><i class="bi bi-graduation-cap"></i> 3. CAPACITAÇÃO E TREINAMENTO</h3>
         <small>NR-01, item 1.7</small>
     </div>
     <div class="card-body">
@@ -538,9 +702,9 @@
             <div class="flex-grow-1">
                 <h5>
                     {% if checklist.cronograma_treinamentos %}
-                    <i class="fas fa-check-circle text-success"></i>
+                    <i class="bi bi-check-circle text-success"></i>
                     {% else %}
-                    <i class="fas fa-times-circle text-danger"></i>
+                    <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
                     3.1 Cronograma de Capacitações
                 </h5>
@@ -556,20 +720,20 @@
                     <br>
                     <div class="d-flex gap-2 flex-wrap">
                         <a href="{% url 'treinamentos:treinamento_list' %}" class="action-link text-success">
-                            <i class="fas fa-list"></i> Lista de Treinamentos
+                            <i class="bi bi-list"></i> Lista de Treinamentos
                         </a>
                         <a href="{% url 'treinamentos:dashboard' %}" class="action-link text-success ms-3">
-                            <i class="fas fa-chart-pie"></i> Dashboard de Treinamentos
+                            <i class="bi bi-chart-pie"></i> Dashboard de Treinamentos
                         </a>
                     </div>
                     {% else %}
                     <span class="badge bg-danger status-badge">NÃO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Estabelecer cronograma de capacitações previstas na NR-01 e demais NRs aplicáveis.
                         <br>
                         <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="fas fa-plus-circle me-1"></i> Criar Treinamento
+                            <i class="bi bi-plus-circle me-1"></i> Criar Treinamento
                         </a>
                     </div>
                     {% endif %}
@@ -584,7 +748,7 @@
 <!-- ═══════════════════════════════════════════ -->
 <div class="card mb-4">
     <div class="section-header">
-        <h3><i class="fas fa-folder-open"></i> 4. DOCUMENTAÇÃO E REGISTROS</h3>
+        <h3><i class="bi bi-folder-open"></i> 4. DOCUMENTAÇÃO E REGISTROS</h3>
         <small>NR-01, item 1.6</small>
     </div>
     <div class="card-body">
@@ -594,9 +758,9 @@
             <div class="flex-grow-1">
                 <h5>
                     {% if checklist.inventario_riscos %}
-                    <i class="fas fa-check-circle text-success"></i>
+                    <i class="bi bi-check-circle text-success"></i>
                     {% else %}
-                    <i class="fas fa-times-circle text-danger"></i>
+                    <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
                     4.1 Inventário de Riscos Ocupacionais
                 </h5>
@@ -613,22 +777,22 @@
                     <br>
                     <div class="d-flex gap-2 flex-wrap">
                         <a href="{% url 'pgr_gestao:risco_list' %}" class="action-link text-success">
-                            <i class="fas fa-list-alt"></i> Ver Inventário de Riscos
+                            <i class="bi bi-list-alt"></i> Ver Inventário de Riscos
                         </a>
                         {% if pode_exportar_excel %}
                         <a href="{% url 'pgr_gestao:inventario_excel' documento.pk %}" class="action-link text-success ms-3">
-                            <i class="fas fa-file-excel"></i> Exportar Excel
+                            <i class="bi bi-file-excel"></i> Exportar Excel
                         </a>
                         {% endif %}
                     </div>
                     {% else %}
                     <span class="badge bg-danger status-badge">NÃO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Elaborar inventário completo de riscos ocupacionais.
                         <br>
                         <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="fas fa-plus-circle me-1"></i> Iniciar Inventário
+                            <i class="bi bi-plus-circle me-1"></i> Iniciar Inventário
                         </a>
                     </div>
                     {% endif %}
@@ -641,9 +805,9 @@
             <div class="flex-grow-1">
                 <h5>
                     {% if checklist.responsavel_tecnico %}
-                    <i class="fas fa-check-circle text-success"></i>
+                    <i class="bi bi-check-circle text-success"></i>
                     {% else %}
-                    <i class="fas fa-times-circle text-danger"></i>
+                    <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
                     4.2 Responsável Técnico pela Elaboração
                 </h5>
@@ -658,16 +822,16 @@
                     <br><small class="text-muted">Responsável(is) técnico(s) identificado(s) e qualificado(s)</small>
                     <br>
                     <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="action-link text-success">
-                        <i class="fas fa-user-tie"></i> Ver dados do responsável técnico
+                        <i class="bi bi-person-lines-fill"></i> Ver dados do responsável técnico
                     </a>
                     {% else %}
                     <span class="badge bg-danger status-badge">NÃO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Designar responsável técnico habilitado para elaboração do PGR.
                         <br>
                         <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="fas fa-edit me-1"></i> Editar Documento PGR
+                            <i class="bi bi-edit me-1"></i> Editar Documento PGR
                         </a>
                     </div>
                     {% endif %}
@@ -680,11 +844,11 @@
             <div class="flex-grow-1">
                 <h5>
                     {% if checklist.data_revisao %}
-                    <i class="fas fa-check-circle text-success"></i>
+                    <i class="bi bi-check-circle text-success"></i>
                     {% elif checklist.revisao_proxima %}
-                    <i class="fas fa-exclamation-circle text-warning"></i>
+                    <i class="bi bi-exclamation-circle text-warning"></i>
                     {% else %}
-                    <i class="fas fa-times-circle text-danger"></i>
+                    <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
                     4.3 Data e Periodicidade de Revisão
                 </h5>
@@ -700,27 +864,27 @@
                     <br><small class="text-muted">Próxima revisão prevista para {{ documento.data_vencimento|date:"d/m/Y" }}</small>
                     <br>
                     <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="action-link text-success">
-                        <i class="fas fa-calendar-check"></i> Ver cronograma do documento
+                        <i class="bi bi-calendar-check"></i> Ver cronograma do documento
                     </a>
                     {% elif checklist.revisao_proxima %}
                     <span class="badge bg-warning status-badge">ATENÇÃO</span>
                     <br><small class="text-warning">Revisão próxima ao vencimento ({{ documento.dias_para_vencimento }} dias)</small>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Planejar e executar revisão do PGR antes do vencimento.
                         <br>
                         <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-sm btn-warning mt-2">
-                            <i class="fas fa-sync-alt me-1"></i> Iniciar Revisão do PGR
+                            <i class="bi bi-sync-alt me-1"></i> Iniciar Revisão do PGR
                         </a>
                     </div>
                     {% else %}
                     <span class="badge bg-danger status-badge">NÃO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         PGR vencido. Realizar revisão imediatamente.
                         <br>
                         <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="fas fa-sync-alt me-1"></i> Revisar PGR Agora
+                            <i class="bi bi-sync-alt me-1"></i> Revisar PGR Agora
                         </a>
                     </div>
                     {% endif %}
@@ -743,9 +907,9 @@
             <div class="flex-grow-1">
                 <h5>
                     {% if checklist.cronograma_acoes %}
-                    <i class="fas fa-check-circle text-success"></i>
+                    <i class="bi bi-check-circle text-success"></i>
                     {% else %}
-                    <i class="fas fa-times-circle text-danger"></i>
+                    <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
                     5.1 Cronograma das Ações Preventivas
                 </h5>
@@ -761,20 +925,20 @@
                     <br>
                     <div class="d-flex gap-2 flex-wrap">
                         <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="action-link text-success">
-                            <i class="fas fa-tasks"></i> Ver Planos de Ação ({{ total_cronograma_acoes }})
+                            <i class="bi bi-tasks"></i> Ver Planos de Ação ({{ total_cronograma_acoes }})
                         </a>
                         <a href="{% url 'pgr_gestao:relatorio_planos_acao' %}" class="action-link text-success ms-3">
-                            <i class="fas fa-chart-bar"></i> Relatório de Planos
+                            <i class="bi bi-chart-bar"></i> Relatório de Planos
                         </a>
                     </div>
                     {% else %}
                     <span class="badge bg-danger status-badge">NÃO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
                         Elaborar cronograma anual de ações preventivas.
                         <br>
                         <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="fas fa-plus-circle me-1"></i> Criar Plano de Ação
+                            <i class="bi bi-plus-circle me-1"></i> Criar Plano de Ação
                         </a>
                     </div>
                     {% endif %}
@@ -789,12 +953,12 @@
 <!-- ═══════════════════════════════════════════ -->
 <div class="card mb-4">
     <div class="card-header bg-info text-white">
-        <h3 class="mb-0"><i class="fas fa-lightbulb"></i> Recomendações e Próximos Passos</h3>
+        <h3 class="mb-0"><i class="bi bi-lightbulb"></i> Recomendações e Próximos Passos</h3>
     </div>
     <div class="card-body">
         {% if itens_nao_conformes > 0 or itens_parciais > 0 %}
         <div class="alert alert-warning">
-            <h5><i class="fas fa-exclamation-triangle"></i> Atenção!</h5>
+            <h5><i class="bi bi-exclamation-triangle"></i> Atenção!</h5>
             <p>Foram identificadas <strong>{{ itens_nao_conformes }} não conformidades</strong>
             {% if itens_parciais > 0 %}e <strong>{{ itens_parciais }} conformidades parciais</strong>{% endif %}
             que requerem ação imediata.</p>
@@ -809,7 +973,7 @@
                     Implementar o Programa de Gerenciamento de Riscos
                 </div>
                 <a href="{% url 'pgr_gestao:documento_create' %}" class="btn btn-sm btn-danger">
-                    <i class="fas fa-plus-circle me-1"></i> Criar PGR
+                    <i class="bi bi-plus-circle me-1"></i> Criar PGR
                 </a>
             </div>
             {% endif %}
@@ -821,7 +985,7 @@
                     Realizar levantamento e avaliação de riscos ocupacionais
                 </div>
                 <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-sm btn-outline-danger">
-                    <i class="fas fa-plus-circle me-1"></i> Cadastrar Riscos
+                    <i class="bi bi-plus-circle me-1"></i> Cadastrar Riscos
                 </a>
             </div>
             {% endif %}
@@ -833,7 +997,7 @@
                     Elaborar planos de ação para riscos identificados
                 </div>
                 <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-outline-warning">
-                    <i class="fas fa-plus-circle me-1"></i> Criar Plano
+                    <i class="bi bi-plus-circle me-1"></i> Criar Plano
                 </a>
             </div>
             {% endif %}
@@ -845,7 +1009,7 @@
                     Designar responsável técnico habilitado
                 </div>
                 <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-sm btn-outline-info">
-                    <i class="fas fa-edit me-1"></i> Editar PGR
+                    <i class="bi bi-edit me-1"></i> Editar PGR
                 </a>
             </div>
             {% endif %}
@@ -857,7 +1021,7 @@
                     Elaborar cronograma anual de ações preventivas
                 </div>
                 <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-outline-info">
-                    <i class="fas fa-plus-circle me-1"></i> Criar Plano
+                    <i class="bi bi-plus-circle me-1"></i> Criar Plano
                 </a>
             </div>
             {% endif %}
@@ -869,7 +1033,7 @@
                     Estabelecer cronograma de capacitações
                 </div>
                 <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-sm btn-outline-info">
-                    <i class="fas fa-plus-circle me-1"></i> Criar Treinamento
+                    <i class="bi bi-plus-circle me-1"></i> Criar Treinamento
                 </a>
             </div>
             {% endif %}
@@ -881,7 +1045,7 @@
                     Especificar EPIs adequados para riscos residuais
                 </div>
                 <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="btn btn-sm btn-outline-secondary">
-                    <i class="fas fa-th me-1"></i> Matriz EPIs
+                    <i class="bi bi-th me-1"></i> Matriz EPIs
                 </a>
             </div>
             {% endif %}
@@ -889,19 +1053,19 @@
 
         {% else %}
         <div class="alert alert-success">
-            <h5><i class="fas fa-check-circle"></i> Parabéns!</h5>
+            <h5><i class="bi bi-check-circle"></i> Parabéns!</h5>
             <p>O PGR está <strong>100% conforme</strong> aos requisitos da NR-01.</p>
             <p class="mb-0">Continue mantendo a documentação atualizada e revisando periodicamente conforme estabelecido.</p>
         </div>
         <div class="d-flex gap-2 flex-wrap mt-3">
             <a href="{% url 'pgr_gestao:dashboard' %}" class="btn btn-outline-success">
-                <i class="fas fa-tachometer-alt me-1"></i> Dashboard PGR
+                <i class="bi bi-tachometer-alt me-1"></i> Dashboard PGR
             </a>
             <a href="{% url 'pgr_gestao:relatorio_planos_acao' %}" class="btn btn-outline-primary">
-                <i class="fas fa-chart-bar me-1"></i> Relatórios
+                <i class="bi bi-chart-bar me-1"></i> Relatórios
             </a>
             <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="btn btn-outline-info">
-                <i class="fas fa-file-alt me-1"></i> Ver Documento
+                <i class="bi bi-file-alt me-1"></i> Ver Documento
             </a>
         </div>
         {% endif %}
@@ -925,6 +1089,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('chartConformidade');
     if (!ctx) return;
 
+    // 🆕 Detecta tema atual e cores do CSS
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const rootStyles = getComputedStyle(document.documentElement);
+    const textColor = rootStyles.getPropertyValue('--bs-body-color').trim();
+    const borderColor = rootStyles.getPropertyValue('--bs-border-color').trim();
+    const mutedColor = rootStyles.getPropertyValue('--bs-text-muted').trim();
+
     const dados = [
         {{ checklist.percentual_gro|default:"0" }},
         {{ checklist.percentual_prevencao|default:"0" }},
@@ -941,23 +1112,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 label: 'Conformidade (%)',
                 data: dados,
                 backgroundColor: dados.map(v => {
-                    if (v >= 90) return '#28a745';
-                    if (v >= 70) return '#ffc107';
-                    return '#dc3545';
+                    if (v >= 90) return isDark ? '#75b798' : '#28a745';
+                    if (v >= 70) return isDark ? '#ffda6a' : '#ffc107';
+                    return isDark ? '#ea868f' : '#dc3545';
                 }),
                 borderRadius: 6,
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,  // ✅ FIX
+            maintainAspectRatio: false,
             scales: {
                 y: {
                     beginAtZero: true,
                     max: 100,
                     ticks: {
+                        color: mutedColor,
                         callback: function(value) { return value + '%'; }
-                    }
+                    },
+                    grid: { color: borderColor }
+                },
+                x: {
+                    ticks: { color: mutedColor },
+                    grid: { color: borderColor }
                 }
             },
             plugins: {
@@ -973,5 +1150,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
 
 

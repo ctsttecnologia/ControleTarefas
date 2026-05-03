@@ -1,5 +1,5 @@
 
-{% extends 'pgr_gestao/base.html' %}
+{% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
 {% block title %}{{ risco.agente }} - Detalhes do Risco{% endblock %}
@@ -11,9 +11,9 @@
 
 {% block content %}
 <div class="page-header">
-    <div class="d-flex justify-content-between align-items-start">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div>
-            <h1><i class="fas fa-exclamation-triangle"></i> Detalhes do Risco</h1>
+            <h1><i class="bi bi-exclamation-triangle"></i> Detalhes do Risco</h1>
             <p class="mb-0">
                 <span class="badge badge-risco-{{ risco.classificacao_risco }}">
                     {{ risco.get_classificacao_risco_display }}
@@ -24,26 +24,24 @@
         <div class="btn-group">
             {% if perms.pgr_gestao.change_riscoidentificado %}
             <a href="{% url 'pgr_gestao:risco_update' risco.pk %}" class="btn btn-warning">
-                <i class="fas fa-edit"></i> Editar
+                <i class="bi bi-pencil-square"></i> Editar
             </a>
             {% endif %}
             <a href="{% url 'pgr_gestao:plano_acao_create' %}?risco={{ risco.pk }}" class="btn btn-success">
-                <i class="fas fa-tasks"></i> Criar Plano de Ação
+                <i class="bi bi-list-task"></i> Criar Plano de Ação
             </a>
             <a href="{% url 'pgr_gestao:avaliacao_create_risco' risco.pk %}" class="btn btn-info">
-                <i class="fas fa-chart-line"></i> Nova Avaliação
+                <i class="bi bi-graph-up"></i> Nova Avaliação
             </a>
         </div>
     </div>
 </div>
 
-<!-- Informações Principais -->
-<div class="row mb-4">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-info-circle"></i> Identificação do Risco
-            </div>
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Identificação -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-info-circle"></i> Identificação do Risco</div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
@@ -55,19 +53,19 @@
                         <p><strong>Meio de Propagação:</strong> {{ risco.meio_propagacao|default:"N/A" }}</p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Documento PGR:</strong> 
+                        <p><strong>Documento PGR:</strong>
                             <a href="{% url 'pgr_gestao:documento_detail' risco.pgr_documento.pk %}">
                                 {{ risco.pgr_documento.codigo_documento }}
                             </a>
                         </p>
-                        <p><strong>GES:</strong> 
+                        <p><strong>GES:</strong>
                             {% if risco.ges %}
                             <a href="{% url 'pgr_gestao:ges_detail' risco.ges.pk %}">{{ risco.ges.nome }}</a>
                             {% else %}N/A{% endif %}
                         </p>
                         <p><strong>Cargo:</strong> {{ risco.cargo.nome|default:"N/A" }}</p>
                         <p><strong>Perfil de Exposição:</strong> {{ risco.get_perfil_exposicao_display }}</p>
-                        <p><strong>Status de Controle:</strong> 
+                        <p><strong>Status de Controle:</strong>
                             {% if risco.status_controle == 'controlado' %}
                             <span class="badge bg-success">{{ risco.get_status_controle_display }}</span>
                             {% elif risco.status_controle == 'em_controle' %}
@@ -101,37 +99,35 @@
         </div>
 
         <!-- Matriz de Avaliação -->
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-table"></i> Matriz de Avaliação de Risco
-            </div>
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-grid-3x3-gap"></i> Matriz de Avaliação de Risco</div>
             <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-3">
-                        <div class="border rounded p-3 mb-2">
+                <div class="row text-center g-3">
+                    <div class="col-md-3 col-6">
+                        <div class="matriz-fator-box">
                             <h6>Gravidade (G)</h6>
-                            <h2 class="text-primary">{{ risco.gravidade_g }}</h2>
+                            <h2>{{ risco.gravidade_g }}</h2>
                             <small class="text-muted">{{ risco.get_gravidade_g_display|default:"N/A" }}</small>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="border rounded p-3 mb-2">
+                    <div class="col-md-3 col-6">
+                        <div class="matriz-fator-box">
                             <h6>Exposição (E)</h6>
-                            <h2 class="text-primary">{{ risco.exposicao_e }}</h2>
+                            <h2>{{ risco.exposicao_e }}</h2>
                             <small class="text-muted">{{ risco.get_exposicao_e_display|default:"N/A" }}</small>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="border rounded p-3 mb-2">
+                    <div class="col-md-3 col-6">
+                        <div class="matriz-fator-box">
                             <h6>Severidade (S)</h6>
-                            <h2 class="text-primary">{{ risco.severidade_s }}</h2>
+                            <h2>{{ risco.severidade_s }}</h2>
                             <small class="text-muted">Tabela 4 e 5</small>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="border rounded p-3 mb-2">
+                    <div class="col-md-3 col-6">
+                        <div class="matriz-fator-box">
                             <h6>Probabilidade (P)</h6>
-                            <h2 class="text-primary">{{ risco.probabilidade_p }}</h2>
+                            <h2>{{ risco.probabilidade_p }}</h2>
                             <small class="text-muted">{{ risco.get_probabilidade_p_display|default:"N/A" }}</small>
                         </div>
                     </div>
@@ -144,7 +140,7 @@
                             {{ risco.get_classificacao_risco_display }}
                         </span>
                     </h2>
-                    <p class="text-muted">
+                    <p class="text-muted mb-0">
                         <strong>Prioridade de Ação:</strong>
                         <span class="badge bg-{{ risco.prioridade_acao }}">
                             {{ risco.get_prioridade_acao_display }}
@@ -156,11 +152,10 @@
     </div>
 
     <!-- Sidebar -->
-    <div class="col-md-4">
-        <!-- Status -->
+    <div class="col-lg-4">
         <div class="card mb-3">
             <div class="card-header bg-primary text-white">
-                <i class="fas fa-chart-pie"></i> Status Geral
+                <i class="bi bi-pie-chart"></i> Status Geral
             </div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
@@ -175,24 +170,21 @@
                     <span>Planos de Ação:</span>
                     <strong>{{ planos_acao.count }}</strong>
                 </div>
-                <div class="d-flex justify-content-between mb-2">
+                <div class="d-flex justify-content-between">
                     <span>Medidas de Controle:</span>
                     <strong>{{ medidas_controle.count }}</strong>
                 </div>
             </div>
         </div>
 
-        <!-- EPIs Recomendados -->
         {% if epis_recomendados %}
         <div class="card mb-3">
-            <div class="card-header">
-                <i class="fas fa-hard-hat"></i> EPIs Recomendados
-            </div>
+            <div class="card-header"><i class="bi bi-shield-shaded"></i> EPIs Recomendados</div>
             <div class="card-body">
-                <ul class="list-unstyled">
+                <ul class="list-unstyled mb-0">
                     {% for epi in epis_recomendados %}
                     <li class="mb-2">
-                        <i class="fas fa-check-circle text-success"></i>
+                        <i class="bi bi-check-circle-fill text-success"></i>
                         {{ epi.equipamento.nome }}
                         {% if epi.ca_numero %}
                         <br><small class="text-muted">CA: {{ epi.ca_numero }}</small>
@@ -204,17 +196,14 @@
         </div>
         {% endif %}
 
-        <!-- Treinamentos Necessários -->
         {% if treinamentos_necessarios %}
         <div class="card">
-            <div class="card-header">
-                <i class="fas fa-graduation-cap"></i> Treinamentos Necessários
-            </div>
+            <div class="card-header"><i class="bi bi-mortarboard"></i> Treinamentos Necessários</div>
             <div class="card-body">
-                <ul class="list-unstyled">
+                <ul class="list-unstyled mb-0">
                     {% for treinamento in treinamentos_necessarios %}
                     <li class="mb-2">
-                        <i class="fas fa-book text-info"></i>
+                        <i class="bi bi-book-fill text-info"></i>
                         {{ treinamento.tipo_curso.nome }}
                     </li>
                     {% endfor %}
@@ -225,40 +214,40 @@
     </div>
 </div>
 
-<!-- Tabs: Avaliações, Medidas de Controle, Planos de Ação -->
+<!-- Tabs -->
 <ul class="nav nav-tabs mb-3" id="riscoTabs" role="tablist">
     <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="avaliacoes-tab" data-bs-toggle="tab" data-bs-target="#avaliacoes" type="button">
-            <i class="fas fa-chart-line"></i> Avaliações ({{ avaliacoes.count }})
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#avaliacoes" type="button">
+            <i class="bi bi-graph-up"></i> Avaliações ({{ avaliacoes.count }})
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="medidas-tab" data-bs-toggle="tab" data-bs-target="#medidas" type="button">
-            <i class="fas fa-shield-alt"></i> Medidas de Controle ({{ medidas_controle.count }})
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#medidas" type="button">
+            <i class="bi bi-shield-check"></i> Medidas de Controle ({{ medidas_controle.count }})
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="planos-tab" data-bs-toggle="tab" data-bs-target="#planos" type="button">
-            <i class="fas fa-tasks"></i> Planos de Ação ({{ planos_acao.count }})
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#planos" type="button">
+            <i class="bi bi-list-task"></i> Planos de Ação ({{ planos_acao.count }})
         </button>
     </li>
 </ul>
 
-<div class="tab-content" id="riscoTabsContent">
-    <!-- Tab Avaliações -->
+<div class="tab-content">
+    <!-- Avaliações -->
     <div class="tab-pane fade show active" id="avaliacoes" role="tabpanel">
         <div class="card">
             <div class="card-header d-flex justify-content-between">
                 <span>Avaliações Quantitativas</span>
                 <a href="{% url 'pgr_gestao:avaliacao_create_risco' risco.pk %}" class="btn btn-sm btn-primary">
-                    <i class="fas fa-plus"></i> Nova Avaliação
+                    <i class="bi bi-plus-lg"></i> Nova Avaliação
                 </a>
             </div>
             <div class="card-body">
                 {% if avaliacoes %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
                                 <th>Tipo</th>
                                 <th>Data</th>
@@ -289,20 +278,20 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center py-4">Nenhuma avaliação quantitativa registrada.</p>
+                <p class="text-muted text-center py-4 mb-0">Nenhuma avaliação quantitativa registrada.</p>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Tab Medidas de Controle -->
+    <!-- Medidas -->
     <div class="tab-pane fade" id="medidas" role="tabpanel">
         <div class="card">
             <div class="card-body">
                 {% if medidas_controle %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
                                 <th>Tipo</th>
                                 <th>Medida de Controle</th>
@@ -313,18 +302,14 @@
                         <tbody>
                             {% for medida in medidas_controle %}
                             <tr>
-                                <td>
-                                    <span class="badge bg-info">
-                                        {{ medida.medida_controle.get_tipo_display }}
-                                    </span>
-                                </td>
+                                <td><span class="badge bg-info">{{ medida.medida_controle.get_tipo_display }}</span></td>
                                 <td>{{ medida.medida_controle.descricao }}</td>
                                 <td>{{ medida.medida_controle.prioridade }}°</td>
                                 <td>
                                     {% if medida.implementada %}
-                                    <i class="fas fa-check-circle text-success"></i> Sim
+                                    <i class="bi bi-check-circle-fill text-success"></i> Sim
                                     {% else %}
-                                    <i class="fas fa-times-circle text-danger"></i> Não
+                                    <i class="bi bi-x-circle-fill text-danger"></i> Não
                                     {% endif %}
                                 </td>
                             </tr>
@@ -333,26 +318,26 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center py-4">Nenhuma medida de controle específica cadastrada.</p>
+                <p class="text-muted text-center py-4 mb-0">Nenhuma medida de controle específica cadastrada.</p>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Tab Planos de Ação -->
+    <!-- Planos -->
     <div class="tab-pane fade" id="planos" role="tabpanel">
         <div class="card">
             <div class="card-header d-flex justify-content-between">
                 <span>Planos de Ação para este Risco</span>
                 <a href="{% url 'pgr_gestao:plano_acao_create' %}?risco={{ risco.pk }}" class="btn btn-sm btn-success">
-                    <i class="fas fa-plus"></i> Novo Plano
+                    <i class="bi bi-plus-lg"></i> Novo Plano
                 </a>
             </div>
             <div class="card-body">
                 {% if planos_acao %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
                                 <th>Descrição</th>
                                 <th>Tipo</th>
@@ -367,29 +352,19 @@
                             {% for plano in planos_acao %}
                             <tr>
                                 <td>{{ plano.descricao_acao|truncatewords:10 }}</td>
-                                <td>
-                                    <span class="badge bg-secondary">{{ plano.get_tipo_acao_display }}</span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-{{ plano.prioridade }}">
-                                        {{ plano.get_prioridade_display }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-{{ plano.status }}">
-                                        {{ plano.get_status_display }}
-                                    </span>
-                                </td>
+                                <td><span class="badge bg-secondary">{{ plano.get_tipo_acao_display }}</span></td>
+                                <td><span class="badge bg-{{ plano.prioridade }}">{{ plano.get_prioridade_display }}</span></td>
+                                <td><span class="badge bg-{{ plano.status }}">{{ plano.get_status_display }}</span></td>
                                 <td>
                                     {{ plano.data_prevista|date:"d/m/Y" }}
                                     {% if plano.esta_atrasado %}
-                                    <br><small class="text-danger">ATRASADO</small>
+                                    <br><small class="text-danger fw-bold">ATRASADO</small>
                                     {% endif %}
                                 </td>
                                 <td>{{ plano.responsavel }}</td>
                                 <td class="text-center">
-                                    <a href="{% url 'pgr_gestao:plano_acao_detail' plano.pk %}" class="btn btn-sm btn-info">
-                                        <i class="fas fa-eye"></i>
+                                    <a href="{% url 'pgr_gestao:plano_acao_detail' plano.pk %}" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-eye"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -398,13 +373,11 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center py-4">Nenhum plano de ação criado para este risco.</p>
+                <p class="text-muted text-center py-4 mb-0">Nenhum plano de ação criado para este risco.</p>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
-
-
 

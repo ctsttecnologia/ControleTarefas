@@ -388,9 +388,14 @@ body.has-submenu {
 }
 
 [data-bs-theme="dark"] .form-control,
-[data-bs-theme="dark"] .form-select {
+[data-bs-theme="dark"] .form-select option {
+    background-color: var(--surface-elevated);
     color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .form-select {
     background-color: var(--surface-subtle);
+    color: var(--bs-body-color);
     border-color: var(--bs-border-color);
 }
 
@@ -913,3 +918,142 @@ body.has-submenu {
     color: var(--text-soft);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   25. 🆕 FIX FINAL: Selects e form-controls no tema escuro
+═══════════════════════════════════════════════════════════════════ */
+
+/* Selects nativos no tema escuro */
+[data-bs-theme="dark"] .form-select {
+    background-color: var(--surface-subtle);
+    color: var(--bs-body-color);
+    border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .form-select option {
+    background-color: var(--surface-elevated);
+    color: var(--bs-body-color);
+}
+
+/* Placeholder em selects e inputs */
+[data-bs-theme="dark"] .form-control::placeholder,
+[data-bs-theme="dark"] .form-select::placeholder {
+    color: var(--bs-text-muted);
+    opacity: 0.7;
+}
+
+/* Garante card-body adaptativo (caso algum tenha bg fixo) */
+.card-body {
+    color: var(--bs-body-color);
+}
+
+/* Help-box com cores adaptativas */
+[data-bs-theme="dark"] .help-box {
+    background-color: rgba(13, 202, 240, 0.08);
+    border-left-color: #0dcaf0;
+    color: var(--bs-body-color);
+}
+
+/* Step number inativo no tema escuro */
+[data-bs-theme="dark"] .step-number {
+    background-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .step-number.active {
+    background-color: var(--bs-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   26. 🆕 SELECT2 - Adaptação ao tema escuro
+═══════════════════════════════════════════════════════════════════ */
+
+/* ─── TEMA CLARO (padrão do Select2 já funciona) ─── */
+
+/* ─── TEMA ESCURO ─── */
+
+/* Caixa principal do select fechado */
+[data-bs-theme="dark"] .select2-container--default .select2-selection--single,
+[data-bs-theme="dark"] .select2-container--default .select2-selection--multiple {
+    background-color: var(--surface-subtle) !important;
+    border-color: var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+}
+
+/* Texto selecionado */
+[data-bs-theme="dark"] .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--bs-body-color) !important;
+}
+
+/* Placeholder */
+[data-bs-theme="dark"] .select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: var(--bs-text-muted) !important;
+}
+
+/* Seta do select */
+[data-bs-theme="dark"] .select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border-color: var(--bs-body-color) transparent transparent transparent !important;
+}
+
+/* Dropdown que abre (popup) */
+[data-bs-theme="dark"] .select2-dropdown {
+    background-color: var(--surface-elevated) !important;
+    border-color: var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+}
+
+/* Campo de busca DENTRO do dropdown */
+[data-bs-theme="dark"] .select2-container--default .select2-search--dropdown .select2-search__field {
+    background-color: var(--surface-subtle) !important;
+    border-color: var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+}
+
+/* Lista de resultados */
+[data-bs-theme="dark"] .select2-results__options {
+    background-color: var(--surface-elevated) !important;
+    color: var(--bs-body-color) !important;
+}
+
+/* Cada opção */
+[data-bs-theme="dark"] .select2-container--default .select2-results__option {
+    background-color: transparent !important;
+    color: var(--bs-body-color) !important;
+}
+
+/* Opção em hover/highlight */
+[data-bs-theme="dark"] .select2-container--default .select2-results__option--highlighted[aria-selected],
+[data-bs-theme="dark"] .select2-container--default .select2-results__option--highlighted {
+    background-color: var(--bs-primary) !important;
+    color: #fff !important;
+}
+
+/* Opção selecionada */
+[data-bs-theme="dark"] .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: var(--bs-primary-bg-subtle) !important;
+    color: var(--bs-body-color) !important;
+}
+
+/* Mensagem "Please enter 1 or more characters" */
+[data-bs-theme="dark"] .select2-container--default .select2-results__option--disabled,
+[data-bs-theme="dark"] .select2-container--default .select2-results__message {
+    color: var(--bs-text-muted) !important;
+    background-color: transparent !important;
+}
+
+/* Multi-select (tags) */
+[data-bs-theme="dark"] .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: var(--bs-primary) !important;
+    border-color: var(--bs-primary) !important;
+    color: #fff !important;
+}
+
+[data-bs-theme="dark"] .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #fff !important;
+}
+
+/* Foco / quando aberto */
+[data-bs-theme="dark"] .select2-container--default.select2-container--focus .select2-selection--single,
+[data-bs-theme="dark"] .select2-container--default.select2-container--focus .select2-selection--multiple,
+[data-bs-theme="dark"] .select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--bs-primary) !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}

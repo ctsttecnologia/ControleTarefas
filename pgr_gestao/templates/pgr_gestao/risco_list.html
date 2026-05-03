@@ -1,5 +1,5 @@
 
-{% extends 'pgr_gestao/base.html' %}
+{% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
 {% block title %}Riscos Identificados{% endblock %}
@@ -8,24 +8,24 @@
 <li class="breadcrumb-item active">Riscos Identificados</li>
 {% endblock %}
 
-{% block content %}
+{% block pgr_content %}
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-center">
         <div>
-            <h1><i class="fas fa-exclamation-triangle"></i> Riscos Identificados</h1>
+            <h1><i class="bi bi-exclamation-triangle"></i> Riscos Identificados</h1>
             <p class="mb-0">Inventário de Riscos Ocupacionais</p>
         </div>
         {% if perms.pgr_gestao.add_riscoidentificado %}
-        <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-primary btn-lg">
-            <i class="fas fa-plus"></i> Novo Risco
+        <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-light btn-lg">
+            <i class="bi bi-plus-lg"></i> Novo Risco
         </a>
         {% endif %}
     </div>
 </div>
 
 <!-- Estatísticas Rápidas -->
-<div class="row mb-4">
-    <div class="col-md-3">
+<div class="row mb-4 g-3">
+    <div class="col-md-3 col-6">
         <div class="card stats-card text-center">
             <div class="card-body">
                 <h3>{{ total_riscos }}</h3>
@@ -33,7 +33,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3 col-6">
         <div class="card stats-card danger text-center">
             <div class="card-body">
                 <h3 class="text-danger">{{ riscos_criticos }}</h3>
@@ -41,7 +41,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3 col-6">
         <div class="card stats-card success text-center">
             <div class="card-body">
                 <h3 class="text-success">{{ riscos_controlados }}</h3>
@@ -49,10 +49,10 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3 col-6">
         <div class="card stats-card warning text-center">
             <div class="card-body">
-                <h3 class="text-warning">{{ total_riscos|add:"-"|add:riscos_controlados }}</h3>
+                <h3 class="text-warning">{{ riscos_pendentes|default:0 }}</h3>
                 <small class="text-muted">Pendentes</small>
             </div>
         </div>
@@ -62,7 +62,7 @@
 <!-- Filtros -->
 <div class="card mb-4">
     <div class="card-header">
-        <i class="fas fa-filter"></i> Filtros de Pesquisa
+        <i class="bi bi-funnel"></i> Filtros de Pesquisa
     </div>
     <div class="card-body">
         <form method="get" class="row g-3">
@@ -111,12 +111,12 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">Buscar</label>
-                <input type="text" name="search" class="form-control" placeholder="Agente, fonte..." 
+                <input type="text" name="search" class="form-control" placeholder="Agente, fonte..."
                        value="{{ request.GET.search }}">
             </div>
             <div class="col-md-1 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-search"></i>
+                    <i class="bi bi-search"></i>
                 </button>
             </div>
         </form>
@@ -126,17 +126,15 @@
 <!-- Tabela de Riscos -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="fas fa-list"></i> Lista de Riscos</span>
-        <div>
-            <a href="{% url 'pgr_gestao:risco_list' %}?export=excel" class="btn btn-sm btn-success">
-                <i class="fas fa-file-excel"></i> Exportar Excel
-            </a>
-        </div>
+        <span><i class="bi bi-list-ul"></i> Lista de Riscos</span>
+        <a href="{% url 'pgr_gestao:risco_list' %}?export=excel" class="btn btn-sm btn-success">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </a>
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover table-sm">
-                <thead>
+            <table class="table table-hover table-sm table-clickable align-middle">
+                <thead class="table-light">
                     <tr>
                         <th>Código</th>
                         <th>Tipo</th>
@@ -146,30 +144,22 @@
                         <th>Classificação</th>
                         <th>Status</th>
                         <th>Prioridade</th>
-                        <th>G</th>
-                        <th>E</th>
-                        <th>S</th>
-                        <th>P</th>
+                        <th class="text-center">G</th>
+                        <th class="text-center">E</th>
+                        <th class="text-center">S</th>
+                        <th class="text-center">P</th>
                         <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for risco in riscos %}
-                    <tr onclick="window.location='{% url 'pgr_gestao:risco_detail' risco.pk %}'" style="cursor: pointer;">
+                    <tr onclick="window.location='{% url 'pgr_gestao:risco_detail' risco.pk %}'">
                         <td><strong>{{ risco.codigo_risco|default:"N/A" }}</strong></td>
-                        <td>
-                            <span class="badge bg-secondary">
-                                {{ risco.tipo_risco.get_categoria_display }}
-                            </span>
-                        </td>
+                        <td><span class="badge bg-secondary">{{ risco.tipo_risco.get_categoria_display }}</span></td>
                         <td>{{ risco.agente|truncatewords:5 }}</td>
                         <td>{{ risco.fonte_geradora|default:"-"|truncatewords:5 }}</td>
                         <td>{{ risco.ges.nome|default:"N/A"|truncatewords:3 }}</td>
-                        <td>
-                            <span class="badge badge-risco-{{ risco.classificacao_risco }}">
-                                {{ risco.get_classificacao_risco_display }}
-                            </span>
-                        </td>
+                        <td><span class="badge badge-risco-{{ risco.classificacao_risco }}">{{ risco.get_classificacao_risco_display }}</span></td>
                         <td>
                             {% if risco.status_controle == 'controlado' %}
                             <span class="badge bg-success">{{ risco.get_status_controle_display }}</span>
@@ -190,37 +180,37 @@
                             <span class="badge bg-secondary">{{ risco.get_prioridade_acao_display }}</span>
                             {% endif %}
                         </td>
-                        <td><small>{{ risco.gravidade_g }}</small></td>
-                        <td><small>{{ risco.exposicao_e }}</small></td>
-                        <td><small>{{ risco.severidade_s }}</small></td>
-                        <td><small>{{ risco.probabilidade_p }}</small></td>
+                        <td class="text-center"><small>{{ risco.gravidade_g }}</small></td>
+                        <td class="text-center"><small>{{ risco.exposicao_e }}</small></td>
+                        <td class="text-center"><small>{{ risco.severidade_s }}</small></td>
+                        <td class="text-center"><small>{{ risco.probabilidade_p }}</small></td>
                         <td class="text-center" onclick="event.stopPropagation();">
                             <div class="btn-group btn-group-sm">
-                                <a href="{% url 'pgr_gestao:risco_detail' risco.pk %}" 
-                                   class="btn btn-info" title="Visualizar">
-                                    <i class="fas fa-eye"></i>
+                                <a href="{% url 'pgr_gestao:risco_detail' risco.pk %}"
+                                   class="btn btn-outline-info" title="Visualizar">
+                                    <i class="bi bi-eye"></i>
                                 </a>
                                 {% if perms.pgr_gestao.change_riscoidentificado %}
-                                <a href="{% url 'pgr_gestao:risco_update' risco.pk %}" 
-                                   class="btn btn-warning" title="Editar">
-                                    <i class="fas fa-edit"></i>
+                                <a href="{% url 'pgr_gestao:risco_update' risco.pk %}"
+                                   class="btn btn-outline-warning" title="Editar">
+                                    <i class="bi bi-pencil-square"></i>
                                 </a>
                                 {% endif %}
-                                <a href="{% url 'pgr_gestao:plano_acao_create' %}?risco={{ risco.pk }}" 
-                                   class="btn btn-success" title="Criar Plano de Ação">
-                                    <i class="fas fa-tasks"></i>
+                                <a href="{% url 'pgr_gestao:plano_acao_create' %}?risco={{ risco.pk }}"
+                                   class="btn btn-outline-success" title="Criar Plano de Ação">
+                                    <i class="bi bi-list-task"></i>
                                 </a>
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="13" class="text-center text-muted py-5">
-                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <td colspan="13" class="text-center table-empty-state">
+                            <i class="bi bi-inbox d-block"></i>
                             <p>Nenhum risco identificado.</p>
                             {% if perms.pgr_gestao.add_riscoidentificado %}
                             <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Identificar Primeiro Risco
+                                <i class="bi bi-plus-lg"></i> Identificar Primeiro Risco
                             </a>
                             {% endif %}
                         </td>
@@ -237,7 +227,7 @@
                 {% if riscos.has_previous %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ riscos.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        <i class="fas fa-chevron-left"></i>
+                        <i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
                 {% endif %}
@@ -257,7 +247,7 @@
                 {% if riscos.has_next %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ riscos.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        <i class="fas fa-chevron-right"></i>
+                        <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>
                 {% endif %}

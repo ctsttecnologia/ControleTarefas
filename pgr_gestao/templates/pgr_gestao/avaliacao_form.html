@@ -1,104 +1,90 @@
+    {# Avaliação Quantitativa - Formulário de Criação/Edição (Final) #}
+    {% extends 'pgr_gestao/pgr_base.html' %}
+    {% load static %}
+    {% load widget_tweaks %}
 
-{% extends 'pgr_gestao/base.html' %}
-{% load static %}
-{% load widget_tweaks %}
+    {% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação Quantitativa{% endblock %}
 
-{% block title %}
-    {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação Quantitativa
-{% endblock %}
+    {% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">Avaliações</a></li>
+    {% if risco %}
+    <li class="breadcrumb-item">
+        <a href="{{ risco.get_absolute_url }}">{{ risco.codigo_risco|default:risco.agente }}</a>
+    </li>
+    {% endif %}
+    <li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %}</li>
+    {% endblock %}
 
-{% block breadcrumb_items %}
-<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">Riscos</a></li>
-{% if risco %}
-    <li class="breadcrumb-item"><a href="{{ risco.get_absolute_url }}">{{ risco.codigo_risco|default:risco.agente }}</a></li>
-{% endif %}
-<li class="breadcrumb-item active">
-    {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação
-</li>
-{% endblock %}
-
-{% block content %}
-<div class="page-header">
-    <h1>
-        <i class="fas fa-chart-line"></i>
-        {% if form.instance.pk %}
-            Editar Avaliação Quantitativa
-        {% else %}
-            Nova Avaliação Quantitativa
-        {% endif %}
-    </h1>
-    <p class="mb-0">
-        {% if risco %}
-            Para o risco: <strong>{{ risco.tipo_risco.nome }} - {{ risco.agente }}</strong>
-            {% if risco.codigo_risco %}({{ risco.codigo_risco }}){% endif %}
-        {% elif form.instance.pk and form.instance.risco_identificado %}
-            Para o risco: <strong>{{ form.instance.risco_identificado }}</strong>
-        {% else %}
-            Selecione o risco identificado no formulário abaixo
-        {% endif %}
-    </p>
-</div>
-
-<div class="card">
-    <div class="card-header bg-primary text-white">
-        <i class="fas fa-edit"></i> Formulário de Avaliação
-    </div>
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
-
-            {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-                {{ form.non_field_errors }}
+    {% block pgr_content %}
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+                <h1>
+                    <i class="bi bi-graph-up-arrow"></i>
+                    {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação Quantitativa
+                </h1>
+                <p class="mb-0">
+                    {% if risco %}
+                    Para o risco: <strong>{{ risco.tipo_risco.nome }} - {{ risco.agente }}</strong>
+                    {% if risco.codigo_risco %}<small class="text-muted">({{ risco.codigo_risco }})</small>{% endif %}
+                    {% elif form.instance.pk and form.instance.risco_identificado %}
+                    Para o risco: <strong>{{ form.instance.risco_identificado }}</strong>
+                    {% else %}
+                    Registro de medição e avaliação de risco
+                    {% endif %}
+                </p>
             </div>
-            {% endif %}
+            <a href="{% url 'pgr_gestao:avaliacao_list' %}" class="btn btn-light">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
 
-            <div class="row">
-                {# ══════ CAMPO RISCO ══════ #}
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.risco_identificado.id_for_label }}" class="form-label required-field">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <i class="bi bi-pencil-square"></i> Formulário de Avaliação
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+                <!-- IDENTIFICAÇÃO                              -->
+                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+                <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                    <i class="bi bi-card-heading"></i> Identificação
+                </h6>
+                <div class="row g-3 mb-4">
+                    <!-- Risco Identificado -->
+                    <div class="col-md-6">
+                        <label for="{{ form.risco_identificado.id_for_label }}" class="form-label fw-semibold required-field">
                             Risco Identificado
                         </label>
-
                         {% if risco %}
-                            {# Risco veio pela URL → mostra readonly + hidden #}
-                            <input type="text" class="form-control" 
-                                   value="{{ risco.tipo_risco.nome }} - {{ risco.agente }}" 
-                                   disabled>
-                            <input type="hidden" 
-                                   name="{{ form.risco_identificado.html_name }}" 
-                                   value="{{ risco.pk }}">
+                        <input type="text" class="form-control"
+                            value="{{ risco.tipo_risco.nome }} - {{ risco.agente }}" disabled>
+                        <input type="hidden" name="{{ form.risco_identificado.html_name }}" value="{{ risco.pk }}">
+                        <small class="text-muted">
+                            <i class="bi bi-lock-fill"></i> Risco pré-selecionado
+                        </small>
                         {% else %}
-                            {# Sem risco na URL → mostra o select com todos os riscos da filial #}
-                            {% render_field form.risco_identificado class="form-select" %}
+                        {% render_field form.risco_identificado class="form-select" %}
                         {% endif %}
-
                         {% if form.risco_identificado.errors %}
                         <div class="text-danger small mt-1">{{ form.risco_identificado.errors }}</div>
                         {% endif %}
                     </div>
-                </div>
 
-                {# ══════ DATA ══════ #}
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.data_avaliacao.id_for_label }}" class="form-label required-field">
-                            Data da Avaliação
-                        </label>
-                        {% render_field form.data_avaliacao class="form-control" type="date" %}
-                        {% if form.data_avaliacao.errors %}
-                        <div class="text-danger small mt-1">{{ form.data_avaliacao.errors }}</div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                {# ══════ TIPO DE AVALIAÇÃO ══════ #}
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.tipo_avaliacao.id_for_label }}" class="form-label required-field">
+                    <!-- Tipo de Avaliação -->
+                    <div class="col-md-3">
+                        <label for="{{ form.tipo_avaliacao.id_for_label }}" class="form-label fw-semibold required-field">
                             Tipo de Avaliação
                         </label>
                         {% render_field form.tipo_avaliacao class="form-select" %}
@@ -106,17 +92,34 @@
                         <div class="text-danger small mt-1">{{ form.tipo_avaliacao.errors }}</div>
                         {% endif %}
                     </div>
+
+                    <!-- Data da Avaliação -->
+                    <div class="col-md-3">
+                        <label for="{{ form.data_avaliacao.id_for_label }}" class="form-label fw-semibold required-field">
+                            Data da Avaliação
+                        </label>
+                        {% render_field form.data_avaliacao class="form-control" %}
+                        {% if form.data_avaliacao.errors %}
+                        <div class="text-danger small mt-1">{{ form.data_avaliacao.errors }}</div>
+                        {% endif %}
+                    </div>
                 </div>
 
-                {# ══════ RESULTADO + UNIDADE ══════ #}
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.resultado_medido.id_for_label }}" class="form-label required-field">
+                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+                <!-- MEDIÇÃO                                     -->
+                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+                <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                    <i class="bi bi-rulers"></i> Medição
+                </h6>
+                <div class="row g-3 mb-4">
+                    <!-- Resultado + Unidade -->
+                    <div class="col-md-5">
+                        <label for="{{ form.resultado_medido.id_for_label }}" class="form-label fw-semibold required-field">
                             Resultado Medido
                         </label>
                         <div class="input-group">
-                            {% render_field form.resultado_medido class="form-control" type="number" step="0.01" %}
-                            {% render_field form.unidade_medida class="form-select" style="max-width: 120px;" %}
+                            {% render_field form.resultado_medido class="form-control" %}
+                            {% render_field form.unidade_medida class="form-select" style="max-width: 140px;" %}
                         </div>
                         {% if form.resultado_medido.errors %}
                         <div class="text-danger small mt-1">{{ form.resultado_medido.errors }}</div>
@@ -125,31 +128,25 @@
                         <div class="text-danger small mt-1">{{ form.unidade_medida.errors }}</div>
                         {% endif %}
                     </div>
-                </div>
-            </div>
-            
-            <div class="row">
-                {# ══════ LIMITE TOLERÂNCIA ══════ #}
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ form.limite_tolerancia_nr.id_for_label }}" class="form-label">
+
+                    <!-- Limite de Tolerância -->
+                    <div class="col-md-4">
+                        <label for="{{ form.limite_tolerancia_nr.id_for_label }}" class="form-label fw-semibold">
                             Limite de Tolerância (NR)
                         </label>
-                        {% render_field form.limite_tolerancia_nr class="form-control" placeholder="Ex: 85 dB(A) para 8h" %}
+                        {% render_field form.limite_tolerancia_nr class="form-control" %}
                         {% if form.limite_tolerancia_nr.errors %}
                         <div class="text-danger small mt-1">{{ form.limite_tolerancia_nr.errors }}</div>
                         {% endif %}
                     </div>
-                </div>
 
-                {# ══════ CONFORMIDADE ══════ #}
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">Conformidade</label>
+                    <!-- Conformidade -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold d-block">Conformidade</label>
                         <div class="form-check form-switch mt-2">
-                            {% render_field form.conforme class="form-check-input" %}
+                            {% render_field form.conforme class="form-check-input" role="switch" %}
                             <label class="form-check-label" for="{{ form.conforme.id_for_label }}">
-                                Resultado está conforme os limites de tolerância?
+                                Está conforme?
                             </label>
                         </div>
                         {% if form.conforme.errors %}
@@ -157,53 +154,85 @@
                         {% endif %}
                     </div>
                 </div>
-            </div>
 
-            {# ══════ EQUIPAMENTO ══════ #}
-            <div class="mb-3">
-                <label for="{{ form.equipamento_utilizado.id_for_label }}" class="form-label">
-                    Equipamento Utilizado
-                </label>
-                {% render_field form.equipamento_utilizado class="form-control" placeholder="Ex: Dosímetro de Ruído, marca X, modelo Y, nº de série Z" %}
-                {% if form.equipamento_utilizado.errors %}
-                <div class="text-danger small mt-1">{{ form.equipamento_utilizado.errors }}</div>
-                {% endif %}
-            </div>
+                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+                <!-- METODOLOGIA E EQUIPAMENTO                   -->
+                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+                <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                    <i class="bi bi-tools"></i> Metodologia e Equipamento
+                </h6>
 
-            {# ══════ OBSERVAÇÕES ══════ #}
-            <div class="mb-3">
-                <label for="{{ form.observacoes.id_for_label }}" class="form-label">
-                    Observações
-                </label>
-                {% render_field form.observacoes class="form-control" rows="3" %}
-                {% if form.observacoes.errors %}
-                <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
-                {% endif %}
-            </div>
+                <!-- Metodologia Utilizada -->
+                <div class="mb-3">
+                    <label for="{{ form.metodologia_utilizada.id_for_label }}" class="form-label fw-semibold">
+                        Metodologia Utilizada
+                    </label>
+                    {% render_field form.metodologia_utilizada class="form-control" placeholder="Descreva a metodologia aplicada (NHO, FUNDACENTRO, NIOSH, etc.)" %}
+                    {% if form.metodologia_utilizada.errors %}
+                    <div class="text-danger small mt-1">{{ form.metodologia_utilizada.errors }}</div>
+                    {% endif %}
+                </div>
 
-            {# ══════ BOTÕES ══════ #}
-            <div class="d-flex justify-content-between mt-4">
-                {% if risco %}
-                    <a href="{{ risco.get_absolute_url }}" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancelar
+                <div class="row g-3 mb-4">
+                    <!-- Equipamento Utilizado -->
+                    <div class="col-md-7">
+                        <label for="{{ form.equipamento_utilizado.id_for_label }}" class="form-label fw-semibold">
+                            Equipamento Utilizado
+                        </label>
+                        {% render_field form.equipamento_utilizado class="form-control" %}
+                        {% if form.equipamento_utilizado.errors %}
+                        <div class="text-danger small mt-1">{{ form.equipamento_utilizado.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Responsável pela Avaliação -->
+                    <div class="col-md-5">
+                        <label for="{{ form.responsavel_avaliacao.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-person-badge"></i> Responsável pela Avaliação
+                        </label>
+                        {% render_field form.responsavel_avaliacao class="form-control" placeholder="Nome do profissional habilitado" %}
+                        {% if form.responsavel_avaliacao.errors %}
+                        <div class="text-danger small mt-1">{{ form.responsavel_avaliacao.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- OBSERVAÇÕES -->
+                <div class="mb-4">
+                    <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">
+                        <i class="bi bi-chat-left-text"></i> Observações
+                    </label>
+                    {% render_field form.observacoes class="form-control" rows="3" placeholder="Detalhes sobre a medição, condições do ambiente, etc." %}
+                    {% if form.observacoes.errors %}
+                    <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <hr>
+
+                <!-- Botões -->
+                <div class="d-flex justify-content-between flex-wrap gap-2">
+                    {% if risco %}
+                    <a href="{{ risco.get_absolute_url }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i> Cancelar
                     </a>
-                {% elif form.instance.pk and form.instance.risco_identificado %}
-                    <a href="{% url 'pgr_gestao:risco_detail' pk=form.instance.risco_identificado.pk %}" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancelar
+                    {% elif form.instance.pk and form.instance.risco_identificado %}
+                    <a href="{% url 'pgr_gestao:risco_detail' pk=form.instance.risco_identificado.pk %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i> Cancelar
                     </a>
-                {% else %}
-                    <a href="{% url 'pgr_gestao:avaliacao_list' %}" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancelar
+                    {% else %}
+                    <a href="{% url 'pgr_gestao:avaliacao_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i> Cancelar
                     </a>
-                {% endif %}
+                    {% endif %}
 
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> 
-                    {% if form.instance.pk %}Salvar Alterações{% else %}Salvar Avaliação{% endif %}
-                </button>
-            </div>
-        </form>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-save"></i>
+                        {% if form.instance.pk %}Salvar Alterações{% else %}Salvar Avaliação{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
-{% endblock %}
+    {% endblock %}
 

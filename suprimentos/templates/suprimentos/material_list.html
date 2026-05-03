@@ -4,106 +4,122 @@
 
 {% block suprimentos_content %}
 <style>
-    /* ── Barra de rolagem horizontal estilizada ── */
+    /* ═══════════════════════════════════════════════════════════════
+       Tabela com scroll horizontal — ADAPTATIVA (claro/escuro)
+       Usa variáveis globais de --surface-* e --bs-border-color
+    ═══════════════════════════════════════════════════════════════ */
+
+    /* ── Wrapper da tabela ── */
     .table-scroll-wrapper {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--bs-border-color);
         border-radius: 0.5rem;
+        background-color: var(--surface-elevated);
     }
 
     .table-scroll-wrapper table {
         min-width: 1400px;
         margin-bottom: 0;
+        color: var(--bs-body-color);
     }
 
-    /* Fixa a coluna de Ações à direita */
+    /* ── Coluna fixa à DIREITA (Ações) ── */
     .table-scroll-wrapper th:last-child,
     .table-scroll-wrapper td:last-child {
         position: sticky;
         right: 0;
         z-index: 2;
-        background: #fff;
+        background-color: var(--surface-elevated);
         box-shadow: -4px 0 8px rgba(0, 0, 0, 0.04);
     }
+
     .table-scroll-wrapper thead th:last-child {
-        background: #f8f9fa;
+        background-color: var(--surface-muted);
         z-index: 3;
     }
 
-    /* Fixa a coluna Código à esquerda */
+    /* ── Coluna fixa à ESQUERDA (Código) ── */
     .table-scroll-wrapper th:first-child,
     .table-scroll-wrapper td:first-child {
         position: sticky;
         left: 0;
         z-index: 2;
-        background: #fff;
+        background-color: var(--surface-elevated);
         box-shadow: 4px 0 8px rgba(0, 0, 0, 0.04);
     }
+
     .table-scroll-wrapper thead th:first-child {
-        background: #f8f9fa;
+        background-color: var(--surface-muted);
         z-index: 3;
     }
 
-    /* Zebra — corrige fundo das colunas fixas */
+    /* ── Zebra striping adaptativo nas colunas fixas ── */
     .table-scroll-wrapper tbody tr:nth-child(even) td:first-child,
     .table-scroll-wrapper tbody tr:nth-child(even) td:last-child {
-        background: #f8f9fa;
-    }
-    .table-scroll-wrapper tbody tr:hover td:first-child,
-    .table-scroll-wrapper tbody tr:hover td:last-child {
-        background: #e9ecef;
-    }
-    .table-scroll-wrapper tbody tr:hover td {
-        background: #e9ecef;
+        background-color: var(--surface-muted);
     }
 
-    /* Scrollbar personalizada */
+    /* ── Hover adaptativo (linha inteira + colunas fixas) ── */
+    .table-scroll-wrapper tbody tr:hover td {
+        background-color: var(--surface-hover);
+    }
+
+    .table-scroll-wrapper tbody tr:hover td:first-child,
+    .table-scroll-wrapper tbody tr:hover td:last-child {
+        background-color: var(--surface-hover);
+    }
+
+    /* ── Scrollbar personalizada — TEMA CLARO ── */
     .table-scroll-wrapper::-webkit-scrollbar {
         height: 8px;
     }
+
     .table-scroll-wrapper::-webkit-scrollbar-track {
-        background: #f1f1f1;
+        background-color: var(--surface-subtle);
         border-radius: 4px;
-    }
-    .table-scroll-wrapper::-webkit-scrollbar-thumb {
-        background: #b0b0b0;
-        border-radius: 4px;
-    }
-    .table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
-        background: #888;
     }
 
-    /* Cabeçalho fixo no topo ao rolar */
+    .table-scroll-wrapper::-webkit-scrollbar-thumb {
+        background-color: rgba(var(--bs-primary-rgb), 0.3);
+        border-radius: 4px;
+    }
+
+    .table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(var(--bs-primary-rgb), 0.6);
+    }
+
+    /* ── Cabeçalho fixo no topo ao rolar ── */
     .table-scroll-wrapper thead th {
         position: sticky;
         top: 0;
         z-index: 1;
-        background: #f8f9fa;
-    }
-
-    /* Impede quebra de texto nos cabeçalhos */
-    .table-scroll-wrapper thead th {
+        background-color: var(--surface-muted);
+        color: var(--bs-text-muted);
         white-space: nowrap;
         font-size: 0.82rem;
         padding: 0.6rem 0.75rem;
+        border-bottom: 2px solid var(--bs-border-color);
     }
 
+    /* ── Células do corpo ── */
     .table-scroll-wrapper tbody td {
         white-space: nowrap;
         font-size: 0.85rem;
         padding: 0.55rem 0.75rem;
+        color: var(--bs-body-color);
+        border-color: var(--bs-border-color);
     }
 
-    /* Indicador visual de scroll */
+    /* ── Indicador de scroll ── */
     .scroll-hint {
         display: none;
         text-align: center;
         padding: 0.4rem;
         font-size: 0.75rem;
-        color: #6c757d;
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
+        color: var(--bs-text-muted);
+        background-color: var(--surface-muted);
+        border: 1px solid var(--bs-border-color);
         border-top: none;
         border-radius: 0 0 0.5rem 0.5rem;
     }
@@ -113,7 +129,32 @@
             display: block;
         }
     }
+
+    /* ═══════════════════════════════════════════════════════════════
+       Ajustes específicos para TEMA ESCURO
+    ═══════════════════════════════════════════════════════════════ */
+    [data-bs-theme="dark"] .table-scroll-wrapper {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-bs-theme="dark"] .table-scroll-wrapper th:last-child,
+    [data-bs-theme="dark"] .table-scroll-wrapper td:last-child {
+        box-shadow: -4px 0 8px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-bs-theme="dark"] .table-scroll-wrapper th:first-child,
+    [data-bs-theme="dark"] .table-scroll-wrapper td:first-child {
+        box-shadow: 4px 0 8px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Badge "N/C" no dark — melhora contraste */
+    [data-bs-theme="dark"] .badge.bg-light.text-warning {
+        background-color: var(--surface-subtle) !important;
+        color: #ffda6a !important;
+        border-color: var(--bs-border-color) !important;
+    }
 </style>
+
 
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -133,7 +174,7 @@
     {# ── Cards de Resumo do Catálogo ── #}
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-6">
-            <div class="card border-0 bg-light shadow-sm">
+            <div class="card border-0 shadow-sm bg-adaptive">
                 <div class="card-body text-center py-3">
                     <small class="text-muted d-block"><i class="bi bi-box-seam"></i> Total Materiais</small>
                     <strong class="fs-4">{{ total_materiais|default:"0" }}</strong>
@@ -141,7 +182,7 @@
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card border-0 bg-light shadow-sm">
+            <div class="card border-0 shadow-sm bg-adaptive">
                 <div class="card-body text-center py-3">
                     <small class="text-muted d-block"><i class="bi bi-calculator"></i> Com Grupo Tributário</small>
                     <strong class="fs-4 text-success">{{ com_grupo_tributario|default:"0" }}</strong>
@@ -149,7 +190,7 @@
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card border-0 bg-light shadow-sm">
+            <div class="card border-0 shadow-sm bg-adaptive">
                 <div class="card-body text-center py-3">
                     <small class="text-muted d-block"><i class="bi bi-exclamation-triangle"></i> Sem Grupo Tributário</small>
                     <strong class="fs-4 text-warning">{{ sem_grupo_tributario|default:"0" }}</strong>
@@ -157,7 +198,7 @@
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card border-0 bg-light shadow-sm">
+            <div class="card border-0 shadow-sm bg-adaptive">
                 <div class="card-body text-center py-3">
                     <small class="text-muted d-block"><i class="bi bi-upc-scan"></i> Com NCM</small>
                     <strong class="fs-4 text-info">{{ com_ncm|default:"0" }}</strong>

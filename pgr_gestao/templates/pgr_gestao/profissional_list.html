@@ -1,5 +1,5 @@
-
-{% extends 'pgr_gestao/base.html' %}
+{# Lista de Profissionais Responsáveis #}
+{% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
 {% block title %}Profissionais Responsáveis{% endblock %}
@@ -8,16 +8,16 @@
 <li class="breadcrumb-item active">Profissionais Responsáveis</li>
 {% endblock %}
 
-{% block content %}
+{% block pgr_content %}
 <div class="page-header">
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h1><i class="fas fa-user-tie"></i> Profissionais Responsáveis</h1>
+            <h1><i class="bi bi-person-badge"></i> Profissionais Responsáveis</h1>
             <p class="mb-0">Cadastro de profissionais para elaboração de PGRs e avaliações</p>
         </div>
         {% if perms.pgr_gestao.add_profissionalresponsavel %}
-        <a href="{% url 'pgr_gestao:profissional_create' %}" class="btn btn-primary btn-lg">
-            <i class="fas fa-plus"></i> Novo Profissional
+        <a href="{% url 'pgr_gestao:profissional_create' %}" class="btn btn-light btn-lg">
+            <i class="bi bi-plus-lg"></i> Novo Profissional
         </a>
         {% endif %}
     </div>
@@ -25,14 +25,17 @@
 
 <!-- Filtros -->
 <div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-funnel"></i> Filtros de Pesquisa
+    </div>
     <div class="card-body">
         <form method="get" class="row g-3">
             <div class="col-md-3">
-                <label class="form-label">Ativo?</label>
+                <label class="form-label">Status</label>
                 <select name="ativo" class="form-select">
                     <option value="">Todos</option>
-                    <option value="true" {% if request.GET.ativo == 'true' %}selected{% endif %}>Sim</option>
-                    <option value="false" {% if request.GET.ativo == 'false' %}selected{% endif %}>Não</option>
+                    <option value="true" {% if request.GET.ativo == 'true' %}selected{% endif %}>Ativos</option>
+                    <option value="false" {% if request.GET.ativo == 'false' %}selected{% endif %}>Inativos</option>
                 </select>
             </div>
             <div class="col-md-4">
@@ -46,79 +49,93 @@
                        value="{{ request.GET.search }}">
             </div>
             <div class="col-md-1 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-search"></i>
+                <button type="submit" class="btn btn-primary w-100" title="Filtrar">
+                    <i class="bi bi-search"></i>
                 </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Tabela de Profissionais -->
+<!-- Tabela -->
 <div class="card">
     <div class="card-header">
-        <i class="fas fa-list"></i> Lista de Profissionais
+        <i class="bi bi-list-ul"></i> Lista de Profissionais
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
                     <tr>
                         <th>Nome Completo</th>
                         <th>Função</th>
                         <th>Registro de Classe</th>
                         <th>Contato</th>
-                        <th>Status</th>
+                        <th class="text-center">Status</th>
                         <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for profissional in profissionais %}
                     <tr>
-                        <td><strong>{{ profissional.nome_completo }}</strong></td>
-                        <td>{{ profissional.funcao }}</td>
-                        <td>{{ profissional.orgao_classe|default_if_none:'' }} {{ profissional.registro_classe }}</td>
                         <td>
-                            {% if profissional.email %}<i class="fas fa-envelope"></i> {{ profissional.email }}<br>{% endif %}
-                            {% if profissional.telefone %}<i class="fas fa-phone"></i> {{ profissional.telefone }}{% endif %}
+                            <strong>{{ profissional.nome_completo }}</strong>
+                            {% if profissional.especialidade %}
+                            <br><small class="text-muted">{{ profissional.especialidade }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ profissional.funcao }}</td>
+                        <td>
+                            {% if profissional.orgao_classe %}
+                            <span class="badge bg-secondary">{{ profissional.orgao_classe }}</span>
+                            {% endif %}
+                            {{ profissional.registro_classe }}
                         </td>
                         <td>
+                            {% if profissional.email %}
+                            <div><i class="bi bi-envelope text-muted"></i> <small>{{ profissional.email }}</small></div>
+                            {% endif %}
+                            {% if profissional.telefone %}
+                            <div><i class="bi bi-telephone text-muted"></i> <small>{{ profissional.telefone }}</small></div>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
                             {% if profissional.ativo %}
-                            <span class="badge bg-success">Ativo</span>
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle"></i> Ativo
+                            </span>
                             {% else %}
-                            <span class="badge bg-danger">Inativo</span>
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-slash-circle"></i> Inativo
+                            </span>
                             {% endif %}
                         </td>
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
                                 {% if perms.pgr_gestao.change_profissionalresponsavel %}
                                 <a href="{% url 'pgr_gestao:profissional_update' profissional.pk %}"
-                                class="btn btn-warning" title="Editar">
-                                    <i class="fas fa-edit"></i>
+                                   class="btn btn-outline-warning" title="Editar">
+                                    <i class="bi bi-pencil-square"></i>
                                 </a>
                                 {% endif %}
+
                                 {% if perms.pgr_gestao.delete_profissionalresponsavel %}
-                                <form action="{% url 'pgr_gestao:profissional_delete' profissional.pk %}" method="post" class="d-inline">
-                                    {% csrf_token %}
-                                    {% if perms.pgr_gestao.delete_profissional %}
-                                    <a href="{% url 'pgr_gestao:profissional_delete' profissional.pk %}"
-                                    class="btn btn-danger confirm-delete" title="Excluir">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </a>
-                                {% endif %}
-                                </form>
+                                <a href="{% url 'pgr_gestao:profissional_delete' profissional.pk %}"
+                                   class="btn btn-outline-danger" title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </a>
                                 {% endif %}
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-5">
-                            <i class="fas fa-user-slash fa-3x mb-3"></i>
+                        <td colspan="6" class="text-center table-empty-state">
+                            <i class="bi bi-person-x d-block"></i>
                             <p>Nenhum profissional cadastrado.</p>
                             {% if perms.pgr_gestao.add_profissionalresponsavel %}
                             <a href="{% url 'pgr_gestao:profissional_create' %}" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Cadastrar Primeiro Profissional
+                                <i class="bi bi-plus-lg"></i> Cadastrar Primeiro Profissional
                             </a>
                             {% endif %}
                         </td>
@@ -130,14 +147,28 @@
 
         <!-- Paginação -->
         {% if profissionais.has_other_pages %}
-        <nav class="mt-4">
-            <ul class="pagination justify-content-center">
+        <nav class="mt-4" aria-label="Paginação">
+            <ul class="pagination justify-content-center mb-0">
                 {% if profissionais.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ profissionais.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&laquo;</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ profissionais.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
                 {% endif %}
-                <li class="page-item disabled"><span class="page-link">Página {{ profissionais.number }} de {{ profissionais.paginator.num_pages }}</span></li>
+
+                <li class="page-item disabled">
+                    <span class="page-link">
+                        Página {{ profissionais.number }} de {{ profissionais.paginator.num_pages }}
+                    </span>
+                </li>
+
                 {% if profissionais.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ profissionais.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&raquo;</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ profissionais.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
                 {% endif %}
             </ul>
         </nav>
@@ -145,4 +176,5 @@
     </div>
 </div>
 {% endblock %}
+
 
