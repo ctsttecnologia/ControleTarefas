@@ -1,4 +1,3 @@
-
 <!-- chat/templates/chat/init_script.html -->
 {% load static %}
 
@@ -79,7 +78,7 @@
             const script = document.createElement('script');
             script.src = "{% static 'js/chat.js' %}?v=" + Date.now();
             script.async = false;
-            
+
             script.onload = () => {
                 if (typeof window.ChatManager !== 'undefined') {
                     console.log('✅ chat.js carregado com sucesso');
@@ -89,12 +88,12 @@
                     showChatErrorMessage('Sistema de chat corrompido');
                 }
             };
-            
+
             script.onerror = () => {
                 console.error('❌ Falha ao carregar chat.js');
                 showChatErrorMessage('Não foi possível carregar o sistema de chat');
             };
-            
+
             document.head.appendChild(script);
         }
 
@@ -103,7 +102,7 @@
                 window.chatManager = new window.ChatManager(chatUrls, currentUserId);
                 const loadTime = (performance.now() - chatLoadStart).toFixed(2);
                 console.log(`🎉 Chat inicializado! Tempo: ${loadTime}ms`);
-                
+
                 document.dispatchEvent(new CustomEvent('chatSystemReady', {
                     detail: { chatManager: window.chatManager, loadTime }
                 }));
@@ -154,4 +153,3 @@
     });
 })();
 </script>
-
