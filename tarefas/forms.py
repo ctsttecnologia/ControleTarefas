@@ -17,10 +17,14 @@ class TarefaForm(forms.ModelForm):
     recorrente = forms.BooleanField(
         required=False,
         label="Tornar esta tarefa recorrente?",
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input', 
+            'id': 'id_recorrente', 
+            'role': 'switch'
+        })
     )
     frequencia_recorrencia = forms.ChoiceField(
-        choices=[('', '---------')] + Tarefas.FREQUENCIA_CHOICES,
+        choices=[('', '---------')] + Tarefas.FREQUENCIA_CHOICES,   
         required=False,
         label="Repetir a cada",
         widget=forms.Select(attrs={'class': 'form-select'})
@@ -113,13 +117,30 @@ class TarefaForm(forms.ModelForm):
         if prazo and data_inicio and prazo < data_inicio:
             self.add_error('prazo', 'O prazo não pode ser anterior à data de início.')
 
-        # Validação: recorrência requer frequência e data fim
-        if recorrente and (not frequencia or not data_fim):
-            raise forms.ValidationError(
-                'Se a tarefa é recorrente, frequência e data final são obrigatórias.'
-            )
+        # ✅ Validação: recorrência requer frequência e data fim
+        if recorrente:
+            if not frequencia:
+                self.add_error(
+                    'frequencia_recorrencia',
+                    'Selecione a frequência da recorrência.'
+                )
+            if not data_fim:
+                self.add_error(
+                    'data_fim_recorrencia',
+                    'Informe a data final da recorrência.'
+                )
+
+        # Validação: data fim da recorrência deve ser posterior ao prazo/início
+        if recorrente and data_fim and data_inicio:
+            # data_fim é DateField, data_inicio é DateTimeField — comparar só a data
+            if data_fim < data_inicio.date():
+                self.add_error(
+                    'data_fim_recorrencia',
+                    'A data final da recorrência deve ser posterior à data de início.'
+                )
 
         return cleaned_data
+
 
     def save(self, commit=True):
         instance = super().save(commit=False)
