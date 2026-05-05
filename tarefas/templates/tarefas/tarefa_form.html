@@ -498,7 +498,7 @@
                 <div class="mb-4">
                     <div class="form-check form-switch mb-3">
                         {{ form.recorrente }}
-                        <label class="form-check-label" for="{{ form.recorrente.id_for_label }}">
+                        <label class="form-check-label" for="id_recorrente">
                             {{ form.recorrente.label }}
                         </label>
                     </div>
@@ -562,10 +562,9 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
-<!-- <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script> -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Flatpickr
+    // ─── Flatpickr ────────────────────────────────────────────
     flatpickr(".datetime-picker", {
         enableTime: true,
         dateFormat: "d/m/Y H:i",
@@ -574,8 +573,8 @@ document.addEventListener('DOMContentLoaded', function() {
         disableMobile: true
     });
 
-    // Select2
-    if (typeof $ !== 'undefined') {
+    // ─── Select2 ──────────────────────────────────────────────
+    if (typeof $ !== 'undefined' && $.fn.select2) {
         $('.select2-widget').select2({
             theme: 'bootstrap-5',
             placeholder: "Selecione...",
@@ -589,18 +588,36 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Toggle Recorrência
-    const toggle = document.getElementById('{{ form.recorrente.id_for_label }}');
+    // ─── Toggle Recorrência (CORRIGIDO) ───────────────────────
+    const toggle = document.getElementById('id_recorrente');
     const campos = document.getElementById('campos-recorrencia');
+
     function toggleRecorrencia() {
-        if (campos) campos.style.display = (toggle && toggle.checked) ? 'flex' : 'none';
+        if (!campos || !toggle) {
+            console.warn('[Recorrência] Elementos não encontrados');
+            return;
+        }
+        if (toggle.checked) {
+            // Remove o display:none inline e força flex
+            campos.style.display = 'flex';
+            console.log('[Recorrência] Campos EXIBIDOS');
+        } else {
+            campos.style.display = 'none';
+            console.log('[Recorrência] Campos OCULTADOS');
+        }
     }
+
     if (toggle) {
+        // Estado inicial — IMPORTANTE para edição de tarefa já recorrente
         toggleRecorrencia();
+        // Reage a cliques do usuário
         toggle.addEventListener('change', toggleRecorrencia);
+    } else {
+        console.error('[Recorrência] Checkbox #id_recorrente não encontrado!');
     }
 });
 </script>
 {% endblock %}
+
 
 
