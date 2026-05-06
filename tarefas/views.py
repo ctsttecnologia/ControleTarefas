@@ -202,6 +202,8 @@ class TarefaDetailView(TarefasBaseMixin, DetailView):
         ctx['can_edit'] = TarefaAccessMixin.user_can_edit(user, tarefa)
         ctx['can_change_status'] = TarefaAccessMixin.user_can_access(user, tarefa)
 
+        ctx['today'] = timezone.localdate()
+
         return ctx
 
     def post(self, request, *args, **kwargs):

@@ -405,6 +405,11 @@ REST_FRAMEWORK = {
     'DATE_FORMAT': '%d/%m/%Y',
 }
 
+# =============================================================================
+# CONFIGURAÇÕES — APP TAREFAS
+# =============================================================================
+# Limite de recorrências geradas por execução do fallback (segurança)
+TAREFAS_MAX_RECORRENCIAS_POR_EXECUCAO = 50
 
 # =============================================================================
 # CELERY - CONFIGURAÇÃO ADAPTATIVA
@@ -426,12 +431,8 @@ CELERY_WORKER_CONCURRENCY = 2 if IS_DEVELOPMENT else 8
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 
-CELERY_TASK_ROUTES = {
-    'documentos.*': {'queue': 'documentos'},
-    'chat.*': {'queue': 'chat'},
-}
-
 CELERY_BEAT_SCHEDULE = {
+    # ─── Tasks existentes ─────────────────────────────────────
     'verificar-vencimentos-diariamente': {
         'task': 'documentos.verificar_vencimentos',
         'schedule': crontab(minute=0, hour=3),
@@ -440,7 +441,33 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'notifications.gerar_notificacoes',
         'schedule': crontab(minute=0, hour=7),
     },
+
+    # ─── App Tarefas — Recorrência e Lembretes ────────────────
+    # Marca tarefas vencidas como atrasadas — diariamente 00:30
+    'tarefas-marcar-atrasadas': {
+        'task': 'tarefas.marcar_tarefas_atrasadas',
+        'schedule': crontab(hour=0, minute=30),
+    },
+
+    # Fallback de geração de recorrências — diariamente 02:00
+    'tarefas-gerar-recorrencias-pendentes': {
+        'task': 'tarefas.gerar_recorrencias_pendentes',
+        'schedule': crontab(hour=2, minute=0),
+    },
+
+    # Lembretes de prazo das tarefas — diariamente 08:00
+    'tarefas-enviar-lembretes-prazo': {
+        'task': 'tarefas.enviar_lembretes_prazo',
+        'schedule': crontab(hour=8, minute=0),
+    },
+
+    # Aviso de fim de recorrência — semanalmente segunda 09:00
+    'tarefas-avisar-recorrencias-proximas-fim': {
+        'task': 'tarefas.avisar_recorrencias_proximas_fim',
+        'schedule': crontab(hour=9, minute=0, day_of_week='monday'),
+    },
 }
+
 
 # =============================================================================
 # CHANNELS (WebSocket) - CONFIGURAÇÃO ADAPTATIVA
@@ -460,7 +487,9 @@ else:
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                "hosts": [REDIS_URL],
+                "hosts": [("127.0.0.1", 6379)],
+                "capacity": 1500,
+                "expiry": 10,
             },
         },
     }
@@ -472,6 +501,7 @@ CHAT_CONFIG = {
     'AUTO_RECONNECT': True,
     'RECONNECT_INTERVAL': 3000,
 }
+
 
 # =============================================================================
 # LOGGING - CONFIGURAÇÃO ADAPTATIVA E SEGURA

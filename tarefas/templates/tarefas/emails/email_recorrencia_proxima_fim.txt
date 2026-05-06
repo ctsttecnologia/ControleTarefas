@@ -1,0 +1,34 @@
+
+{# templates/tarefas/emails/email_recorrencia_proxima_fim.txt #}
+RECORRÊNCIA PRÓXIMA DO FIM
+==========================
+
+Olá{% if destinatario.first_name %} {{ destinatario.first_name }}{% endif %},
+
+A recorrência da tarefa abaixo está programada para terminar em breve.
+Após essa data, novas instâncias NÃO serão geradas automaticamente.
+
+⏰ TERMINA EM {{ dias_restantes }} DIA(S)
+   Data fim: {{ data_fim_fmt }}
+   Frequência: {{ frequencia }}
+   Ocorrências geradas até agora: {{ total_ocorrencias }}
+
+DETALHES DA TAREFA-RAIZ
+-----------------------
+Título:      {{ tarefa_raiz.titulo }}
+Responsável: {% if tarefa_raiz.responsavel %}{{ tarefa_raiz.responsavel.get_full_name|default:tarefa_raiz.responsavel.username }}{% else %}Não atribuído{% endif %}
+{% if tarefa_raiz.projeto %}Projeto:     {{ tarefa_raiz.projeto }}
+{% endif %}
+O QUE FAZER?
+------------
+• Para CONTINUAR a rotina: estenda a data fim de recorrência
+  → {{ tarefa_editar_url }}
+
+• Para ENCERRAR: nenhuma ação necessária — a recorrência será
+  encerrada automaticamente após {{ data_fim_fmt }}.
+
+Acessar a tarefa: {{ tarefa_url }}
+
+--
+Gerenciando Tarefas · Cetest Minas
+Este é um email automático. Por favor, não responda.
