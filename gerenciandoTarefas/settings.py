@@ -426,20 +426,26 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
-CELERY_ENABLE_UTC = True
-CELERY_WORKER_CONCURRENCY = 2 if IS_DEVELOPMENT else 8
+CELERY_ENABLE_UTC = False  # ✅ CORRIGIDO: usar TZ local
+CELERY_WORKER_CONCURRENCY = 2 if IS_DEVELOPMENT else 4  # ✅ Reduzido pra container all-in-one
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
+
+# ✅ Adicionar: timeout e segurança
+CELERY_TASK_TIME_LIMIT = 30 * 60        # 30min hard limit
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60   # 25min soft limit
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_DISABLE_RATE_LIMITS = True
 
 CELERY_BEAT_SCHEDULE = {
     # ─── Tasks existentes ─────────────────────────────────────
     'verificar-vencimentos-diariamente': {
         'task': 'documentos.verificar_vencimentos',
-        'schedule': crontab(minute=0, hour=3),
+        'schedule': crontab(minute=0, hour=9),
     },
     'gerar-notificacoes-diariamente': {
         'task': 'notifications.gerar_notificacoes',
-        'schedule': crontab(minute=0, hour=7),
+        'schedule': crontab(minute=0, hour=11),
     },
 
     # ─── App Tarefas — Recorrência e Lembretes ────────────────
@@ -535,6 +541,10 @@ LOGGING = {
             'formatter': 'simple',
         },
     },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
     'loggers': {
         'django': {
             'handlers': ['console'],
@@ -568,7 +578,8 @@ if IS_PRE_PRODUCTION and LOGS_DIR.exists():
             'formatter': 'verbose',
         }
         LOGGING['loggers']['django']['handlers'].append('file')
-        LOGGING['root']['handlers'].append('file')
+        if 'root' in LOGGING:
+            LOGGING['root']['handlers'].append('file')
         logger.debug("Logging em arquivo ativado para pré-produção")
     except Exception as e:
         logger.debug(f"Não foi possível configurar logging em arquivo: {e}")
