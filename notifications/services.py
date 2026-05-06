@@ -1357,6 +1357,235 @@ def notificar_documento_vencido(documento):
     return n
 
 
+
+# Alias para compatibilidade com imports antigos
+enviar_email_tarefa = enviar_email
+
+
+
+# =============================================================================
+# FUNÇÕES ESPECÍFICAS PARA RECORRÊNCIA DE TAREFAS
+# =============================================================================
+
+def notificar_tarefa_recorrente_gerada(tarefa_nova, tarefa_raiz):
+    """
+    Notifica responsável e participantes que uma nova ocorrência
+    de tarefa recorrente foi gerada automaticamente.
+    
+    Args:
+        tarefa_nova: A tarefa-filha recém-criada
+        tarefa_raiz: A tarefa-raiz que originou a recorrência
+    """
+    destinatarios = _coletar_interessados_tarefa(tarefa_nova, excluir_usuario=None)
+    if not destinatarios:
+        return []
+
+    url = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa_nova.pk})
+    url_raiz = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa_raiz.pk})
+    resultados = []
+
+    prazo_fmt = (
+        tarefa_nova.prazo.strftime("%d/%m/%Y %H:%M")
+        if tarefa_nova.prazo else 'Sem prazo definido'
+    )
+    frequencia = tarefa_raiz.get_frequencia_recorrencia_display() if tarefa_raiz.frequencia_recorrencia else 'Recorrente'
+
+    for user in destinatarios:
+        n = criar_notificacao(
+            usuario=user,
+            titulo=f'🔄 Nova ocorrência: {tarefa_nova.titulo[:45]}',
+            tipo='tarefa_atribuida',
+            categoria='tarefa',
+            prioridade='media',
+            mensagem=(
+                f'Uma nova ocorrência da tarefa recorrente "{tarefa_raiz.titulo}" foi gerada.\n'
+                f'Frequência: {frequencia}\n'
+                f'Prazo: {prazo_fmt}'
+            ),
+            url_destino=url,
+            icone='bi-arrow-repeat',
+            duplicar=True,
+        )
+        if n:
+            resultados.append(n)
+
+    # E-mail
+    emails_dest = [u.email for u in destinatarios if u.email]
+    if emails_dest:
+        enviar_email(
+            assunto=f'[Tarefa Recorrente] Nova ocorrência: {tarefa_nova.titulo}',
+            template_texto='tarefas/emails/email_recorrencia_gerada.txt',
+            template_html='tarefas/emails/email_recorrencia_gerada.html',
+            contexto={
+                'tarefa': tarefa_nova,
+                'tarefa_raiz': tarefa_raiz,
+                'frequencia': frequencia,
+                'prazo_fmt': prazo_fmt,
+                'tarefa_url': url,
+                'tarefa_raiz_url': url_raiz,
+            },
+            destinatarios=emails_dest,
+        )
+
+    return resultados
+
+
+def notificar_recorrencia_proxima_fim(tarefa_raiz, dias_restantes):
+    """
+    Notifica criador e responsável que a recorrência está perto do fim.
+    Permite que decidam estender ou criar novo fluxo.
+    
+    Args:
+        tarefa_raiz: A tarefa-raiz da recorrência
+        dias_restantes: Quantos dias faltam para data_fim_recorrencia
+    """
+    destinatarios = set()
+    if tarefa_raiz.usuario:
+        destinatarios.add(tarefa_raiz.usuario)
+    if tarefa_raiz.responsavel and tarefa_raiz.responsavel != tarefa_raiz.usuario:
+        destinatarios.add(tarefa_raiz.responsavel)
+
+    if not destinatarios:
+        return []
+
+    url = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa_raiz.pk})
+    url_editar = reverse('tarefas:editar_tarefa', kwargs={'pk': tarefa_raiz.pk})
+    resultados = []
+
+    data_fim_fmt = (
+        tarefa_raiz.data_fim_recorrencia.strftime("%d/%m/%Y")
+        if tarefa_raiz.data_fim_recorrencia else 'N/D'
+    )
+    frequencia = tarefa_raiz.get_frequencia_recorrencia_display() if tarefa_raiz.frequencia_recorrencia else 'Recorrente'
+
+    # Prioridade aumenta conforme se aproxima do fim
+    if dias_restantes <= 7:
+        prioridade = 'alta'
+        icone = 'bi-exclamation-triangle-fill'
+    elif dias_restantes <= 15:
+        prioridade = 'media'
+        icone = 'bi-clock-history'
+    else:
+        prioridade = 'baixa'
+        icone = 'bi-calendar-event'
+
+    for user in destinatarios:
+        n = criar_notificacao(
+            usuario=user,
+            titulo=f'⏰ Recorrência termina em {dias_restantes} dias: {tarefa_raiz.titulo[:35]}',
+            tipo='sistema',
+            categoria='tarefa',
+            prioridade=prioridade,
+            mensagem=(
+                f'A recorrência "{tarefa_raiz.titulo}" ({frequencia}) '
+                f'está programada para terminar em {data_fim_fmt}.\n\n'
+                f'Se desejar continuar gerando ocorrências, edite a tarefa '
+                f'e ajuste a data fim ou crie um novo fluxo de recorrência.'
+            ),
+            url_destino=url,
+            icone=icone,
+            duplicar=True,
+        )
+        if n:
+            resultados.append(n)
+
+    # E-mail — um por destinatário, com nome personalizado
+    for user in destinatarios:
+        if not user.email:
+            continue
+        enviar_email(
+            assunto=f'[Tarefa Recorrente] "{tarefa_raiz.titulo}" termina em {dias_restantes} dias',
+            template_texto='tarefas/emails/email_recorrencia_proxima_fim.txt',
+            template_html='tarefas/emails/email_recorrencia_proxima_fim.html',
+            contexto={
+                'destinatario': user,
+                'tarefa_raiz': tarefa_raiz,
+                'dias_restantes': dias_restantes,
+                'data_fim_fmt': data_fim_fmt,
+                'frequencia': frequencia,
+                'total_ocorrencias': tarefa_raiz.total_ocorrencias_geradas,
+                'tarefa_url': url,
+                'tarefa_editar_url': url_editar,
+            },
+            destinatarios=[user.email],
+        )
+
+    return resultados
+
+
+def notificar_lembrete_tarefa_prazo(tarefa, dias_antes):
+    """
+    Envia lembrete antes do prazo da tarefa.
+    Disparado pela task Celery quando faltam X dias (conforme dias_lembrete).
+    
+    Args:
+        tarefa: A tarefa em questão
+        dias_antes: Quantos dias antes do prazo o lembrete está sendo enviado
+    """
+    destinatarios = _coletar_interessados_tarefa(tarefa, excluir_usuario=None)
+    if not destinatarios:
+        return []
+
+    url = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa.pk})
+    resultados = []
+
+    prazo_fmt = (
+        tarefa.prazo.strftime("%d/%m/%Y %H:%M")
+        if tarefa.prazo else 'Sem prazo'
+    )
+
+    # Prioridade conforme proximidade
+    if dias_antes <= 1:
+        prioridade = 'critica'
+        icone = 'bi-alarm-fill'
+        urgencia = 'URGENTE'
+    elif dias_antes <= 3:
+        prioridade = 'alta'
+        icone = 'bi-alarm'
+        urgencia = 'Atenção'
+    else:
+        prioridade = 'media'
+        icone = 'bi-bell'
+        urgencia = 'Lembrete'
+
+    for user in destinatarios:
+        n = criar_notificacao(
+            usuario=user,
+            titulo=f'⏰ {urgencia}: {tarefa.titulo[:40]} vence em {dias_antes} dias',
+            tipo='tarefa_lembrete',
+            categoria='tarefa',
+            prioridade=prioridade,
+            mensagem=(
+                f'A tarefa "{tarefa.titulo}" vence em {dias_antes} dia(s).\n'
+                f'Prazo final: {prazo_fmt}'
+            ),
+            url_destino=url,
+            icone=icone,
+            duplicar=True,
+        )
+        if n:
+            resultados.append(n)
+
+    # E-mail
+    emails_dest = [u.email for u in destinatarios if u.email]
+    if emails_dest:
+        enviar_email(
+            assunto=f'[Lembrete] "{tarefa.titulo}" vence em {dias_antes} dia(s)',
+            template_texto='tarefas/emails/email_lembrete_prazo.txt',
+            template_html='tarefas/emails/email_lembrete_prazo.html',
+            contexto={
+                'tarefa': tarefa,
+                'dias_antes': dias_antes,
+                'prazo_fmt': prazo_fmt,
+                'urgencia': urgencia,
+                'tarefa_url': url,
+            },
+            destinatarios=emails_dest,
+        )
+
+    return resultados
+
+
 # Alias para compatibilidade com imports antigos
 enviar_email_tarefa = enviar_email
 enviar_email_pgr = enviar_email

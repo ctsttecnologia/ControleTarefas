@@ -1,5 +1,4 @@
-﻿
-<!-- templates/tarefas/tarefa_detail.html -->
+﻿<!-- templates/tarefas/tarefa_detail.html -->
 {% extends 'base.html' %}
 {% load static %}
 {% load secure_url %}
@@ -55,7 +54,7 @@
 
 /* ── Header ── */
 .detail-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem; }
-.detail-title { font-size: 1.4rem; font-weight: 700; color: var(--detail-text); margin-bottom: 0.3rem; line-height: 1.3; }
+.detail-title { font-size: 1.4rem; font-weight: 700; color: var(--detail-text); margin-bottom: 0.3rem; line-height: 1.3; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
 .detail-meta { font-size: 0.82rem; color: var(--detail-text-muted); margin: 0; }
 .detail-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
 
@@ -214,6 +213,85 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* =============================================================================
+   ★ RECORRÊNCIA — Card de informações
+   ============================================================================= */
+.recurrence-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.25em 0.65em;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
+    vertical-align: middle;
+}
+
+.recurrence-badge i {
+    font-size: 0.75rem;
+    animation: spin-slow 4s linear infinite;
+}
+
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+.recurrence-card {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+[data-bs-theme="dark"] .recurrence-card {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.recurrence-icon-wrap {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(99, 102, 241, 0.15);
+    color: #6366f1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+[data-bs-theme="dark"] .recurrence-icon-wrap {
+    background: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+}
+
+.recurrence-status-active {
+    color: #16a34a;
+    font-weight: 700;
+    font-size: 0.72rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.recurrence-status-finished {
+    color: #6b7280;
+    font-weight: 700;
+    font-size: 0.72rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+[data-bs-theme="dark"] .recurrence-status-finished {
+    color: #8b8ea8;
+}
+
 /* ── Mobile ── */
 @media (max-width: 767.98px) {
     .detail-wrapper { padding: 0.75rem; }
@@ -229,7 +307,14 @@
     <!-- Header -->
     <div class="detail-header">
         <div>
-            <h1 class="detail-title">{{ object.titulo }}</h1>
+            <h1 class="detail-title">
+                {{ object.titulo }}
+                {% if object.recorrente %}
+                <span class="recurrence-badge" title="Esta é uma tarefa recorrente">
+                    <i class="bi bi-arrow-repeat"></i> Recorrente
+                </span>
+                {% endif %}
+            </h1>
             <p class="detail-meta">
                 Criada por <strong>{{ object.usuario.get_full_name|default:object.usuario.username }}</strong>
                 em {{ object.data_criacao|date:"d/m/Y" }}
@@ -247,7 +332,6 @@
                 <i class="bi bi-pencil me-1"></i> Editar
             </a>
             {% endif %}
-
         </div>
     </div>
 
@@ -283,7 +367,7 @@
                         <div class="d-flex justify-content-between align-items-center mt-2 gap-2">
                             <div class="small">{{ form.anexo }}</div>
                             <button type="submit" class="btn btn-sm btn-primary" title="Adicionar comentário">
-                                <i class="bi bi-send me-1"></i> 
+                                <i class="bi bi-send me-1"></i>
                             </button>
                         </div>
                     </form>
@@ -319,6 +403,8 @@
 
         <!-- ═══ Sidebar ═══ -->
         <div>
+
+            <!-- Card Detalhes -->
             <div class="detail-card">
                 <div class="detail-card-header">
                     <h6 class="detail-card-title"><i class="bi bi-info-circle me-2"></i>Detalhes</h6>
@@ -432,6 +518,104 @@
                     </div>
                 </div>
             </div>
+            <!-- Fim Card Detalhes -->
+
+            <!-- ═══ Card de Recorrência (apenas se for recorrente) ═══ -->
+            {% if object.recorrente %}
+            <div class="detail-card recurrence-card">
+                <div class="detail-card-header">
+                    <h6 class="detail-card-title">
+                        <i class="bi bi-arrow-repeat me-2" style="color:#6366f1;"></i>
+                        Recorrência
+                    </h6>
+                    {% if object.data_fim_recorrencia and object.data_fim_recorrencia >= today %}
+                        <span class="recurrence-status-active">
+                            <i class="bi bi-circle-fill" style="font-size:0.5rem;"></i> Ativa
+                        </span>
+                    {% else %}
+                        <span class="recurrence-status-finished">
+                            <i class="bi bi-circle-fill" style="font-size:0.5rem;"></i> Encerrada
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="detail-card-body">
+
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">Frequência</div>
+                        <p class="sidebar-value">
+                            <span class="recurrence-icon-wrap">
+                                <i class="bi bi-calendar3"></i>
+                            </span>
+                            {{ object.get_frequencia_recorrencia_display|default:"Não definida" }}
+                        </p>
+                    </div>
+
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">Repetir até</div>
+                        <p class="sidebar-value">
+                            <span class="recurrence-icon-wrap">
+                                <i class="bi bi-calendar-check"></i>
+                            </span>
+                            {% if object.data_fim_recorrencia %}
+                                {{ object.data_fim_recorrencia|date:"d/m/Y" }}
+                                {% if object.data_fim_recorrencia >= today %}
+                                    <small class="text-muted ms-1">
+                                        ({{ object.data_fim_recorrencia|timeuntil }} restantes)
+                                    </small>
+                                {% else %}
+                                    <small class="text-muted ms-1">
+                                        (encerrada há {{ object.data_fim_recorrencia|timesince }})
+                                    </small>
+                                {% endif %}
+                            {% else %}
+                                Sem data limite
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    {% if object.tarefa_pai %}
+                    <hr class="sidebar-divider">
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">Tarefa Original</div>
+                        <p class="sidebar-value">
+                            <i class="bi bi-link-45deg"></i>
+                            <a href="{% url 'tarefas:tarefa_detail' object.tarefa_pai.pk %}"
+                               style="color:#6366f1; text-decoration:none;">
+                                {{ object.tarefa_pai.titulo|truncatechars:35 }}
+                            </a>
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    {% if object.tarefas_filhas.exists %}
+                    <hr class="sidebar-divider">
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">
+                            Ocorrências geradas
+                            <span class="comment-count ms-1">{{ object.tarefas_filhas.count }}</span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-1 mt-1">
+                            {% for filha in object.tarefas_filhas.all|slice:":5" %}
+                            <a href="{% url 'tarefas:tarefa_detail' filha.pk %}"
+                               class="participant-tag" style="text-decoration:none;"
+                               title="{{ filha.titulo }} - {{ filha.data_inicio|date:'d/m/Y' }}">
+                                <i class="bi bi-calendar-event"></i>
+                                {{ filha.data_inicio|date:"d/m" }}
+                            </a>
+                            {% endfor %}
+                            {% if object.tarefas_filhas.count > 5 %}
+                            <span class="participant-tag" style="opacity:0.7;">
+                                +{{ object.tarefas_filhas.count|add:"-5" }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+            {% endif %}
+            <!-- Fim Card Recorrência -->
 
             <!-- Histórico -->
             {% if historicos %}
@@ -489,36 +673,33 @@ document.addEventListener('DOMContentLoaded', function() {
     var dataAtualiz     = document.getElementById('dataAtualizacao');
     var changer         = document.getElementById('statusChanger');
 
+    if (!toggleBtn) return;
+
     var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     var ajaxUrl   = "{% url 'tarefas:alterar_status_tarefa' object.pk %}";
     var currentStatus = '{{ object.status }}';
     var isLoading = false;
 
-    // Toggle
     toggleBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         if (!isLoading) dropdown.classList.toggle('show');
     });
 
-    // Fechar ao clicar fora
     document.addEventListener('click', function(e) {
         if (!changer.contains(e.target)) {
             dropdown.classList.remove('show');
         }
     });
 
-    // ESC
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') dropdown.classList.remove('show');
     });
 
-    // Limpar feedback
     function limparFeedback() {
         feedback.className = 'status-feedback';
         feedback.style.display = 'none';
     }
 
-    // Clique nas opções
     dropdown.querySelectorAll('.status-option').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var novoStatus = this.dataset.status;
@@ -531,7 +712,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             var statusAnteriorDisplay = display.textContent;
 
-            // Loading state
             isLoading = true;
             dropdown.classList.remove('show');
             toggleBtn.style.opacity = '0.5';
@@ -556,11 +736,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.ok) {
                     currentStatus = data.novo_status;
 
-                    // Atualizar botão
                     display.textContent = data.novo_status_display;
                     dot.className = 'status-dot status-dot-' + data.novo_status;
 
-                    // Atualizar opções
                     dropdown.querySelectorAll('.status-option').forEach(function(opt) {
                         opt.classList.remove('active');
                         var chk = opt.querySelector('.bi-check2');
@@ -575,7 +753,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
 
-                    // Progresso
                     if (data.progresso !== undefined) {
                         progressPercent.textContent = data.progresso;
                         progressBar.style.width = data.progresso + '%';
@@ -585,12 +762,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         else progressBar.classList.add('bg-warning');
                     }
 
-                    // Data atualização
                     if (data.data_atualizacao) {
                         dataAtualiz.innerHTML = '<i class="bi bi-clock-history"></i> ' + data.data_atualizacao;
                     }
 
-                    // Histórico — inserir novo item no topo
                     var histList = document.getElementById('historicoList');
                     if (histList) {
                         var userName = '{{ request.user.get_full_name|default:request.user.username|escapejs }}';
@@ -615,7 +790,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         histList.insertBefore(novoItem, histList.firstChild);
                     } else {
-                        // Se não tinha histórico, cria o card
                         var sidebar = document.querySelector('.detail-grid > div:last-child');
                         if (sidebar) {
                             var card = document.createElement('div');
@@ -648,7 +822,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
 
-                    // Feedback sucesso
                     feedback.innerHTML = '<i class="bi bi-check-circle-fill"></i> Status atualizado!';
                     feedback.className = 'status-feedback success';
                     setTimeout(limparFeedback, 3500);
@@ -672,7 +845,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
-
-
-
 
