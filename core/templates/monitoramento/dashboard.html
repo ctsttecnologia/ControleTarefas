@@ -5,12 +5,8 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <h2><i class="bi bi-speedometer2"></i> Monitoramento do Servidor</h2>
-        <small class="text-muted d-block mt-2">
-            <span id="disco-usado">-</span> / <span id="disco-total">-</span> GB
-            <br><span class="text-truncate d-inline-block" style="max-width: 100%;" id="disco-path" title=""></span>
-        </small>
     </div>
     <div class="d-flex justify-content-between align-items-center mb-4">
         <small class="text-muted">
@@ -19,7 +15,6 @@
             Auto-refresh: 5s |
             Uptime: <span id="uptime">-</span>h
         </small>
-
     </div>
 
     <!-- Cards de métricas principais -->
@@ -65,6 +60,7 @@
                     </div>
                     <small class="text-muted d-block mt-2">
                         <span id="disco-usado">-</span> / <span id="disco-total">-</span> GB
+                        <br><span class="text-truncate d-inline-block" style="max-width: 100%;" id="disco-path" title=""></span>
                     </small>
                 </div>
             </div>
@@ -87,28 +83,87 @@
     </div>
 
     <!-- Redis e Celery -->
-    <div class="row-md-6">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h6 class="text-muted text-uppercase small">📦 Redis</h6>
-                <h4 id="redis-status">-</h4>
-                <div id="redis-details">
-                    <table class="table table-sm mb-0 mt-2">
-                        <tr><td>Memória usada:</td><td><strong><span id="redis-mem">-</span> MB</strong></td></tr>
-                        <tr><td>Clientes conectados:</td><td><strong id="redis-clients">-</strong></td></tr>
-                        <tr><td>Total de keys:</td><td><strong id="redis-keys">-</strong></td></tr>
-                        <tr><td>Versão:</td><td><strong id="redis-versao">-</strong></td></tr>
-                    </table>
-                </div>
-                <div id="redis-erro" class="alert alert-warning mt-2 small mb-0" style="display:none;">
-                    <i class="bi bi-info-circle"></i>
-                    <span id="redis-erro-msg"></span>
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="text-muted text-uppercase small mb-0">📦 Redis</h6>
+                        <button class="btn btn-sm btn-link p-0 text-muted" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#redis-legenda"
+                                aria-expanded="false" title="Sobre clientes conectados">
+                            <i class="bi bi-info-circle"></i> Legenda
+                        </button>
+                    </div>
+                    <h4 id="redis-status" class="mt-2">-</h4>
+
+                    <div id="redis-details">
+                        <table class="table table-sm mb-0 mt-2">
+                            <tr>
+                                <td>Memória usada:</td>
+                                <td><strong><span id="redis-mem">-</span> MB</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Clientes conectados:</td>
+                                <td>
+                                    <strong id="redis-clients">-</strong>
+                                    <span id="redis-clients-badge" class="badge ms-2">-</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Total de keys:</td>
+                                <td><strong id="redis-keys">-</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Versão:</td>
+                                <td><strong id="redis-versao">-</strong></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Legenda colapsável -->
+                    <div class="collapse mt-3" id="redis-legenda">
+                        <div class="card card-body bg-light p-2 small">
+                            <strong class="mb-1">📋 Referência: Clientes Conectados</strong>
+                            <table class="table table-sm table-borderless mb-0 small">
+                                <thead>
+                                    <tr class="border-bottom">
+                                        <th class="py-1">Quantidade</th>
+                                        <th class="py-1">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="py-1"><span class="badge bg-success">0–50</span></td>
+                                        <td class="py-1">✅ Normal</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-1"><span class="badge bg-warning text-dark">50–200</span></td>
+                                        <td class="py-1">🟡 Atenção (revisar pools)</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-1"><span class="badge" style="background-color:#fd7e14;">200–1000</span></td>
+                                        <td class="py-1">🟠 Suspeito (possível leak)</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-1"><span class="badge bg-danger">1000+</span></td>
+                                        <td class="py-1">🔴 Problema sério (vai bater no <code>maxclients</code>)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="redis-erro" class="alert alert-warning mt-2 small mb-0" style="display:none;">
+                        <i class="bi bi-info-circle"></i>
+                        <span id="redis-erro-msg"></span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="row-md-6">
-            <div class="card shadow-sm">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <h6 class="text-muted text-uppercase small">🌿 Celery</h6>
                     <h2 class="mb-1"><span id="celery-fila">-</span></h2>
@@ -153,6 +208,36 @@ function atualizarBarra(barId, percent) {
     const bar = document.getElementById(barId);
     bar.style.width = percent + '%';
     bar.className = 'progress-bar ' + corBarra(percent);
+}
+
+// 🆕 Avalia o status dos clientes Redis e retorna {classe, texto, tooltip}
+function statusClientesRedis(num) {
+    if (num <= 50) {
+        return {
+            classe: 'bg-success',
+            texto: 'Normal',
+            tooltip: '0-50: ✅ Operação saudável'
+        };
+    } else if (num <= 200) {
+        return {
+            classe: 'bg-warning text-dark',
+            texto: 'Atenção',
+            tooltip: '50-200: 🟡 Revisar pools de conexão'
+        };
+    } else if (num <= 1000) {
+        return {
+            classe: 'text-white',
+            estilo: 'background-color:#fd7e14;',
+            texto: 'Suspeito',
+            tooltip: '200-1000: 🟠 Possível connection leak'
+        };
+    } else {
+        return {
+            classe: 'bg-danger',
+            texto: 'Crítico',
+            tooltip: '1000+: 🔴 Próximo do limite maxclients!'
+        };
+    }
 }
 
 async function atualizar() {
@@ -201,10 +286,21 @@ async function atualizar() {
             redisStatus.innerHTML = '<span class="text-success">✅ Online</span>';
             redisDetails.style.display = '';
             redisErro.style.display = 'none';
+
             document.getElementById('redis-mem').textContent = d.redis.mem_usada_mb || '-';
-            document.getElementById('redis-clients').textContent = d.redis.clientes || '-';
             document.getElementById('redis-keys').textContent = d.redis.total_keys || '-';
             document.getElementById('redis-versao').textContent = d.redis.versao || '-';
+
+            // 🆕 Clientes com badge colorida
+            const numClientes = parseInt(d.redis.clientes) || 0;
+            document.getElementById('redis-clients').textContent = numClientes;
+
+            const badge = document.getElementById('redis-clients-badge');
+            const status = statusClientesRedis(numClientes);
+            badge.className = 'badge ms-2 ' + status.classe;
+            badge.style.cssText = status.estilo || '';
+            badge.textContent = status.texto;
+            badge.title = status.tooltip;
         } else {
             redisStatus.innerHTML = '<span class="text-danger">❌ Offline</span>';
             redisDetails.style.display = 'none';
@@ -242,3 +338,4 @@ atualizar();
 setInterval(atualizar, 5000);
 </script>
 {% endblock %}
+
