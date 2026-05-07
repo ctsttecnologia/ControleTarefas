@@ -19,6 +19,7 @@ from .forms import ChangeFilialForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse, NoReverseMatch
+from django.contrib.auth.mixins import UserPassesTestMixin
 
 # =============================================================================
 # == MIXINS DE PERMISSÃO E ESCOPO (ARQUITETURA DE 3 NÍVEIS)
@@ -758,3 +759,28 @@ class FuncionarioRequiredMixin(LoginRequiredMixin):
 
 # Alias público
 sanitize_image = _sanitize_image
+
+# core/mixins.py (ou onde está o TarefaAccessMixin)
+
+# =============================================================================
+# == MIXIN DE ACESSO AO MONITORAMENTO
+# =============================================================================
+
+class MonitoramentoAccessMixin(UserPassesTestMixin):
+    """
+    Mixin que garante acesso ao painel de monitoramento.
+    Acesso: superuser ou membros do grupo 'Administrador'.
+    """
+
+    raise_exception = False  # redireciona para login em vez de 403
+
+    def test_func(self):
+        return self.user_can_monitor(self.request.user)
+
+    @staticmethod
+    def user_can_monitor(user):
+        if not user.is_authenticated:
+            return False
+        if user.is_superuser:
+            return True
+        return user.groups.filter(name='Administrador').exists()

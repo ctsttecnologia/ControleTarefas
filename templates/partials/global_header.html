@@ -1,5 +1,6 @@
 <!-- templates/partials/global_header.html -->
 {% load static %}
+{% load core_extras %}
 
 <header id="global-header">
     <nav class="navbar navbar-expand-lg fixed-top"
@@ -113,14 +114,12 @@
                         
                         </li>
                     </div>                      
-                    <!-- ════════════════════════════════════════════ -->
-                    <!-- Usuário                                      -->
-                    <!-- ════════════════════════════════════════════ -->
+                    <!-- Menu do usuário -->
                     <div class="dropdown">
                         <a href="#" class="nav-link dropdown-toggle text-white d-flex align-items-center gap-2"
-                           data-bs-toggle="dropdown" aria-expanded="false">
+                        data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="rounded-circle d-flex align-items-center justify-content-center"
-                                 style="width: 32px; height: 32px; background-color: rgba(255,255,255,0.2); color: #fff; font-weight: 600;">
+                                style="width: 32px; height: 32px; background-color: rgba(255,255,255,0.2); color: #fff; font-weight: 600;">
                                 {{ user.username.0|upper }}
                             </div>
                             <span class="d-none d-lg-inline">
@@ -150,6 +149,17 @@
                                 </a>
                             </li>
                             {% endif %}
+
+                            {# 🔒 Monitoramento: apenas superuser OU grupo Administrador #}
+                            {% if user.is_superuser or user.groups.all|length and "Administrador" in user.groups.all|stringformat:"s" %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-primary" href="{% url 'core:dashboard' %}" target="_blank">
+                                    <i class="bi bi-speedometer2 me-2"></i>Monitoramento do Servidor
+                                </a>
+                            </li>
+                            {% endif %}
+
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form action="{% url 'usuario:logout' %}" method="post" class="d-inline">

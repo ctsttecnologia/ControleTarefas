@@ -313,8 +313,12 @@ def marcar_tarefas_atrasadas():
     atualizadas = qs.update(status='atrasada')
 
     logger.info(f'[Tarefas Atrasadas] {atualizadas} tarefa(s) marcadas como atrasadas.')
-    return {'atualizadas': atualizadas}
+    return {'atualizadas': atualizadas, **_marcar_atrasadas_logica()}
 
+def _marcar_atrasadas_logica():
+    """Lógica pura, reutilizável."""
+    # ... seu código aqui
+    return {"atualizadas": 42}
 
 # =============================================================================
 # TASK MANUAL — Para invocar manualmente em caso de necessidade

@@ -263,3 +263,5 @@ def sem_funcionario_view(request):
     """
     modulo = request.GET.get('modulo', '')
     return render(request, 'errors/sem_funcionario.html', {'modulo': modulo}, status=403)
+
+
