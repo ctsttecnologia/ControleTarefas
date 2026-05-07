@@ -1,6 +1,8 @@
 ﻿# core/urls.py
 
 from django.urls import path
+
+from core.views_monitoramento import monitoramento_api, monitoramento_view
 from . import views
 from core.views import sem_funcionario_view
 
@@ -18,5 +20,11 @@ urlpatterns = [
 
     # Erros personalizados
     path('400/', views.error_400_view, name='error_400'),
+
+    # Monitoramento
+    path('monitoramento/', monitoramento_view, name='monitoramento'),
+    path('monitoramento/api/', monitoramento_api, name='monitoramento_api'),
+    path('monitoramento/dashboard/', monitoramento_view, name='dashboard'),
+
 
 ]
