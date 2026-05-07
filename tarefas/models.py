@@ -7,6 +7,7 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
 
+
 User = settings.AUTH_USER_MODEL
 
 
@@ -25,8 +26,8 @@ class Tarefas(models.Model):
         ('andamento',  'Em Andamento'),
         ('pausada',    'Pausada'),
         ('concluida',  'Concluída'),
-        ('cancelada',  'Cancelada'),
         ('atrasada',   'Atrasada'),
+        ('cancelada',  'Cancelada'),
     ]
 
     PRIORIDADE_CHOICES = [
@@ -474,20 +475,54 @@ class HistoricoStatus(models.Model):
 
 class HistoricoTarefa(models.Model):
     """Histórico v2 — usado pelas views novas."""
+
+    TIPO_ALTERACAO_CHOICES = [
+        ('status',        'Mudança de Status'),
+        ('participantes', 'Alteração de Participantes'),
+        ('campo',         'Alteração de Campo'),
+        ('comentario',    'Novo Comentário'),
+        ('criacao',       'Criação'),
+        ('exclusao',      'Exclusão'),
+    ]
+
     tarefa = models.ForeignKey(
-        Tarefas,
+        'Tarefas',
         on_delete=models.CASCADE,
         related_name='historicos_v2',
     )
-    alterado_por    = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    campo_alterado  = models.CharField(max_length=50)
+    alterado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    tipo_alteracao = models.CharField(
+        max_length=30,
+        choices=TIPO_ALTERACAO_CHOICES,
+        default='campo',
+        db_index=True,
+    )
+    filial = models.ForeignKey(
+        'usuario.Filial',          # 👈 TROQUE pelo app correto (ex: 'empresas.Filial')
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='historicos_tarefa',
+    )
+    campo_alterado  = models.CharField(max_length=50, blank=True)
     valor_anterior  = models.TextField(blank=True)
     valor_novo      = models.TextField(blank=True)
     descricao       = models.CharField(max_length=255, blank=True)
-    data_alteracao  = models.DateTimeField(auto_now_add=True)
+    data_alteracao  = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         ordering = ['-data_alteracao']
-
-
+        verbose_name = 'Histórico de Tarefa'
+        verbose_name_plural = 'Históricos de Tarefas'
+        permissions = [
+            ('view_historico_tarefa', 'Pode ver histórico de tarefas'),
+        ]
         
+
+    def __str__(self):
+        return f'#{self.tarefa_id} - {self.get_tipo_alteracao_display()}'
