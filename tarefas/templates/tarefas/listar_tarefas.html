@@ -1,3 +1,17 @@
+
+<!--
+
+| Ação      | Superuser | view_all | change | Criador | Responsável | Participante |
+|-----------|-----------|----------|--------|---------|-------------|--------------|
+| Listar    | ✅       | ✅       | ✅    | ✅      | ✅         | ✅           |
+| Ver       | ✅       | ✅       | ✅    | ✅      | ✅         | ✅           |
+| Editar    | ✅       | ❌       | ✅    | ✅      | ✅         | ❌           |
+| Concluir  | ✅       | ❌       | ❌    | ✅      | ✅         | ❌           |
+| Excluir   | ✅       | ❌       | ❌    | ✅      | ❌         | ❌           |
+| Comentar  | ✅       | ✅       | ✅    | ✅      | ✅         | ✅           |
+
+-->
+
 <!-- templates/tarefas/listar_tarefas.html -->
 {% extends 'base.html' %}
 {% load static %}
@@ -368,13 +382,12 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                                 {% endif %}
 
                                 {# EDITAR — só responsável com permissão ou superuser #}
-                                {% if perms.tarefas.change_tarefas or tarefa.responsavel == user or user.is_superuser %}
+                                {% if can_edit %}
                                     <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}"
                                     class="action-btn action-btn--edit" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                 {% endif %}
-
                                 {# EXCLUIR — só quem tem permissão ou superuser #}
                                 {% if perms.tarefas.delete_tarefas or user.is_superuser %}
                                     <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}"

@@ -1,4 +1,18 @@
+"""
+═══════════════════════════════════════════════════════════════════
+📋 MATRIZ DE PERMISSÕES — TAREFAS
+═══════════════════════════════════════════════════════════════════
 
+| Ação      | Superuser | view_all | change | Criador | Responsável | Participante |
+|-----------|-----------|----------|--------|---------|-------------|--------------|
+| Listar    | Sim       | Sim      | Sim    | Sim     | Sim         | Sim          |
+| Ver       | Sim       | Sim      | Sim    | Sim     | Sim         | Sim          |
+| Editar    | Sim       | Não      | Sim    | Sim     | Sim         | Não          |
+| Concluir  | Sim       | Não      | Não    | Sim     | Sim         | Não          |
+| Excluir   | Sim       | Não      | Não    | Sim     | Não         | Não          |
+| Comentar  | Sim       | Sim      | Sim    | Sim     | Sim         | Sim          |
+═══════════════════════════════════════════════════════════════════
+"""
 # tarefas/views.py
 
 import json
@@ -1007,4 +1021,5 @@ def alterar_status_tarefa(request, pk):
         'progresso': tarefa.progresso,
         'data_atualizacao': tarefa.data_atualizacao.strftime('%d/%m/%Y %H:%M'),
     })
+
 
