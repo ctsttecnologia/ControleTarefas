@@ -1,5 +1,5 @@
 
-{% extends 'base.html' %}
+{% extends "departamento_pessoal/_base_dp.html" %}
 
 {% block title %}Importação em Massa — Funcionários{% endblock %}
 
@@ -80,7 +80,10 @@
                         Após preencher o modelo, faça o upload para processamento automático.
                     </p>
 
-                    <form method="post" enctype="multipart/form-data" novalidate>
+                    <form method="post" 
+                        action="{% url 'departamento_pessoal:importacao_massa_funcionarios' %}" 
+                        enctype="multipart/form-data" 
+                        novalidate>
                         {% csrf_token %}
 
                         {% if form.errors %}
@@ -120,7 +123,7 @@
                         </div>
 
                         <div class="text-center mt-auto">
-                            <button type="submit" class="btn btn-primary px-5">
+                            <button type="submit" class="btn btn-primary px-5" id="btn-processar">
                                 <i class="bi bi-gear me-2"></i>Processar Planilha
                             </button>
                         </div>

@@ -1229,28 +1229,63 @@ def download_modelo_funcionarios_view(request):
 @app_permission_required(APP_LABEL)
 def importacao_massa_funcionarios_view(request):
     """Upload e processamento da planilha de funcionários."""
+    
+    # Verificação de permissão
     if not request.user.has_perm(f'{APP_LABEL}.add_funcionario'):
-        raise PermissionDenied("Você não tem permissão para importar funcionários.")
+        messages.error(request, "Você não tem permissão para importar funcionários.")
+        return redirect('departamento_pessoal:lista_funcionarios')
+
+    # Verificação de filial ANTES do POST (evita confusão)
+    filial = getattr(request.user, 'filial_ativa', None)
+    if not filial and not request.user.is_superuser:
+        messages.error(
+            request,
+            "Nenhuma filial ativa. Selecione uma filial no menu superior antes de importar."
+        )
+        return redirect('departamento_pessoal:lista_funcionarios')
 
     if request.method == 'POST':
         form = ImportacaoMassaFuncionarioForm(request.POST, request.FILES)
+        
         if form.is_valid():
-            arquivo = form.cleaned_data['arquivo']
-            filial = getattr(request.user, 'filial_ativa', None)
+            try:
+                arquivo = form.cleaned_data['arquivo']
+                resultado = processar_planilha(arquivo, filial)
 
-            if not filial and not request.user.is_superuser:
+                # Mensagem de sucesso/erro baseada no resultado
+                if resultado.get('sucessos', 0) > 0:
+                    messages.success(
+                        request,
+                        f"✅ {resultado['sucessos']} funcionário(s) importado(s) com sucesso."
+                    )
+                if resultado.get('erros', 0) > 0:
+                    messages.warning(
+                        request,
+                        f"⚠️ {resultado['erros']} linha(s) com erro. Verifique o relatório abaixo."
+                    )
+
+                return render(
+                    request,
+                    'departamento_pessoal/importacao_massa_resultado.html',
+                    {
+                        'resultado': resultado,
+                        'form': ImportacaoMassaFuncionarioForm()
+                    },
+                )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.exception("Erro ao processar planilha de funcionários")
                 messages.error(
                     request,
-                    "Nenhuma filial ativa. Selecione uma filial no menu superior."
+                    f"Erro ao processar planilha: {str(e)}"
                 )
-                return redirect(request.path)
-
-            resultado = processar_planilha(arquivo, filial)
-
-            return render(
+                # Cai pro render com o form (preserva os dados)
+        else:
+            # Form inválido — mostra erros no template
+            messages.error(
                 request,
-                'departamento_pessoal/importacao_massa_resultado.html',
-                {'resultado': resultado, 'form': ImportacaoMassaFuncionarioForm()},
+                "Erro no formulário. Verifique os campos abaixo."
             )
     else:
         form = ImportacaoMassaFuncionarioForm()

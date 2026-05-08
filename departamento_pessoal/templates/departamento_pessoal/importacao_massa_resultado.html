@@ -1,9 +1,9 @@
 
-{% extends 'base.html' %}
+{% extends "departamento_pessoal/_base_dp.html" %}
 
 {% block title %}Resultado da Importação — Funcionários{% endblock %}
 
-{% block content %}
+{% block dp_content %}
 <div class="container-fluid py-4 px-lg-5">
 
     {# ══════════════════════════════════════════════ #}
@@ -170,8 +170,12 @@
                 Funcionários já importados com sucesso <strong>não serão duplicados</strong>
                 (a matrícula será rejeitada por já existir).
             </p>
-            <form method="post" enctype="multipart/form-data" novalidate>
+            <form method="post" 
+                action="{% url 'departamento_pessoal:importacao_massa_funcionarios' %}" 
+                enctype="multipart/form-data" 
+                novalidate>
                 {% csrf_token %}
+
                 <div class="row align-items-end g-3">
                     <div class="col-md-8">
                         {{ form.arquivo }}
