@@ -144,11 +144,15 @@
 {% endblock %}
 
 {% block dp_content %}
-<div class="module-header">
+<div class="module-header d-flex justify-content-between align-items-center mb-4">
     <h1>
         <i class="bi bi-person-{% if object %}gear{% else %}plus{% endif %} me-2"></i>
         {{ titulo_pagina }}
     </h1>
+    <a href="{% url 'departamento_pessoal:importacao_massa_funcionarios' %}"
+        class="btn btn-outline-secundary btn-sm-3">
+        <i class="bi bi-arrow-repeat me-1"></i>Importação em Massa
+    </a>
 </div>
 
 <div class="content-card">
