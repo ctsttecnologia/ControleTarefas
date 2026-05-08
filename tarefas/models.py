@@ -186,8 +186,8 @@ class Tarefas(models.Model):
         indexes = [
             models.Index(fields=['status', 'prazo']),
             models.Index(fields=['filial', 'status']),
-            models.Index(fields=['recorrente', 'recorrencia_encerrada']),  # 🆕
-            models.Index(fields=['tarefa_recorrencia_pai']),               # 🆕
+            models.Index(fields=['recorrente', 'recorrencia_encerrada']),  
+            models.Index(fields=['tarefa_recorrencia_pai']),               
         ]
 
     def __str__(self):
@@ -503,7 +503,7 @@ class HistoricoTarefa(models.Model):
         db_index=True,
     )
     filial = models.ForeignKey(
-        'usuario.Filial',          # 👈 TROQUE pelo app correto (ex: 'empresas.Filial')
+        'usuario.Filial',          
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -522,7 +522,9 @@ class HistoricoTarefa(models.Model):
         permissions = [
             ('view_historico_tarefa', 'Pode ver histórico de tarefas'),
         ]
-        
+
 
     def __str__(self):
         return f'#{self.tarefa_id} - {self.get_tipo_alteracao_display()}'
+    
+    
