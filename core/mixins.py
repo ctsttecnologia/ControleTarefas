@@ -56,16 +56,23 @@ class ViewFilialScopedMixin:
     NÍVEL 2 (Horizontal/Filial) - Para Views:
     Filtra o queryset chamando o método 'for_request(request)' 
     do manager do modelo.
-
-    IMPORTANTE: O modelo desta View DEVE usar o 'FilialManager'.
     """
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        if hasattr(qs, 'for_request'):
-            return qs.for_request(self.request)
+        parent = super()
+        if hasattr(parent, 'get_queryset'):
+            qs = parent.get_queryset()
+        elif getattr(self, 'model', None) is not None:  # ✅ getattr defensivo
+            qs = self.model._default_manager.all()
+        else:
+            raise ImproperlyConfigured(
+                f"{self.__class__.__name__} precisa definir 'model' "
+                f"ou herdar de uma view com get_queryset()."
+            )
+        filial = self.get_filial_ativa()
+        if filial and hasattr(qs, 'model') and hasattr(qs.model, 'filial'):  # ✅ hasattr extra
+            qs = qs.filter(filial=filial)
         return qs
-
 
 class TecnicoScopeMixin:
     """
