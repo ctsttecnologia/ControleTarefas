@@ -68,19 +68,21 @@
             <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="sst-btn-header">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
-            {% if perms.seguranca_trabalho.view_fichaepi %}
+            {% if permission.seguranca_trabalho.view_fichaepi %}
             <a href="{% url 'seguranca_trabalho:ficha_pdf_template' ficha.pk %}" class="sst-btn-header sst-btn-header--primary">
                 <i class="bi bi-file-pdf"></i> PDF
             </a>
             {% endif %}
-            {% if not ficha.assinatura_funcionario %}
-            <a href="{% url 'seguranca_trabalho:assinar_termo' ficha.pk %}" class="sst-btn-header sst-btn-header--warning">
-                <i class="bi bi-pen"></i> Assinar Termo
-            </a>
-            {% else %}
-            <span class="sst-btn-header--success-badge">
-                <i class="bi bi-check-circle"></i> Termo Assinado em {{ ficha.data_assinatura_termo|date:"d/m/Y" }}
-            </span>
+            {% if permission.seguranca_trabalho.view_fichaepi %}
+                {% if not ficha.assinatura_funcionario %}
+                <a href="{% url 'seguranca_trabalho:assinar_termo' ficha.pk %}" class="sst-btn-header sst-btn-header--warning">
+                    <i class="bi bi-pen"></i> Assinar Termo
+                </a>
+                {% else %}
+                <span class="sst-btn-header--success-badge">
+                    <i class="bi bi-check-circle"></i> Termo Assinado em {{ ficha.data_assinatura_termo|date:"d/m/Y" }}
+                </span>
+                {% endif %}
             {% endif %}
         </div>
     </div>
@@ -149,24 +151,28 @@
                             </td>
                             <td class="text-center">
                                 <div class="sst-action-group">
-                                    {% if not entrega.data_assinatura and not entrega.data_devolucao %}
-                                    <button type="button" class="sst-action-btn sst-action-btn--sign"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#assinaturaModal"
-                                            data-form-url="{% url 'seguranca_trabalho:entrega_sign' entrega.pk %}"
-                                            data-funcionario-nome="{{ ficha.funcionario.nome_completo }}"
-                                            title="Assinar">
-                                        <i class="bi bi-pen"></i>
-                                    </button>
-                                    {% endif %}
-                                    {% if not entrega.data_devolucao %}
-                                    <form method="post" action="{% url 'seguranca_trabalho:entrega_return' entrega.pk %}" class="d-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="sst-action-btn sst-action-btn--return" title="Registrar Devolução"
-                                                onclick="return confirm('Confirma a devolução deste EPI?')">
-                                            <i class="bi bi-box-arrow-in-left"></i>
+                                    {% if permission.seguranca_trabalho.view_fichaepi %}
+                                        {% if not entrega.data_assinatura and not entrega.data_devolucao %}
+                                        <button type="button" class="sst-action-btn sst-action-btn--sign"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#assinaturaModal"
+                                                data-form-url="{% url 'seguranca_trabalho:entrega_sign' entrega.pk %}"
+                                                data-funcionario-nome="{{ ficha.funcionario.nome_completo }}"
+                                                title="Assinar">
+                                            <i class="bi bi-pen"></i>
                                         </button>
-                                    </form>
+                                        {% endif %}
+                                    {% endif %}
+                                    {% if permission.seguranca_trabalho.view_fichaepi %}
+                                        {% if not entrega.data_devolucao %}
+                                        <form method="post" action="{% url 'seguranca_trabalho:entrega_return' entrega.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="sst-action-btn sst-action-btn--return" title="Registrar Devolução"
+                                                    onclick="return confirm('Confirma a devolução deste EPI?')">
+                                                <i class="bi bi-box-arrow-in-left"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             </td>
@@ -211,7 +217,7 @@
         </div>
 
         <!-- Nova Entrega -->
-        {% if perms.seguranca_trabalho.add_entregaepi %}
+        {% if permission.seguranca_trabalho.add_entregaepi %}
         <div class="sst-card">
             <div class="sst-card-header sst-card-header--success">
                 <i class="bi bi-plus-circle"></i>
@@ -248,7 +254,7 @@
                     </div>
 
                     <div class="d-grid">
-                        {% if perms.seguranca_trabalho.add_entregaepi or user.is_superuser %}
+                        {% if permission.seguranca_trabalho.add_entregaepi or user.is_superuser %}
                         <button type="submit" class="sst-btn-success" style="justify-content:center;">
                             <i class="bi bi-check-lg"></i> Registrar Entrega
                         </button>

@@ -209,7 +209,7 @@
                     <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="sst-btn-cancel">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </a>
-                    {% if perms.seguranca_trabalho.add_equipamento or user.is_superuser %}
+                    {% if permission.seguranca_trabalho.add_equipamento or user.is_superuser %}
                     <button type="submit" class="sst-btn-primary">
                         <i class="bi bi-check-lg"></i> Salvar
                     </button>

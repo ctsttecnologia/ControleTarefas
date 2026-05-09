@@ -28,14 +28,19 @@
                     <!-- Tabs de opção -->
                     <ul class="nav nav-tabs" id="assinaturaTabsModal" role="tablist">
                         <li class="nav-item" role="presentation">
+                            {% if permission.seguranca_trabalho.add_ficha or user.is_superuser %}
                             <button class="nav-link active" id="draw-tab-modal" data-bs-toggle="tab" data-bs-target="#draw-pane-modal" type="button">
                                 <i class="bi bi-pencil me-1"></i> Desenhar
                             </button>
+                            {% endif %}
                         </li>
+                        
                         <li class="nav-item" role="presentation">
+                            {% if permission.seguranca_trabalho.add_ficha or user.is_superuser %}
                             <button class="nav-link" id="upload-tab-modal" data-bs-toggle="tab" data-bs-target="#upload-pane-modal" type="button">
                                 <i class="bi bi-upload me-1"></i> Anexar Imagem
                             </button>
+                            {% endif %}
                         </li>
                     </ul>
 
@@ -51,6 +56,7 @@
                         </div>
                         
                         <!-- Tab: Upload -->
+                        {% if permission.seguranca_trabalho.add_ficha or user.is_superuser %}
                         <div class="tab-pane fade" id="upload-pane-modal" role="tabpanel">
                             <label for="assinatura_imagem_upload_modal" class="form-label fw-semibold">
                                 Fazer Upload de Assinatura:
@@ -59,6 +65,7 @@
                                    name="assinatura_imagem" accept="image/png, image/jpeg">
                             <small class="text-muted">Formatos aceitos: PNG, JPEG</small>
                         </div>
+                        {% endif %}
                     </div>
                 </div>
                 
@@ -69,9 +76,11 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         Cancelar
                     </button>
+                    {% if permission.seguranca_trabalho.add_ficha or user.is_superuser %}
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i> Salvar Assinatura
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>

@@ -402,7 +402,9 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
             <h4>
+                {% if perms.seguranca_trabalho.view_ficha or user.is_superuser %}
                 <i class="bi bi-pen-fill me-2"></i>Assinatura de Recebimento
+                {% endif %}
             </h4>
             <span class="as-subtitle">{{ entrega.ficha.funcionario.nome_completo }}</span>
         </div>
@@ -479,9 +481,12 @@
 
                     <!-- Tabs -->
                     <div class="as-tabs" role="tablist">
+                        {% if perms.seguranca_trabalho.add_entregaficha or user.is_superuser %}
                         <button class="as-tab active" data-bs-toggle="tab" data-bs-target="#draw-pane" type="button" role="tab">
                             <i class="bi bi-pencil"></i> Desenhar
                         </button>
+                        {% endif %}
+                        {% if perms.seguranca_trabalho.add_entregaficha or user.is_superuser %}
                         <button class="as-tab" data-bs-toggle="tab" data-bs-target="#upload-pane" type="button" role="tab">
                             <i class="bi bi-upload"></i> Upload
                         </button>
@@ -521,7 +526,7 @@
                     <a href="{% url 'seguranca_trabalho:ficha_detail' entrega.ficha.pk %}" class="as-btn-cancel">
                         Cancelar
                     </a>
-                    {% if perms.seguranca_trabalho.add_entrega or user.is_superuser %}
+                    {% if perms.seguranca_trabalho.add_entregaficha or user.is_superuser %}
                     <button type="submit" form="formAssinatura" class="as-btn-confirm">
                         <i class="bi bi-check-lg"></i> Confirmar Assinatura
                     </button>

@@ -14,7 +14,7 @@
             </h4>
             <span class="sst-page-subtitle">Gerencie os tipos de equipamentos disponíveis</span>
         </div>
-        {% if perms.seguranca_trabalho.add_equipamento or user.is_superuser %}
+        {% if permission.seguranca_trabalho.add_equipamento or user.is_superuser %}
         <a href="{% url 'seguranca_trabalho:equipamento_create' %}" class="sst-btn-header sst-btn-header--secundary">
             <i class="bi bi-plus-circle"></i> Novo Equipamento
         </a>
