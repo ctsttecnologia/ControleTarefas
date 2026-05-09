@@ -12,7 +12,7 @@
             <h4><i class="bi bi-diagram-3 me-2"></i>Associações Cargo × Função</h4>
             <span class="sst-page-subtitle">Vincule cargos às funções de segurança</span>
         </div>
-        {% if perms.seguranca_trabalho.add_cargofuncao %}
+        {% if permission.seguranca_trabalho.add_cargofuncao %}
         <a href="{% url 'seguranca_trabalho:associar_funcao_cargo' %}" class="sst-btn-header sst-btn-header--secundary">
             <i class="bi bi-plus-circle"></i> Nova Associação
         </a>
@@ -71,7 +71,7 @@
                         <span style="color:var(--sst-text);">{{ assoc.funcao.nome }}</span>
                     </td>
                     <td class="text-center">
-                        {% if perms.seguranca_trabalho.delete_cargofuncao %}
+                        {% if permission.seguranca_trabalho.delete_cargofuncao %}
                         <button type="button" class="sst-action-btn sst-action-btn--delete"
                                 hx-post="{% url 'seguranca_trabalho:desvincular_funcao_cargo' assoc.funcao_id assoc.cargo_id %}"
                                 hx-target="#assoc-{{ assoc.funcao_id }}-{{ assoc.cargo_id }}"
@@ -89,7 +89,7 @@
                         <div class="sst-empty">
                             <div class="sst-empty-icon"><i class="bi bi-inbox"></i></div>
                             <h6>Nenhuma associação encontrada</h6>
-                            {% if perms.seguranca_trabalho.add_cargofuncao %}
+                            {% if permission.seguranca_trabalho.add_cargofuncao %}
                             <a href="{% url 'seguranca_trabalho:criar_associacao' %}" class="sst-btn-primary mt-2" style="font-size:.82rem; padding:.4rem 1rem;">
                                 <i class="bi bi-plus-circle"></i> Criar primeira associação
                             </a>

@@ -1198,7 +1198,7 @@
             <div class="collapse navbar-collapse" id="sstNavbar">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-lg-center">
 
-                    {% if perms.seguranca_trabalho.view_fichaepi %}
+                    {% if permission.seguranca_trabalho.view_fichaepi %}
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:dashboard' %}"
                            class="sst-nav-link {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
@@ -1207,7 +1207,7 @@
                     </li>
                     {% endif %}
 
-                    {% if perms.seguranca_trabalho.view_fichaepi %}
+                    {% if permission.seguranca_trabalho.view_fichaepi %}
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:ficha_list' %}"
                            class="sst-nav-link {% if 'ficha_' in request.resolver_match.url_name %}active{% endif %}">
@@ -1223,7 +1223,7 @@
                     </li>
                     {% endif %}
 
-                    {% if perms.seguranca_trabalho.view_equipamento %}
+                    {% if permission.seguranca_trabalho.view_equipamento %}
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:equipamento_list' %}"
                            class="sst-nav-link {% if 'equipamento_' in request.resolver_match.url_name %}active{% endif %}">
@@ -1232,7 +1232,7 @@
                     </li>
                     {% endif %}
 
-                    {% if perms.seguranca_trabalho.view_funcao %}
+                    {% if permission.seguranca_trabalho.view_funcao %}
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:funcao_list' %}"
                            class="sst-nav-link {% if 'funcao_' in request.resolver_match.url_name %}active{% endif %}">
@@ -1241,7 +1241,7 @@
                     </li>
                     {% endif %}
 
-                    {% if perms.seguranca_trabalho.change_matrizepi %}
+                    {% if permission.seguranca_trabalho.change_matrizepi %}
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}"
                            class="sst-nav-link {% if 'controle_epi' in request.resolver_match.url_name %}active{% endif %}">
@@ -1261,7 +1261,7 @@
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><span class="sst-dropdown-label">Módulos Relacionados</span></li>
 
-                            {% if perms.gestao_riscos.view_inspecao %}
+                            {% if permission.gestao_riscos.view_inspecao %}
                             <li>
                                 <a class="dropdown-item" href="{% url 'gestao_riscos:lista_riscos' %}">
                                     <i class="bi bi-exclamation-triangle text-warning"></i> Gestão de Riscos
@@ -1269,7 +1269,7 @@
                             </li>
                             {% endif %}
 
-                            {% if perms.pgr_gestao.view_pgrdocumento %}
+                            {% if permission.pgr_gestao.view_pgrdocumento %}
                             <li>
                                 <a class="dropdown-item" href="{% url 'pgr_gestao:dashboard' %}">
                                     <i class="bi bi-shield-exclamation text-primary"></i> PGR
@@ -1277,7 +1277,7 @@
                             </li>
                             {% endif %}
 
-                            {% if perms.gestao_riscos.view_inspecao %}
+                            {% if permission.gestao_riscos.view_inspecao %}
                             <li>
                                 <a class="dropdown-item" href="{% url 'ltcat:ltcat_list' %}">
                                     <i class="bi bi-file-earmark-medical text-info"></i> LTCAT
@@ -1285,7 +1285,7 @@
                             </li>
                             {% endif %}
 
-                            {% if perms.seguranca_trabalho.view_cargofuncao %}
+                            {% if permission.seguranca_trabalho.view_cargofuncao %}
                             <li><hr class="dropdown-divider"></li>
                             <li><span class="sst-dropdown-label">Configurações</span></li>
                             <li>

@@ -127,7 +127,7 @@
     </div>
     {% endif %}
 
-    {% if perms.pgr_gestao.view_riscoidentificado %}
+    {% if permission.pgr_gestao.view_riscoidentificado %}
     <div class="col-lg-3 col-md-6">
         <a href="{% url 'pgr_gestao:risco_list' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
@@ -141,7 +141,7 @@
     </div>
     {% endif %}
 
-    {% if perms.pgr_gestao.view_planoacaopgr %}
+    {% if permission.pgr_gestao.view_planoacaopgr %}
     <div class="col-lg-3 col-md-6">
         <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
@@ -159,7 +159,7 @@
          LTCAT
     ═══════════════════════════════════════════════════════════════════════ -->
 
-    {% if perms.pgr_gestao.view_pgrdocumento %}
+    {% if permission.pgr_gestao.view_pgrdocumento %}
     <div class="col-lg-3 col-md-6">
         <a href="{% url 'ltcat:dashboard' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
@@ -178,7 +178,7 @@
          GESTÃO DE RISCOS
     ═══════════════════════════════════════════════════════════════════════ -->
 
-    {% if perms.gestao_riscos.view_inspecao %}
+    {% if permission.gestao_riscos.view_inspecao %}
     <div class="col-lg-3 col-md-6">
         <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
@@ -192,7 +192,7 @@
     </div>
     {% endif %}
 
-    {% if perms.gestao_riscos.view_incidente %}
+    {% if permission.gestao_riscos.view_incidente %}
     <div class="col-lg-3 col-md-6">
         <a href="{% url 'gestao_riscos:registrar_incidente' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
@@ -210,7 +210,7 @@
          TREINAMENTOS
     ═══════════════════════════════════════════════════════════════════════ -->
 
-    {% if perms.treinamentos.view_treinamento %}
+    {% if permission.treinamentos.view_treinamento %}
     <div class="col-lg-3 col-md-6">
         <a href="{% url 'treinamentos:treinamento_list' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
