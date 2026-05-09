@@ -16,6 +16,9 @@ from django.db.models import Count, Q, Sum, Value, IntegerField
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
+import tarefas
+import treinamentos
+
 
 # =====================================================================
 # IMPORTS DOS MODELS (lazy para evitar circular imports)
@@ -144,7 +147,6 @@ def get_metricas_tarefas(filial=None):
     prioridade_data = list(qs.values('prioridade').annotate(total=Count('id')))
 
     # progresso é @property (não é campo do banco)
-    # NÃO usar .only() — iterar o queryset normal
     progresso_medio = 0
     if total > 0:
         tarefas_list = list(qs)
@@ -164,6 +166,8 @@ def get_metricas_tarefas(filial=None):
         'progresso_medio': progresso_medio,
         'tarefas_proximas': proximas,
     }
+
+
 
 
 # =====================================================================
@@ -276,6 +280,7 @@ def get_metricas_epi(filial=None):
         'movimentacoes_recentes': movimentacoes_recentes,
         'equipamentos_estoque_baixo': baixo_estoque,
         'resumo_equipamentos': resumo_equipamentos,
+        
     }
 
 
@@ -413,10 +418,6 @@ def get_metricas_pgr(filial=None):
 def get_metricas_geral(filial=None):
     """
     Retorna métricas consolidadas para o dashboard geral.
-    Faz apenas as queries de contagem (leve).
-
-    Returns:
-        dict com totais e alertas críticos.
     """
     treinamentos = get_metricas_treinamentos(filial, dias_alerta=15)
     tarefas = get_metricas_tarefas(filial)
@@ -471,16 +472,24 @@ def get_metricas_geral(filial=None):
         })
 
     return {
+        # Totais
         'total_treinamentos': treinamentos['total_treinamentos'],
         'total_tarefas': tarefas['total_tarefas'],
         'total_entregas_epi': epi['total_entregas'],
         'total_documentos': documentos['total_documentos'],
         'total_pgr_gestao': total_pgr,
         'pgr_gestao_atrasadas': pgr_atrasadas,
+
+        # Alertas / contadores
         'treinamentos_vencimento_proximo': treinamentos['vencimento_proximo'],
         'tarefas_atrasadas': tarefas['tarefas_atrasadas'],
         'entregas_sem_assinatura': epi['entregas_sem_assinatura'],
         'documentos_a_vencer': documentos['documentos_a_vencer'],
         'alertas_criticos': alertas,
+
+        # ✅ KPIs DE PROGRESSO / TAXAS
+        'progresso_medio': tarefas['progresso_medio'],
+        'taxa_presenca': treinamentos['taxa_presenca'],
     }
+
 

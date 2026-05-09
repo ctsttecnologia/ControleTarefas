@@ -7,16 +7,16 @@ import json
 import logging
 from datetime import timedelta
 from pathlib import Path
-
+from django.views.generic.detail import SingleObjectMixin
+from celery.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
-from django.db.models import Q, Count, Sum, Value, IntegerField, ProtectedError, F
+from django.db.models import Q, Count, Sum, Value, IntegerField, ProtectedError
 from django.db.models.functions import Coalesce
-from django.http import Http404, HttpResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
@@ -34,8 +34,8 @@ from docx import Document
 from weasyprint import HTML, default_url_fetcher
 
 from core.mixins import (
-    AppPermissionMixin, FuncionarioRequiredMixin, HTMXModalFormMixin, ViewFilialScopedMixin,
-    TecnicoScopeMixin, FilialCreateMixin,
+    AppPermissionMixin, FuncionarioRequiredMixin, ViewFilialScopedMixin,
+    TecnicoScopeMixin, FilialCreateMixin, LoginRequiredMixin,
 )
 from departamento_pessoal.models import Funcionario
 from usuario.models import Filial
@@ -50,11 +50,10 @@ from .models import (
     CargoFuncao, MovimentacaoEstoque,
 )
 
+
 logger = logging.getLogger(__name__)
 
 _APP = 'seguranca_trabalho'
-
-
 
 
 # =============================================================================
@@ -110,53 +109,180 @@ def _imagem_file_para_base64(image_field):
         logger.warning("Erro ao converter imagem para base64: %s", e)
         return None
 
+
 # =============================================================================
-# == MIXIN BASE DO APP (camada de seguranca consolidada)
+# MIXINS DE SUPORTE
 # =============================================================================
 
-class SSTBaseMixin(FuncionarioRequiredMixin, AppPermissionMixin):
+class FilialAtivaMixin:
     """
-    Mixin base do app Seguranca do Trabalho.
-
-    Consolida a stack de seguranca padrao do projeto:
-      1. FuncionarioRequiredMixin -> autenticacao + vinculo com Funcionario
-      2. AppPermissionMixin       -> permissao por app (seguranca_trabalho)
-
-    NAO inclui ViewFilialScopedMixin nem TecnicoScopeMixin porque essas
-    camadas dependem do model e variam por view. Adicione-as conforme a
-    necessidade de cada classe filha.
-
-    Uso tipico:
-        class EquipamentoListView(SSTBaseMixin, ViewFilialScopedMixin, ListView):
-            app_label_required = 'seguranca_trabalho'
-            model = Equipamento
-
-        class FichaEPIListView(SSTBaseMixin, TecnicoScopeMixin, ViewFilialScopedMixin, ListView):
-            app_label_required = 'seguranca_trabalho'
-            tecnico_scope_lookup = 'funcionario__user'
-            model = FichaEPI
+    Obtém a filial ativa com prioridade para o seletor da sessão.
+    Fallbacks: user.filial_ativa → funcionario.filial.
     """
-    modulo_nome = 'Seguranca do Trabalho'
-    app_label_required = 'seguranca_trabalho'
+
+    def get_filial_ativa(self):
+        filial_id = self.request.session.get('active_filial_id')
+        if filial_id:
+            try:
+                return Filial.objects.get(pk=filial_id)
+            except Filial.DoesNotExist:
+                pass
+
+        user = self.request.user
+        filial_ativa = getattr(user, 'filial_ativa', None)
+        if filial_ativa:
+            return filial_ativa
+
+        try:
+            funcionario = Funcionario.objects.select_related('filial').get(usuario=user)
+            return funcionario.filial
+        except Funcionario.DoesNotExist:
+            return None
+
+    def get_filial_ativa_id(self):
+        filial = self.get_filial_ativa()
+        return filial.id if filial else None
+
+
+class SSTVisibilityMixin(FilialAtivaMixin):
+    """
+    Controla a visibilidade dos registros de SST conforme o perfil do usuário.
+
+    Regras:
+      - Superuser → tudo
+      - Permissão global 'view_all_*' → tudo da filial (já filtrada)
+      - Demais usuários com Funcionario → registros da filial dele (FilialManager)
+      - Sem vínculo → nada
+    """
+
+    def get_queryset(self):
+        parent = super()
+        if hasattr(parent, 'get_queryset'):
+            qs = parent.get_queryset()
+        elif self.model is not None:
+            qs = self.model._default_manager.all()
+        else:
+            raise ImproperlyConfigured(
+                f"{self.__class__.__name__} precisa definir 'model' "
+                f"ou herdar de uma view com get_queryset()."
+            )
+        # ... resto da lógica de filtro por filial
+        filial = self.get_filial_ativa()
+        if filial and hasattr(qs.model, 'filial'):
+            qs = qs.filter(filial=filial)
+        return qs
+
+    def apply_visibility(self, queryset):
+        user = self.request.user
+
+        if user.is_superuser:
+            return queryset
+
+        if user.has_perm('seguranca_trabalho.view_all_seguranca_trabalho'):
+            return queryset
+
+        funcionario = getattr(user, 'funcionario', None)
+        if not funcionario:
+            return queryset.none()
+
+        return queryset
+
+
+class SSTSearchMixin:
+    """
+    Aplica busca textual via parâmetro `?q=` em campos definidos por
+    `search_fields`. Inclui ordering opcional via `search_order_by`.
+
+    Exemplo:
+        class MinhaView(SSTSearchMixin, ListView):
+            search_fields = ['funcionario__nome_completo', 'funcionario__matricula']
+            search_order_by = 'funcionario__nome_completo'
+    """
+    search_fields: list[str] = []
+    search_order_by: str | None = None
+    search_distinct: bool = False
+
+    def apply_search(self, queryset):
+        q = self.request.GET.get('q')
+        if q and self.search_fields:
+            filters = Q()
+            for field in self.search_fields:
+                filters |= Q(**{f'{field}__icontains': q})
+            queryset = queryset.filter(filters)
+            if self.search_distinct:
+                queryset = queryset.distinct()
+        if self.search_order_by:
+            queryset = queryset.order_by(self.search_order_by)
+        return queryset
+
+
+# =============================================================================
+# MIXIN BASE DO APP
+# =============================================================================
+
+class SSTBaseMixin(
+    FuncionarioRequiredMixin,
+    AppPermissionMixin,
+    SSTVisibilityMixin,
+    ViewFilialScopedMixin,
+):
+    """
+    Mixin base para todas as CBVs do app Segurança do Trabalho.
+
+    MRO:
+      1. FuncionarioRequiredMixin → autenticação + vínculo com Funcionario
+      2. AppPermissionMixin       → permissão por app ('seguranca_trabalho')
+      3. SSTVisibilityMixin       → apply_visibility() + FilialAtivaMixin
+      4. ViewFilialScopedMixin    → get_queryset() filtrado por filial
+
+    O `get_queryset()` aqui já aplica visibilidade automaticamente,
+    portanto subclasses NÃO precisam chamar `apply_visibility()` manualmente.
+
+    Para escopo técnico, herdar também de `TecnicoScopeMixin`
+    e definir `tecnico_scope_lookup`.
+    """
+    modulo_nome = 'Segurança do Trabalho'
+    app_label_required = _APP
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and not request.user.is_superuser:
+            if not request.user.has_perm(f'{_APP}.view_all_{_APP}'):
+                try:
+                    _ = request.user.funcionario
+                except Funcionario.DoesNotExist:
+                    return render(request, 'seguranca_trabalho/acesso_negado.html', {
+                        'titulo': 'Acesso Restrito',
+                        'mensagem': (
+                            'Sua conta não está vinculada a um registro de '
+                            'funcionário, por isso não pode acessar o módulo '
+                            'de Segurança do Trabalho.'
+                        ),
+                    }, status=403)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        """Aplica filial + visibilidade de uma vez para evitar duplicação."""
+        qs = super().get_queryset()
+        return self.apply_visibility(qs)
 
 
 # =============================================================================
 # EQUIPAMENTOS (CRUD + Ajuste de Estoque)
 # =============================================================================
 
-class EquipamentoListView(SSTBaseMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = 'seguranca_trabalho'
+class EquipamentoListView(SSTBaseMixin, ListView):
     model = Equipamento
+    permission_required = 'seguranca_trabalho.view_equipamento'
     template_name = 'seguranca_trabalho/equipamento_list.html'
     context_object_name = 'equipamentos'
     paginate_by = 20
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        filial = getattr(self.request.user, 'filial_ativa', None)
+        filial = self.get_filial_ativa()
 
         if filial:
-            # ✅ Pré-calcula estoque em UMA query usando subqueries agrupadas
+            # Pré-calcula estoque em UMA query
             movs_por_equip = (
                 MovimentacaoEstoque.objects
                 .filter(filial=filial)
@@ -164,7 +290,6 @@ class EquipamentoListView(SSTBaseMixin, ViewFilialScopedMixin, ListView):
                 .annotate(total=Sum('quantidade'))
             )
 
-            # Monta mapa: {equipamento_id: {'ENTRADA': X, 'SAIDA': Y}}
             mapa = {}
             for item in movs_por_equip:
                 eq_id = item['equipamento_id']
@@ -180,16 +305,16 @@ class EquipamentoListView(SSTBaseMixin, ViewFilialScopedMixin, ListView):
         return context
 
 
-class EquipamentoDetailView(SSTBaseMixin, ViewFilialScopedMixin, DetailView):
-    app_label_required = 'seguranca_trabalho'
+class EquipamentoDetailView(SSTBaseMixin, DetailView):
     model = Equipamento
+    permission_required = 'seguranca_trabalho.view_equipamento'
     template_name = 'seguranca_trabalho/equipamento_detail.html'
     context_object_name = 'equipamento'
 
 
 class EquipamentoCreateView(SSTBaseMixin, FilialCreateMixin, CreateView):
-    app_label_required = 'seguranca_trabalho'
     model = Equipamento
+    permission_required = 'seguranca_trabalho.add_equipamento'
     form_class = EquipamentoForm
     template_name = 'seguranca_trabalho/equipamento_form.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
@@ -210,15 +335,12 @@ class EquipamentoCreateView(SSTBaseMixin, FilialCreateMixin, CreateView):
         return response
 
 
-class EquipamentoUpdateView(SSTBaseMixin, ViewFilialScopedMixin, UpdateView):
-    app_label_required = 'seguranca_trabalho'
+class EquipamentoUpdateView(SSTBaseMixin, UpdateView):
     model = Equipamento
+    permission_required = 'seguranca_trabalho.change_equipamento'
     form_class = EquipamentoForm
     template_name = 'seguranca_trabalho/equipamento_form.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
-
-    def get_queryset(self):
-        return super().get_queryset().select_related('fabricante')
 
     def form_valid(self, form):
         messages.success(
@@ -228,9 +350,9 @@ class EquipamentoUpdateView(SSTBaseMixin, ViewFilialScopedMixin, UpdateView):
         return super().form_valid(form)
 
 
-class EquipamentoDeleteView(SSTBaseMixin, ViewFilialScopedMixin, DeleteView):
-    app_label_required = 'seguranca_trabalho'
+class EquipamentoDeleteView(SSTBaseMixin, DeleteView):
     model = Equipamento
+    permission_required = 'seguranca_trabalho.delete_equipamento'
     template_name = 'seguranca_trabalho/confirm_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
     context_object_name = 'object'
@@ -242,10 +364,10 @@ class EquipamentoDeleteView(SSTBaseMixin, ViewFilialScopedMixin, DeleteView):
 
 class AjusteEstoqueView(SSTBaseMixin, View):
     """Permite ajustar o estoque de um equipamento com justificativa."""
-    app_label_required = 'seguranca_trabalho'
+    http_method_names = ['get', 'post']
 
     def _get_equipamento(self, request, pk):
-        filial = getattr(request.user, 'filial_ativa', None)
+        filial = self.get_filial_ativa()
         return get_object_or_404(Equipamento, pk=pk, filial=filial)
 
     def _render(self, request, equipamento, form):
@@ -260,7 +382,7 @@ class AjusteEstoqueView(SSTBaseMixin, View):
 
     def post(self, request, pk):
         equipamento = self._get_equipamento(request, pk)
-        filial = getattr(request.user, 'filial_ativa', None)
+        filial = self.get_filial_ativa()
         form = AjusteEstoqueForm(request.POST)
 
         if not form.is_valid():
@@ -300,33 +422,24 @@ class AjusteEstoqueView(SSTBaseMixin, View):
 # FICHAS EPI (CRUD)
 # =============================================================================
 
-class FichaEPIListView(
-    SSTBaseMixin,
-    TecnicoScopeMixin,
-    ViewFilialScopedMixin,
-    ListView
-):
-    app_label_required = 'seguranca_trabalho'
+class FichaEPIListView(SSTBaseMixin, TecnicoScopeMixin, SSTSearchMixin, ListView):
     model = FichaEPI
+    permission_required = 'seguranca_trabalho.view_fichaepi'
     template_name = 'seguranca_trabalho/ficha_list.html'
     context_object_name = 'fichas'
     paginate_by = 30
     tecnico_scope_lookup = 'funcionario__usuario'
+    search_fields = ['funcionario__nome_completo', 'funcionario__matricula']
+    search_order_by = 'funcionario__nome_completo'
 
     def get_queryset(self):
         qs = super().get_queryset().select_related('funcionario', 'funcionario__cargo')
-        query_text = self.request.GET.get('q')
-        if query_text:
-            qs = qs.filter(
-                Q(funcionario__nome_completo__icontains=query_text) |
-                Q(funcionario__matricula__icontains=query_text)
-            )
-        return qs.order_by('funcionario__nome_completo')
+        return self.apply_search(qs)
 
 
-class FichaEPICreateView(SSTBaseMixin, FilialCreateMixin, CreateView):
-    app_label_required = 'seguranca_trabalho'
+class FichaEPICreateView(SSTBaseMixin, CreateView):
     model = FichaEPI
+    permission_required = 'seguranca_trabalho.add_fichaepi'
     form_class = FichaEPIForm
     template_name = 'seguranca_trabalho/ficha_create.html'
     success_url = reverse_lazy('seguranca_trabalho:ficha_list')
@@ -337,23 +450,23 @@ class FichaEPICreateView(SSTBaseMixin, FilialCreateMixin, CreateView):
         return kwargs
 
     def form_valid(self, form):
+        # A filial da ficha é derivada do funcionário selecionado.
         form.instance.filial = form.cleaned_data['funcionario'].filial
         return super().form_valid(form)
 
 
-class FichaEPIDetailView(
-    SSTBaseMixin,
-    TecnicoScopeMixin,
-    ViewFilialScopedMixin,
-    FormMixin,
-    DetailView
-):
-    app_label_required = 'seguranca_trabalho'
+class FichaEPIDetailView(SSTBaseMixin, TecnicoScopeMixin, FormMixin, DetailView):
     model = FichaEPI
+    permission_required = 'seguranca_trabalho.view_fichaepi'
     template_name = 'seguranca_trabalho/ficha_detail.html'
     context_object_name = 'ficha'
     form_class = EntregaEPIForm
     tecnico_scope_lookup = 'funcionario__usuario'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            'funcionario', 'funcionario__cargo'
+        )
 
     def get_success_url(self):
         return reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.object.pk})
@@ -405,9 +518,9 @@ class FichaEPIDetailView(
         return redirect(self.get_success_url())
 
 
-class FichaEPIUpdateView(SSTBaseMixin, ViewFilialScopedMixin, UpdateView):
-    app_label_required = 'seguranca_trabalho'
+class FichaEPIUpdateView(SSTBaseMixin, UpdateView):
     model = FichaEPI
+    permission_required = 'seguranca_trabalho.change_fichaepi'
     form_class = FichaEPIForm
     template_name = 'seguranca_trabalho/ficha_form.html'
 
@@ -420,16 +533,16 @@ class FichaEPIUpdateView(SSTBaseMixin, ViewFilialScopedMixin, UpdateView):
         return kwargs
 
 
-class FichaEPIDeleteView(SSTBaseMixin, ViewFilialScopedMixin, DeleteView):
-    app_label_required = 'seguranca_trabalho'
+class FichaEPIDeleteView(SSTBaseMixin, DeleteView):
     model = FichaEPI
+    permission_required = 'seguranca_trabalho.delete_fichaepi'
     template_name = 'seguranca_trabalho/confirm_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:ficha_list')
     context_object_name = 'object'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        ficha = self.get_object()
+        ficha = self.object
         entregas = ficha.entregas.select_related('equipamento')
         context['has_entregas'] = entregas.exists()
         context['entregas_count'] = entregas.count()
@@ -452,21 +565,22 @@ class FichaEPIDeleteView(SSTBaseMixin, ViewFilialScopedMixin, DeleteView):
 
 
 # =============================================================================
-# ENTREGAS EPI (Assinatura e Devolucao)
+# ENTREGAS EPI (Assinatura e Devolução)
 # =============================================================================
 
-class AssinarEntregaView(
-    SSTBaseMixin,
-    TecnicoScopeMixin,
-    ViewFilialScopedMixin,
-    UpdateView
-):
-    app_label_required = 'seguranca_trabalho'
+class AssinarEntregaView(SSTBaseMixin, TecnicoScopeMixin, UpdateView):
     model = EntregaEPI
+    permission_required = 'seguranca_trabalho.change_entregaepi'
+    http_method_names = ['get', 'post']
     form_class = AssinaturaEntregaForm
     template_name = 'seguranca_trabalho/entrega_sign.html'
     context_object_name = 'entrega'
     tecnico_scope_lookup = 'ficha__funcionario__usuario'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            'ficha', 'ficha__funcionario', 'equipamento'
+        )
 
     def get_success_url(self):
         return reverse(
@@ -498,74 +612,52 @@ class AssinarEntregaView(
         return redirect(self.get_success_url())
 
 
-class RegistrarDevolucaoView(SSTBaseMixin, TecnicoScopeMixin, View):
-    app_label_required = 'seguranca_trabalho'
-    http_method_names = ['post']
-    tecnico_scope_lookup = 'ficha__funcionario__usuario'
+class RegistrarDevolucaoView(SSTBaseMixin, LoginRequiredMixin, SingleObjectMixin, View):
+    model = EntregaEPI
+    pk_url_kwarg = 'pk'
+    app_label_required = 'seguranca_trabalho'  # ajuste se o app_label for outro
 
-    @transaction.atomic
+    # GET não faz sentido aqui — só aceita POST
+    def get(self, request, *args, **kwargs):
+        return redirect('seguranca_trabalho:entrega_list')
+
     def post(self, request, *args, **kwargs):
-        filial_id = request.session.get('active_filial_id')
-        qs = EntregaEPI.objects.all()
-        if filial_id:
-            qs = qs.filter(filial_id=filial_id)
-        qs = self.scope_tecnico_queryset(qs)
-        entrega = get_object_or_404(qs, pk=kwargs.get('pk'))
+        entrega = self.get_object()  # já respeita o queryset com escopo de filial
 
         if entrega.data_devolucao:
-            messages.warning(
-                request,
-                f"O EPI '{entrega.equipamento.nome}' já foi devolvido."
-            )
-        else:
-            entrega.data_devolucao = timezone.now().date()
-            entrega.recebedor_devolucao = request.user
-            entrega.save()
-            MovimentacaoEstoque.objects.create(
-                equipamento=entrega.equipamento,
-                tipo='ENTRADA',
-                quantidade=entrega.quantidade,
-                responsavel=request.user,
-                justificativa=(
-                    f"Devolução EPI - Ficha #{entrega.ficha.pk} "
-                    f"({entrega.ficha.funcionario.nome_completo})"
-                ),
-                entrega_associada=entrega,
-                filial=entrega.filial,
-            )
-            messages.success(
-                request,
-                f"Devolução do EPI '{entrega.equipamento.nome}' registrada."
-            )
-        return redirect('seguranca_trabalho:ficha_detail', pk=entrega.ficha.pk)
+            messages.warning(request, "Esta entrega já foi devolvida.")
+            return redirect('seguranca_trabalho:entrega_list')
+
+        entrega.data_devolucao = timezone.now()
+        entrega.save(update_fields=['data_devolucao'])
+        messages.success(request, "Devolução registrada com sucesso.")
+        return redirect('seguranca_trabalho:entrega_list')
 
 
 # =============================================================================
-# RELATORIOS PDF - FICHA INDIVIDUAL
+# RELATÓRIOS PDF - FICHA INDIVIDUAL
 # =============================================================================
 
-class GerarFichaPDFView(
-    SSTBaseMixin,
-    TecnicoScopeMixin,
-    ViewFilialScopedMixin,
-    DetailView
-):
-    app_label_required = 'seguranca_trabalho'
+class GerarFichaPDFView(SSTBaseMixin, TecnicoScopeMixin, DetailView):
     model = FichaEPI
+    permission_required = 'seguranca_trabalho.view_fichaepi'
+    template_name = 'seguranca_trabalho/ficha_pdf_template.html'
+    context_object_name = 'ficha'
     tecnico_scope_lookup = 'funcionario__usuario'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            'funcionario', 'funcionario__cargo', 'filial'
+        )
 
     @staticmethod
     def _processar_assinatura(entrega):
-        """Retorna data URI da assinatura ou None."""
-        # Tenta primeiro campo de texto (base64 direto)
         resultado = _processar_assinatura_base64(entrega.assinatura_recebimento)
         if resultado:
             return resultado
-        # Fallback para arquivo de imagem
         return _imagem_file_para_base64(entrega.assinatura_imagem)
 
     def _get_logo_base64(self, filial):
-        """Logo da filial ou fallback estático."""
         if filial and hasattr(filial, 'logo'):
             logo = _imagem_file_para_base64(filial.logo)
             if logo:
@@ -583,7 +675,6 @@ class GerarFichaPDFView(
 
     def get(self, request, *args, **kwargs):
         ficha = self.get_object()
-
         logger.info("Gerando ficha PDF: %s", ficha.funcionario.nome_completo)
 
         entregas = (
@@ -606,9 +697,7 @@ class GerarFichaPDFView(
             ),
         }
 
-        html_string = render_to_string(
-            'seguranca_trabalho/ficha_pdf_template.html', context
-        )
+        html_string = render_to_string(self.template_name, context)
 
         if settings.DEBUG:
             debug_path = Path(settings.BASE_DIR) / 'debug_ficha.html'
@@ -629,22 +718,24 @@ class GerarFichaPDFView(
         )
         return response
 
+
 # =============================================================================
 # TERMOS E ASSINATURAS
 # =============================================================================
 
-class AssinarTermoView(
-    SSTBaseMixin,
-    TecnicoScopeMixin,
-    ViewFilialScopedMixin,
-    UpdateView
-):
-    app_label_required = 'seguranca_trabalho'
+class AssinarTermoView(SSTBaseMixin, TecnicoScopeMixin, UpdateView):
     model = FichaEPI
+    permission_required = 'seguranca_trabalho.change_fichaepi'
+    http_method_names = ['get', 'post']
     form_class = AssinaturaTermoForm
     template_name = 'seguranca_trabalho/termo_sign.html'
     context_object_name = 'ficha'
     tecnico_scope_lookup = 'funcionario__usuario'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            'funcionario', 'funcionario__cargo'
+        )
 
     def get_success_url(self):
         return reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.object.pk})
@@ -671,26 +762,22 @@ class AssinarTermoView(
         messages.success(self.request, "Termo assinado com sucesso!")
         return redirect(self.get_success_url())
 
+
 # =============================================================================
 # DASHBOARD SST
 # =============================================================================
 
-class DashboardSSTView(
-    SSTBaseMixin,
-    TecnicoScopeMixin,
-    ViewFilialScopedMixin,
-    TemplateView
-):
-    app_label_required = 'seguranca_trabalho'
+class DashboardSSTView(SSTBaseMixin, TecnicoScopeMixin, TemplateView):
     template_name = 'seguranca_trabalho/dashboard.html'
     tecnico_scope_lookup = 'funcionario__usuario'
+    permission_required = 'seguranca_trabalho.view_dashboard'
 
     def _is_tecnico(self):
         return getattr(self.request.user, 'is_tecnico', False)
 
-    def _queryset_por_filial(self, model_class):
+    def _qs_filial(self, model_class):
         """Retorna queryset do model filtrado pela filial ativa."""
-        filial_id = self.request.session.get('active_filial_id')
+        filial_id = self.get_filial_ativa_id()
         if not filial_id:
             return model_class.objects.none()
 
@@ -704,10 +791,10 @@ class DashboardSSTView(
         context = super().get_context_data(**kwargs)
 
         try:
-            equipamentos = self._queryset_por_filial(Equipamento)
-            fichas = self._queryset_por_filial(FichaEPI)
-            entregas = self._queryset_por_filial(EntregaEPI)
-            matriz = self._queryset_por_filial(MatrizEPI)
+            equipamentos = self._qs_filial(Equipamento)
+            fichas = self._qs_filial(FichaEPI)
+            entregas = self._qs_filial(EntregaEPI)
+            matriz = self._qs_filial(MatrizEPI)
         except Exception as e:
             logger.error("Erro no DashboardSST: %s", e)
             equipamentos = Equipamento.objects.none()
@@ -739,12 +826,10 @@ class DashboardSSTView(
         ).select_related('equipamento')
 
         epis_vencidos = epis_vencendo = epis_regulares = 0
-
         for entrega in entregas_ativas:
             if not entrega.equipamento.vida_util_dias:
                 epis_regulares += 1
                 continue
-
             vencimento = entrega.data_entrega + timedelta(days=entrega.equipamento.vida_util_dias)
             if vencimento < today:
                 epis_vencidos += 1
@@ -763,7 +848,6 @@ class DashboardSSTView(
             .annotate(num_epis=Count('equipamento'))
             .order_by('-num_epis')[:10]
         )
-
         if matriz_data:
             context['matriz_labels'] = json.dumps([m['funcao__nome'] for m in matriz_data])
             context['matriz_data'] = json.dumps([m['num_epis'] for m in matriz_data])
@@ -798,36 +882,27 @@ class DashboardSSTView(
 
 
 # =============================================================================
-# FUNCOES (Cargos do Trabalho)
+# FUNÇÕES (Cargos do Trabalho)
 # =============================================================================
 
-class FuncaoListView(SSTBaseMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = 'seguranca_trabalho'
+class FuncaoListView(SSTBaseMixin, SSTSearchMixin, ListView):
     model = Funcao
+    permission_required = 'seguranca_trabalho.view_funcao'
     template_name = 'seguranca_trabalho/funcao_list.html'
     context_object_name = 'funcoes'
     paginate_by = 15
+    search_fields = ['nome', 'descricao', 'funcoes_cargo__cargo__nome']
+    search_order_by = 'nome'
+    search_distinct = True
 
     def get_queryset(self):
-        queryset = super().get_queryset().prefetch_related('funcoes_cargo__cargo')
-        query = self.request.GET.get('q')
-        if query:
-            queryset = queryset.filter(
-                Q(nome__icontains=query) |
-                Q(descricao__icontains=query) |
-                Q(funcoes_cargo__cargo__nome__icontains=query)
-            ).distinct()
-        return queryset.order_by('nome')
+        qs = super().get_queryset().prefetch_related('funcoes_cargo__cargo')
+        return self.apply_search(qs)
 
 
-class FuncaoCreateView(
-    SSTBaseMixin,
-    FilialCreateMixin,
-    HTMXModalFormMixin,
-    CreateView
-):
-    app_label_required = 'seguranca_trabalho'
+class FuncaoCreateView(SSTBaseMixin, FilialCreateMixin, CreateView):
     model = Funcao
+    permission_required = 'seguranca_trabalho.add_funcao'
     form_class = FuncaoForm
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
 
@@ -837,14 +912,9 @@ class FuncaoCreateView(
         return ['seguranca_trabalho/funcao_form.html']
 
 
-class FuncaoUpdateView(
-    SSTBaseMixin,
-    ViewFilialScopedMixin,
-    HTMXModalFormMixin,
-    UpdateView
-):
-    app_label_required = 'seguranca_trabalho'
+class FuncaoUpdateView(SSTBaseMixin, UpdateView):
     model = Funcao
+    permission_required = 'seguranca_trabalho.change_funcao'
     form_class = FuncaoForm
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
 
@@ -861,9 +931,9 @@ class FuncaoUpdateView(
         return ['seguranca_trabalho/funcao_form.html']
 
 
-class FuncaoDeleteView(SSTBaseMixin, ViewFilialScopedMixin, DeleteView):
-    app_label_required = 'seguranca_trabalho'
+class FuncaoDeleteView(SSTBaseMixin, DeleteView):
     model = Funcao
+    permission_required = 'seguranca_trabalho.delete_funcao'
     template_name = 'seguranca_trabalho/funcao_confirm_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
     context_object_name = 'object'
@@ -874,29 +944,26 @@ class FuncaoDeleteView(SSTBaseMixin, ViewFilialScopedMixin, DeleteView):
 
 
 # =============================================================================
-# ASSOCIACOES (Funcao x Cargo x EPI)
+# ASSOCIAÇÕES (Função x Cargo x EPI)
 # =============================================================================
 
-class AssociacaoListView(SSTBaseMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = 'seguranca_trabalho'
+class AssociacaoListView(SSTBaseMixin, SSTSearchMixin, ListView):
     model = CargoFuncao
+    permission_required = 'seguranca_trabalho.view_cargofuncao'
+    context_object_name = 'associacoes'
     template_name = 'seguranca_trabalho/lista_associacoes.html'
     paginate_by = 20
+    search_fields = ['cargo__nome', 'funcao__nome']
+    search_order_by = 'cargo__nome'
 
     def get_queryset(self):
         qs = super().get_queryset().select_related('cargo', 'funcao')
-        q = self.request.GET.get('q')
-        if q:
-            qs = qs.filter(
-                Q(cargo__nome__icontains=q) |
-                Q(funcao__nome__icontains=q)
-            )
-        return qs.order_by('cargo__nome')
+        return self.apply_search(qs)
 
 
 class AssociacaoCreateView(SSTBaseMixin, FilialCreateMixin, CreateView):
-    app_label_required = 'seguranca_trabalho'
     model = CargoFuncao
+    permission_required = 'seguranca_trabalho.add_cargofuncao'
     form_class = CargoFuncaoForm
     template_name = 'seguranca_trabalho/formulario_associacao.html'
     success_url = reverse_lazy('seguranca_trabalho:lista_associacoes')
@@ -936,22 +1003,12 @@ def desvincular_funcao_cargo(request, funcao_id, cargo_id):
 # =============================================================================
 
 class ControleEPIPorFuncaoView(SSTBaseMixin, TemplateView):
-    app_label_required = 'seguranca_trabalho'
     template_name = 'seguranca_trabalho/controle_epi_por_funcao.html'
-
-    def _get_filial_atual(self, request):
-        active_filial_id = request.session.get('active_filial_id')
-        if not active_filial_id:
-            return None
-        try:
-            return Filial.objects.get(pk=active_filial_id)
-        except Filial.DoesNotExist:
-            messages.error(request, "A filial selecionada é inválida.")
-            return None
+    permission_required = 'seguranca_trabalho.view_matrizepi'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        filial_atual = self._get_filial_atual(self.request)
+        filial_atual = self.get_filial_ativa()
 
         if not filial_atual:
             messages.warning(self.request, "Nenhuma filial selecionada.")
@@ -986,15 +1043,14 @@ class ControleEPIPorFuncaoView(SSTBaseMixin, TemplateView):
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        active_filial_id = request.session.get('active_filial_id')
-        if not active_filial_id:
+        filial_id = self.get_filial_ativa_id()
+        if not filial_id:
             messages.error(request, "Sessão expirada ou filial não selecionada.")
             return redirect(request.path_info)
 
         funcoes_ids = set(
-            Funcao.objects.filter(
-                filial_id=active_filial_id, ativo=True
-            ).values_list('id', flat=True)
+            Funcao.objects.filter(filial_id=filial_id, ativo=True)
+            .values_list('id', flat=True)
         )
         equipamentos_ids = set(
             Equipamento.objects.filter(ativo=True).values_list('id', flat=True)
@@ -1013,7 +1069,6 @@ class ControleEPIPorFuncaoView(SSTBaseMixin, TemplateView):
         for key, value in request.POST.items():
             if not key.startswith('freq_'):
                 continue
-
             try:
                 _, funcao_id_str, equipamento_id_str = key.split('_')
                 funcao_id = int(funcao_id_str)
@@ -1026,7 +1081,6 @@ class ControleEPIPorFuncaoView(SSTBaseMixin, TemplateView):
 
             submitted_keys.add((funcao_id, equipamento_id))
             frequencia = int(value) if value and value.isdigit() else 0
-
             if frequencia <= 0:
                 continue
 
@@ -1041,7 +1095,7 @@ class ControleEPIPorFuncaoView(SSTBaseMixin, TemplateView):
                     MatrizEPI(
                         funcao_id=funcao_id,
                         equipamento_id=equipamento_id,
-                        filial_id=active_filial_id,
+                        filial_id=filial_id,
                         frequencia_troca_meses=frequencia,
                     )
                 )
@@ -1060,15 +1114,12 @@ class ControleEPIPorFuncaoView(SSTBaseMixin, TemplateView):
         return redirect(request.path_info)
 
 
-
-
 # =============================================================================
-# RELATORIOS PDF / WORD - GERAIS
+# RELATÓRIOS PDF / WORD - GERAIS
 # =============================================================================
-
 
 class RelatorioSSTPDFView(SSTBaseMixin, View):
-    app_label_required = 'seguranca_trabalho'
+    http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):
         entregas = EntregaEPI.objects.for_request(request).select_related(
@@ -1088,9 +1139,8 @@ class RelatorioSSTPDFView(SSTBaseMixin, View):
         response['Content-Disposition'] = 'attachment; filename="relatorio_sst.pdf"'
         return response
 
-class ExportarFuncionariosPDFView(SSTBaseMixin, View):
-    app_label_required = 'seguranca_trabalho'
 
+class ExportarFuncionariosPDFView(SSTBaseMixin, View):
     def get(self, request, *args, **kwargs):
         funcionarios = Funcionario.objects.for_request(request).select_related(
             'cargo', 'departamento'
@@ -1099,7 +1149,7 @@ class ExportarFuncionariosPDFView(SSTBaseMixin, View):
         context = {
             'funcionarios': funcionarios,
             'data_emissao': timezone.now().strftime('%d/%m/%Y às %H:%M'),
-            'nome_filial': getattr(request.user, 'filial_ativa', None) or 'Geral',
+            'nome_filial': self.get_filial_ativa() or 'Geral',
         }
         html_string = render_to_string(
             'departamento_pessoal/relatorio_funcionarios_pdf.html', context
@@ -1113,8 +1163,6 @@ class ExportarFuncionariosPDFView(SSTBaseMixin, View):
 
 
 class ExportarFuncionariosWordView(SSTBaseMixin, View):
-    app_label_required = 'seguranca_trabalho'
-
     def get(self, request, *args, **kwargs):
         funcionarios = Funcionario.objects.for_request(request).select_related(
             'cargo', 'departamento'
@@ -1155,7 +1203,7 @@ class ExportarFuncionariosWordView(SSTBaseMixin, View):
 
 
 # =============================================================================
-# REDIRECTS / UTILITARIOS
+# REDIRECTS / UTILITÁRIOS
 # =============================================================================
 
 @login_required
