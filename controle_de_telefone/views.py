@@ -684,8 +684,8 @@ class VinculoCreateView(_VinculoBaseMixin, SuccessMessageMixin, CreateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
 
-        filial_ativa = self.request.session.get('filial_ativa_id')
-        kwargs['filial_id'] = filial_ativa
+        filial_id = self.request.session.get('active_filial_id')
+        kwargs['filial_id'] = filial_id
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -1163,7 +1163,7 @@ class RecargaCreditoListView(_RecargaBaseMixin, ListView):
         )
         
         # Filtra por filial ativa (se não for superuser)
-        filial_id = self.request.session.get('filial_ativa_id')
+        filial_id = self.request.session.get('active_filial_id')
         if filial_id and not self.request.user.is_superuser:
             qs = qs.filter(filial_id=filial_id)
         
@@ -1189,7 +1189,7 @@ class RecargaCreditoListView(_RecargaBaseMixin, ListView):
         # Base do queryset para estatísticas (respeita filial ativa)
         # ═══════════════════════════════════════════════════════════
         qs_filial = RecargaCredito.objects.all()
-        filial_id = self.request.session.get('filial_ativa_id')
+        filial_id = self.request.session.get('active_filial_id')
         if filial_id and not self.request.user.is_superuser:
             qs_filial = qs_filial.filter(filial_id=filial_id)
 

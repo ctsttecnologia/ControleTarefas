@@ -631,6 +631,9 @@
                 <thead>
                     <tr>
                         <th>
+                            <i class="bi bi-notebook-fill me-1"></i> {% trans "Registro" %}
+                        </th>
+                        <th>
                             <i class="bi bi-briefcase me-1"></i> {% trans "Função" %}
                         </th>
                         {% for equipamento in equipamentos %}
@@ -642,10 +645,13 @@
                 </thead>
                 <tbody id="mzTableBody">
                     {% for funcao in funcoes %}
-                    <tr data-funcao="{{ funcao.nome|lower }}">
+                    <tr data-funcao="{{ funcao.nome}}">
+                        <th>|  
+                            {{ funcao.registro|truncatechars:6 }}
+                        </th>
                         <th>
                             <i class="bi bi-person-badge mz-funcao-icon"></i>
-                            {{ funcao.nome }}
+                            {{ funcao.nome|truncatechars:50 }}
                         </th>
                         {% for equipamento in equipamentos %}
                         <td>

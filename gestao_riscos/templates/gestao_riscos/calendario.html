@@ -8,17 +8,227 @@
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
 <style>
+    /* ═══════════════════════════════════════════════════════════════
+       CALENDÁRIO DE INSPEÇÕES — Adaptativo Claro/Escuro
+       Usa as variáveis globais do tema (style.css)
+    ═══════════════════════════════════════════════════════════════ */
+
     #calendar {
-        background-color: white;
+        background-color: var(--surface-elevated);
+        color: var(--bs-body-color);
         padding: 20px;
         border-radius: 8px;
+        transition: background-color 0.3s ease, color 0.3s ease;
     }
-    .fc-event {
-        border: none !important;
+
+    /* ─── Cabeçalho do calendário (toolbar) ─── */
+    #calendar .fc-toolbar-title {
+        color: var(--text-strong);
+        font-weight: 600;
+    }
+
+    #calendar .fc-button {
+        background-color: var(--bs-primary) !important;
+        border-color: var(--bs-primary) !important;
+        color: #fff !important;
+        font-weight: 500;
+        text-transform: capitalize;
+        box-shadow: none !important;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+
+    #calendar .fc-button:hover:not(:disabled) {
+        background-color: var(--bs-primary-hover) !important;
+        border-color: var(--bs-primary-hover) !important;
+        transform: translateY(-1px);
+    }
+
+    #calendar .fc-button:disabled {
+        opacity: 0.55;
+    }
+
+    #calendar .fc-button-active,
+    #calendar .fc-button-primary:not(:disabled).fc-button-active,
+    #calendar .fc-button-primary:not(:disabled):active {
+        background-color: var(--bs-primary-hover) !important;
+        border-color: var(--bs-primary-hover) !important;
+        box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.25) !important;
+    }
+
+    /* ─── Estrutura interna (linhas, colunas, bordas) ─── */
+    #calendar .fc-theme-standard td,
+    #calendar .fc-theme-standard th,
+    #calendar .fc-theme-standard .fc-scrollgrid {
+        border-color: var(--bs-border-color);
+    }
+
+    #calendar .fc-col-header-cell {
+        background-color: var(--surface-muted);
+        color: var(--bs-text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        padding: 8px 0;
+    }
+
+    #calendar .fc-col-header-cell-cushion {
+        color: var(--bs-text-muted);
+        text-decoration: none;
+    }
+
+    /* ─── Células de dias ─── */
+    #calendar .fc-daygrid-day {
+        background-color: var(--surface-elevated);
+        transition: background-color 0.2s ease;
+    }
+
+    #calendar .fc-daygrid-day:hover {
+        background-color: var(--surface-hover);
         cursor: pointer;
     }
-    .fc-daygrid-day:hover {
-        background-color: rgba(13, 110, 253, 0.05);
+
+    #calendar .fc-daygrid-day-number,
+    #calendar .fc-daygrid-day-top {
+        color: var(--bs-body-color);
+        text-decoration: none;
+        font-weight: 500;
+        padding: 4px 6px;
+    }
+
+    /* Dias de outros meses (esmaecidos) */
+    #calendar .fc-day-other .fc-daygrid-day-number {
+        color: var(--bs-text-muted);
+        opacity: 0.55;
+    }
+
+    #calendar .fc-day-other {
+        background-color: var(--surface-subtle);
+    }
+
+    /* ─── Dia de hoje (destaque) ─── */
+    #calendar .fc-day-today {
+        background-color: rgba(var(--bs-primary-rgb), 0.08) !important;
+    }
+
+    #calendar .fc-day-today .fc-daygrid-day-number {
+        color: var(--bs-primary);
+        font-weight: 700;
+    }
+
+    /* ─── Eventos ─── */
+    #calendar .fc-event {
+        border: none !important;
+        cursor: pointer;
+        font-weight: 500;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.82rem;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    #calendar .fc-event:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    #calendar .fc-event-title,
+    #calendar .fc-event-time {
+        color: #fff;
+    }
+
+    /* ─── Visualização "Lista" (listWeek) ─── */
+    #calendar .fc-list {
+        border-color: var(--bs-border-color);
+    }
+
+    #calendar .fc-list-day-cushion,
+    #calendar .fc-list-table .fc-list-day > * {
+        background-color: var(--surface-muted) !important;
+        color: var(--bs-body-color);
+    }
+
+    #calendar .fc-list-event:hover td {
+        background-color: var(--surface-hover) !important;
+    }
+
+    #calendar .fc-list-event td {
+        background-color: var(--surface-elevated);
+        border-color: var(--bs-border-color);
+        color: var(--bs-body-color);
+    }
+
+    #calendar .fc-list-empty {
+        background-color: var(--surface-subtle);
+        color: var(--bs-text-muted);
+    }
+
+    /* ─── "Mais eventos" (popover) ─── */
+    #calendar .fc-daygrid-more-link {
+        color: var(--bs-primary);
+        font-weight: 600;
+    }
+
+    #calendar .fc-popover {
+        background-color: var(--surface-elevated) !important;
+        border-color: var(--bs-border-color) !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    #calendar .fc-popover-header {
+        background-color: var(--surface-muted) !important;
+        color: var(--bs-body-color) !important;
+        border-bottom: 1px solid var(--bs-border-color);
+    }
+
+    #calendar .fc-popover-body {
+        background-color: var(--surface-elevated) !important;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       AJUSTES ESPECÍFICOS PARA TEMA ESCURO
+    ═══════════════════════════════════════════════════════════════ */
+    [data-bs-theme="dark"] #calendar {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Cabeçalho da grade — mais contraste no escuro */
+    [data-bs-theme="dark"] #calendar .fc-col-header-cell {
+        background-color: var(--surface-muted);
+    }
+
+    /* Linhas de divisão mais sutis */
+    [data-bs-theme="dark"] #calendar .fc-theme-standard td,
+    [data-bs-theme="dark"] #calendar .fc-theme-standard th,
+    [data-bs-theme="dark"] #calendar .fc-scrollgrid {
+        border-color: var(--bs-border-color);
+    }
+
+    /* Hover mais visível no escuro */
+    [data-bs-theme="dark"] #calendar .fc-daygrid-day:hover {
+        background-color: rgba(0, 184, 212, 0.12);
+    }
+
+    /* Botão "Hoje" desabilitado no escuro — sutil */
+    [data-bs-theme="dark"] #calendar .fc-button:disabled {
+        opacity: 0.4;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       LEGENDA — badges com tamanho fixo
+    ═══════════════════════════════════════════════════════════════ */
+    .legenda-badge {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        margin-right: 6px;
+        vertical-align: middle;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    [data-bs-theme="dark"] .legenda-badge {
+        border-color: rgba(255, 255, 255, 0.1);
     }
 </style>
 {% endblock %}
@@ -56,15 +266,15 @@
     <div class="card shadow-sm mb-4">
         <div class="card-body py-2">
             <div class="d-flex flex-wrap gap-3 align-items-center">
-                <strong class="me-2">Legenda:</strong>
+                <strong class="me-2 text-strong">Legenda:</strong>
                 <span class="d-flex align-items-center">
-                    <span class="badge bg-primary me-1">&nbsp;&nbsp;</span> Pendente
+                    <span class="legenda-badge bg-primary"></span> Pendente
                 </span>
                 <span class="d-flex align-items-center">
-                    <span class="badge bg-warning me-1">&nbsp;&nbsp;</span> Aguardando Aprovação
+                    <span class="legenda-badge bg-warning"></span> Aguardando Aprovação
                 </span>
                 <span class="d-flex align-items-center">
-                    <span class="badge bg-success me-1">&nbsp;&nbsp;</span> Concluída
+                    <span class="legenda-badge bg-success"></span> Concluída
                 </span>
             </div>
         </div>
@@ -87,7 +297,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
-    
+
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         locale: 'pt-br',
@@ -113,9 +323,10 @@ document.addEventListener('DOMContentLoaded', function() {
         dayMaxEvents: 3,
         eventDisplay: 'block'
     });
-    
+
     calendar.render();
 });
 </script>
 {% endblock %}
+
 
