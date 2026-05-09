@@ -68,9 +68,11 @@
             <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="sst-btn-header">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
+            {% if perms.seguranca_trabalho.view_fichaepi %}
             <a href="{% url 'seguranca_trabalho:ficha_pdf_template' ficha.pk %}" class="sst-btn-header sst-btn-header--primary">
                 <i class="bi bi-file-pdf"></i> PDF
             </a>
+            {% endif %}
             {% if not ficha.assinatura_funcionario %}
             <a href="{% url 'seguranca_trabalho:assinar_termo' ficha.pk %}" class="sst-btn-header sst-btn-header--warning">
                 <i class="bi bi-pen"></i> Assinar Termo

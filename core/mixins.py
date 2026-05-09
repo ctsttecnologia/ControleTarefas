@@ -21,6 +21,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse, NoReverseMatch
 from django.contrib.auth.mixins import UserPassesTestMixin
 
+
 # =============================================================================
 # == MIXINS DE PERMISSÃO E ESCOPO (ARQUITETURA DE 3 NÍVEIS)
 # =============================================================================
@@ -54,24 +55,60 @@ class AdminFilialScopedMixin:
 class ViewFilialScopedMixin:
     """
     NÍVEL 2 (Horizontal/Filial) - Para Views:
-    Filtra o queryset chamando o método 'for_request(request)' 
-    do manager do modelo.
+    Filtra o queryset pela filial ativa da sessão.
+
+    Estratégia (em ordem de prioridade):
+      1. Se o manager do model tiver 'for_request(request)', usa-o.
+      2. Caso contrário, lê 'active_filial_id' da sessão e filtra
+         pelo campo 'filial' do model (se existir).
     """
+
+    # Nome do FK no model — pode ser sobrescrito pela view se diferente
+    filial_field = 'filial'
+
+    def get_filial_ativa(self):
+        """
+        Retorna a instância de Filial ativa na sessão, ou None.
+        Disponibiliza o método para qualquer view que herde deste mixin.
+        """
+        request = getattr(self, 'request', None)
+        if request is None:
+            return None
+
+        filial_id = request.session.get('active_filial_id')
+        if not filial_id:
+            return None
+
+        # Import lazy para evitar import circular
+        try:
+            from filiais.models import Filial   # ⚠️ ajuste o app se for outro
+        except ImportError:
+            return None
+
+        return Filial.objects.filter(pk=filial_id).first()
 
     def get_queryset(self):
         parent = super()
         if hasattr(parent, 'get_queryset'):
             qs = parent.get_queryset()
-        elif getattr(self, 'model', None) is not None:  # ✅ getattr defensivo
+        elif getattr(self, 'model', None) is not None:
             qs = self.model._default_manager.all()
         else:
             raise ImproperlyConfigured(
                 f"{self.__class__.__name__} precisa definir 'model' "
                 f"ou herdar de uma view com get_queryset()."
             )
+
+        # 1) Caminho preferido: manager com for_request()
+        if hasattr(qs, 'for_request'):
+            return qs.for_request(self.request)
+
+        # 2) Fallback: filtra pela filial da sessão
         filial = self.get_filial_ativa()
-        if filial and hasattr(qs, 'model') and hasattr(qs.model, 'filial'):  # ✅ hasattr extra
-            qs = qs.filter(filial=filial)
+        model = getattr(qs, 'model', None)
+        if filial and model and hasattr(model, self.filial_field):
+            qs = qs.filter(**{self.filial_field: filial})
+
         return qs
 
 class TecnicoScopeMixin:

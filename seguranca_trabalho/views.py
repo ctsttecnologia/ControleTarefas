@@ -615,23 +615,37 @@ class AssinarEntregaView(SSTBaseMixin, TecnicoScopeMixin, UpdateView):
 class RegistrarDevolucaoView(SSTBaseMixin, LoginRequiredMixin, SingleObjectMixin, View):
     model = EntregaEPI
     pk_url_kwarg = 'pk'
-    app_label_required = 'seguranca_trabalho'  # ajuste se o app_label for outro
+    permission_required = 'seguranca_trabalho.change_entregaepi'
 
-    # GET não faz sentido aqui — só aceita POST
     def get(self, request, *args, **kwargs):
-        return redirect('seguranca_trabalho:entrega_list')
+        return redirect('seguranca_trabalho:ficha_detail', pk=self.get_object().ficha.pk)
 
     def post(self, request, *args, **kwargs):
-        entrega = self.get_object()  # já respeita o queryset com escopo de filial
+        entrega = self.get_object()
+        ficha_pk = entrega.ficha.pk
 
         if entrega.data_devolucao:
             messages.warning(request, "Esta entrega já foi devolvida.")
-            return redirect('seguranca_trabalho:entrega_list')
+            return redirect('seguranca_trabalho:ficha_detail', pk=ficha_pk)
 
-        entrega.data_devolucao = timezone.now()
-        entrega.save(update_fields=['data_devolucao'])
+        with transaction.atomic():
+            entrega.data_devolucao = timezone.now().date()
+            entrega.recebedor_devolucao = request.user
+            entrega.save(update_fields=['data_devolucao', 'recebedor_devolucao'])
+
+            # O signal cuidará de incrementar Equipamento.estoque_atual
+            MovimentacaoEstoque.objects.create(
+                equipamento=entrega.equipamento,
+                tipo=MovimentacaoEstoque.Tipo.ENTRADA,
+                quantidade=entrega.quantidade,
+                justificativa=f"Devolução - Entrega #{entrega.pk}",
+                responsavel=request.user,
+                filial=entrega.filial,
+                entrega_associada=entrega,
+            )
+
         messages.success(request, "Devolução registrada com sucesso.")
-        return redirect('seguranca_trabalho:entrega_list')
+        return redirect('seguranca_trabalho:ficha_detail', pk=ficha_pk)
 
 
 # =============================================================================
