@@ -44,7 +44,7 @@
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
                                 {% if perms.usuario.change_grupo or user.is_superuser %}
-                                <a href="{% url 'usuario:grupo_form' grupo.pk %}"
+                                <a href="{% url 'usuario:grupo_editar' grupo.pk %}"
                                    class="btn btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>

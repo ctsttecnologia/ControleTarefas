@@ -1,4 +1,4 @@
-{# templates/usuario/form_usuario.html #}
+﻿{# templates/usuario/form_usuario.html #}
 {% extends 'usuario/base_usuario.html' %}
 {% load widget_tweaks %}
 
@@ -511,7 +511,7 @@
                             {% endif %}
                         </div>
                         <div class="d-flex gap-2">
-                            <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-outline-secondary">
+                            <a href="{% url 'usuario:usuario_lista' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-1"></i>Cancelar
                             </a>
                             <button type="submit" class="btn btn-primary px-4">

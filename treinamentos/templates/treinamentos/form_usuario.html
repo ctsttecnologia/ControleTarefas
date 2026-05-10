@@ -1,4 +1,4 @@
-{# templates/usuario/form_usuario.html #}
+﻿{# templates/usuario/form_usuario.html #}
 {% extends 'base.html' %}
 {% load static widget_tweaks %}
 
@@ -220,7 +220,7 @@
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                            <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-cancel">
+                            <a href="{% url 'usuario:usuario_lista' %}" class="btn btn-cancel">
                                 <i class="bi bi-arrow-left me-1"></i> Cancelar
                             </a>
                             {% if perms.treinamentos.add_usuario or user.is_superuser %}
