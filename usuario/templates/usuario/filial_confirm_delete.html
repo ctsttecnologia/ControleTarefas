@@ -1,4 +1,4 @@
-{% extends 'usuario/base_usuario.html' %}
+﻿{% extends 'usuario/base_usuario.html' %}
 
 {% block title %}Excluir Filial{% endblock %}
 
@@ -20,7 +20,7 @@
                 <form method="post">
                     {% csrf_token %}
                     <div class="d-flex justify-content-center gap-2 mt-3">
-                        <a href="{% url 'usuario:filial_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        <a href="{% url 'usuario:filial_lista' %}" class="btn btn-outline-secondary">Cancelar</a>
                         <button type="submit" class="btn btn-danger">
                             <i class="bi bi-trash me-1"></i>Excluir
                         </button>

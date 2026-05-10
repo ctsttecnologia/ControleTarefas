@@ -2,6 +2,7 @@
 from django import template
 from core.mixins import MonitoramentoAccessMixin
 
+
 register = template.Library()
 
 
@@ -14,7 +15,7 @@ def pode_monitorar(user):
 @register.filter(name='in_grupo')
 def in_grupo(user, nome_grupo):
     """Verifica se o usuário pertence a um grupo específico."""
-    if not user.is_authenticated:
+    if not user or not user.is_authenticated:
         return False
     return user.groups.filter(name=nome_grupo).exists()
 

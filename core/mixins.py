@@ -81,7 +81,7 @@ class ViewFilialScopedMixin:
 
         # Import lazy para evitar import circular
         try:
-            from filiais.models import Filial   # ⚠️ ajuste o app se for outro
+            from usuario.models import Filial
         except ImportError:
             return None
 
@@ -99,11 +99,9 @@ class ViewFilialScopedMixin:
                 f"ou herdar de uma view com get_queryset()."
             )
 
-        # 1) Caminho preferido: manager com for_request()
         if hasattr(qs, 'for_request'):
             return qs.for_request(self.request)
 
-        # 2) Fallback: filtra pela filial da sessão
         filial = self.get_filial_ativa()
         model = getattr(qs, 'model', None)
         if filial and model and hasattr(model, self.filial_field):

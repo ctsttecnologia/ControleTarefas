@@ -363,29 +363,30 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # =============================================================================
 # E-MAIL
 # =============================================================================
-EMAIL_BACKEND = 'gerenciandoTarefas.email_backend.InsecureEmailBackend'
-EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+import ssl
+
+EMAIL_HOST = config('EMAIL_HOST')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
-# 🔧 Backend inseguro só em DEBUG (desenvolvimento)
+# Backend por ambiente
 if DEBUG:
-    EMAIL_BACKEND = 'gerenciandoTarefas.email_backend.InsecureEmailBackend'
+    # Dev: salva e-mails em arquivos, console limpo
+    EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+    EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
 else:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    # Em produção, usa seu backend customizado que lida com o certificado
+    EMAIL_BACKEND = 'gerenciandoTarefas.email_backend.InsecureEmailBackend'
 
-# O certificado do servidor SMTP é emitido para *.m9.network,
-# não para smtp.cetestsp.com.br, então desabilitamos a verificação de hostname
-# mantendo a validação do certificado em si (CERT_REQUIRED continua ativo)
 EMAIL_SSL_CONTEXT = ssl.create_default_context()
 EMAIL_SSL_CONTEXT.check_hostname = False
-EMAIL_SSL_CONTEXT.verify_mode = ssl.CERT_NONE
+EMAIL_SSL_CONTEXT.verify_mode = ssl.CERT_REQUIRED
 
-EMAIL_NOTIFICACAO_PGR = config('EMAIL_NOTIFICACAO_PGR', default='ctsttecnologia@gmail.com')
-EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO', default='ctsttecnologia@gmail.com')
+EMAIL_NOTIFICACAO_PGR = config('EMAIL_NOTIFICACAO_PGR', default='esg@cetestsp.com.br')
+EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO', default='esg@cetestsp.com.br')
 
 
 # =============================================================================

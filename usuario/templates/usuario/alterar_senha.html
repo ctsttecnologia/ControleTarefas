@@ -1,3 +1,4 @@
+
 {# templates/usuario/alterar_senha.html #}
 {% extends 'usuario/base_usuario.html' %}
 {% load widget_tweaks %}
@@ -32,7 +33,7 @@
                         <!-- Input group com botão toggle -->
                         <div class="input-group">
                             {% render_field field class="form-control" %}
-                            <button class="btn btn-outline-secondary toggle-password"
+                            <button class="bi-eye btn btn-outline-primary btn-sm mb-1 toggle-password"
                                     type="button"
                                     data-target="#{{ field.id_for_label }}"
                                     tabindex="-1"
@@ -86,55 +87,68 @@
 (function () {
     'use strict';
 
-    // ─── Toggle mostrar/ocultar senha ────────────────────────────────────────
-    document.querySelectorAll('.toggle-password').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            const input = document.querySelector(this.dataset.target);
-            const icon  = this.querySelector('i');
+    document.addEventListener('DOMContentLoaded', () => {
 
-            if (!input) return;
+        // ─── Toggle mostrar/ocultar senha ────────────────────────────────
+        document.querySelectorAll('.toggle-password').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetSel = btn.getAttribute('data-target');
+                const input = document.querySelector(targetSel);
+                const icon  = btn.querySelector('i');
 
-            const isPassword = input.type === 'password';
-            input.type       = isPassword ? 'text' : 'password';
-            icon.classList.toggle('fa-eye',       !isPassword);
-            icon.classList.toggle('fa-eye-slash',  isPassword);
-        });
-    });
+                if (!input || !icon) return;
 
-    // ─── Indicador de força da senha ─────────────────────────────────────────
-    const passwordInput = document.getElementById('id_new_password1');
-    const bar           = document.getElementById('password-strength-bar');
-    const label         = document.getElementById('password-strength-text');
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
 
-    if (passwordInput && bar && label) {
-        passwordInput.addEventListener('input', function () {
-            const strength = calcStrength(this.value);
+                // Alterna ícones do FontAwesome (que é o que você usa no HTML)
+                icon.classList.toggle('fa-eye',       !isPassword);
+                icon.classList.toggle('fa-eye-slash',  isPassword);
 
-            const levels = [
-                { pct: 0,   cls: '',           text: ''            },
-                { pct: 25,  cls: 'bg-danger',  text: 'Muito fraca' },
-                { pct: 50,  cls: 'bg-warning', text: 'Fraca'       },
-                { pct: 75,  cls: 'bg-info',    text: 'Média'       },
-                { pct: 100, cls: 'bg-success', text: 'Forte'       },
-            ];
+                btn.setAttribute(
+                    'aria-label',
+                    isPassword ? 'Ocultar senha' : 'Mostrar senha'
+                );
+            }); // fecha click
+        });     // fecha forEach
 
-            const level = levels[strength];
+        // ─── Indicador de força da senha ─────────────────────────────────
+        const passwordInput = document.getElementById('id_new_password1');
+        const bar           = document.getElementById('password-strength-bar');
+        const label         = document.getElementById('password-strength-text');
 
-            bar.style.width   = level.pct + '%';
-            bar.className     = 'progress-bar ' + level.cls;
-            label.textContent = level.text;
-            label.className   = 'fw-semibold ' + level.cls.replace('bg-', 'text-');
-        });
-    }
+        if (passwordInput && bar && label) {
+            passwordInput.addEventListener('input', function () {
+                const strength = calcStrength(this.value);
 
+                const levels = [
+                    { pct: 0,   cls: '',           text: ''            },
+                    { pct: 25,  cls: 'bg-danger',  text: 'Muito fraca' },
+                    { pct: 50,  cls: 'bg-warning', text: 'Fraca'       },
+                    { pct: 75,  cls: 'bg-info',    text: 'Média'       },
+                    { pct: 100, cls: 'bg-success', text: 'Forte'       },
+                ];
+
+                const level = levels[strength];
+
+                bar.style.width   = level.pct + '%';
+                bar.className     = 'progress-bar ' + level.cls;
+                label.textContent = level.text;
+                label.className   = 'fw-semibold ' + level.cls.replace('bg-', 'text-');
+            });
+        }
+
+    }); // fecha DOMContentLoaded
+
+    // ─── Função utilitária ───────────────────────────────────────────────
     function calcStrength(pwd) {
         if (!pwd) return 0;
         let score = 0;
-        if (pwd.length >= 8)                         score++; // comprimento mínimo
-        if (pwd.length >= 12)                        score++; // comprimento ideal
-        if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++; // maiúsc + minúsc
-        if (/[0-9]/.test(pwd))                       score++; // número
-        if (/[^A-Za-z0-9]/.test(pwd))               score++; // caractere especial
+        if (pwd.length >= 8)                         score++;
+        if (pwd.length >= 12)                        score++;
+        if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd))  score++;
+        if (/[0-9]/.test(pwd))                       score++;
+        if (/[^A-Za-z0-9]/.test(pwd))                score++;
         return Math.min(4, score);
     }
 

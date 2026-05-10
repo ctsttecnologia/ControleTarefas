@@ -94,7 +94,7 @@ class HierarchyProtectionMixin:
                              UpdateView):
             ...
     """
-    hierarchy_redirect_url = 'usuario:lista_usuarios'
+    hierarchy_redirect_url = 'usuario:usuario_lista'
     hierarchy_error_message = "Você não tem privilégios para alterar este usuário."
 
     def dispatch(self, request, *args, **kwargs):
@@ -127,7 +127,7 @@ class PreventSelfActionMixin:
                                    View):
             self_action_message = "Você não pode desativar a si mesmo."
     """
-    self_action_redirect_url = 'usuario:lista_usuarios'
+    self_action_redirect_url = 'usuario:usuario_lista'
     self_action_message = "Você não pode executar esta ação em si mesmo."
 
     def dispatch(self, request, *args, **kwargs):
@@ -171,7 +171,7 @@ class LastSuperuserProtectionMixin:
                                    View):
             ...
     """
-    last_superuser_redirect_url = 'usuario:lista_usuarios'
+    last_superuser_redirect_url = 'usuario:usuario_lista'
     last_superuser_message = (
         "Operação bloqueada: este é o último superusuário ativo do sistema. "
         "Promova outro usuário a superusuário antes de executar esta ação."

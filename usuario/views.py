@@ -416,12 +416,12 @@ class UserSetPasswordView(AppPermissionMixin,
     """Permite superusuário definir nova senha para outro usuário."""
     permission_required = 'usuario.change_usuario'
     form_class = SetPasswordForm
-    template_name = 'usuario/definir_senha_form.html'
-    success_url = reverse_lazy('usuario:lista_usuarios')
+    template_name = 'usuario/alterar_senha.html'
+    success_url = reverse_lazy('usuario:usuario_lista')
     self_action_message = (
         "Use 'Alterar Minha Senha' para redefinir sua própria senha."
     )
-    self_action_redirect_url = 'usuario:alterar_senha'
+    self_action_redirect_url = 'usuario:alterar_senha_propria'
 
     def has_permission(self):
         # 🔒 Apenas superuser pode redefinir senha de outros
@@ -709,15 +709,27 @@ class ManageCardPermissionsView(AppPermissionMixin, _SuperuserOnlyMixin, View):
 
 
 # =============================================================================
-# RECUPERAÇÃO DE SENHA
+# RECUPERAÇÃO DE SENHA (usuário NÃO autenticado)
 # =============================================================================
 
 @method_decorator(sensitive_post_parameters('email'), name='dispatch')
+@method_decorator(never_cache, name='dispatch')
 class CustomPasswordResetView(PasswordResetView):
+    """
+    Solicita o e-mail e envia link de redefinição.
+    Usuário NÃO precisa estar autenticado.
+    """
     template_name = 'usuario/password_reset/form.html'
-    email_template_name = 'usuario/password_reset/email.html'
+    email_template_name = 'usuario/password_reset/email.txt'        # versão texto
+    html_email_template_name = 'usuario/password_reset/email.html'  # versão HTML
     subject_template_name = 'usuario/password_reset/subject.txt'
     success_url = reverse_lazy('usuario:password_reset_done')
+    from_email = None  # usa DEFAULT_FROM_EMAIL do settings
+
+    def form_valid(self, form):
+        email = form.cleaned_data.get('email', '')
+        audit_logger.info(f"Solicitação de reset de senha: email={email}")
+        return super().form_valid(form)
 
 
 class CustomPasswordResetDoneView(PasswordResetDoneView):
@@ -727,13 +739,25 @@ class CustomPasswordResetDoneView(PasswordResetDoneView):
 @method_decorator(sensitive_post_parameters(
     'new_password1', 'new_password2'
 ), name='dispatch')
+@method_decorator(never_cache, name='dispatch')
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    """Recebe o link clicado pelo usuário, valida o token e permite criar nova senha."""
     template_name = 'usuario/password_reset/confirm.html'
     success_url = reverse_lazy('usuario:password_reset_complete')
+    post_reset_login = False  # 🔒 não loga automaticamente (mais seguro)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        audit_logger.info(
+            f"Senha redefinida via token: user={form.user.username} "
+            f"ip={self.request.META.get('REMOTE_ADDR', '-')}"
+        )
+        return response
 
 
 class CustomPasswordResetCompleteView(PasswordResetCompleteView):
     template_name = 'usuario/password_reset/complete.html'
+
 
 
 # =============================================================================

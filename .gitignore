@@ -60,3 +60,5 @@ auditoria_*.txt
 # Relatorios de auditoria gerados localmente
 auditoria_*.txt
 
+rotas_usuario.csv
+sent_emails/

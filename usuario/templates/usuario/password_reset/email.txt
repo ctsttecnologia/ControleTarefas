@@ -1,0 +1,15 @@
+
+Olá {{ user.get_full_name|default:user.username }},
+
+Você (ou alguém) solicitou a redefinição de senha da sua conta no sistema Cetest Minas.
+
+Para criar uma nova senha, acesse o link abaixo:
+
+{{ protocol }}://{{ domain }}{% url 'usuario:password_reset_confirm' uidb64=uid token=token %}
+
+Seu nome de usuário, caso tenha esquecido: {{ user.get_username }}
+
+Se você não solicitou esta redefinição, ignore este e-mail. Sua senha continuará a mesma.
+
+Atenciosamente,
+Equipe Cetest Minas
