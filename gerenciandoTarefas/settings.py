@@ -363,7 +363,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # =============================================================================
 # E-MAIL
 # =============================================================================
-import ssl
+
+FORCE_REAL_EMAIL = config('FORCE_REAL_EMAIL', default=False, cast=bool)
+
+# Backend por ambiente
+if DEBUG and not FORCE_REAL_EMAIL:
+    EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+    EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+else:
+    EMAIL_BACKEND = 'gerenciandoTarefas.email_backend.InsecureEmailBackend'
 
 EMAIL_HOST = config('EMAIL_HOST')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
@@ -372,14 +380,6 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
-# Backend por ambiente
-if DEBUG:
-    # Dev: salva e-mails em arquivos, console limpo
-    EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-    EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
-else:
-    # Em produção, usa seu backend customizado que lida com o certificado
-    EMAIL_BACKEND = 'gerenciandoTarefas.email_backend.InsecureEmailBackend'
 
 EMAIL_SSL_CONTEXT = ssl.create_default_context()
 EMAIL_SSL_CONTEXT.check_hostname = False
