@@ -185,42 +185,42 @@ def gerar_recorrencia_se_aplicavel(tarefa):
 # PARTICIPANTES — m2m_changed
 # =============================================================================
 
-@receiver(m2m_changed, sender=Tarefas.participantes.through)
-def notificar_participantes_adicionados(sender, instance, action, pk_set, **kwargs):
-    """
-    Quando participantes são adicionados a uma tarefa existente,
-    notifica os novos participantes.
-    
-    Não dispara em tarefas recém-criadas (notificar_tarefa_criada já cuida).
-    """
-    if action != 'post_add' or not pk_set:
-        return
+#@receiver(m2m_changed, sender=Tarefas.participantes.through)
+#def notificar_participantes_adicionados(sender, instance, action, pk_set, **kwargs):
+#    """
+#    Quando participantes são adicionados a uma tarefa existente,
+#    notifica os novos participantes.
+#    
+#    Não dispara em tarefas recém-criadas (notificar_tarefa_criada já cuida).
+#    """
+#    if action != 'post_add' or not pk_set:
+#        return
 
-    # Evita notificação duplicada em tarefas recém-criadas
-    # (delta de 5 segundos entre criação e adição de participantes)
-    if instance.data_criacao:
-        delta = (timezone.now() - instance.data_criacao).total_seconds()
-        if delta < 5:
-            return
+#    # Evita notificação duplicada em tarefas recém-criadas
+#    # (delta de 5 segundos entre criação e adição de participantes)
+#    if instance.data_criacao:
+#        delta = (timezone.now() - instance.data_criacao).total_seconds()
+#        if delta < 5:
+#            return
 
-    from django.contrib.auth import get_user_model
-    from notifications.services import notificar_tarefa_participante_adicionado
+#    from django.contrib.auth import get_user_model
+#    from notifications.services import notificar_tarefa_participante_adicionado
 
-    User = get_user_model()
-    novos = User.objects.filter(pk__in=pk_set)
+#    User = get_user_model()
+#    novos = User.objects.filter(pk__in=pk_set)
 
-    if not novos.exists():
-        return
+#    if not novos.exists():
+#        return
 
-    try:
-        notificar_tarefa_participante_adicionado(
-            tarefa=instance,
-            novos_participantes=novos,
-            adicionado_por=getattr(instance, '_alterado_por', None),
-        )
-    except Exception as e:
-        logger.error(
-            f'Erro ao notificar participantes adicionados na tarefa #{instance.pk}: {e}',
-            exc_info=True
-        )
+#    try:
+#        notificar_tarefa_participante_adicionado(
+#            tarefa=instance,
+#            novos_participantes=novos,
+#            adicionado_por=getattr(instance, '_alterado_por', None),
+#        )
+#   except Exception as e:
+#        logger.error(
+#            f'Erro ao notificar participantes adicionados na tarefa #{instance.pk}: {e}',
+#            exc_info=True
+#        )
 

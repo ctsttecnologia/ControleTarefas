@@ -260,6 +260,7 @@ class TarefaCreateView(TarefasBaseMixin, CreateView):
         form.instance.filial = self.request.user.filial_ativa
 
         response = super().form_valid(form)  # Agora self.object existe
+        self.object._alterado_por = self.request.user
         self.object.participantes.add(self.request.user)
         # ✅ Notificar DEPOIS do save
         notificar_tarefa_criada(
@@ -271,7 +272,6 @@ class TarefaCreateView(TarefasBaseMixin, CreateView):
 
 
 class TarefaUpdateView(TarefasBaseMixin, UpdateView):
-
     model = Tarefas
     form_class = TarefaForm
     template_name = 'tarefas/tarefa_form.html'
@@ -294,8 +294,12 @@ class TarefaUpdateView(TarefasBaseMixin, UpdateView):
         return kwargs
 
     def form_valid(self, form):
-        form.instance._user = self.request.user
+        # ✅ CORRIGIDO: usa _alterado_por (padrão do sistema)
+        # Setado ANTES de super().form_valid() pra estar disponível
+        # quando o signal m2m_changed disparar em participantes.set()
+        form.instance._alterado_por = self.request.user
         return super().form_valid(form)
+
 
 
 class TarefaDeleteView(TarefasBaseMixin, DeleteView):
@@ -333,7 +337,7 @@ class ConcluirTarefaView(TarefasBaseMixin, View):
         )
 
         if tarefa.status != 'concluida':
-            tarefa._user = request.user
+            tarefa._alterado_por = request.user 
             tarefa.status = 'concluida'
             tarefa.save()
             messages.success(request, f'Tarefa "{tarefa.titulo}" concluída!')
@@ -573,7 +577,7 @@ class UpdateTaskStatusView(TarefasBaseMixin, View):
                 Q(usuario=request.user) | Q(responsavel=request.user)
             ).get(pk=task_id)
 
-            tarefa._user = request.user
+            tarefa._alterado_por = request.user 
             tarefa.status = new_status
             tarefa.save()
 
