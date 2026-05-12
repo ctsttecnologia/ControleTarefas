@@ -122,6 +122,20 @@
 .history-change { color: var(--detail-text-muted); }
 .history-arrow { color: var(--detail-text-muted); margin: 0 0.25rem; }
 
+/* 🛡️ BLINDAGEM 1: Estilo "Sistema" para registros órfãos ou automáticos */
+.history-author-system {
+    font-weight: 600;
+    color: var(--detail-text-muted);
+    font-style: italic;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.history-author-system i {
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+
 /* ── Layout Grid ── */
 .detail-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
 @media (min-width: 992px) { .detail-grid { grid-template-columns: 1fr 340px; } }
@@ -627,17 +641,23 @@
                 {% for h in historicos %}
                 <div class="history-item">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="history-author">
-                            {% if h.alterado_por %}
+                        {# 🛡️ BLINDAGEM 2: Autor com diferenciação visual para "Sistema" #}
+                        {% if h.alterado_por %}
+                            <span class="history-author" title="Usuário responsável pela alteração">
                                 {{ h.alterado_por.get_full_name|default:h.alterado_por.username }}
-                            {% else %}
-                                Sistema
-                            {% endif %}
-                        </span>
+                            </span>
+                        {% else %}
+                            <span class="history-author-system"
+                                  title="Registro automático ou anterior ao rastreamento de autoria">
+                                <i class="bi bi-robot"></i> Sistema
+                            </span>
+                        {% endif %}
                         <span class="history-date">{{ h.data_alteracao|date:"d/m/Y H:i" }}</span>
                     </div>
                     <div class="history-change">
-                        <i class="bi {{ h.icone }} me-1" style="color:{{ h.cor }}; font-size:0.75rem;"></i>
+                        {# 🛡️ BLINDAGEM 4: Fallback de ícone/cor para registros antigos sem metadata #}
+                        <i class="bi {{ h.icone|default:'bi-clock-history' }} me-1"
+                           style="color:{{ h.cor|default:'#6b7280' }}; font-size:0.75rem;"></i>
                         {% if h.tipo_alteracao == 'status' %}
                             {{ h.valor_anterior }}
                             <span class="history-arrow">→</span>
@@ -679,6 +699,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var ajaxUrl   = "{% url 'tarefas:alterar_status_tarefa' object.pk %}";
     var currentStatus = '{{ object.status }}';
     var isLoading = false;
+
+    // 🛡️ BLINDAGEM 3: Fallback defensivo no nome do usuário
+    var userName = '{{ request.user.get_full_name|default:request.user.username|escapejs }}' || 'Sistema';
 
     toggleBtn.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -767,13 +790,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     var histList = document.getElementById('historicoList');
-                    if (histList) {
-                        var userName = '{{ request.user.get_full_name|default:request.user.username|escapejs }}';
-                        var agora = new Date();
-                        var dataStr = agora.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'})
-                                    + ' '
-                                    + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+                    var agora = new Date();
+                    var dataStr = agora.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'})
+                                + ' '
+                                + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
 
+                    if (histList) {
                         var novoItem = document.createElement('div');
                         novoItem.className = 'history-item';
                         novoItem.style.animation = 'statusFadeIn 0.3s ease';
@@ -802,14 +824,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 '<div style="max-height:300px;overflow-y:auto;" id="historicoList">' +
                                     '<div class="history-item" style="animation:statusFadeIn 0.3s ease;">' +
                                         '<div class="d-flex justify-content-between align-items-center mb-1">' +
-                                            '<span class="history-author">' +
-                                                '{{ request.user.get_full_name|default:request.user.username|escapejs }}' +
-                                            '</span>' +
-                                            '<span class="history-date">' +
-                                                new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'}) +
-                                                ' ' +
-                                                new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) +
-                                            '</span>' +
+                                            '<span class="history-author">' + userName + '</span>' +
+                                            '<span class="history-date">' + dataStr + '</span>' +
                                         '</div>' +
                                         '<div class="history-change">' +
                                             statusAnteriorDisplay +
@@ -845,4 +861,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
-
