@@ -123,44 +123,30 @@ def dropdown_html(request):
 
 @login_required
 def api_notificacoes_novas(request):
-    """
-    Retorna notificações criadas após o timestamp fornecido.
+    try:
+        desde = request.GET.get('desde')
+        qs = Notificacao.objects.filter(usuario=request.user, lida=False)
+        
+        if desde:
+            timestamp = parse_datetime(desde)
+            if timestamp:
+                qs = qs.filter(data_criacao__gt=timestamp)
+        
+        notificacoes = qs.order_by('-data_criacao')[:20]
+        
+        data = [{
+            'id': n.id,
+            'titulo': n.titulo,
+            'mensagem': n.mensagem,
+            'url': n.url_destino or '#',
+            'icone': n.icone or 'bi-bell',
+            'data_criacao': n.data_criacao.isoformat(),
+        } for n in notificacoes]
+        
+        return JsonResponse({'notificacoes': data, 'total': len(data)})
     
-    GET /notificacoes/api/novas/?desde=2026-05-11T17:00:00Z
-    """
-    desde = request.GET.get('desde')
-    
-    qs = Notificacao.objects.filter(
-        usuario=request.user,
-        lida=False,
-    )
-    
-    if desde:
-        timestamp = parse_datetime(desde)
-        if timestamp:
-            qs = qs.filter(criada_em__gt=timestamp)
-    
-    # Limita a 10 mais recentes pra não sobrecarregar
-    notificacoes = qs.order_by('-criada_em')[:10]
-    
-    data = {
-        'server_time': timezone.now().isoformat(),
-        'total_nao_lidas': Notificacao.objects.filter(
-            usuario=request.user, 
-            lida=False
-        ).count(),
-        'novas': [
-            {
-                'id': n.id,
-                'titulo': n.titulo,
-                'mensagem': n.mensagem,
-                'url': n.url or '',
-                'tipo': getattr(n, 'tipo', 'info'),  # info|sucesso|aviso|erro
-                'criada_em': n.criada_em.isoformat(),
-                'icone': getattr(n, 'icone', '🔔'),
-            }
-            for n in notificacoes
-        ],
-    }
-    
-    return JsonResponse(data)
+    except Exception as e:
+        # 🛡️ Nunca derruba o polling do frontend
+        import logging
+        logging.getLogger(__name__).exception("Erro em api_notificacoes_novas")
+        return JsonResponse({'notificacoes': [], 'total': 0, 'erro': str(e)}, status=200)
