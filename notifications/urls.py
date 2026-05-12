@@ -10,8 +10,11 @@ urlpatterns = [
     path('', views.notificacao_list, name='notificacao_list'),
     path('<int:pk>/lida/', views.marcar_como_lida, name='marcar_como_lida'),
     path('marcar-todas/', views.marcar_todas_como_lidas, name='marcar_todas_como_lidas'),
-    path('api/contagem/', views.api_contagem, name='api_contagem'),
     path('dropdown-html/', views.dropdown_html, name='dropdown_html'),
+
+    path('api/contagem/', views.api_contagem, name='api_contagem'),
+    
+    path('api/novas/', views.api_notificacoes_novas, name='api_novas'),
 ]
 
 

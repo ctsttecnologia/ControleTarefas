@@ -278,3 +278,21 @@ def registrar_alteracao_participantes(tarefa, usuarios, acao, alterado_por=None)
         logger.error(f'Erro ao registrar participantes da tarefa {tarefa.pk}: {e}')
         return None
 
+def _garantir_usuario(usuario, contexto=''):
+    """Garante usuário no histórico; usa 'sistema' como fallback."""
+    if usuario is not None:
+        return usuario
+    
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    sistema, _ = User.objects.get_or_create(
+        username='sistema',
+        defaults={
+            'first_name': 'Sistema',
+            'last_name': 'Automático',
+            'is_active': False,
+            'email': 'sistema@cetest.local',
+        }
+    )
+    logger.warning(f'⚠️ Histórico sem usuário {contexto}. Usando Sistema.')
+    return sistema

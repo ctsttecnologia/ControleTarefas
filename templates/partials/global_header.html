@@ -109,6 +109,28 @@
                             </ul>
                         </div>
 
+                        <!-- Container dos toasts -->
+                        <div id="toast-container" 
+                            style="position: fixed; top: 80px; right: 20px; z-index: 9999; max-width: 380px;">
+                        </div>
+
+                        <!-- Som de notificação (opcional) -->
+                        <audio id="som-notificacao" preload="auto">
+                            <source src="{% static 'sounds/slick-notification.ogg' %}" type="audio/ogg">
+                        </audio>
+
+                        {% if user.is_authenticated %}
+                        <script>
+                            window.NOTIF_CONFIG = {
+                                apiUrl: "{% url 'notifications:api_novas' %}",
+                                intervalo: 5000,  // 5 segundos
+                                somAtivo: true,
+                                browserNotifAtivo: true,
+                            };
+                        </script>
+                        <script src="{% static 'js/notificacoes-realtime.js' %}"></script>
+                        {% endif %}
+
                         <!-- Menu do usuário -->
                         <div class="dropdown">
                             <a href="#" class="nav-link dropdown-toggle text-white d-flex align-items-center gap-2"

@@ -73,7 +73,14 @@ def registrar_e_notificar_participantes(sender, instance, action, pk_set, **kwar
 
     User = get_user_model()
     tarefa = instance
-    alterado_por = getattr(tarefa, '_user', None)
+    
+    # ✅ CORRIGIDO: usa _alterado_por (padrão do sistema)
+    # Fallback: autor da tarefa
+    alterado_por = (
+        getattr(tarefa, '_alterado_por', None) 
+        or tarefa.usuario
+    )
+    
     usuarios = User.objects.filter(pk__in=pk_set)
 
     # ── 1. Registrar no Histórico ──
@@ -104,6 +111,7 @@ def registrar_e_notificar_participantes(sender, instance, action, pk_set, **kwar
                 f'Erro ao notificar participantes tarefa {tarefa.pk}: {e}',
                 exc_info=True,
             )
+
 
 # =============================================================================
 # SIGNAL: Notificacao criada/atualizada → Push WebSocket (badge em tempo real)

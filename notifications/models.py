@@ -34,6 +34,11 @@ class Notificacao(models.Model):
         ('pedido_entregue', 'Pedido Entregue'),
         ('pedido_recebido', 'Pedido Recebido'),
         ('pedido_verba_excedida', 'Pedido Excede Verba'),
+
+        ('info', 'Informação'),
+        ('sucesso', 'Sucesso'),
+        ('aviso', 'Aviso'),
+        ('erro', 'Erro'),
     ]
     # --- Categorias (para agrupar/filtrar no dropdown) ---
     CATEGORIA_CHOICES = [

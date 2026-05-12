@@ -403,7 +403,6 @@
 
         <!-- ═══ Sidebar ═══ -->
         <div>
-
             <!-- Card Detalhes -->
             <div class="detail-card">
                 <div class="detail-card-header">
@@ -625,33 +624,34 @@
                     <span class="comment-count">{{ historicos|length }}</span>
                 </div>
                 <div style="max-height: 400px; overflow-y: auto;" id="historicoList">
-                    {% for h in historicos %}
-                    <div class="history-item">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="history-author">
-                                {{ h.alterado_por.get_full_name|default:h.alterado_por.username|default:"Sistema" }}
-                            </span>
-                            <span class="history-date">{{ h.data_alteracao|date:"d/m/Y H:i" }}</span>
-                        </div>
-                        <div class="history-change">
-                            <i class="bi {{ h.icone }} me-1" style="color:{{ h.cor }}; font-size:0.75rem;"></i>
-                            {% if h.tipo_alteracao == 'status' %}
-                                {{ h.valor_anterior }}
-                                <span class="history-arrow">→</span>
-                                <strong>{{ h.valor_novo }}</strong>
-                            {% elif h.tipo_alteracao == 'criacao' %}
-                                <strong>{{ h.descricao }}</strong>
+                {% for h in historicos %}
+                <div class="history-item">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="history-author">
+                            {% if h.alterado_por %}
+                                {{ h.alterado_por.get_full_name|default:h.alterado_por.username }}
                             {% else %}
-                                {{ h.descricao }}
+                                Sistema
                             {% endif %}
-                        </div>
+                        </span>
+                        <span class="history-date">{{ h.data_alteracao|date:"d/m/Y H:i" }}</span>
                     </div>
-                    {% endfor %}
+                    <div class="history-change">
+                        <i class="bi {{ h.icone }} me-1" style="color:{{ h.cor }}; font-size:0.75rem;"></i>
+                        {% if h.tipo_alteracao == 'status' %}
+                            {{ h.valor_anterior }}
+                            <span class="history-arrow">→</span>
+                            <strong>{{ h.valor_novo }}</strong>
+                        {% elif h.tipo_alteracao == 'criacao' %}
+                            <strong>{{ h.descricao }}</strong>
+                        {% else %}
+                            {{ h.descricao }}
+                        {% endif %}
+                    </div>
                 </div>
+                {% endfor %}
             </div>
-            {% endif %}
-
-        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -8,6 +8,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from django.utils.dateparse import parse_datetime
+
 from .models import Notificacao
 
 
@@ -118,3 +120,47 @@ def dropdown_html(request):
         'notification_list': qs,
         'notification_count': qs.count(),
     })
+
+@login_required
+def api_notificacoes_novas(request):
+    """
+    Retorna notificações criadas após o timestamp fornecido.
+    
+    GET /notificacoes/api/novas/?desde=2026-05-11T17:00:00Z
+    """
+    desde = request.GET.get('desde')
+    
+    qs = Notificacao.objects.filter(
+        usuario=request.user,
+        lida=False,
+    )
+    
+    if desde:
+        timestamp = parse_datetime(desde)
+        if timestamp:
+            qs = qs.filter(criada_em__gt=timestamp)
+    
+    # Limita a 10 mais recentes pra não sobrecarregar
+    notificacoes = qs.order_by('-criada_em')[:10]
+    
+    data = {
+        'server_time': timezone.now().isoformat(),
+        'total_nao_lidas': Notificacao.objects.filter(
+            usuario=request.user, 
+            lida=False
+        ).count(),
+        'novas': [
+            {
+                'id': n.id,
+                'titulo': n.titulo,
+                'mensagem': n.mensagem,
+                'url': n.url or '',
+                'tipo': getattr(n, 'tipo', 'info'),  # info|sucesso|aviso|erro
+                'criada_em': n.criada_em.isoformat(),
+                'icone': getattr(n, 'icone', '🔔'),
+            }
+            for n in notificacoes
+        ],
+    }
+    
+    return JsonResponse(data)
