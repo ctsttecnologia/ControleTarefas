@@ -1,17 +1,20 @@
 
 # notifications/views.py
 
+from venv import logger
+import logging
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-
 from django.utils.dateparse import parse_datetime
-
 from .models import Notificacao
 
+MAX_DROPDOWN = 8
+
+logger = logging.getLogger(__name__)
 
 @login_required
 def notificacao_list(request):
@@ -85,68 +88,92 @@ def marcar_todas_como_lidas(request):
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
 
+@login_required
 def api_contagem(request):
-    """
-    Endpoint leve para polling do contador (usado por JS).
-    
-    🎯 NÃO usa @login_required: retorna 401 JSON em vez de redirect 302
-    para evitar carregar a página de login em chamadas AJAX.
-    """
-    if not request.user.is_authenticated:
-        return JsonResponse(
-            {'status': 'error', 'error': 'Autenticação necessária', 'count': 0},
-            status=401,
-        )
+    """Retorna apenas a contagem de notificações não lidas (leve e rápido)."""
+    try:
+        total = Notificacao.objects.filter(
+            usuario=request.user,
+            lida=False
+        ).count()
 
-    count = Notificacao.objects.filter(
-        usuario=request.user,
-        lida=False,
-    ).count()
-
-    return JsonResponse({'status': 'ok', 'count': count})
+        return JsonResponse({
+            'total_nao_lidas': total,
+            'server_time': timezone.now().isoformat(),
+        })
+    except Exception:
+        logger.exception("Erro em api_contagem")
+        return JsonResponse({
+            'total_nao_lidas': 0,
+            'server_time': timezone.now().isoformat(),
+        }, status=200)
 
 @login_required
 def dropdown_html(request):
     """
     Retorna o HTML parcial do dropdown do sino (apenas a lista de notificações).
-    Usado pelo JS para re-renderizar o dropdown quando chega notificação via WebSocket.
+    Usado pelo JS para re-renderizar o dropdown quando chega notificação
+    via WebSocket ou ao voltar para a aba.
     """
-    qs = Notificacao.objects.filter(
+    # Conta o total de não lidas ANTES de aplicar slice
+    total_nao_lidas = Notificacao.objects.filter(
         usuario=request.user,
         lida=False,
-    )[:8]  # MAX_DROPDOWN
-    
+    ).count()
+
+    # Busca apenas as N mais recentes para exibir no dropdown
+    notificacoes = Notificacao.objects.filter(
+        usuario=request.user,
+        lida=False,
+    ).order_by('-data_criacao')[:MAX_DROPDOWN]
+
     return render(request, 'notifications/_dropdown_items.html', {
-        'notification_list': qs,
-        'notification_count': qs.count(),
+        'notification_list': notificacoes,
+        'notification_count': total_nao_lidas,   # total real, não limitado a 8
+        'tem_mais': total_nao_lidas > MAX_DROPDOWN,
     })
 
 @login_required
 def api_notificacoes_novas(request):
+    """Retorna as notificações novas desde o último polling."""
     try:
         desde = request.GET.get('desde')
-        qs = Notificacao.objects.filter(usuario=request.user, lida=False)
-        
+        agora = timezone.now()
+
+        qs = Notificacao.objects.filter(usuario=request.user)
+
         if desde:
             timestamp = parse_datetime(desde)
             if timestamp:
                 qs = qs.filter(data_criacao__gt=timestamp)
-        
-        notificacoes = qs.order_by('-data_criacao')[:20]
-        
-        data = [{
+
+        notificacoes_qs = qs.order_by('-data_criacao')[:20]
+
+        novas = [{
             'id': n.id,
             'titulo': n.titulo,
             'mensagem': n.mensagem,
-            'url': n.url_destino or '#',
-            'icone': n.icone or 'bi-bell',
+            'tipo': getattr(n, 'tipo', 'info'),
+            'url': n.url_destino or '',
+            'icone': getattr(n, 'icone', '') or '',
             'data_criacao': n.data_criacao.isoformat(),
-        } for n in notificacoes]
-        
-        return JsonResponse({'notificacoes': data, 'total': len(data)})
-    
-    except Exception as e:
-        # 🛡️ Nunca derruba o polling do frontend
-        import logging
-        logging.getLogger(__name__).exception("Erro em api_notificacoes_novas")
-        return JsonResponse({'notificacoes': [], 'total': 0, 'erro': str(e)}, status=200)
+        } for n in notificacoes_qs]
+
+        total_nao_lidas = Notificacao.objects.filter(
+            usuario=request.user,
+            lida=False
+        ).count()
+
+        return JsonResponse({
+            'novas': novas,
+            'total_nao_lidas': total_nao_lidas,
+            'server_time': agora.isoformat(),
+        })
+
+    except Exception:
+        logger.exception("Erro em api_notificacoes_novas")
+        return JsonResponse({
+            'novas': [],
+            'total_nao_lidas': 0,
+            'server_time': timezone.now().isoformat(),
+        }, status=200)

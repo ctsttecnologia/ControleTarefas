@@ -1,7 +1,7 @@
 ﻿
 # FRAMEWORK PRINCIPAL
 # ============================================================
-Django>=4.2.28,<5.0                # LTS 4.2 até abril/2026 (migração para 5.x em PR separado)
+Django>=5.2.14,<6.0                # LTS até abril/2028 ⚠️ migração de 4.2
 asgiref>=3.10.0
 sqlparse>=0.5.3
 
@@ -13,7 +13,7 @@ PyJWT>=2.10.1                      # crit header bypass
 weasyprint>=66.0                   # SSRF redirect bypass
 Brotli>=1.2.0                      # Scrapy/urllib3 brotli DoS
 GitPython>=3.1.45                  # OK, mas reavaliar necessidade
-cryptography>=46.0.2               # #43, #67, #74
+cryptography>=44.0.1               # você já está em 46 
 lxml>=5.4.0
 pyasn1>=0.6.1
 orjson>=3.10.7
@@ -71,7 +71,7 @@ PyMySQL>=1.1.2
 
 # HTTP / NETWORKING
 # ============================================================
-requests>=2.32.4                   # #11 .netrc leak, #64 zip reuse
+requests>=2.32.3
 certifi>=2025.1.31
 charset-normalizer>=3.4.1
 idna>=3.10
@@ -84,7 +84,7 @@ wsproto>=1.2.0
 # PDF / DOCUMENTOS
 # ============================================================
 reportlab>=4.4.0
-pypdf>=6.10.2                      # 22+ CVEs corrigidos (DoS, infinite loops)
+pypdf>=5.4.0
 pydyf>=0.11.0
 pyHanko>=0.26.0
 pyhanko-certvalidator>=0.26.8
@@ -123,8 +123,11 @@ numpy>=2.3.1
 pandas>=2.3.0
 pyarrow>=21.0.0
 
-
+# STREAMLIT (opcional - se realmente usa)
 # ============================================================
+streamlit>=1.49.1
+streamlit-drawable-canvas>=0.9.3
+streamlit-pdf-viewer>=0.0.26
 pydeck>=0.9.1
 tenacity>=9.1.2
 watchdog>=6.0.0
@@ -190,7 +193,7 @@ rsa>=4.9.1
 # ============================================================
 cffi>=1.17.1
 pycparser>=2.22
-pyOpenSSL>=26.0.0                  # #60 DTLS cookie, #61 TLS callback
+pyOpenSSL>=25.3.0
 service-identity>=24.2.0
 pyasn1_modules>=0.4.2
 asn1crypto>=1.5.1
