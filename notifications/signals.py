@@ -1,4 +1,4 @@
-# notifications/signals.py — SUBSTITUIR completamente
+# notifications/signals.py
 
 """
 Signals que geram notificações automaticamente.
