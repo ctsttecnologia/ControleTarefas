@@ -84,21 +84,22 @@
                 <div class="d-flex align-items-center gap-2">
                     {% if user.is_authenticated %}
 
-                        <!-- Notificações — Sistema Unificado -->
-
+                        <!-- ============================================= -->
+                        <!-- Notificações — Sistema Unificado               -->
+                        <!-- ============================================= -->
                         <div class="dropdown">
                             <a href="#" id="header-notification-bell"
                                class="nav-link text-white position-relative"
                                data-bs-toggle="dropdown" aria-expanded="false"
                                title="Notificações">
                                 <i class="bi bi-bell-fill fs-5"></i>
-                                {% if notification_count > 0 %}
-                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                                        style="font-size: 0.6em;" id="notification-badge">
-                                        {{ notification_count }}
-                                        <span class="visually-hidden">notificações não lidas</span>
-                                    </span>
-                                {% endif %}
+                                {# Badge SEMPRE no DOM — só esconde quando count = 0 #}
+                                <span id="notification-badge"
+                                      class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                      style="font-size: 0.6em; {% if not notification_count %}display:none;{% endif %}">
+                                    {{ notification_count|default:0 }}
+                                    <span class="visually-hidden">notificações não lidas</span>
+                                </span>
                             </a>
 
                             <!-- Dropdown de notificações -->
@@ -108,28 +109,6 @@
                                 {% include 'notifications/_dropdown_items.html' %}
                             </ul>
                         </div>
-
-                        <!-- Container dos toasts -->
-                        <div id="toast-container" 
-                            style="position: fixed; top: 80px; right: 20px; z-index: 9999; max-width: 380px;">
-                        </div>
-
-                        <!-- Som de notificação (opcional) -->
-                        <audio id="som-notificacao" preload="auto">
-                            <source src="{% static 'sounds/slick-notification.ogg' %}" type="audio/ogg">
-                        </audio>
-
-                        {% if user.is_authenticated %}
-                        <script>
-                            window.NOTIF_CONFIG = {
-                                apiUrl: "{% url 'notifications:api_novas' %}",
-                                intervalo: 5000,  // 5 segundos
-                                somAtivo: true,
-                                browserNotifAtivo: true,
-                            };
-                        </script>
-                        <script src="{% static 'js/notificacoes-realtime.js' %}"></script>
-                        {% endif %}
 
                         <!-- Menu do usuário -->
                         <div class="dropdown">
@@ -178,23 +157,24 @@
                                     {% endif %}
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <form action="{% url 'usuario:logout' %}" method="post" class="d-inline">
-                                            {% csrf_token %}
-                                            <button type="submit" class="dropdown-item text-danger">
-                                                <i class="bi bi-box-arrow-right me-2"></i>Sair
-                                            </button>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </div>
+                                <li>
+                                    <form action="{% url 'usuario:logout' %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="bi bi-box-arrow-right me-2"></i>Sair
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
 
-                            <!-- Tema -->
-                            <button id="theme-switcher-btn" class="btn btn-outline-light btn-sm"
-                                    type="button" aria-label="Alternar tema">
-                                <i class="bi bi-sun-fill theme-icon-light"></i>
-                                <i class="bi bi-moon-stars-fill theme-icon-dark d-none"></i>
-                            </button>
+                        <!-- Tema -->
+                        <button id="theme-switcher-btn" class="btn btn-outline-light btn-sm"
+                                type="button" aria-label="Alternar tema">
+                            <i class="bi bi-sun-fill theme-icon-light"></i>
+                            <i class="bi bi-moon-stars-fill theme-icon-dark d-none"></i>
+                        </button>
+
                     {% else %}
                         <a href="{% url 'usuario:login' %}" class="btn btn-outline-light btn-sm">
                             <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
@@ -206,77 +186,104 @@
     </nav>
 </header>
 
-<!-- Script: Polling + Re-render do dropdown via WebSocket -->
 {% if user.is_authenticated %}
+<!-- ============================================================= -->
+<!-- Elementos auxiliares de notificação (fora do <nav> pra evitar  -->
+<!-- conflito de stacking-context do fixed-top)                     -->
+<!-- ============================================================= -->
+
+<!-- Container dos toasts -->
+<div id="toast-container"
+     style="position: fixed; top: 80px; right: 20px; z-index: 9999;
+            width: 380px; max-width: calc(100vw - 40px);
+            pointer-events: none;">
+</div>
+
+<!-- Som de notificação -->
+<audio id="som-notificacao" preload="auto">
+    <source src="{% static 'sounds/slick-notification.ogg' %}" type="audio/ogg">
+</audio>
+
+<!-- ============================================================= -->
+<!-- Configuração global do sistema de notificações                 -->
+<!-- ============================================================= -->
+<script>
+    window.NOTIF_CONFIG = {
+        apiUrl: "{% url 'notifications:api_novas' %}",
+        contagemUrl: "{% url 'notifications:api_contagem' %}",
+        intervalo: 30000,
+        somAtivo: true,
+        browserNotifAtivo: true,
+        badgeSelector: '#notification-badge',
+        listaSelector: '#notification-dropdown-list',
+        toastContainerId: 'toast-container',
+        somElementId: 'som-notificacao',
+        iconLogo: "{% static 'images/logocetest.png' %}",
+    };
+</script>
+
+<!-- Carrega o sistema de polling/toast/realtime -->
+<script src="{% static 'js/notificacoes-realtime.js' %}"></script>
+
+<!-- ============================================================= -->
+<!-- Re-render do dropdown via WebSocket / visibilitychange         -->
+<!-- (usa window.NotificacoesAPI exposto globalmente)               -->
+<!-- ============================================================= -->
 <script>
 (function() {
     'use strict';
 
-    const INTERVALO_MS = 60000;
-    const ENDPOINT_CONTAGEM = "{% url 'notifications:api_contagem' %}";
     const ENDPOINT_DROPDOWN = "{% url 'notifications:dropdown_html' %}";
+    const ENDPOINT_CONTAGEM = "{% url 'notifications:api_contagem' %}";
 
-    let pollingId = null;
-    let pollingPaused = false;
-
-    function getElements() {
-        return {
-            badge: document.getElementById('notification-badge'),
-            bell: document.getElementById('header-notification-bell'),
-            dropdown: document.getElementById('notification-dropdown-list'),
-        };
+    function getDropdown() {
+        return document.getElementById('notification-dropdown-list');
     }
 
-    function atualizarBadge(count) {
-        const { badge, bell } = getElements();
+    function getBadge() {
+        return document.getElementById('notification-badge');
+    }
 
-        if (count > 0) {
-            if (badge) {
-                badge.textContent = count;
-                badge.style.display = '';
-            } else if (bell) {
-                const newBadge = document.createElement('span');
-                newBadge.id = 'notification-badge';
-                newBadge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
-                newBadge.style.fontSize = '0.6em';
-                newBadge.textContent = count;
-                bell.appendChild(newBadge);
-            }
-        } else if (badge) {
+    /**
+     * Atualiza o número do badge do sino.
+     * Mantida no NotificacoesAPI para compatibilidade com chat.js (WebSocket).
+     */
+    function atualizarBadge(count) {
+        const badge = getBadge();
+        if (!badge) return;
+
+        const n = Number(count) || 0;
+        if (n > 0) {
+            badge.textContent = n > 99 ? '99+' : n;
+            badge.style.display = '';
+        } else {
+            badge.textContent = '0';
             badge.style.display = 'none';
         }
     }
 
-    async function atualizarContador() {
-        if (pollingPaused) return;
-
+    /**
+     * Busca a contagem atual no servidor e atualiza o badge.
+     */
+    async function forcarAtualizacao() {
         try {
             const resp = await fetch(ENDPOINT_CONTAGEM, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin',
             });
-
-            if (resp.status === 401) {
-                console.warn('[Notif] Sessão expirada — interrompendo polling');
-                pararPolling();
-                return;
-            }
-
             if (!resp.ok) return;
-
             const data = await resp.json();
-            atualizarBadge(data.count ?? 0);
+            atualizarBadge(data.count ?? data.total_nao_lidas ?? 0);
         } catch (e) {
-            // silencioso
+            console.warn('[Notif] Falha ao atualizar contagem:', e);
         }
     }
 
     /**
-     * Re-renderiza o dropdown completo (header + lista de notificações).
-     * Chamado pelo WebSocket quando chega uma nova notificação.
+     * Re-renderiza o dropdown completo.
      */
     async function recarregarDropdown() {
-        const { dropdown } = getElements();
+        const dropdown = getDropdown();
         if (!dropdown) {
             console.warn('[Notif] #notification-dropdown-list não encontrado');
             return;
@@ -287,12 +294,10 @@
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin',
             });
-
             if (!resp.ok) {
                 console.warn('[Notif] Falha ao recarregar dropdown:', resp.status);
                 return;
             }
-
             const html = await resp.text();
             dropdown.innerHTML = html;
             console.log('[Notif] Dropdown atualizado');
@@ -301,36 +306,26 @@
         }
     }
 
-    function iniciarPolling() {
-        if (pollingId) return;
-        pollingId = setInterval(atualizarContador, INTERVALO_MS);
-    }
-
-    function pararPolling() {
-        if (pollingId) {
-            clearInterval(pollingId);
-            pollingId = null;
-        }
-    }
-
+    // Recarrega dropdown ao voltar à aba
     document.addEventListener('visibilitychange', () => {
-        pollingPaused = document.hidden;
         if (!document.hidden) {
-            atualizarContador();
-            recarregarDropdown();  // atualiza dropdown ao voltar à aba
+            recarregarDropdown();
+            forcarAtualizacao();
         }
     });
 
-    // API global usada pelo WebSocket
+    // ============================================================
+    // API global — usada pelo chat.js (WebSocket) e por outros JS
+    // ============================================================
     window.NotificacoesAPI = {
-        atualizarBadge: atualizarBadge,
-        forcarAtualizacao: atualizarContador,
+        atualizarBadge: atualizarBadge,         // ✅ compatível com chat.js
+        forcarAtualizacao: forcarAtualizacao,
         recarregarDropdown: recarregarDropdown,
-        pararPolling: pararPolling,
-        iniciarPolling: iniciarPolling,
+        // Atalhos para o sistema realtime (se carregado)
+        pararPolling:   () => window.NotifRealtime?.pararPolling?.(),
+        iniciarPolling: () => window.NotifRealtime?.iniciarPolling?.(),
     };
-
-    iniciarPolling();
 })();
 </script>
 {% endif %}
+

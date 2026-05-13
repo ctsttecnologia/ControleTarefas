@@ -13,7 +13,6 @@ urlpatterns = [
     path('dropdown-html/', views.dropdown_html, name='dropdown_html'),
 
     path('api/contagem/', views.api_contagem, name='api_contagem'),
-    
     path('api/novas/', views.api_notificacoes_novas, name='api_novas'),
 ]
 

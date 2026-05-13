@@ -1,22 +1,41 @@
 
 // static/js/notificacoes-realtime.js
+// Sistema de notificações em tempo real via polling
+// Mescla: toast visual + polling robusto + dropdown + visibility API
 
 (function () {
     'use strict';
 
-    const config = window.NOTIF_CONFIG || {};
+    // ===== Configuração (sobrescrevível via window.NOTIF_CONFIG) =====
+    const config = Object.assign({
+        apiUrl: '/notifications/api/novas/',
+        contagemUrl: '/notifications/api/contagem/',
+        intervalo: 30000,                  // 30s entre polls
+        somAtivo: true,
+        browserNotifAtivo: true,
+        badgeSelector: '#badge-notificacoes',
+        listaSelector: '#notif-lista',     // dropdown do sino (opcional)
+        toastContainerId: 'toast-container',
+        somElementId: 'som-notificacao',
+        somUrlFallback: '/static/sounds/notif.mp3',
+        iconLogo: '/static/img/logo-cetest.png',
+        iconBadge: '/static/img/badge.png',
+    }, window.NOTIF_CONFIG || {});
+
     let ultimoCheck = new Date().toISOString();
     let polling = null;
+    let visibilityHandlerRegistrado = false;
 
     // ===== Permissão de notificação do navegador =====
     if (config.browserNotifAtivo && 'Notification' in window) {
         if (Notification.permission === 'default') {
-            // Pede permissão após 3s pra não ser intrusivo
             setTimeout(() => Notification.requestPermission(), 3000);
         }
     }
 
-    // ===== Função: buscar novas notificações =====
+    // ===========================================================
+    // POLLING
+    // ===========================================================
     async function buscarNovas() {
         try {
             const url = `${config.apiUrl}?desde=${encodeURIComponent(ultimoCheck)}`;
@@ -26,8 +45,8 @@
             });
 
             if (!response.ok) {
-                if (response.status === 403) {
-                    // Sessão expirou, para o polling
+                if (response.status === 401 || response.status === 403) {
+                    console.warn('[notif] sessão expirou, parando polling');
                     pararPolling();
                     return;
                 }
@@ -35,39 +54,50 @@
             }
 
             const data = await response.json();
-            ultimoCheck = data.server_time;
+
+            // Atualiza timestamp do servidor (evita drift de relógio)
+            if (data.server_time) {
+                ultimoCheck = data.server_time;
+            }
 
             // Atualiza badge do sino
-            atualizarBadgeSino(data.total_nao_lidas);
+            atualizarBadgeSino(data.total_nao_lidas || 0);
 
-            // Mostra cada nova notificação
-            data.novas.forEach(notif => {
-                mostrarToast(notif);
-                mostrarBrowserNotification(notif);
-                tocarSom();
-            });
+            // Processa novas notificações
+            const novas = Array.isArray(data.novas) ? data.novas : [];
+            if (novas.length > 0) {
+                novas.forEach(notif => {
+                    mostrarToast(notif);
+                    inserirNoDropdown(notif);
+                    mostrarBrowserNotification(notif);
+                });
+                tocarSom();  // som único pra várias notificações
+            }
 
         } catch (error) {
-            console.warn('Erro ao buscar notificações:', error);
+            console.warn('[notif] erro ao buscar notificações:', error);
         }
     }
 
-    // ===== Função: mostrar toast bonitão =====
+    // ===========================================================
+    // TOAST VISUAL
+    // ===========================================================
     function mostrarToast(notif) {
-        const container = document.getElementById('toast-container');
+        const container = document.getElementById(config.toastContainerId);
         if (!container) return;
 
         const cores = {
-            info: { bg: '#0d6efd', icone: 'ℹ️' },
+            info:    { bg: '#0d6efd', icone: 'ℹ️' },
             sucesso: { bg: '#198754', icone: '✅' },
-            aviso: { bg: '#ffc107', icone: '⚠️' },
-            erro: { bg: '#dc3545', icone: '🚨' },
+            aviso:   { bg: '#ffc107', icone: '⚠️' },
+            erro:    { bg: '#dc3545', icone: '🚨' },
         };
         const estilo = cores[notif.tipo] || cores.info;
         const icone = notif.icone || estilo.icone;
 
         const toast = document.createElement('div');
         toast.className = 'cetest-toast';
+        toast.dataset.notifId = notif.id;
         toast.style.cssText = `
             background: white;
             border-left: 5px solid ${estilo.bg};
@@ -96,7 +126,7 @@
                 background: none; border: none; color: #adb5bd;
                 cursor: pointer; font-size: 18px; line-height: 1;
                 padding: 0; align-self: flex-start;
-            ">&times;</button>
+            " aria-label="Fechar">&times;</button>
         `;
 
         // Click no toast → vai pra URL
@@ -115,27 +145,50 @@
         });
 
         container.appendChild(toast);
-
-        // Auto-remove após 8 segundos
         setTimeout(() => removerToast(toast), 8000);
     }
 
     function removerToast(toast) {
+        if (!toast || !toast.parentElement) return;
         toast.style.animation = 'slideOutRight 0.3s ease-in';
         setTimeout(() => toast.remove(), 300);
     }
 
-    // ===== Browser Notification (quando aba não está ativa) =====
+    // ===========================================================
+    // DROPDOWN DO SINO (opcional — só atua se existir #notif-lista)
+    // ===========================================================
+    function inserirNoDropdown(notif) {
+        const lista = document.querySelector(config.listaSelector);
+        if (!lista) return;
+
+        // Evita duplicar se a mesma notificação já estiver no dropdown
+        if (lista.querySelector(`[data-notif-id="${notif.id}"]`)) return;
+
+        const item = document.createElement('a');
+        item.href = notif.url || '#';
+        item.className = 'notif-item nova dropdown-item';
+        item.dataset.notifId = notif.id;
+        item.innerHTML = `
+            <div class="notif-titulo" style="font-weight:600;">${escapeHtml(notif.titulo)}</div>
+            <div class="notif-msg" style="font-size:13px; color:#6c757d;">${escapeHtml(notif.mensagem)}</div>
+            <div class="notif-tempo" style="font-size:11px; color:#adb5bd;">agora</div>
+        `;
+        lista.prepend(item);
+    }
+
+    // ===========================================================
+    // BROWSER NOTIFICATION (quando aba está inativa)
+    // ===========================================================
     function mostrarBrowserNotification(notif) {
         if (!config.browserNotifAtivo) return;
         if (!('Notification' in window)) return;
         if (Notification.permission !== 'granted') return;
-        if (document.hasFocus()) return;  // só mostra se aba estiver inativa
+        if (document.hasFocus()) return;  // só notifica fora da aba
 
         const n = new Notification(notif.titulo, {
             body: notif.mensagem,
-            icon: '/static/img/logo-cetest.png',
-            badge: '/static/img/badge.png',
+            icon: config.iconLogo,
+            badge: config.iconBadge,
             tag: `notif-${notif.id}`,
             requireInteraction: false,
         });
@@ -149,49 +202,74 @@
         setTimeout(() => n.close(), 10000);
     }
 
-    // ===== Som =====
+    // ===========================================================
+    // SOM
+    // ===========================================================
     function tocarSom() {
         if (!config.somAtivo) return;
-        const audio = document.getElementById('som-notificacao');
+
+        // Prefere <audio> no DOM (permite controle de volume via HTML)
+        const audio = document.getElementById(config.somElementId);
         if (audio) {
             audio.currentTime = 0;
-            audio.play().catch(() => { /* navegador bloqueou autoplay */ });
+            audio.play().catch(() => { /* autoplay bloqueado */ });
+            return;
         }
+
+        // Fallback: cria Audio em runtime
+        try {
+            const a = new Audio(config.somUrlFallback);
+            a.volume = 0.5;
+            a.play().catch(() => {});
+        } catch (e) {}
     }
 
-    // ===== Atualiza contador do sino =====
+    // ===========================================================
+    // BADGE DO SINO
+    // ===========================================================
     function atualizarBadgeSino(total) {
-        const badge = document.querySelector('#badge-notificacoes');
+        const badge = document.querySelector(config.badgeSelector);
         if (!badge) return;
 
         if (total > 0) {
             badge.textContent = total > 99 ? '99+' : total;
             badge.style.display = 'inline-block';
+            badge.classList.add('tem-novas');
         } else {
+            badge.textContent = '0';
             badge.style.display = 'none';
+            badge.classList.remove('tem-novas');
         }
     }
 
-    // ===== Utilitário =====
+    // ===========================================================
+    // UTILITÁRIO
+    // ===========================================================
     function escapeHtml(str) {
         const div = document.createElement('div');
         div.textContent = str || '';
         return div.innerHTML;
     }
 
-    // ===== Controle do polling =====
+    // ===========================================================
+    // CONTROLE DO POLLING
+    // ===========================================================
     function iniciarPolling() {
         if (polling) return;
         polling = setInterval(buscarNovas, config.intervalo);
-        // Pausa quando aba fica oculta (economia de recurso)
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                pararPolling();
-            } else {
-                buscarNovas();  // busca imediata ao voltar
-                iniciarPolling();
-            }
-        });
+
+        // Registra visibility listener APENAS UMA VEZ
+        if (!visibilityHandlerRegistrado) {
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    pararPolling();
+                } else {
+                    buscarNovas();        // busca imediata ao voltar
+                    iniciarPolling();
+                }
+            });
+            visibilityHandlerRegistrado = true;
+        }
     }
 
     function pararPolling() {
@@ -201,7 +279,20 @@
         }
     }
 
-    // ===== Start! =====
+    // ===========================================================
+    // START!
+    // ===========================================================
+    // Busca imediata + inicia polling
+    buscarNovas();
     iniciarPolling();
+
+    // Expor pra debug no console
+    window.NotifRealtime = {
+        buscarNovas,
+        iniciarPolling,
+        pararPolling,
+        config,
+        get ultimoCheck() { return ultimoCheck; },
+    };
 })();
 
