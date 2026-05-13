@@ -259,15 +259,10 @@ class TarefaCreateView(TarefasBaseMixin, CreateView):
         form.instance.usuario = self.request.user
         form.instance.filial = self.request.user.filial_ativa
 
-        response = super().form_valid(form)  # Agora self.object existe
+        response = super().form_valid(form)
         self.object._alterado_por = self.request.user
         self.object.participantes.add(self.request.user)
-        # ✅ Notificar DEPOIS do save
-        notificar_tarefa_criada(
-            tarefa=self.object,
-            criador=self.request.user,
-        )
-
+        
         return response
 
 

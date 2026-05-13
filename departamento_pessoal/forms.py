@@ -2,12 +2,10 @@
 
 from django import forms
 from django.contrib.auth import get_user_model
-from streamlit import user
 from cliente.models import Cliente
 from seguranca_trabalho.models import Funcao
 from .models import Funcionario, Documento, Cargo, Departamento
 from django.utils.translation import gettext_lazy as _
-
 
 User = get_user_model()
 
@@ -68,7 +66,7 @@ class FuncionarioForm(forms.ModelForm):
             'foto_3x4', 'nome_completo', 'data_nascimento', 'email_pessoal', 
             'telefone', 'sexo', 'usuario', 'matricula', 'departamento', 
             'cargo', 'funcao', 'cliente', 'data_admissao', 'salario', 
-            'status', 'data_demissao', 'cliente',
+            'status', 'data_demissao',
         ]
         # Aplica widgets para usar as classes do Bootstrap e tipos de input corretos
         widgets = {
@@ -87,12 +85,14 @@ class FuncionarioForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-
         request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
 
+        # ✅ Usa o usuário do request (Django), não do Streamlit
+        user = request.user if request and hasattr(request, 'user') else None
+
         # Se usuário tem permissão global, mostra todos
-        if user and user.has_perm('cliente.view_all_cliente'):
+        if user and user.is_authenticated and user.has_perm('cliente.view_all_cliente'):
             qs = Cliente.objects.all_filiais().select_related('filial')  # bypass do manager
         else:
             qs = Cliente.objects.select_related('filial')
@@ -102,10 +102,9 @@ class FuncionarioForm(forms.ModelForm):
         if request and hasattr(request, 'user') and hasattr(request.user, 'filial_ativa'):
             filial_ativa = request.user.filial_ativa
             if filial_ativa:
-                # Filtra as opções de 'funcao' para a filial ativa do usuário
-                self.fields['funcao'].queryset = Funcao.objects.filter(filial=filial_ativa, ativo=True)
-                # Você pode adicionar filtros para outros campos aqui também, se necessário
-                # Ex: self.fields['cargo'].queryset = Cargo.objects.filter(filial=filial_ativa)
+                self.fields['funcao'].queryset = Funcao.objects.filter(
+                    filial=filial_ativa, ativo=True
+                )
 
         # Aplica a classe .form-control ou .form-select a todos os campos para consistência
         for field_name, field in self.fields.items():
