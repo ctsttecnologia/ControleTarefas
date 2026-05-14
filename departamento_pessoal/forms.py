@@ -93,7 +93,9 @@ class FuncionarioForm(forms.ModelForm):
 
         # Se usuário tem permissão global, mostra todos
         if user and user.is_authenticated and user.has_perm('cliente.view_all_cliente'):
-            qs = Cliente.objects.all_filiais().select_related('filial')  # bypass do manager
+            # Tenta bypass; se não existir, cai no manager padrão
+            bypass = getattr(Cliente.objects, 'all_filiais', None)
+            qs = bypass().select_related('filial') if bypass else Cliente.objects.select_related('filial')
         else:
             qs = Cliente.objects.select_related('filial')
         
