@@ -22,7 +22,7 @@ ALL_CARDS = [
         'permission': 'departamento_pessoal.view_painel_dp',
         'icon': 'images/dp.gif',
         'links': [
-            {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel DP',
+            {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel',
              'permission': 'departamento_pessoal.view_funcionario'},
             {'url': 'treinamentos:dashboard', 'text': 'Treinamentos'},
         ]
@@ -33,7 +33,7 @@ ALL_CARDS = [
         'permission': 'seguranca_trabalho.view_fichaepi',
         'icon': 'images/tst.gif',
         'links': [
-            {'url': 'seguranca_trabalho:dashboard', 'text': 'Painel SST', 'permission': 'seguranca_trabalho.view_fichaepi'},
+            {'url': 'seguranca_trabalho:dashboard', 'text': 'Painel', 'permission': 'seguranca_trabalho.view_fichaepi'},
             {'url': 'seguranca_trabalho:ficha_list', 'text': 'Fichas de EPI', 'permission': 'seguranca_trabalho.view_fichaepi'},
             {'url': 'gestao_riscos:lista_riscos', 'text': 'Gestão de Riscos', 'permission': 'gestao_riscos.view_risco'},
         ]
@@ -54,7 +54,7 @@ ALL_CARDS = [
         'permission': 'ata_reuniao.view_atareuniao',
         'icon': 'images/reuniao.png',
         'links': [
-            {'url': 'ata_reuniao:ata_reuniao_dashboard', 'text': 'Painel de Atas', 'permission': 'ata_reuniao.view_atareuniao'},
+            {'url': 'ata_reuniao:ata_reuniao_dashboard', 'text': 'Painel', 'permission': 'ata_reuniao.view_atareuniao'},
             {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Lista de Atas', 'permission': 'ata_reuniao.view_atareuniao'},
         ]
     },

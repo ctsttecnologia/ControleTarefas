@@ -282,7 +282,7 @@ class UserCreateView(AppPermissionMixin,
     model = Usuario
     form_class = CustomUserCreationForm
     template_name = 'usuario/form_usuario.html'
-    success_url = reverse_lazy('usuario:lista_usuarios')
+    success_url = reverse_lazy('usuario:usuario_lista')
 
     def dispatch(self, request, *args, **kwargs):
         if not Filial.objects.exists():
@@ -290,7 +290,7 @@ class UserCreateView(AppPermissionMixin,
                 request,
                 "Cadastre ao menos uma filial antes de criar usuários."
             )
-            return redirect('usuario:filial_list')
+            return redirect('usuario:filial_lista')
         return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
@@ -342,7 +342,7 @@ class UserUpdateView(AppPermissionMixin,
     model = Usuario
     form_class = CustomUserChangeForm
     template_name = 'usuario/form_usuario.html'
-    success_url = reverse_lazy('usuario:lista_usuarios')
+    success_url = reverse_lazy('usuario:usuario_lista')
 
     def get_queryset(self):
         return super().get_queryset().select_related('filial_ativa')
@@ -403,7 +403,7 @@ class UserToggleActiveView(AppPermissionMixin,
             request,
             f"Usuário '{user_to_toggle.username}' {status} com sucesso."
         )
-        return redirect('usuario:lista_usuarios')
+        return redirect('usuario:usuario_lista')
 
 
 @method_decorator(sensitive_post_parameters(
@@ -586,7 +586,7 @@ class GerenciarGruposUsuarioView(AppPermissionMixin, View):
                 f"Grupo '{grupo.name}' removido de '{usuario.username}'."
             )
 
-        return redirect('usuario:gerenciar_grupos_usuario', pk=usuario.pk)
+        return redirect('usuario:usuario_gerenciar_grupos', pk=usuario.pk)
 
 
 # =============================================================================
@@ -601,7 +601,7 @@ class _SuperuserOnlyMixin:
 
 class FilialListView(AppPermissionMixin, _SuperuserOnlyMixin, ListView):
     model = Filial
-    template_name = 'usuario/filial_list.html'
+    template_name = 'usuario/filial_lista.html'
     context_object_name = 'filiais'
 
 
@@ -609,7 +609,7 @@ class FilialCreateView(AppPermissionMixin, _SuperuserOnlyMixin, CreateView):
     model = Filial
     form_class = FilialForm
     template_name = 'usuario/filial_form.html'
-    success_url = reverse_lazy('usuario:filial_list')
+    success_url = reverse_lazy('usuario:filial_lista')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -629,7 +629,7 @@ class FilialUpdateView(AppPermissionMixin, _SuperuserOnlyMixin, UpdateView):
     model = Filial
     form_class = FilialForm
     template_name = 'usuario/filial_form.html'
-    success_url = reverse_lazy('usuario:filial_list')
+    success_url = reverse_lazy('usuario:filial_lista')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -648,7 +648,7 @@ class FilialUpdateView(AppPermissionMixin, _SuperuserOnlyMixin, UpdateView):
 class FilialDeleteView(AppPermissionMixin, _SuperuserOnlyMixin, DeleteView):
     model = Filial
     template_name = 'usuario/filial_confirm_delete.html'
-    success_url = reverse_lazy('usuario:filial_list')
+    success_url = reverse_lazy('usuario:filial_lista')
 
     def post(self, request, *args, **kwargs):
         try:
@@ -665,7 +665,7 @@ class FilialDeleteView(AppPermissionMixin, _SuperuserOnlyMixin, DeleteView):
                 'Esta filial não pode ser excluída pois existem '
                 'registros associados a ela.'
             )
-            return redirect('usuario:filial_list')
+            return redirect('usuario:filial_lista')
 
 
 # =============================================================================

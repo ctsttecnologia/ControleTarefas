@@ -1,6 +1,7 @@
 # core/managers.py
 
 from django.db import models
+from .middleware import get_current_filial
 
 
 class FilialQuerySet(models.QuerySet):
@@ -53,14 +54,14 @@ class FilialQuerySet(models.QuerySet):
 
 
 class FilialManager(models.Manager):
-    """
-    Manager padrão do sistema.
-    Todos os models (com ou sem campo filial direto) podem usá-lo.
-    """
-
     def get_queryset(self):
-        return FilialQuerySet(self.model, using=self._db)
+        qs = super().get_queryset()
+        filial = get_current_filial()
+        if filial is not None:
+            return qs.filter(filial=filial)
+        return qs
 
-    def for_request(self, request):
-        return self.get_queryset().for_request(request)
+    def all_filiais(self):
+        """Retorna o queryset SEM filtrar por filial."""
+        return super().get_queryset()
 

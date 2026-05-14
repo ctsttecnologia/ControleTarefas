@@ -165,6 +165,7 @@ MIDDLEWARE.extend([
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.CurrentFilialMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware', 
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
