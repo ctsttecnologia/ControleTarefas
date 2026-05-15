@@ -2,7 +2,7 @@
 
 import io
 import json
-from typing import Any
+from typing import Any, Self
 from django.shortcuts import get_object_or_404, redirect, render
 import openpyxl
 from django.conf import settings
@@ -24,21 +24,19 @@ from openpyxl.utils import get_column_letter
 from xhtml2pdf import pisa
 import pandas as pd
 from io import BytesIO
-
 from cliente.models import Cliente
 from departamento_pessoal.models import Funcionario
 from core.mixins import FuncionarioRequiredMixin, ViewFilialScopedMixin, AppPermissionMixin
 from core.decorators import app_permission_required
-
 from .forms import AtaReuniaoForm, HistoricoAtaForm, ComentarioForm, UploadAtaReuniaoForm
 from .models import AtaReuniao, HistoricoAta, Filial, Comentario
-
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.contrib.messages import get_messages
 from django.core.exceptions import ObjectDoesNotExist
 from ata_reuniao import models
+from django.utils.timezone import localtime
 
 
 User = get_user_model()
@@ -274,7 +272,7 @@ class AtaReuniaoListView(AtaReuniaoBaseMixin, AtaQuerysetMixin, AtaFilterContext
                     )
                 }, status=403)
         return super().dispatch(request, *args, **kwargs)
-
+    
     def get_queryset(self):
         return self.get_ata_queryset(self.request, model_class=self.model)
 
@@ -466,20 +464,37 @@ class AtaReuniaoDashboardView(
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        # Filtros compartilhados via mixin
         context.update(self.get_filter_context())
 
-        # Queryset já com visibilidade aplicada
         base_queryset = self.get_ata_queryset(self.request, model_class=AtaReuniao)
+        hoje = timezone.localdate()
 
-        # ── KPIs ──
+        # ── KPIs base ──
+        total_geral     = base_queryset.count()
         total_concluido = base_queryset.filter(status=AtaReuniao.Status.CONCLUIDO).count()
         total_cancelado = base_queryset.filter(status=AtaReuniao.Status.CANCELADO).count()
+        total_pendente  = base_queryset.filter(status=AtaReuniao.Status.PENDENTE).count()
+        total_andamento = base_queryset.filter(status=AtaReuniao.Status.ANDAMENTO).count()
+        total_em_aberto = total_pendente + total_andamento
 
+        # ── 🆕 Atas VENCIDAS (em aberto e prazo expirado) ──
+        em_aberto_qs = base_queryset.filter(
+            status__in=[AtaReuniao.Status.PENDENTE, AtaReuniao.Status.ANDAMENTO]
+        )
+        total_vencidas = em_aberto_qs.filter(
+            prazo__lt=hoje, prazo__isnull=False
+        ).count()
+
+        # ── 🆕 Atas vencendo nos próximos 7 dias ──
+        from datetime import timedelta
+        proximos_7_dias = hoje + timedelta(days=7)
+        total_vencendo = em_aberto_qs.filter(
+            prazo__gte=hoje, prazo__lte=proximos_7_dias
+        ).count()
+
+        # ── Concluídas: no prazo vs com atraso ──
         concluido_no_prazo = 0
         concluido_com_atraso = 0
-
         atas_concluidas = base_queryset.filter(
             status=AtaReuniao.Status.CONCLUIDO
         ).only('prazo', 'atualizado_em')
@@ -493,23 +508,29 @@ class AtaReuniaoDashboardView(
             else:
                 concluido_no_prazo += 1
 
-        total_concluido_efetivo = concluido_no_prazo + concluido_com_atraso
-        percentual_no_prazo = (
-            (concluido_no_prazo / total_concluido_efetivo * 100)
-            if total_concluido_efetivo > 0 else 0
-        )
-        percentual_com_atraso = (
-            (concluido_com_atraso / total_concluido_efetivo * 100)
-            if total_concluido_efetivo > 0 else 0
-        )
+        total_efetivo = concluido_no_prazo + concluido_com_atraso
+        pct_no_prazo    = (concluido_no_prazo / total_efetivo * 100) if total_efetivo else 0
+        pct_com_atraso  = (concluido_com_atraso / total_efetivo * 100) if total_efetivo else 0
+
+        # ── Taxa de conclusão geral ──
+        taxa_conclusao = (total_concluido / total_geral * 100) if total_geral else 0
 
         context.update({
+            # Existentes
             'total_concluido': total_concluido,
             'concluido_no_prazo': concluido_no_prazo,
             'concluido_com_atraso': concluido_com_atraso,
             'total_cancelado': total_cancelado,
-            'percentual_no_prazo': percentual_no_prazo,
-            'percentual_com_atraso': percentual_com_atraso,
+            'percentual_no_prazo': pct_no_prazo,
+            'percentual_com_atraso': pct_com_atraso,
+            # 🆕 Novos
+            'total_geral': total_geral,
+            'total_pendente': total_pendente,
+            'total_andamento': total_andamento,
+            'total_em_aberto': total_em_aberto,
+            'total_vencidas': total_vencidas,
+            'total_vencendo': total_vencendo,
+            'taxa_conclusao': taxa_conclusao,
         })
 
         # ── Gráfico: Pendências por Responsável ──
@@ -521,31 +542,32 @@ class AtaReuniaoDashboardView(
             .order_by('-count')[:10]
         )
         context['pendencias_labels'] = [
-            item['responsavel__nome_completo'] or 'Sem responsável'
-            for item in pendencias
+            item['responsavel__nome_completo'] or 'Sem responsável' for item in pendencias
         ]
         context['pendencias_data'] = [item['count'] for item in pendencias]
 
-        # ── Gráfico: Qualidade das Conclusões ──
+        # ── Gráfico: Qualidade ──
         context['qualidade_labels'] = ['No Prazo', 'Com Atraso']
         context['qualidade_data'] = [concluido_no_prazo, concluido_com_atraso]
 
-        # ── Kanban (embutido no Dashboard) ──
-        context['kanban_status_choices'] = AtaReuniao.Status.choices
+        # ── 🆕 Gráfico: Distribuição por Status ──
+        context['status_dist_labels'] = ['Pendente', 'Em Andamento', 'Concluído', 'Cancelado']
+        context['status_dist_data']   = [total_pendente, total_andamento, total_concluido, total_cancelado]
 
-        kanban_items = {}
-        for status_value, status_label in AtaReuniao.Status.choices:
-            kanban_items[status_label] = list(
-                base_queryset.filter(status=status_value)
-                .select_related(
-                    'responsavel', 'responsavel__usuario',
-                    'contrato', 'coordenador', 'coordenador__usuario',
-                )
-                .order_by('prazo')
-            )
-        context['kanban_items'] = kanban_items
+        # ── 🆕 Evolução mensal (últimos 6 meses) ──
+        from django.db.models.functions import TruncMonth
+        seis_meses_atras = hoje - timedelta(days=180)
+        evolucao = (
+            base_queryset.filter(entrada__gte=seis_meses_atras)
+            .annotate(mes=TruncMonth('entrada'))
+            .values('mes')
+            .annotate(criadas=Count('id'))
+            .order_by('mes')
+        )
+        context['evolucao_labels'] = [e['mes'].strftime('%b/%y') for e in evolucao]
+        context['evolucao_data']   = [e['criadas'] for e in evolucao]
+
         context['titulo_pagina'] = "Dashboard de Atas"
-
         return context
 
 
@@ -1037,3 +1059,29 @@ def download_error_report(request):
     )
     response['Content-Disposition'] = 'attachment; filename="relatorio_erros_importacao.xlsx"'
     return response
+
+
+def ata_add_comment(request, pk):
+    ata = get_object_or_404(AtaReuniao, pk=pk)
+
+    if request.method == 'POST':
+        comentario = request.POST.get('comentario', '').strip()
+        if comentario:
+            historico = HistoricoAta.objects.create(
+                ata=ata,
+                usuario=request.user,
+                comentario=comentario,
+            )
+
+            # Resposta AJAX
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'ok': True,
+                    'autor': request.user.get_full_name() or request.user.username,
+                    'comentario': historico.comentario,
+                    'data': localtime(historico.timestamp).strftime('%d/%m/%Y %H:%M'),
+                })
+
+        messages.success(request, 'Comentário adicionado!')
+
+    return redirect('ata_reuniao:ata_reuniao_detail', pk=pk)

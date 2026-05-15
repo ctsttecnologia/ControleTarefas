@@ -1,5 +1,4 @@
 
-<!-- Dashboard de Atas de Reunião -->
 {% extends "base.html" %}
 {% load static %}
 {% load ata_extras %}
@@ -7,27 +6,40 @@
 
 {% block extra_css %}
 <style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #4e73df 0%, #224abe 50%, #1a3a8a 100%);
+        --card-radius: 1rem;
+        --card-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        --card-shadow-hover: 0 8px 24px rgba(78,115,223,0.12);
+        --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
     /* ═══ HERO ═══ */
     .page-hero {
-        background: linear-gradient(135deg, #4e73df 0%, #224abe 50%, #1a3a8a 100%);
-        border-radius: 1rem;
+        background: var(--primary-gradient);
+        border-radius: var(--card-radius);
         color: #fff;
         padding: 2rem 2.5rem;
         margin-bottom: 2rem;
         position: relative;
         overflow: hidden;
+        box-shadow: 0 10px 30px rgba(34, 74, 190, 0.25);
+    }
+    .page-hero::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+        opacity: 0.5;
     }
     .page-hero::after {
         content: '';
         position: absolute;
-        top: -40%;
-        right: -8%;
-        width: 280px;
-        height: 280px;
+        top: -40%; right: -8%;
+        width: 280px; height: 280px;
         background: rgba(255,255,255,0.07);
         border-radius: 50%;
-        pointer-events: none;
     }
+    .page-hero > * { position: relative; z-index: 1; }
     .page-hero h1 { font-weight: 700; font-size: 1.65rem; margin-bottom: 0.25rem; }
     .page-hero p  { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
 
@@ -51,27 +63,20 @@
         box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15);
     }
     .export-bar label {
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
+        font-size: 0.7rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.4px;
         color: #858796;
     }
 
     .btn-export {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 0.5rem 1rem;
-        border-radius: 0.625rem;
-        font-size: 0.82rem;
-        font-weight: 600;
-        border: 2px solid;
-        transition: all 0.2s;
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 0.5rem 1rem; border-radius: 0.625rem;
+        font-size: 0.82rem; font-weight: 600;
+        border: 2px solid; transition: var(--transition);
     }
     .btn-export:hover { transform: translateY(-1px); }
-    .btn-export-pdf { border-color: #ff1500; color: #e74a3b; background: rgba(231,74,59,0.04); }
-    .btn-export-pdf:hover { background: #fa1500; color: #fff; }
+    .btn-export-pdf   { border-color: #e74a3b; color: #e74a3b; background: rgba(231,74,59,0.04); }
+    .btn-export-pdf:hover   { background: #e74a3b; color: #fff; }
     .btn-export-excel { border-color: #1cc88a; color: #1cc88a; background: rgba(28,200,138,0.04); }
     .btn-export-excel:hover { background: #1cc88a; color: #fff; }
 
@@ -79,53 +84,78 @@
     .kpi-card {
         border: none;
         border-radius: 0.875rem;
-        transition: transform 0.2s, box-shadow 0.2s;
+        transition: var(--transition);
         position: relative;
         overflow: hidden;
         text-decoration: none !important;
         color: inherit !important;
     }
-    .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+    .kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--card-shadow-hover);
+    }
     .kpi-card .card-body { padding: 1.5rem; }
     .kpi-indicator {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 4px;
-        height: 100%;
+        position: absolute; top: 0; left: 0;
+        width: 4px; height: 100%;
         border-radius: 0.875rem 0 0 0.875rem;
     }
     .kpi-icon-wrapper {
-        width: 50px;
-        height: 50px;
+        width: 50px; height: 50px;
         border-radius: 0.75rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-        flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.25rem; flex-shrink: 0;
     }
     .kpi-value { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
-    .kpi-label { font-size: 0.78rem; color: #858796; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+    .kpi-value-counter { transition: all 0.3s; }
+    .kpi-label {
+        font-size: 0.78rem; color: #858796;
+        font-weight: 600; text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
     .kpi-percent { font-size: 0.72rem; font-weight: 600; margin-top: 0.25rem; }
+    .kpi-trend {
+        display: inline-flex; align-items: center; gap: 3px;
+        font-size: 0.7rem; font-weight: 700;
+        padding: 0.15rem 0.5rem;
+        border-radius: 50rem;
+        margin-top: 0.35rem;
+    }
     .kpi-dot {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 10px;
-        height: 10px;
+        position: absolute; top: 8px; right: 8px;
+        width: 10px; height: 10px;
         border-radius: 50%;
         animation: pulse-dot 2s infinite;
     }
     @keyframes pulse-dot {
         0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.6; transform: scale(1.3); }
+        50%      { opacity: 0.6; transform: scale(1.3); }
+    }
+    
+    /* Mini progress bar dentro do KPI */
+    .kpi-mini-progress {
+        height: 4px;
+        background: rgba(0,0,0,0.05);
+        border-radius: 50rem;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+    .kpi-mini-progress-bar {
+        height: 100%;
+        border-radius: 50rem;
+        transition: width 0.6s ease;
     }
 
     /* ═══ CHARTS ═══ */
     .chart-wrapper { position: relative; height: 320px; width: 100%; }
     .chart-wrapper-donut { position: relative; height: 280px; width: 100%; max-width: 280px; margin: 0 auto; }
-    .chart-card { border: none; border-radius: 0.875rem; }
+    .chart-card {
+        border: none;
+        border-radius: var(--card-radius);
+        box-shadow: var(--card-shadow);
+        transition: var(--transition);
+    }
+    .chart-card:hover { box-shadow: var(--card-shadow-hover); }
     .chart-card .card-header {
         background: transparent;
         border-bottom: 2px solid #f0f2f5;
@@ -133,230 +163,21 @@
     }
     .chart-card .card-header h5 { font-weight: 700; font-size: 1rem; margin: 0; }
 
-    /* ═══ KANBAN FILTERS ═══ */
-    .kanban-filters {
-        background: #fff;
-        border: 1px solid #e9ecef;
-        border-radius: 0.75rem;
-        padding: 1rem;
-        margin-bottom: 1rem;
-    }
-    .kanban-filters .form-select {
-        border: 2px solid #e2e8f0;
-        border-radius: 0.5rem;
-        font-size: 0.85rem;
-        padding: 0.5rem 0.75rem;
-    }
-    .kanban-filters .form-select:focus {
-        border-color: #4e73df;
-        box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15);
-    }
-    .kanban-filters label {
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        color: #858796;
-        margin-bottom: 0.25rem;
-    }
-    .filter-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        background: rgba(78,115,223,0.1);
-        color: #4e73df;
-        padding: 0.3rem 0.65rem;
-        border-radius: 50rem;
-        font-size: 0.72rem;
-        font-weight: 600;
-    }
-
-    /* ═══ KANBAN ═══ */
-    .kanban-section-title {
-        font-weight: 700;
-        font-size: 1.25rem;
-        color: #2d3748;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    .kanban-board-container {
-        background: #f8f9fc;
-        border-radius: 0.875rem;
-        padding: 1.25rem;
-        border: 1px solid #e9ecef;
-    }
-    .kanban-board { display: flex; overflow-x: auto; padding-bottom: 0.5rem; gap: 1rem; scrollbar-width: thin; }
-    .kanban-column {
-        flex: 0 0 300px;
-        min-width: 300px;
-        background: #fff;
-        border-radius: 0.75rem;
-        border-top: 4px solid;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    }
-    .kanban-column-header {
-        padding: 0.875rem 1rem;
-        font-weight: 700;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        color: #4a5568;
-        border-bottom: 1px solid #f0f2f5;
-    }
-    .kanban-column-count {
-        background: rgba(0,0,0,0.06);
-        color: #4a5568;
-        font-size: 0.75rem;
-        font-weight: 700;
-        padding: 0.2rem 0.55rem;
-        border-radius: 50rem;
-        transition: all 0.2s;
-    }
-    .kanban-cards {
-        padding: 0.75rem;
-        min-height: 150px;
-        max-height: 55vh;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 0.625rem;
-    }
-    .kanban-card {
-        border: 1.5px solid #e9ecef;
-        border-radius: 0.625rem;
-        background: #fff;
-        cursor: grab;
-        transition: all 0.2s;
-        text-decoration: none !important;
-        color: inherit !important;
-        position: relative;
-    }
-    .kanban-card:hover { 
-        border-color: #4e73df; 
-        box-shadow: 0 4px 12px rgba(78,115,223,0.1); 
-        transform: translateY(-2px); 
-    }
-    .kanban-card:active { cursor: grabbing; }
-    .kanban-card.is-dragging { 
-        opacity: 0.5; 
-        transform: rotate(2deg); 
-        cursor: grabbing;
-    }
-    .kanban-card.hidden-by-filter {
-        display: none !important;
-    }
-    .kanban-card .card-body { padding: 0.875rem; }
-    .kanban-card-title { 
-        font-size: 0.85rem; 
-        font-weight: 600; 
-        color: #2d3748; 
-        line-height: 1.4; 
-        margin-bottom: 0.25rem;
-    }
-    .kanban-card-meta { font-size: 0.75rem; color: #a0aec0; }
-    
-    /* Link de edição no card */
-    .kanban-card-link {
-        position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(78,115,223,0.1);
-        color: #4e73df;
-        border-radius: 0.375rem;
-        font-size: 0.8rem;
-        opacity: 0;
-        transition: all 0.2s;
-        z-index: 10;
-    }
-    .kanban-card:hover .kanban-card-link {
-        opacity: 1;
-    }
-    .kanban-card-link:hover {
-        background: #4e73df;
-        color: #fff;
-        transform: scale(1.1);
-    }
-    
-    /* Info do cliente no card */
-    .kanban-card-client {
-        font-size: 0.7rem;
-        color: #718096;
-        background: rgba(0,0,0,0.04);
-        padding: 0.15rem 0.5rem;
-        border-radius: 0.25rem;
-        margin-bottom: 0.5rem;
-        display: inline-block;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .kanban-column[data-status="Pendente"]      { border-top-color: #f6c23e; }
-    .kanban-column[data-status="Em Andamento"]  { border-top-color: #36b9cc; }
-    .kanban-column[data-status="Concluído"]     { border-top-color: #1cc88a; }
-    .kanban-column[data-status="Cancelado"]     { border-top-color: #858796; }
-    .kanban-column[data-status="Cancelado"] .kanban-card { opacity: 0.6; }
-    .kanban-column[data-status="Cancelado"] .kanban-card-title { text-decoration: line-through; }
-
-    .kanban-empty { text-align: center; padding: 2rem 1rem; color: #cbd5e0; font-size: 0.82rem; }
-    .kanban-empty i { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; }
-
-    .badge-overdue { background: rgba(231,74,59,0.12); color: #c0392b; font-weight: 600; border-radius: 50rem; font-size: 0.7rem; padding: 0.25rem 0.6rem; }
-    .badge-on-time { background: rgba(108,117,125,0.1); color: #858796; font-weight: 600; border-radius: 50rem; font-size: 0.7rem; padding: 0.25rem 0.6rem; }
-
-    /* Toast */
-    .kanban-toast {
-        position: fixed;
-        bottom: 2rem;
-        right: 2rem;
-        background: #1cc88a;
-        color: #fff;
-        padding: 0.875rem 1.25rem;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        font-size: 0.875rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        transform: translateY(100px);
-        opacity: 0;
-        transition: all 0.3s ease;
-        z-index: 9999;
-    }
-    .kanban-toast.show {
-        transform: translateY(0);
-        opacity: 1;
-    }
-    .kanban-toast.error {
-        background: #e74a3b;
-    }
+    /* ═══ TOAST ═══ */
+    .toast-container { z-index: 1100; }
 
     /* ═══ DARK MODE ═══ */
     [data-bs-theme="dark"] .page-hero { background: linear-gradient(135deg, #224abe, #1a2d6d); }
     [data-bs-theme="dark"] .export-bar { background: var(--bs-body-bg); border-color: rgba(255,255,255,0.06); }
     [data-bs-theme="dark"] .export-bar .form-control,
     [data-bs-theme="dark"] .export-bar .form-select { border-color: #2d3748; }
-    [data-bs-theme="dark"] .kanban-filters { background: var(--bs-body-bg); border-color: rgba(255,255,255,0.06); }
-    [data-bs-theme="dark"] .kanban-filters .form-select { border-color: #2d3748; background: var(--bs-body-bg); color: #e2e8f0; }
     [data-bs-theme="dark"] .kpi-card { background: var(--bs-body-bg); }
     [data-bs-theme="dark"] .kpi-value { color: #e2e8f0; }
     [data-bs-theme="dark"] .chart-card .card-header { border-bottom-color: rgba(255,255,255,0.06); }
-    [data-bs-theme="dark"] .kanban-board-container { background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.06); }
-    [data-bs-theme="dark"] .kanban-column { background: var(--bs-body-bg); }
-    [data-bs-theme="dark"] .kanban-card { border-color: rgba(255,255,255,0.06); background: var(--bs-body-bg); }
-    [data-bs-theme="dark"] .kanban-card-title { color: #e2e8f0; }
-    [data-bs-theme="dark"] .kanban-section-title { color: #e2e8f0; }
-    [data-bs-theme="dark"] .kanban-card-client { background: rgba(255,255,255,0.06); color: #a0aec0; }
 
     @media print {
         .no-print { display: none !important; }
         .page-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .kanban-board-container { display: none; }
     }
 </style>
 {% endblock %}
@@ -371,17 +192,21 @@
                 <h1><i class="bi bi-clipboard-data me-2"></i>Dashboard de Atas</h1>
                 <p>Performance e fluxo de trabalho das atividades de reunião</p>
             </div>
-                <div>
-                {% if perms.ata_reuniao.view_ata_reuniao or user.is_superuser %}
+            <div class="d-flex gap-2 flex-wrap no-print">
+                <button class="btn btn-sm btn-outline-light" onclick="copyLink()" title="Copiar link">
+                    <i class="bi bi-link-45deg"></i>
+                </button>
+                {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_reuniao_kanban' %}" class="btn btn-sm btn-outline-light">
-                    <i class="bi bi-bar-chart-line me-1"></i> Kamban
+                    <i class="bi bi-kanban me-1"></i> Kanban
                 </a>
-                {% endif %}
-                {% if perms.ata_reuniao.view_ata_reuniao or user.is_superuser %}
-                <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-sm btn-outline-light no-print">
+                <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-list-ul me-1"></i> Ver Lista
                 </a>
                 {% endif %}
+                <button onclick="window.print()" class="btn btn-sm btn-outline-light" title="Imprimir">
+                    <i class="bi bi-printer"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -397,7 +222,7 @@
                 <label for="data_fim_filtro">Data Fim</label>
                 <input type="date" class="form-control form-control-sm" id="data_fim_filtro">
             </div>
-            <div class="col-md-6 d-flex gap-2 justify-content-end">
+            <div class="col-md-6 d-flex gap-2 justify-content-end flex-wrap">
                 <button id="btn-export-pdf" class="btn-export btn-export-pdf">
                     <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
                 </button>
@@ -407,9 +232,70 @@
             </div>
         </div>
     </div>
-    
-    <!-- ═══ KPIs ═══ -->
-    <div class="row g-3 mb-4">
+
+    <!-- ═══ KPIs LINHA 1: Status geral ═══ -->
+    <div class="row g-3 mb-3">
+        <!-- Total em Aberto -->
+        <div class="col-md-6 col-xl-3">
+            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=Pendente" class="card kpi-card shadow-sm h-100">
+                <div class="kpi-indicator bg-warning"></div>
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-wrapper bg-warning bg-opacity-10">
+                        <i class="bi bi-hourglass-split text-warning"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="kpi-value text-warning kpi-value-counter" data-target="{{ total_em_aberto }}">0</div>
+                        <div class="kpi-label">Em Aberto</div>
+                        <div class="kpi-percent text-muted">
+                            {{ total_pendente }} pendente{{ total_pendente|pluralize:"s" }} · {{ total_andamento }} em andamento
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- 🆕 VENCIDAS -->
+        <div class="col-md-6 col-xl-3">
+            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?vencidas=1" class="card kpi-card shadow-sm h-100">
+                <div class="kpi-indicator bg-danger"></div>
+                {% if total_vencidas > 0 %}<div class="kpi-dot bg-danger"></div>{% endif %}
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-wrapper bg-danger bg-opacity-10">
+                        <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="kpi-value text-danger kpi-value-counter" data-target="{{ total_vencidas }}">0</div>
+                        <div class="kpi-label">Vencidas</div>
+                        <div class="kpi-percent text-danger">
+                            {% if total_vencidas > 0 %}
+                                <i class="bi bi-arrow-up-right"></i> Ação necessária
+                            {% else %}
+                                <i class="bi bi-check-circle"></i> Tudo em dia
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- 🆕 VENCENDO (próximos 7 dias) -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card kpi-card shadow-sm h-100">
+                <div class="kpi-indicator" style="background: #f6c23e;"></div>
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-wrapper" style="background: rgba(246,194,62,0.1);">
+                        <i class="bi bi-clock-history" style="color: #f6c23e;"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="kpi-value kpi-value-counter" data-target="{{ total_vencendo }}" style="color: #f6c23e;">0</div>
+                        <div class="kpi-label">Vencendo (7 dias)</div>
+                        <div class="kpi-percent text-muted">Atenção próxima</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Concluído -->
         <div class="col-md-6 col-xl-3">
             <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=Concluído" class="card kpi-card shadow-sm h-100">
                 <div class="kpi-indicator bg-success"></div>
@@ -417,54 +303,70 @@
                     <div class="kpi-icon-wrapper bg-success bg-opacity-10">
                         <i class="bi bi-check2-circle text-success"></i>
                     </div>
-                    <div>
-                        <div class="kpi-value text-success">{{ total_concluido }}</div>
-                        <div class="kpi-label">Total Concluído</div>
+                    <div class="flex-grow-1">
+                        <div class="kpi-value text-success kpi-value-counter" data-target="{{ total_concluido }}">0</div>
+                        <div class="kpi-label">Concluídas</div>
+                        <div class="kpi-mini-progress">
+                            <div class="kpi-mini-progress-bar bg-success" style="width: {{ taxa_conclusao|floatformat:0 }}%"></div>
+                        </div>
+                        <div class="kpi-percent text-success">{{ taxa_conclusao|floatformat:1 }}% taxa de conclusão</div>
                     </div>
                 </div>
             </a>
         </div>
-        <div class="col-md-6 col-xl-3">
-            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=Concluído" class="card kpi-card shadow-sm h-100">
+    </div>
+
+    <!-- ═══ KPIs LINHA 2: Qualidade das conclusões ═══ -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-xl-4">
+            <div class="card kpi-card shadow-sm h-100">
                 <div class="kpi-indicator bg-primary"></div>
                 <div class="card-body d-flex align-items-center gap-3">
                     <div class="kpi-icon-wrapper bg-primary bg-opacity-10">
                         <i class="bi bi-calendar2-check text-primary"></i>
                     </div>
-                    <div>
-                        <div class="kpi-value text-primary">{{ concluido_no_prazo }}</div>
-                        <div class="kpi-label">No Prazo</div>
-                        <div class="kpi-percent text-primary">{{ percentual_no_prazo|floatformat:1 }}% do total</div>
+                    <div class="flex-grow-1">
+                        <div class="kpi-value text-primary kpi-value-counter" data-target="{{ concluido_no_prazo }}">0</div>
+                        <div class="kpi-label">Concluídas no Prazo</div>
+                        <div class="kpi-mini-progress">
+                            <div class="kpi-mini-progress-bar bg-primary" style="width: {{ percentual_no_prazo|floatformat:0 }}%"></div>
+                        </div>
+                        <div class="kpi-percent text-primary">{{ percentual_no_prazo|floatformat:1 }}% das concluídas</div>
                     </div>
                 </div>
-            </a>
+            </div>
         </div>
-        <div class="col-md-6 col-xl-3">
-            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=Concluído" class="card kpi-card shadow-sm h-100">
-                <div class="kpi-indicator bg-danger"></div>
-                {% if concluido_com_atraso > 0 %}<div class="kpi-dot bg-danger"></div>{% endif %}
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card kpi-card shadow-sm h-100">
+                <div class="kpi-indicator" style="background: #e67e22;"></div>
                 <div class="card-body d-flex align-items-center gap-3">
-                    <div class="kpi-icon-wrapper bg-danger bg-opacity-10">
-                        <i class="bi bi-{% if concluido_com_atraso > 0 %}bell-fill{% else %}calendar2-x{% endif %} text-danger"></i>
+                    <div class="kpi-icon-wrapper" style="background: rgba(230,126,34,0.1);">
+                        <i class="bi bi-calendar2-x" style="color: #e67e22;"></i>
                     </div>
-                    <div>
-                        <div class="kpi-value text-danger">{{ concluido_com_atraso }}</div>
-                        <div class="kpi-label">Com Atraso</div>
-                        <div class="kpi-percent text-danger">{{ percentual_com_atraso|floatformat:1 }}% do total</div>
+                    <div class="flex-grow-1">
+                        <div class="kpi-value kpi-value-counter" data-target="{{ concluido_com_atraso }}" style="color: #e67e22;">0</div>
+                        <div class="kpi-label">Concluídas com Atraso</div>
+                        <div class="kpi-mini-progress">
+                            <div class="kpi-mini-progress-bar" style="width: {{ percentual_com_atraso|floatformat:0 }}%; background: #e67e22;"></div>
+                        </div>
+                        <div class="kpi-percent" style="color: #e67e22;">{{ percentual_com_atraso|floatformat:1 }}% das concluídas</div>
                     </div>
                 </div>
-            </a>
+            </div>
         </div>
-        <div class="col-md-6 col-xl-3">
+
+        <div class="col-md-12 col-xl-4">
             <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=Cancelado" class="card kpi-card shadow-sm h-100">
                 <div class="kpi-indicator" style="background: #858796;"></div>
                 <div class="card-body d-flex align-items-center gap-3">
                     <div class="kpi-icon-wrapper" style="background: rgba(133,135,150,0.1);">
                         <i class="bi bi-x-circle" style="color: #858796;"></i>
                     </div>
-                    <div>
-                        <div class="kpi-value" style="color: #858796;">{{ total_cancelado }}</div>
-                        <div class="kpi-label">Cancelado</div>
+                    <div class="flex-grow-1">
+                        <div class="kpi-value kpi-value-counter" data-target="{{ total_cancelado }}" style="color: #858796;">0</div>
+                        <div class="kpi-label">Canceladas</div>
+                        <div class="kpi-percent text-muted">Total de {{ total_geral }} ata{{ total_geral|pluralize:"s" }}</div>
                     </div>
                 </div>
             </a>
@@ -472,11 +374,12 @@
     </div>
 
     <!-- ═══ GRÁFICOS ═══ -->
-    <div class="row g-4 mb-5">
+    <div class="row g-4 mb-4">
         <div class="col-lg-7">
-            <div class="card chart-card shadow-sm h-100">
-                <div class="card-header">
+            <div class="card chart-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5><i class="bi bi-bar-chart-line text-warning me-2"></i>Pendências por Responsável</h5>
+                    <span class="badge bg-warning bg-opacity-10 text-warning">Top 10</span>
                 </div>
                 <div class="card-body">
                     <div class="chart-wrapper"><canvas id="pendenciasChart"></canvas></div>
@@ -484,7 +387,7 @@
             </div>
         </div>
         <div class="col-lg-5">
-            <div class="card chart-card shadow-sm h-100">
+            <div class="card chart-card h-100">
                 <div class="card-header">
                     <h5><i class="bi bi-pie-chart text-success me-2"></i>Qualidade das Conclusões</h5>
                 </div>
@@ -495,13 +398,40 @@
         </div>
     </div>
 
-
-    <!-- Toast de notificação -->
-    <div class="kanban-toast" id="kanbanToast">
-        <i class="bi bi-check-circle me-2"></i>
-        <span id="toastMessage">Status atualizado com sucesso!</span>
+    <!-- ═══ GRÁFICOS LINHA 2 ═══ -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+            <div class="card chart-card h-100">
+                <div class="card-header">
+                    <h5><i class="bi bi-pie-chart-fill text-primary me-2"></i>Distribuição por Status</h5>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <div class="chart-wrapper-donut"><canvas id="statusDistChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card chart-card h-100">
+                <div class="card-header">
+                    <h5><i class="bi bi-graph-up text-info me-2"></i>Evolução (últimos 6 meses)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-wrapper"><canvas id="evolucaoChart"></canvas></div>
+                </div>
+            </div>
+        </div>
     </div>
 
+</div>
+
+<!-- ═══ TOAST CONTAINER ═══ -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="appToast" class="toast align-items-center text-white border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -512,29 +442,85 @@
 {{ pendencias_data|default:"[]"|json_script:"pendencias_data_data" }}
 {{ qualidade_labels|default:"[]"|json_script:"qualidade_labels_data" }}
 {{ qualidade_data|default:"[]"|json_script:"qualidade_data_data" }}
+{{ status_dist_labels|default:"[]"|json_script:"status_dist_labels_data" }}
+{{ status_dist_data|default:"[]"|json_script:"status_dist_data_data" }}
+{{ evolucao_labels|default:"[]"|json_script:"evolucao_labels_data" }}
+{{ evolucao_data|default:"[]"|json_script:"evolucao_data_data" }}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // ═══════════════════════════════════════════════════════════════
-    // CONFIGURAÇÕES GLOBAIS
-    // ═══════════════════════════════════════════════════════════════
+
+    // ═══ TOAST HELPER ═══
+    function showToast(msg, type = 'success') {
+        const toast = document.getElementById('appToast');
+        toast.className = `toast align-items-center text-white border-0 bg-${type}`;
+        toast.querySelector('.toast-body').textContent = msg;
+        new bootstrap.Toast(toast, { delay: 3000 }).show();
+    }
+
+    // ═══ COPIAR LINK ═══
+    window.copyLink = function() {
+        navigator.clipboard.writeText(window.location.href)
+            .then(() => showToast('🔗 Link copiado!'))
+            .catch(() => showToast('Erro ao copiar', 'danger'));
+    };
+
+    // ═══ ANIMAÇÃO DE CONTADORES ═══
+    function animateCounter(el) {
+        const target = parseInt(el.dataset.target, 10) || 0;
+        const duration = 1000;
+        const steps = 30;
+        const stepValue = target / steps;
+        let current = 0;
+        let step = 0;
+        const timer = setInterval(() => {
+            step++;
+            current = Math.min(target, Math.round(stepValue * step));
+            el.textContent = current;
+            if (step >= steps) {
+                el.textContent = target;
+                clearInterval(timer);
+            }
+        }, duration / steps);
+    }
+
+    // Anima quando entra na viewport
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCounter(entry.target);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.3 });
+
+    document.querySelectorAll('.kpi-value-counter').forEach(el => observer.observe(el));
+
+    // ═══ CONFIGS DE GRÁFICO ═══
     const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
     const fontColor = isDark ? 'rgba(255,255,255,0.7)' : '#858796';
     const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-    const csrfToken = '{{ csrf_token }}';
-    const apiUrlBase = '{% url "ata_reuniao:api_update_status" 0 %}';
     const baseOpts = { responsive: true, maintainAspectRatio: false };
 
-    // ═══════════════════════════════════════════════════════════════
-    // GRÁFICOS
-    // ═══════════════════════════════════════════════════════════════
-    const pendenciasLabels = JSON.parse(document.getElementById('pendencias_labels_data').textContent);
-    const pendenciasData = JSON.parse(document.getElementById('pendencias_data_data').textContent);
-    const qualidadeLabels = JSON.parse(document.getElementById('qualidade_labels_data').textContent);
-    const qualidadeData = JSON.parse(document.getElementById('qualidade_data_data').textContent);
+    const $ = (id) => JSON.parse(document.getElementById(id).textContent);
+    const pendenciasLabels = $('pendencias_labels_data');
+    const pendenciasData   = $('pendencias_data_data');
+    const qualidadeLabels  = $('qualidade_labels_data');
+    const qualidadeData    = $('qualidade_data_data');
+    const statusDistLabels = $('status_dist_labels_data');
+    const statusDistData   = $('status_dist_data_data');
+    const evolucaoLabels   = $('evolucao_labels_data');
+    const evolucaoData     = $('evolucao_data_data');
 
-    // Gráfico de Barras - Pendências
+    function emptyChart(canvas, msg = 'Sem dados') {
+        const wrapper = canvas.closest('.chart-wrapper, .chart-wrapper-donut');
+        wrapper.innerHTML = `<div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+            <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.4;"></i>
+            <small class="mt-2">${msg}</small>
+        </div>`;
+    }
+
+    // ═══ Pendências (barras) ═══
     const pendenciasCtx = document.getElementById('pendenciasChart');
     if (pendenciasCtx && pendenciasLabels.length > 0) {
         new Chart(pendenciasCtx, {
@@ -544,27 +530,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     label: 'Pendências',
                     data: pendenciasData,
-                    backgroundColor: 'rgba(246,194,62,0.2)',
+                    backgroundColor: 'rgba(246,194,62,0.25)',
                     borderColor: '#f6c23e',
                     borderWidth: 2,
                     borderRadius: 6,
+                    hoverBackgroundColor: 'rgba(246,194,62,0.5)',
                 }]
             },
             options: {
                 ...baseOpts,
                 indexAxis: 'y',
+                animation: { duration: 800, easing: 'easeOutQuart' },
                 scales: {
-                    x: { beginAtZero: true, ticks: { precision: 0, color: fontColor }, grid: { color: gridColor, drawBorder: false } },
+                    x: { beginAtZero: true, ticks: { precision: 0, color: fontColor }, grid: { color: gridColor } },
                     y: { ticks: { color: fontColor }, grid: { display: false } }
                 },
                 plugins: { legend: { display: false } }
             }
         });
     } else if (pendenciasCtx) {
-        pendenciasCtx.closest('.chart-wrapper').innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted"><i class="bi bi-info-circle me-2"></i>Nenhuma pendência</div>';
+        emptyChart(pendenciasCtx, 'Nenhuma pendência 🎉');
     }
 
-    // Gráfico Donut - Qualidade
+    // ═══ Qualidade (donut) ═══
     const qualidadeCtx = document.getElementById('qualidadeChart');
     if (qualidadeCtx && qualidadeData.some(v => v > 0)) {
         new Chart(qualidadeCtx, {
@@ -573,23 +561,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 labels: qualidadeLabels,
                 datasets: [{
                     data: qualidadeData,
-                    backgroundColor: ['rgba(28,200,138,0.8)', 'rgba(231,74,59,0.8)'],
+                    backgroundColor: ['rgba(28,200,138,0.85)', 'rgba(231,74,59,0.85)'],
                     borderColor: isDark ? '#1a1d23' : '#fff',
                     borderWidth: 3,
-                    hoverOffset: 8
+                    hoverOffset: 10
                 }]
             },
             options: {
                 ...baseOpts,
-                cutout: '60%',
+                cutout: '65%',
                 plugins: {
-                    legend: { 
-                        position: 'bottom', 
-                        labels: { color: fontColor, usePointStyle: true, pointStyle: 'circle', padding: 16 } 
-                    },
+                    legend: { position: 'bottom', labels: { color: fontColor, usePointStyle: true, padding: 16 } },
                     tooltip: {
                         callbacks: {
-                            label: function(ctx) {
+                            label: (ctx) => {
                                 const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
                                 const pct = ((ctx.parsed / total) * 100).toFixed(1);
                                 return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
@@ -600,38 +585,144 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     } else if (qualidadeCtx) {
-        qualidadeCtx.closest('.chart-wrapper-donut').innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted"><i class="bi bi-info-circle me-2"></i>Sem dados</div>';
+        emptyChart(qualidadeCtx, 'Nenhuma ata concluída ainda');
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // EXPORTAÇÃO PDF/EXCEL
-    // ═══════════════════════════════════════════════════════════════
-    const btnPdf = document.getElementById('btn-export-pdf');
+    // ═══ 🆕 Distribuição por Status (donut) ═══
+    const statusDistCtx = document.getElementById('statusDistChart');
+    if (statusDistCtx && statusDistData.some(v => v > 0)) {
+        new Chart(statusDistCtx, {
+            type: 'doughnut',
+            data: {
+                labels: statusDistLabels,
+                datasets: [{
+                    data: statusDistData,
+                    backgroundColor: ['#f6c23e', '#36b9cc', '#1cc88a', '#858796'],
+                    borderColor: isDark ? '#1a1d23' : '#fff',
+                    borderWidth: 3,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                ...baseOpts,
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: fontColor, usePointStyle: true, padding: 12, font: { size: 11 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+                                return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else if (statusDistCtx) {
+        emptyChart(statusDistCtx);
+    }
+
+    // ═══ 🆕 Evolução (linha) ═══
+    const evolucaoCtx = document.getElementById('evolucaoChart');
+    if (evolucaoCtx && evolucaoLabels.length > 0) {
+        new Chart(evolucaoCtx, {
+            type: 'line',
+            data: {
+                labels: evolucaoLabels,
+                datasets: [{
+                    label: 'Atas criadas',
+                    data: evolucaoData,
+                    borderColor: '#36b9cc',
+                    backgroundColor: 'rgba(54,185,204,0.15)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#36b9cc',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                ...baseOpts,
+                animation: { duration: 1000, easing: 'easeOutQuart' },
+                scales: {
+                    x: { ticks: { color: fontColor }, grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { precision: 0, color: fontColor }, grid: { color: gridColor } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    } else if (evolucaoCtx) {
+        emptyChart(evolucaoCtx, 'Sem dados nos últimos 6 meses');
+    }
+
+    // ═══ EXPORTAÇÃO ═══
+    const btnPdf   = document.getElementById('btn-export-pdf');
     const btnExcel = document.getElementById('btn-export-excel');
-    
+
     if (btnPdf || btnExcel) {
-        const baseUrlPdf = "{% url 'ata_reuniao:ata_reuniao_export_pdf' %}";
+        const baseUrlPdf   = "{% url 'ata_reuniao:ata_reuniao_export_pdf' %}";
         const baseUrlExcel = "{% url 'ata_reuniao:ata_reuniao_export_excel' %}";
-        
-        function handleExport(baseUrl) {
+
+        function handleExport(baseUrl, btn) {
             const di = document.getElementById('data_inicio_filtro')?.value;
             const df = document.getElementById('data_fim_filtro')?.value;
-            
-            if ((di && df) || (!di && !df)) {
-                const params = new URLSearchParams();
-                if (di && df) {
-                    params.set('data_inicio', di);
-                    params.set('data_fim', df);
-                }
-                window.location.href = `${baseUrl}?${params.toString()}`;
-            } else {
-                alert('Preencha ambas as datas ou deixe vazias para exportar tudo.');
+
+            if (di && !df || !di && df) {
+                showToast('⚠️ Preencha ambas as datas ou deixe vazias', 'warning');
+                return;
             }
+
+            // Loading state
+            const original = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Gerando...';
+            btn.disabled = true;
+
+            const params = new URLSearchParams();
+            if (di && df) {
+                params.set('data_inicio', di);
+                params.set('data_fim', df);
+            }
+            window.location.href = `${baseUrl}?${params.toString()}`;
+
+            // Restaura após 3s
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.disabled = false;
+            }, 3000);
         }
-        
-        btnPdf?.addEventListener('click', () => handleExport(baseUrlPdf));
-        btnExcel?.addEventListener('click', () => handleExport(baseUrlExcel));
+
+        btnPdf?.addEventListener('click', (e) => handleExport(baseUrlPdf, e.currentTarget));
+        btnExcel?.addEventListener('click', (e) => handleExport(baseUrlExcel, e.currentTarget));
+    }
+
+    // ═══ ATALHOS ═══
+    document.addEventListener('keydown', (e) => {
+        const tag = document.activeElement.tagName;
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
+
+        if (e.key.toLowerCase() === 'k' && !e.ctrlKey) {
+            const kanban = document.querySelector('a[href*="ata_reuniao_kanban"]');
+            if (kanban) { e.preventDefault(); kanban.click(); }
+        }
+        if (e.key.toLowerCase() === 'l' && !e.ctrlKey) {
+            const list = document.querySelector('a[href*="ata_reuniao_list"]');
+            if (list) { e.preventDefault(); list.click(); }
+        }
+    });
+
+    // Dica de atalhos (1ª visita)
+    if (!localStorage.getItem('dashShortcutsHint')) {
+        setTimeout(() => {
+            showToast('💡 Atalhos: K = Kanban · L = Lista', 'info');
+            localStorage.setItem('dashShortcutsHint', '1');
+        }, 1500);
     }
 });
 </script>
 {% endblock %}
+

@@ -1,4 +1,3 @@
-<!-- Detalhes da Ata de Reunião -->
 {% extends "base.html" %}
 {% load static %}
 
@@ -6,15 +5,35 @@
 
 {% block extra_css %}
 <style>
+    /* ═══════════════════════════════════════════
+       🎨 DESIGN TOKENS
+       ═══════════════════════════════════════════ */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #4e73df 0%, #224abe 50%, #1a3a8a 100%);
+        --card-radius: 1rem;
+        --card-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        --card-shadow-hover: 0 8px 24px rgba(78,115,223,0.12);
+        --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
     /* ═══ HERO ═══ */
     .detail-hero {
-        border-radius: 1rem;
+        border-radius: var(--card-radius);
         color: #fff;
         padding: 2rem 2.5rem;
         margin-bottom: 2rem;
         position: relative;
         overflow: hidden;
-        background: linear-gradient(135deg, #4e73df 0%, #224abe 50%, #1a3a8a 100%);
+        background: var(--primary-gradient);
+        box-shadow: 0 10px 30px rgba(34, 74, 190, 0.25);
+    }
+    .detail-hero::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        opacity: 0.6;
+        pointer-events: none;
     }
     .detail-hero::after {
         content: '';
@@ -27,72 +46,84 @@
         border-radius: 50%;
         pointer-events: none;
     }
-    .detail-hero h1 { font-weight: 700; font-size: 1.5rem; margin-bottom: 0.5rem; }
-    .hero-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-top: 0.75rem;
-    }
-    .hero-meta-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 0.85rem;
-        opacity: 0.9;
-    }
+    .detail-hero > * { position: relative; z-index: 1; }
+    .detail-hero h1 { font-weight: 700; font-size: 1.6rem; margin-bottom: 0.5rem; }
+
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.75rem; }
+    .hero-meta-item { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; opacity: 0.92; }
+
     .hero-badge {
-        background: rgba(255,255,255,0.2);
-        backdrop-filter: blur(4px);
+        background: rgba(255,255,255,0.18);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.15);
         border-radius: 50rem;
         padding: 0.3rem 1rem;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+    .hero-badge.danger { background: rgba(231,74,59,0.35); border-color: rgba(231,74,59,0.4); }
+
+    /* ═══ PROGRESS PRAZO ═══ */
+    .deadline-progress {
+        margin-top: 1.25rem;
+        background: rgba(255,255,255,0.15);
+        border-radius: 50rem;
+        height: 6px;
+        overflow: hidden;
+        position: relative;
+    }
+    .deadline-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #1cc88a, #f6c23e, #e74a3b);
+        border-radius: 50rem;
+        transition: width 0.6s ease;
+    }
+    .deadline-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        opacity: 0.85;
+        margin-top: 6px;
     }
 
     /* ═══ INFO CARD ═══ */
-    .info-card { border: none; border-radius: 0.875rem; }
+    .info-card {
+        border: none;
+        border-radius: var(--card-radius);
+        box-shadow: var(--card-shadow);
+        transition: var(--transition);
+    }
+    .info-card:hover { box-shadow: var(--card-shadow-hover); }
     .info-card .card-header {
         background: transparent;
         border-bottom: 2px solid #f0f2f5;
-        padding: 1.25rem 1.5rem;
+        padding: 1.1rem 1.5rem;
     }
     .info-card .card-header h5 {
-        font-weight: 700;
-        font-size: 1rem;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+        font-weight: 700; font-size: 1rem; margin: 0;
+        display: flex; align-items: center; gap: 0.5rem;
     }
 
-    /* ═══ INFO GRID ═══ */
+    /* ═══ INFO ITEMS ═══ */
     .info-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        display: flex; justify-content: space-between; align-items: center;
         padding: 0.875rem 1.5rem;
         border-bottom: 1px solid #f5f5f8;
-        transition: background 0.15s;
+        transition: var(--transition);
     }
     .info-item:last-child { border-bottom: none; }
-    .info-item:hover { background: #fafbfc; }
+    .info-item:hover { background: #fafbfc; padding-left: 1.75rem; }
     .info-item-label {
-        font-size: 0.82rem;
-        font-weight: 600;
-        color: #858796;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        font-size: 0.82rem; font-weight: 600; color: #858796;
+        display: flex; align-items: center; gap: 8px;
     }
     .info-item-label i { width: 16px; text-align: center; }
     .info-item-value { font-weight: 600; color: #2d3748; font-size: 0.9rem; }
 
     /* ═══ ACTION CONTENT ═══ */
     .action-content {
-        font-size: 0.95rem;
-        line-height: 1.8;
-        color: #4a5568;
+        font-size: 0.95rem; line-height: 1.8; color: #4a5568;
         white-space: pre-wrap;
     }
 
@@ -100,149 +131,190 @@
     .comment-form textarea {
         border: 2px solid #e2e8f0;
         border-radius: 0.625rem;
-        transition: border-color 0.2s, box-shadow 0.2s;
+        transition: var(--transition);
+        resize: vertical;
+        min-height: 90px;
     }
     .comment-form textarea:focus {
         border-color: #4e73df;
         box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15);
     }
+    .char-counter {
+        font-size: 0.75rem; color: #a0aec0;
+        transition: color 0.2s;
+    }
+    .char-counter.warning { color: #f6c23e; }
+    .char-counter.danger { color: #e74a3b; }
+
+    /* ═══ AVATAR ═══ */
+    .avatar-circle {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 0.8rem;
+        color: #fff;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #4e73df, #224abe);
+    }
+    .avatar-circle.sm { width: 28px; height: 28px; font-size: 0.7rem; }
 
     /* ═══ TIMELINE ═══ */
     .timeline { list-style: none; padding: 0; margin: 0; }
     .timeline-item {
         position: relative;
-        padding-left: 2rem;
+        padding-left: 3rem;
         padding-bottom: 1.5rem;
+        animation: slideIn 0.4s ease;
     }
     .timeline-item::before {
         content: '';
         position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
+        left: 18px; top: 36px; bottom: 0;
         width: 2px;
-        background: #e9ecef;
+        background: linear-gradient(to bottom, #e9ecef, transparent);
     }
-    .timeline-item:last-child::before { bottom: auto; height: 20px; }
-    .timeline-item::after {
-        content: '';
+    .timeline-item:last-child::before { display: none; }
+    .timeline-avatar {
         position: absolute;
-        left: -5px;
-        top: 4px;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #4e73df;
-        border: 2px solid #fff;
-        box-shadow: 0 0 0 2px #e9ecef;
+        left: 0; top: 0;
+        z-index: 1;
+    }
+    .timeline-content {
+        background: #f8f9fc;
+        border-radius: 0.625rem;
+        padding: 0.75rem 1rem;
+        border-left: 3px solid #4e73df;
     }
     .timeline-author { font-weight: 700; font-size: 0.9rem; color: #2d3748; }
-    .timeline-date { font-size: 0.78rem; color: #a0aec0; }
+    .timeline-date { font-size: 0.75rem; color: #a0aec0; }
     .timeline-text { font-size: 0.875rem; color: #4a5568; line-height: 1.6; margin-top: 0.25rem; }
 
-    .timeline-empty {
-        text-align: center;
-        padding: 2rem;
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(-10px); }
+        to   { opacity: 1; transform: translateX(0); }
     }
+
+    .timeline-empty { text-align: center; padding: 2rem; }
     .timeline-empty-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
+        width: 56px; height: 56px; border-radius: 50%;
         background: #f0f2f5;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: flex; align-items: center; justify-content: center;
         margin: 0 auto 0.75rem;
     }
     .timeline-empty-icon i { font-size: 1.25rem; color: #adb5bd; }
 
-    /* ═══ STATUS PILL ═══ */
+    /* ═══ PILLS / BADGES ═══ */
     .status-pill-lg {
         padding: 0.35rem 1rem;
         border-radius: 50rem;
-        font-size: 0.8rem;
-        font-weight: 700;
+        font-size: 0.8rem; font-weight: 700;
     }
-
-    /* ═══ OVERDUE BADGE ═══ */
     .overdue-alert {
         background: rgba(231,74,59,0.1);
         color: #c0392b;
         border-radius: 50rem;
         padding: 0.3rem 0.75rem;
-        font-size: 0.75rem;
-        font-weight: 700;
+        font-size: 0.75rem; font-weight: 700;
+        animation: pulse 2s infinite;
     }
+    @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(231,74,59,0.4); }
+        50%      { box-shadow: 0 0 0 6px rgba(231,74,59,0); }
+    }
+
+    /* ═══ STICKY SIDEBAR (desktop) ═══ */
+    @media (min-width: 992px) {
+        .sidebar-sticky { position: sticky; top: 1rem; }
+    }
+
+    /* ═══ TOAST ═══ */
+    .toast-container { z-index: 1100; }
+
+    /* ═══ BTN SPINNER ═══ */
+    .btn-loading { pointer-events: none; opacity: 0.7; }
+    .btn-loading .spinner-border-sm { display: inline-block !important; }
 
     /* ═══ DARK MODE ═══ */
     [data-bs-theme="dark"] .detail-hero { background: linear-gradient(135deg, #224abe, #1a2d6d); }
     [data-bs-theme="dark"] .info-card .card-header { border-bottom-color: rgba(255,255,255,0.06); }
     [data-bs-theme="dark"] .info-item { border-bottom-color: rgba(255,255,255,0.04); }
-    [data-bs-theme="dark"] .info-item:hover { background: rgba(255,255,255,0.02); }
+    [data-bs-theme="dark"] .info-item:hover { background: rgba(255,255,255,0.03); }
     [data-bs-theme="dark"] .info-item-value { color: #e2e8f0; }
-    [data-bs-theme="dark"] .action-content { color: #a0aec0; }
-    [data-bs-theme="dark"] .timeline-item::before { background: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .action-content { color: #cbd5e0; }
+    [data-bs-theme="dark"] .timeline-content { background: rgba(255,255,255,0.03); }
     [data-bs-theme="dark"] .timeline-author { color: #e2e8f0; }
     [data-bs-theme="dark"] .timeline-text { color: #a0aec0; }
 
     @media print {
         .no-print { display: none !important; }
         .detail-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .info-card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    }
+
+    @media (max-width: 768px) {
+        .detail-hero { padding: 1.5rem; }
+        .detail-hero h1 { font-size: 1.2rem; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-{% include "partials/_messages.html" %}
-
 <div class="container-fluid py-4 px-lg-5">
 
     <!-- ═══ HERO ═══ -->
     <div class="detail-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-            <div>
-                <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
                     <span class="hero-badge">{{ ata.get_status_display }}</span>
                     <span class="hero-badge">{{ ata.get_natureza_display }}</span>
                     {% if ata.is_overdue %}
-                    <span class="hero-badge" style="background: rgba(231,74,59,0.4);">
+                    <span class="hero-badge danger">
                         <i class="bi bi-exclamation-triangle me-1"></i> Prazo Vencido
                     </span>
                     {% endif %}
                 </div>
                 <h1>{{ ata.titulo|default:"Ata de Reunião" }}</h1>
                 <div class="hero-meta">
-                    <span class="hero-meta-item">
-                        <i class="bi bi-flag"></i> Item: {{ ata.id }}
-                    </span>
-                    <span class="hero-meta-item">
-                        <i class="bi bi-briefcase"></i> {{ ata.contrato.nome }}
-                    </span>
-                    <span class="hero-meta-item">
-                        <i class="bi bi-calendar-event"></i> {{ ata.entrada|date:"d/m/Y" }}
-                    </span>
+                    <span class="hero-meta-item"><i class="bi bi-hash"></i> #{{ ata.id }}</span>
+                    <span class="hero-meta-item"><i class="bi bi-briefcase"></i> {{ ata.contrato.nome }}</span>
+                    <span class="hero-meta-item"><i class="bi bi-calendar-event"></i> {{ ata.entrada|date:"d/m/Y" }}</span>
                     {% if ata.prazo %}
-                    <span class="hero-meta-item">
-                        <i class="bi bi-alarm"></i> Prazo: {{ ata.prazo|date:"d/m/Y" }}
-                    </span>
+                    <span class="hero-meta-item"><i class="bi bi-alarm"></i> Prazo: {{ ata.prazo|date:"d/m/Y" }}</span>
                     {% endif %}
                 </div>
+
+                {# Barra de progresso de prazo — só aparece se houver prazo e não estiver concluído #}
+                {% if ata.prazo and ata.status != 'Concluído' %}
+                <div class="deadline-progress" id="deadlineBar" data-entrada="{{ ata.entrada|date:'Y-m-d' }}" data-prazo="{{ ata.prazo|date:'Y-m-d' }}">
+                    <div class="deadline-progress-bar" style="width: 0%"></div>
+                </div>
+                <div class="deadline-info">
+                    <span><i class="bi bi-flag-fill me-1"></i>{{ ata.entrada|date:"d/m" }}</span>
+                    <span id="deadlineRemaining">Calculando...</span>
+                    <span><i class="bi bi-flag-checkered me-1"></i>{{ ata.prazo|date:"d/m" }}</span>
+                </div>
+                {% endif %}
             </div>
+
             <div class="d-flex gap-2 flex-wrap no-print">
-                <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-sm btn-outline-light">
-                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-sm btn-outline-light" title="Voltar (Esc)">
+                    <i class="bi bi-arrow-left"></i> <span class="d-none d-sm-inline">Voltar</span>
                 </a>
+                <button class="btn btn-sm btn-outline-light" onclick="copyLink()" title="Copiar link">
+                    <i class="bi bi-link-45deg"></i>
+                </button>
                 {% if perms.ata_reuniao.change_atareuniao or user.is_superuser %}
-                <a href="{% url 'ata_reuniao:ata_reuniao_update' ata.pk %}" class="btn btn-sm btn-light fw-semibold">
+                <a href="{% url 'ata_reuniao:ata_reuniao_update' ata.pk %}" class="btn btn-sm btn-light fw-semibold" title="Editar (E)">
                     <i class="bi bi-pencil-square me-1"></i> Editar
                 </a>
                 {% endif %}
                 {% if perms.ata_reuniao.delete_atareuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_confirm_delete' ata.pk %}" class="btn btn-sm btn-outline-light">
-                    <i class="bi bi-trash3 me-1"></i> Excluir
+                    <i class="bi bi-trash3"></i>
                 </a>
                 {% endif %}
-                <button onclick="window.print()" class="btn btn-sm btn-outline-light">
+                <button onclick="window.print()" class="btn btn-sm btn-outline-light" title="Imprimir (Ctrl+P)">
                     <i class="bi bi-printer"></i>
                 </button>
             </div>
@@ -254,86 +326,104 @@
         <div class="col-lg-8">
 
             <!-- Ação / Proposta -->
-            <div class="card info-card shadow-sm mb-4">
-                <div class="card-header">
+            <div class="card info-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5><i class="bi bi-clipboard-check text-primary"></i> Ação / Proposta</h5>
+                    <button class="btn btn-sm btn-light" onclick="copyText('actionContent', this)" title="Copiar texto">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
                 </div>
                 <div class="card-body p-4">
-                    <div class="action-content">{{ ata.acao|linebreaks }}</div>
+                    <div class="action-content" id="actionContent">{{ ata.acao }}</div>
                 </div>
             </div>
 
             <!-- Comentário -->
-            <div class="card info-card shadow-sm mb-4 no-print">
+            {% if perms.ata_reuniao.change_atareuniao or user.is_superuser %}
+            <div class="card info-card mb-4 no-print">
                 <div class="card-header">
                     <h5><i class="bi bi-chat-dots text-success"></i> Adicionar Comentário</h5>
                 </div>
                 <div class="card-body p-4">
-                    <form method="post" action="{% url 'ata_reuniao:ata_add_comment' ata.pk %}" class="comment-form">
+                    <form id="commentForm" method="post"
+                          action="{% url 'ata_reuniao:ata_add_comment' ata.pk %}"
+                          class="comment-form">
                         {% csrf_token %}
-                        <textarea class="form-control mb-3" name="comentario" rows="3"
-                                  placeholder="Escreva um comentário ou atualização..."></textarea>
-                        <div class="text-end">
-                            {% if perms.ata_reuniao.change_atareuniao or user.is_superuser %}
+                        <textarea class="form-control mb-2"
+                                  name="comentario"
+                                  id="commentText"
+                                  rows="3"
+                                  maxlength="1000"
+                                  placeholder="Escreva um comentário ou atualização... (Ctrl+Enter para enviar)"
+                                  required></textarea>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="char-counter" id="charCounter">0 / 1000</small>
                             <button type="submit" class="btn btn-primary" style="border-radius: 0.625rem;">
-                                <i class="bi bi-send me-1"></i> Enviar Comentário
+                                <span class="spinner-border spinner-border-sm me-1" style="display:none"></span>
+                                <i class="bi bi-send me-1"></i> Enviar
                             </button>
-                            {% endif %}
                         </div>
                     </form>
                 </div>
             </div>
+            {% endif %}
 
             <!-- Histórico -->
-            <div class="card info-card shadow-sm">
+            <div class="card info-card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5><i class="bi bi-clock-history text-warning"></i> Histórico</h5>
-                    {% if ata.historico.all %}
-                    <span class="badge bg-warning bg-opacity-10 text-warning fw-bold" style="border-radius: 50rem;">
+                    <span class="badge bg-warning bg-opacity-10 text-warning fw-bold" style="border-radius: 50rem;" id="historyCount">
                         {{ ata.historico.all|length }} registro{{ ata.historico.all|length|pluralize:"s" }}
                     </span>
-                    {% endif %}
                 </div>
                 <div class="card-body p-4">
-                    {% if ata.historico.all %}
-                    <ul class="timeline">
+                    <ul class="timeline" id="timelineList">
                         {% for item in ata.historico.all %}
                         <li class="timeline-item">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="timeline-author">
-                                    {{ item.usuario.get_full_name|default:"Usuário do Sistema" }}
-                                </span>
-                                <span class="timeline-date">
-                                    <i class="bi bi-clock me-1"></i>{{ item.timestamp|date:"d/m/Y \à\s H:i" }}
-                                </span>
+                            <div class="timeline-avatar">
+                                {% with nome=item.usuario.get_full_name|default:"US" %}
+                                <div class="avatar-circle">{{ nome|slice:":2"|upper }}</div>
+                                {% endwith %}
                             </div>
-                            <div class="timeline-text">{{ item.comentario|linebreaksbr }}</div>
+                            <div class="timeline-content">
+                                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
+                                    <span class="timeline-author">
+                                        {{ item.usuario.get_full_name|default:"Usuário do Sistema" }}
+                                    </span>
+                                    <span class="timeline-date" title="{{ item.timestamp|date:'d/m/Y H:i:s' }}">
+                                        <i class="bi bi-clock me-1"></i>
+                                        <span class="relative-time" data-time="{{ item.timestamp|date:'c' }}">
+                                            {{ item.timestamp|date:"d/m/Y H:i" }}
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="timeline-text">{{ item.comentario|linebreaksbr }}</div>
+                            </div>
                         </li>
+                        {% empty %}
+                        <div class="timeline-empty" id="emptyState">
+                            <div class="timeline-empty-icon">
+                                <i class="bi bi-chat-square-dots"></i>
+                            </div>
+                            <h6 class="fw-bold mb-1">Nenhum registro ainda</h6>
+                            <p class="text-muted small mb-0">O histórico aparecerá aqui quando houver comentários.</p>
+                        </div>
                         {% endfor %}
                     </ul>
-                    {% else %}
-                    <div class="timeline-empty">
-                        <div class="timeline-empty-icon">
-                            <i class="bi bi-chat-square-dots"></i>
-                        </div>
-                        <h6 class="fw-bold mb-1">Nenhum registro</h6>
-                        <p class="text-muted small mb-0">O histórico aparecerá aqui quando houver comentários.</p>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
 
         <!-- ═══ SIDEBAR ═══ -->
         <div class="col-lg-4">
-            <div class="card info-card shadow-sm">
-                <div class="card-header">
-                    <h5><i class="bi bi-info-circle text-primary"></i> Informações</h5>
-                </div>
-                <div class="p-0">
-                    <div class="info-item">
-                        <span class="info-item-label"><i class="bi bi-flag"></i> Status</span>
-                        <span>
+            <div class="sidebar-sticky">
+                <div class="card info-card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-info-circle text-primary"></i> Informações</h5>
+                    </div>
+                    <div class="p-0">
+                        <div class="info-item">
+                            <span class="info-item-label"><i class="bi bi-flag"></i> Status</span>
                             {% with s=ata.status %}
                             <span class="badge status-pill-lg
                                 {% if s == 'Concluído' %}bg-success
@@ -344,82 +434,342 @@
                                 {{ ata.get_status_display }}
                             </span>
                             {% endwith %}
-                        </span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-item-label"><i class="bi bi-person-fill"></i> Responsável</span>
-                        <span class="info-item-value">{{ ata.responsavel.nome_completo|default:"N/A" }}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-item-label"><i class="bi bi-person-badge"></i> Coordenador</span>
-                        <span class="info-item-value">{{ ata.coordenador.nome_completo|default:"N/A" }}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-item-label"><i class="bi bi-tag"></i> Natureza</span>
-                        <span class="info-item-value">
+                        </div>
+                        <div class="info-item">
+                            <span class="info-item-label"><i class="bi bi-person-fill"></i> Responsável</span>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if ata.responsavel %}
+                                <div class="avatar-circle sm">{{ ata.responsavel.nome_completo|slice:":2"|upper }}</div>
+                                {% endif %}
+                                <span class="info-item-value">{{ ata.responsavel.nome_completo|default:"N/A" }}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-item-label"><i class="bi bi-person-badge"></i> Coordenador</span>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if ata.coordenador %}
+                                <div class="avatar-circle sm" style="background: linear-gradient(135deg, #1cc88a, #13855c);">
+                                    {{ ata.coordenador.nome_completo|slice:":2"|upper }}
+                                </div>
+                                {% endif %}
+                                <span class="info-item-value">{{ ata.coordenador.nome_completo|default:"N/A" }}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-item-label"><i class="bi bi-tag"></i> Natureza</span>
                             <span class="badge bg-light text-dark border" style="font-size: 0.78rem;">
                                 {{ ata.get_natureza_display }}
                             </span>
-                        </span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-item-label"><i class="bi bi-calendar-plus"></i> Entrada</span>
-                        <span class="info-item-value">{{ ata.entrada|date:"d/m/Y" }}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-item-label"><i class="bi bi-alarm"></i> Prazo</span>
-                        <span class="info-item-value d-flex align-items-center gap-2">
-                            {{ ata.prazo|date:"d/m/Y"|default:"Não definido" }}
-                            {% if ata.is_overdue %}
-                            <span class="overdue-alert">
-                                <i class="bi bi-exclamation-triangle me-1"></i>Vencido
+                        </div>
+                        <div class="info-item">
+                            <span class="info-item-label"><i class="bi bi-calendar-plus"></i> Entrada</span>
+                            <span class="info-item-value">{{ ata.entrada|date:"d/m/Y" }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-item-label"><i class="bi bi-alarm"></i> Prazo</span>
+                            <span class="info-item-value d-flex align-items-center gap-2">
+                                {{ ata.prazo|date:"d/m/Y"|default:"Não definido" }}
+                                {% if ata.is_overdue %}
+                                <span class="overdue-alert">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Vencido
+                                </span>
+                                {% endif %}
                             </span>
-                            {% endif %}
-                        </span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-item-label"><i class="bi bi-building"></i> Filial</span>
-                        <span class="info-item-value">{{ ata.filial.nome }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-item-label"><i class="bi bi-building"></i> Filial</span>
+                            <span class="info-item-value">{{ ata.filial.nome }}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Quick Actions -->
-            <div class="card info-card shadow-sm mt-4 no-print">
-                <div class="card-header">
-                    <h5 class="mb-0" style="font-size: 0.9rem;">
-                        <i class="bi bi-lightning-fill text-warning"></i> Ações Rápidas
-                    </h5>
-                </div>
-                <div class="card-body d-grid gap-2">
-                    {% if perms.ata_reuniao.change_ata_reuniao or user.is_superuser %}
-                    <a href="{% url 'ata_reuniao:ata_reuniao_update' ata.pk %}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-pencil-square me-2"></i> Editar Ata
-                    </a>
-                    {% endif %}
-                    {% if perms.ata_reuniao.delete_ata_reuniao or user.is_superuser %}
-                    <a href="{% url 'ata_reuniao:ata_confirm_delete' ata.pk %}" class="btn btn-outline-danger btn-sm">
-                        <i class="bi bi-trash me-2"></i> Excluir Ata
-                    </a>
-                    {% endif %}
-                    {% if perms.ata_reuniao.view_ata_reuniao or user.is_superuser %}
-                    <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-list-check me-2"></i> Todas as Atas
-                    </a>
-                    {% endif %}
-                    {% if perms.ata_reuniao.view_ata_reuniao or user.is_superuser %}
-                    <a href="{% url 'ata_reuniao:ata_reuniao_dashboard' %}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-speedometer2 me-2"></i> Dashboard
-                    </a>
-                    {% endif %}
-                    
-                    <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
-                        <i class="bi bi-printer me-2"></i> Imprimir
-                    </button>
+                <!-- Quick Actions -->
+                <div class="card info-card mt-4 no-print">
+                    <div class="card-header">
+                        <h5 style="font-size: 0.9rem;">
+                            <i class="bi bi-lightning-fill text-warning"></i> Ações Rápidas
+                        </h5>
+                    </div>
+                    <div class="card-body d-grid gap-2">
+                        {% if perms.ata_reuniao.change_atareuniao or user.is_superuser %}
+                        <a href="{% url 'ata_reuniao:ata_reuniao_update' ata.pk %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil-square me-2"></i> Editar Ata
+                        </a>
+                        {% endif %}
+                        {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
+                        <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-list-check me-2"></i> Todas as Atas
+                        </a>
+                        <a href="{% url 'ata_reuniao:ata_reuniao_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                        </a>
+                        {% endif %}
+                        <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
+                            <i class="bi bi-printer me-2"></i> Imprimir
+                        </button>
+                        {% if perms.ata_reuniao.delete_atareuniao or user.is_superuser %}
+                        <hr class="my-1">
+                        <a href="{% url 'ata_reuniao:ata_confirm_delete' ata.pk %}" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash me-2"></i> Excluir Ata
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- ═══ TOAST CONTAINER ═══ -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="appToast" class="toast align-items-center text-white border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    // ═══ TOAST HELPER ═══
+    function showToast(msg, type = 'success') {
+        const toast = document.getElementById('appToast');
+        toast.className = `toast align-items-center text-white border-0 bg-${type}`;
+        toast.querySelector('.toast-body').textContent = msg;
+        new bootstrap.Toast(toast, { delay: 3000 }).show();
+    }
+
+    // ═══ COPIAR LINK ═══
+    window.copyLink = function() {
+        navigator.clipboard.writeText(window.location.href)
+            .then(() => showToast('🔗 Link copiado!'))
+            .catch(() => showToast('Erro ao copiar', 'danger'));
+    };
+
+    // ═══ COPIAR TEXTO ═══
+    window.copyText = function(id, btn) {
+        const text = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check2"></i>';
+            btn.classList.add('btn-success', 'text-white');
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.classList.remove('btn-success', 'text-white');
+            }, 1500);
+        });
+    };
+
+    // ═══ CHAR COUNTER ═══
+    const textarea = document.getElementById('commentText');
+    const counter  = document.getElementById('charCounter');
+    if (textarea && counter) {
+        const max = parseInt(textarea.getAttribute('maxlength'), 10);
+        textarea.addEventListener('input', () => {
+            const len = textarea.value.length;
+            counter.textContent = `${len} / ${max}`;
+            counter.classList.toggle('warning', len > max * 0.8);
+            counter.classList.toggle('danger',  len > max * 0.95);
+        });
+    }
+
+    // ═══ AJAX COMMENT SUBMIT ═══
+    const form = document.getElementById('commentForm');
+    if (form) {
+        // Ctrl+Enter envia
+        textarea.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                form.requestSubmit();
+            }
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = form.querySelector('button[type=submit]');
+            const spinner = btn.querySelector('.spinner-border-sm');
+            btn.classList.add('btn-loading');
+            spinner.style.display = 'inline-block';
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value,
+                    },
+                    body: new FormData(form)
+                });
+
+                if (!response.ok) throw new Error('Falha no envio');
+
+                // Tenta usar JSON; se a view ainda não retornar JSON, recarrega
+                const ct = response.headers.get('content-type') || '';
+                if (ct.includes('application/json')) {
+                    const data = await response.json();
+                    addTimelineItem(data);
+                    textarea.value = '';
+                    counter.textContent = '0 / 1000';
+                    showToast('✅ Comentário adicionado!');
+                } else {
+                    // Fallback: recarrega a página
+                    window.location.reload();
+                }
+            } catch (err) {
+                showToast('❌ Erro ao enviar comentário', 'danger');
+            } finally {
+                btn.classList.remove('btn-loading');
+                spinner.style.display = 'none';
+            }
+        });
+    }
+    // ═══ ADICIONAR ITEM NA TIMELINE (AJAX) ═══
+    function addTimelineItem(data) {
+        const list  = document.getElementById('timelineList');
+        const empty = document.getElementById('emptyState');
+        if (empty) empty.remove();
+
+        const iniciais = (data.autor || 'US').slice(0, 2).toUpperCase();
+        const li = document.createElement('li');
+        li.className = 'timeline-item';
+        li.innerHTML = `
+            <div class="timeline-avatar">
+                <div class="avatar-circle">${iniciais}</div>
+            </div>
+            <div class="timeline-content">
+                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
+                    <span class="timeline-author">${escapeHtml(data.autor)}</span>
+                    <span class="timeline-date">
+                        <i class="bi bi-clock me-1"></i>${data.data}
+                    </span>
+                </div>
+                <div class="timeline-text">${escapeHtml(data.comentario).replace(/\n/g, '<br>')}</div>
+            </div>
+        `;
+        list.prepend(li);
+
+        // Atualiza contador de registros
+        const count = list.querySelectorAll('.timeline-item').length;
+        const badge = document.getElementById('historyCount');
+        if (badge) {
+            badge.textContent = `${count} registro${count > 1 ? 's' : ''}`;
+        }
+    }
+
+    // ═══ ESCAPE HTML (segurança XSS) ═══
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // ═══ PROGRESS BAR DE PRAZO ═══
+    const bar = document.getElementById('deadlineBar');
+    if (bar) {
+        const entrada = new Date(bar.dataset.entrada);
+        const prazo   = new Date(bar.dataset.prazo);
+        const hoje    = new Date();
+        const total   = prazo - entrada;
+        const passado = hoje - entrada;
+        const pct     = Math.min(100, Math.max(0, (passado / total) * 100));
+
+        // Anima a barra
+        setTimeout(() => {
+            bar.querySelector('.deadline-progress-bar').style.width = pct + '%';
+        }, 200);
+
+        const diasRestantes = Math.ceil((prazo - hoje) / (1000 * 60 * 60 * 24));
+        const info = document.getElementById('deadlineRemaining');
+
+        if (info) {
+            if (diasRestantes < 0) {
+                info.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i>Vencido há ${Math.abs(diasRestantes)} dia(s)`;
+            } else if (diasRestantes === 0) {
+                info.innerHTML = `<i class="bi bi-clock-fill me-1"></i><strong>Vence hoje!</strong>`;
+            } else if (diasRestantes <= 3) {
+                info.innerHTML = `<i class="bi bi-hourglass-split me-1"></i><strong>${diasRestantes} dia(s) restantes</strong>`;
+            } else {
+                info.innerHTML = `<i class="bi bi-hourglass-split me-1"></i>${diasRestantes} dia(s) restantes`;
+            }
+        }
+    }
+
+    // ═══ TEMPO RELATIVO (com hover na data completa) ═══
+    function relativeTime(iso) {
+        const diff = (Date.now() - new Date(iso)) / 1000;
+        if (diff < 60)     return 'agora há pouco';
+        if (diff < 3600)   return `há ${Math.floor(diff / 60)} min`;
+        if (diff < 86400)  return `há ${Math.floor(diff / 3600)} h`;
+        if (diff < 604800) return `há ${Math.floor(diff / 86400)} dia(s)`;
+        if (diff < 2592000) return `há ${Math.floor(diff / 604800)} semana(s)`;
+        return null; // mais de 30 dias: mantém o formato original
+    }
+
+    document.querySelectorAll('.relative-time').forEach(el => {
+        const rel = relativeTime(el.dataset.time);
+        if (rel) {
+            el.dataset.original = el.textContent.trim();
+            el.textContent = rel;
+            el.style.cursor = 'help';
+            el.addEventListener('mouseenter', () => { el.textContent = el.dataset.original; });
+            el.addEventListener('mouseleave', () => { el.textContent = rel; });
+        }
+    });
+
+    // ═══ ATALHOS DE TECLADO ═══
+    document.addEventListener('keydown', (e) => {
+        // Ignora se estiver digitando em input/textarea/contenteditable
+        const tag = document.activeElement.tagName;
+        const isEditable = document.activeElement.isContentEditable;
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || isEditable) return;
+
+        // Esc → Voltar
+        if (e.key === 'Escape') {
+            const back = document.querySelector('a[href*="ata_reuniao_list"]');
+            if (back) {
+                e.preventDefault();
+                back.click();
+            }
+        }
+
+        // E → Editar
+        if (e.key.toLowerCase() === 'e' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            const edit = document.querySelector('a[href*="ata_reuniao_update"]');
+            if (edit) {
+                e.preventDefault();
+                edit.click();
+            }
+        }
+
+        // C → Focar no comentário
+        if (e.key.toLowerCase() === 'c' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            if (textarea) {
+                e.preventDefault();
+                textarea.focus();
+                textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+
+    // ═══ DICA DE ATALHOS (primeira visita) ═══
+    if (!localStorage.getItem('ataShortcutsHintShown')) {
+        setTimeout(() => {
+            showToast('💡 Dica: use E para editar, C para comentar, Esc para voltar', 'info');
+            localStorage.setItem('ataShortcutsHintShown', '1');
+        }, 2000);
+    }
+
+})();
+</script>
+{% endblock %}
+
+   
+
 
