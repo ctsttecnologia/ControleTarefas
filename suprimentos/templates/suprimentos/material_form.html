@@ -1,4 +1,4 @@
-
+﻿
 {% extends "suprimentos/suprimentos_base.html" %}
 {% load crispy_forms_tags %}
 
@@ -14,10 +14,10 @@
             <form method="post" novalidate>
                 {% csrf_token %}
 
-                {# ── Campos padrão do Material ── #}
+                {# â”€â”€ Campos padrÃ£o do Material â”€â”€ #}
                 <div class="row">
                     <div class="col-12 mb-3">
-                        <label for="id_descricao" class="form-label fw-bold">Descrição *</label>
+                        <label for="id_descricao" class="form-label fw-bold">DescriÃ§Ã£o *</label>
                         {{ form.descricao }}
                         {% if form.descricao.errors %}
                             <div class="text-danger small">{{ form.descricao.errors }}</div>
@@ -27,7 +27,7 @@
 
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label for="id_classificacao" class="form-label fw-bold">Classificação *</label>
+                        <label for="id_classificacao" class="form-label fw-bold">ClassificaÃ§Ã£o *</label>
                         {{ form.classificacao }}
                     </div>
                     <div class="col-md-4 mb-3">
@@ -46,18 +46,18 @@
                         {{ form.marca }}
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label for="id_valor_unitario" class="form-label fw-bold">Valor Unitário (R$)</label>
+                        <label for="id_valor_unitario" class="form-label fw-bold">Valor UnitÃ¡rio (R$)</label>
                         {{ form.valor_unitario }}
                     </div>
                 </div>
 
-                {# ═══════════════════════════════════════════════ #}
-                {# ── BLOCO EPI: Vínculo com SST ──               #}
-                {# ═══════════════════════════════════════════════ #}
+                {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                {# â”€â”€ BLOCO EPI: VÃ­nculo com SST â”€â”€               #}
+                {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
                 <div id="bloco-vinculo-epi" style="display:none;">
                     <hr>
                     <h5 class="text-primary mb-3">
-                        <i class="bi bi-shield-check me-1"></i> Vínculo com SST
+                        <i class="bi bi-shield-check me-1"></i> VÃ­nculo com SST
                     </h5>
 
                     <div class="mb-3">
@@ -95,14 +95,14 @@
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_epi_ca" class="form-label fw-bold">CA (Certificado de Aprovação) *</label>
+                                    <label for="id_epi_ca" class="form-label fw-bold">CA (Certificado de AprovaÃ§Ã£o) *</label>
                                     {{ form.epi_ca }}
                                     {% if form.epi_ca.errors %}
                                         <div class="text-danger small">{{ form.epi_ca.errors }}</div>
                                     {% endif %}
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_epi_vida_util_dias" class="form-label fw-bold">Vida Útil (dias) *</label>
+                                    <label for="id_epi_vida_util_dias" class="form-label fw-bold">Vida Ãštil (dias) *</label>
                                     {{ form.epi_vida_util_dias }}
                                     {% if form.epi_vida_util_dias.errors %}
                                         <div class="text-danger small">{{ form.epi_vida_util_dias.errors }}</div>
@@ -113,13 +113,13 @@
                     </div>
                 </div>
 
-                {# ═══════════════════════════════════════════════ #}
-                {# ── BLOCO FERRAMENTA: Vínculo com Ferramentas ── #}
-                {# ═══════════════════════════════════════════════ #}
+                {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                {# â”€â”€ BLOCO FERRAMENTA: VÃ­nculo com Ferramentas â”€â”€ #}
+                {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
                 <div id="bloco-vinculo-ferramenta" style="display:none;">
                     <hr>
                     <h5 class="text-warning mb-3">
-                        <i class="bi bi-tools me-1"></i> Vínculo com Ferramentas
+                        <i class="bi bi-tools me-1"></i> VÃ­nculo com Ferramentas
                     </h5>
 
                     <div class="mb-3">
@@ -144,7 +144,7 @@
                         <div class="card-body" id="campos-nova-ferramenta" style="display:none;">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_ferr_codigo" class="form-label fw-bold">Código de Identificação</label>
+                                    <label for="id_ferr_codigo" class="form-label fw-bold">CÃ³digo de IdentificaÃ§Ã£o</label>
                                     {{ form.ferr_codigo }}
                                     <div class="form-text">Gerado automaticamente se deixado em branco.</div>
                                     {% if form.ferr_codigo.errors %}
@@ -152,20 +152,20 @@
                                     {% endif %}
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_ferr_patrimonio" class="form-label fw-bold">Nº de Patrimônio</label>
+                                    <label for="id_ferr_patrimonio" class="form-label fw-bold">NÂº de PatrimÃ´nio</label>
                                     {{ form.ferr_patrimonio }}
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_ferr_localizacao" class="form-label fw-bold">Localização Padrão *</label>
+                                    <label for="id_ferr_localizacao" class="form-label fw-bold">LocalizaÃ§Ã£o PadrÃ£o *</label>
                                     {{ form.ferr_localizacao }}
                                     {% if form.ferr_localizacao.errors %}
                                         <div class="text-danger small">{{ form.ferr_localizacao.errors }}</div>
                                     {% endif %}
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_ferr_data_aquisicao" class="form-label fw-bold">Data de Aquisição *</label>
+                                    <label for="id_ferr_data_aquisicao" class="form-label fw-bold">Data de AquisiÃ§Ã£o *</label>
                                     {{ form.ferr_data_aquisicao }}
                                     {% if form.ferr_data_aquisicao.errors %}
                                         <div class="text-danger small">{{ form.ferr_data_aquisicao.errors }}</div>
@@ -186,19 +186,19 @@
                     </div>
                 </div>
 
-                {# ═══════════════════════════════════════════════════════ #}
-                {# ── BLOCO TRIBUTAÇÃO (DENTRO do form!) ──               #}
-                {# ═══════════════════════════════════════════════════════ #}
+                {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                {# â”€â”€ BLOCO TRIBUTAÃ‡ÃƒO (DENTRO do form!) â”€â”€               #}
+                {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
                 <hr>
                 <div class="card border-primary border-opacity-25 mb-3" id="bloco-tributacao">
                     <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">
-                            <i class="bi bi-calculator me-1 text-primary"></i> Informações Tributárias
+                            <i class="bi bi-calculator me-1 text-primary"></i> InformaÃ§Ãµes TributÃ¡rias
                             <small class="text-muted">(opcional)</small>
                         </h6>
                         <a href="{% url 'tributacao:dashboard' %}" target="_blank"
                            class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-box-arrow-up-right"></i> Módulo Tributação
+                            <i class="bi bi-box-arrow-up-right"></i> MÃ³dulo TributaÃ§Ã£o
                         </a>
                     </div>
                     <div class="card-body">
@@ -209,7 +209,7 @@
                                 </label>
                                 {{ form.ncm }}
                                 <div class="form-text">
-                                    Código fiscal do material no Mercosul.
+                                    CÃ³digo fiscal do material no Mercosul.
                                     {% if perms.tributacao.add_solicitacao or user.is.superuser %}
                                     <a href="{% url 'tributacao:ncm_create' %}" target="_blank">
                                         <i class="bi bi-plus-circle"></i> Cadastrar NCM
@@ -222,11 +222,11 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="id_grupo_tributario" class="form-label fw-semibold">
-                                    <i class="bi bi-collection text-primary"></i> Grupo Tributário
+                                    <i class="bi bi-collection text-primary"></i> Grupo TributÃ¡rio
                                 </label>
                                 {{ form.grupo_tributario }}
                                 <div class="form-text">
-                                    Define CFOP, alíquotas e créditos fiscais.
+                                    Define CFOP, alÃ­quotas e crÃ©ditos fiscais.
                                     {% if perms.tributacao.add_grupo_tributario or user.is.superuser %}     
                                     <a href="{% url 'tributacao:grupo_create' %}" target="_blank">
                                         <i class="bi bi-plus-circle"></i> Criar grupo
@@ -242,38 +242,38 @@
                         {# Preview do grupo selecionado #}
                         <div id="grupo-trib-preview" class="bg-light border rounded p-3 mt-3 d-none">
                             <h6 class="fw-bold small mb-2">
-                                <i class="bi bi-eye text-info"></i> Preview do Grupo Tributário
+                                <i class="bi bi-eye text-info"></i> Preview do Grupo TributÃ¡rio
                             </h6>
                             <div class="row text-center">
                                 <div class="col-md-3">
                                     <small class="text-muted d-block">CFOP</small>
-                                    <strong id="preview-cfop">—</strong>
+                                    <strong id="preview-cfop">â€”</strong>
                                 </div>
                                 <div class="col-md-3">
                                     <small class="text-muted d-block">ICMS</small>
-                                    <span id="preview-icms">—</span>
+                                    <span id="preview-icms">â€”</span>
                                 </div>
                                 <div class="col-md-3">
                                     <small class="text-muted d-block">PIS / COFINS</small>
-                                    <span id="preview-pis-cofins">—</span>
+                                    <span id="preview-pis-cofins">â€”</span>
                                 </div>
                                 <div class="col-md-3">
                                     <small class="text-muted d-block">IPI</small>
-                                    <span id="preview-ipi">—</span>
+                                    <span id="preview-ipi">â€”</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {# ── Ativo ── #}
+                {# â”€â”€ Ativo â”€â”€ #}
                 <hr>
                 <div class="form-check mb-3">
                     {{ form.ativo }}
                     <label class="form-check-label" for="id_ativo">Ativo</label>
                 </div>
 
-                {# ── Botões ── #}
+                {# â”€â”€ BotÃµes â”€â”€ #}
                 <div class="d-flex justify-content-between mt-4">
                     <a href="{% url 'suprimentos:material_lista' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left me-1"></i> Voltar
@@ -295,29 +295,29 @@
 document.addEventListener('DOMContentLoaded', function () {
     const classificacao = document.getElementById('id_classificacao');
 
-    // ── Blocos de seção ──
+    // â”€â”€ Blocos de seÃ§Ã£o â”€â”€
     const blocoEpi = document.getElementById('bloco-vinculo-epi');
     const blocoFerramenta = document.getElementById('bloco-vinculo-ferramenta');
 
-    // ── EPI: elementos ──
+    // â”€â”€ EPI: elementos â”€â”€
     const criarEpiCheck = document.getElementById('id_criar_equipamento_epi');
     const camposNovoEpi = document.getElementById('campos-novo-epi');
     const selectEquipamento = document.getElementById('id_equipamento_epi');
     const blocoCriarEpi = document.getElementById('bloco-criar-epi');
 
-    // ── Ferramenta: elementos ──
+    // â”€â”€ Ferramenta: elementos â”€â”€
     const criarFerrCheck = document.getElementById('id_criar_ferramenta');
     const camposNovaFerr = document.getElementById('campos-nova-ferramenta');
     const selectFerramenta = document.getElementById('id_ferramenta_ref');
     const blocoCriarFerr = document.getElementById('bloco-criar-ferramenta');
 
-    // ── Tributação: elementos ──
+    // â”€â”€ TributaÃ§Ã£o: elementos â”€â”€
     const grupoSelect = document.getElementById('id_grupo_tributario');
     const preview = document.getElementById('grupo-trib-preview');
 
-    // ═══════════════════════════════════════
-    // Toggle principal por classificação
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // Toggle principal por classificaÃ§Ã£o
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     function toggleBlocos() {
         const val = classificacao.value;
 
@@ -337,9 +337,9 @@ document.addEventListener('DOMContentLoaded', function () {
         toggleCriarFerr();
     }
 
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // Toggle criar EPI
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     function toggleCriarEpi() {
         if (selectEquipamento.value) {
             blocoCriarEpi.style.display = 'none';
@@ -351,9 +351,9 @@ document.addEventListener('DOMContentLoaded', function () {
         camposNovoEpi.style.display = criarEpiCheck.checked ? 'block' : 'none';
     }
 
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // Toggle criar Ferramenta
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     function toggleCriarFerr() {
         if (selectFerramenta.value) {
             blocoCriarFerr.style.display = 'none';
@@ -365,9 +365,9 @@ document.addEventListener('DOMContentLoaded', function () {
         camposNovaFerr.style.display = criarFerrCheck.checked ? 'block' : 'none';
     }
 
-    // ═══════════════════════════════════════
-    // Preview Grupo Tributário (AJAX)
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // Preview Grupo TributÃ¡rio (AJAX)
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     function carregarPreviewGrupo() {
         if (!grupoSelect || !preview) return;
 
@@ -387,20 +387,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // ICMS
                 const icmsRecup = data.icms.recuperavel
-                    ? '<span class="badge bg-success">crédito</span>'
-                    : '<span class="badge bg-secondary">sem crédito</span>';
+                    ? '<span class="badge bg-success">crÃ©dito</span>'
+                    : '<span class="badge bg-secondary">sem crÃ©dito</span>';
                 document.getElementById('preview-icms').innerHTML =
                     `${data.icms.aliquota}% ${icmsRecup}`;
 
                 // PIS / COFINS
-                const pisRecup = data.pis.recuperavel ? '✓' : '✗';
-                const cofRecup = data.cofins.recuperavel ? '✓' : '✗';
+                const pisRecup = data.pis.recuperavel ? 'âœ“' : 'âœ—';
+                const cofRecup = data.cofins.recuperavel ? 'âœ“' : 'âœ—';
                 document.getElementById('preview-pis-cofins').innerHTML =
                     `PIS ${data.pis.aliquota}% (${pisRecup}) / COFINS ${data.cofins.aliquota}% (${cofRecup})`;
 
                 // IPI
                 const ipiRecup = data.ipi.recuperavel
-                    ? '<span class="badge bg-success">crédito</span>'
+                    ? '<span class="badge bg-success">crÃ©dito</span>'
                     : '<span class="badge bg-secondary">custo</span>';
                 document.getElementById('preview-ipi').innerHTML =
                     `${data.ipi.aliquota}% ${ipiRecup}`;
@@ -410,9 +410,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(() => preview.classList.add('d-none'));
     }
 
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // Event listeners
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     classificacao.addEventListener('change', toggleBlocos);
 
     criarEpiCheck.addEventListener('change', toggleCriarEpi);
@@ -425,12 +425,12 @@ document.addEventListener('DOMContentLoaded', function () {
         grupoSelect.addEventListener('change', carregarPreviewGrupo);
     }
 
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // Estado inicial
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     toggleBlocos();
 
-    // Trigger preview se já tem grupo selecionado (edição)
+    // Trigger preview se jÃ¡ tem grupo selecionado (ediÃ§Ã£o)
     if (grupoSelect && grupoSelect.value) {
         carregarPreviewGrupo();
     }

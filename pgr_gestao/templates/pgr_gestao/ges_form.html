@@ -1,4 +1,4 @@
-{# GES - Formulário de Criação/Edição #}
+﻿{# GES - FormulÃ¡rio de CriaÃ§Ã£o/EdiÃ§Ã£o #}
 {% extends "pgr_gestao/pgr_base.html" %}
 {% load static %}
 {% load widget_tweaks %}
@@ -18,7 +18,7 @@
                 <i class="bi bi-people-fill"></i>
                 {% if form.instance.pk %}Editar GES{% else %}Novo GES{% endif %}
             </h1>
-            <p class="mb-0">Grupo de Exposição Similar</p>
+            <p class="mb-0">Grupo de ExposiÃ§Ã£o Similar</p>
         </div>
         <a href="{% url 'pgr_gestao:ges_list' %}" class="btn btn-light">
             <i class="bi bi-arrow-left"></i> Voltar
@@ -35,10 +35,10 @@
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
             {% endif %}
 
-            <!-- 1. Identificação -->
+            <!-- 1. IdentificaÃ§Ã£o -->
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
-                    <i class="bi bi-card-heading"></i> 1. Identificação do GES
+                    <i class="bi bi-card-heading"></i> 1. IdentificaÃ§Ã£o do GES
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -53,19 +53,19 @@
                         </div>
                         <div class="col-md-6">
                             <label for="{{ form.codigo.id_for_label }}" class="form-label fw-semibold">
-                                Código do GES
+                                CÃ³digo do GES
                             </label>
                             {% render_field form.codigo class="form-control" placeholder="Ex: GES-001" %}
                             {% if form.codigo.errors %}
                             <div class="text-danger small mt-1">{{ form.codigo.errors }}</div>
                             {% endif %}
-                            <small class="form-text text-muted">Será gerado automaticamente se em branco</small>
+                            <small class="form-text text-muted">SerÃ¡ gerado automaticamente se em branco</small>
                         </div>
                         <div class="col-12">
                             <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold required-field">
                                 Nome do GES
                             </label>
-                            {% render_field form.nome class="form-control" placeholder="Ex: Operadores de Máquinas - Setor de Produção" %}
+                            {% render_field form.nome class="form-control" placeholder="Ex: Operadores de MÃ¡quinas - Setor de ProduÃ§Ã£o" %}
                             {% if form.nome.errors %}
                             <div class="text-danger small mt-1">{{ form.nome.errors }}</div>
                             {% endif %}
@@ -81,7 +81,7 @@
                         </div>
                         <div class="col-md-4">
                             <label for="{{ form.numero_trabalhadores.id_for_label }}" class="form-label fw-semibold">
-                                Nº de Trabalhadores
+                                NÂº de Trabalhadores
                             </label>
                             {% render_field form.numero_trabalhadores class="form-control" type="number" min="1" placeholder="10" %}
                             {% if form.numero_trabalhadores.errors %}
@@ -92,10 +92,10 @@
                 </div>
             </div>
 
-            <!-- 2. Cargo e Função -->
+            <!-- 2. Cargo e FunÃ§Ã£o -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
-                    <i class="bi bi-briefcase-fill"></i> 2. Cargo e Função
+                    <i class="bi bi-briefcase-fill"></i> 2. Cargo e FunÃ§Ã£o
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -108,7 +108,7 @@
                             <small class="form-text text-muted">Cargo conforme CBO</small>
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.funcao.id_for_label }}" class="form-label fw-semibold">Função</label>
+                            <label for="{{ form.funcao.id_for_label }}" class="form-label fw-semibold">FunÃ§Ã£o</label>
                             {% render_field form.funcao class="form-select" %}
                             {% if form.funcao.errors %}
                             <div class="text-danger small mt-1">{{ form.funcao.errors }}</div>
@@ -116,13 +116,13 @@
                         </div>
                         <div class="col-12">
                             <label for="{{ form.descricao_atividades.id_for_label }}" class="form-label fw-semibold required-field">
-                                Descrição das Atividades
+                                DescriÃ§Ã£o das Atividades
                             </label>
                             {% render_field form.descricao_atividades class="form-control" rows="5" placeholder="Descreva as atividades desenvolvidas pelos trabalhadores deste GES..." %}
                             {% if form.descricao_atividades.errors %}
                             <div class="text-danger small mt-1">{{ form.descricao_atividades.errors }}</div>
                             {% endif %}
-                            <small class="form-text text-muted">Seja detalhado na descrição das atividades</small>
+                            <small class="form-text text-muted">Seja detalhado na descriÃ§Ã£o das atividades</small>
                         </div>
                     </div>
                 </div>
@@ -146,9 +146,9 @@
                         </div>
                         <div class="col-md-6">
                             <label for="{{ form.horario_trabalho.id_for_label }}" class="form-label fw-semibold">
-                                Horário de Trabalho
+                                HorÃ¡rio de Trabalho
                             </label>
-                            {% render_field form.horario_trabalho class="form-control" placeholder="Ex: 08:00 às 17:00" %}
+                            {% render_field form.horario_trabalho class="form-control" placeholder="Ex: 08:00 Ã s 17:00" %}
                             {% if form.horario_trabalho.errors %}
                             <div class="text-danger small mt-1">{{ form.horario_trabalho.errors }}</div>
                             {% endif %}
@@ -164,17 +164,17 @@
                 </div>
             </div>
 
-            <!-- 4. Informações Complementares -->
+            <!-- 4. InformaÃ§Ãµes Complementares -->
             <div class="card mb-4">
                 <div class="card-header bg-warning text-dark">
-                    <i class="bi bi-info-circle-fill"></i> 4. Informações Complementares
+                    <i class="bi bi-info-circle-fill"></i> 4. InformaÃ§Ãµes Complementares
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
                         <label for="{{ form.caracteristicas_ambiente.id_for_label }}" class="form-label fw-semibold">
-                            Características do Ambiente
+                            CaracterÃ­sticas do Ambiente
                         </label>
-                        {% render_field form.caracteristicas_ambiente class="form-control" rows="3" placeholder="Características físicas do ambiente..." %}
+                        {% render_field form.caracteristicas_ambiente class="form-control" rows="3" placeholder="CaracterÃ­sticas fÃ­sicas do ambiente..." %}
                         {% if form.caracteristicas_ambiente.errors %}
                         <div class="text-danger small mt-1">{{ form.caracteristicas_ambiente.errors }}</div>
                         {% endif %}
@@ -191,8 +191,8 @@
                     </div>
 
                     <div class="mb-4">
-                        <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">Observações</label>
-                        {% render_field form.observacoes class="form-control" rows="3" placeholder="Informações adicionais..." %}
+                        <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">ObservaÃ§Ãµes</label>
+                        {% render_field form.observacoes class="form-control" rows="3" placeholder="InformaÃ§Ãµes adicionais..." %}
                         {% if form.observacoes.errors %}
                         <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
                         {% endif %}
@@ -208,7 +208,7 @@
                                 </div>
                                 <small class="text-muted d-block mt-1">
                                     <i class="bi bi-info-circle"></i>
-                                    GES inativo <strong>não será incluído</strong> no relatório PDF do PGR.
+                                    GES inativo <strong>nÃ£o serÃ¡ incluÃ­do</strong> no relatÃ³rio PDF do PGR.
                                 </small>
                             </div>
                             <div id="statusBadge">
@@ -227,7 +227,7 @@
                         {% if form.instance.pk and not form.instance.ativo %}
                         <div class="alert alert-warning mt-3 mb-0 py-2">
                             <i class="bi bi-exclamation-triangle-fill"></i>
-                            <strong>Atenção:</strong> Este GES está inativo e não aparecerá no inventário de riscos do PDF.
+                            <strong>AtenÃ§Ã£o:</strong> Este GES estÃ¡ inativo e nÃ£o aparecerÃ¡ no inventÃ¡rio de riscos do PDF.
                         </div>
                         {% endif %}
                     </div>
@@ -238,7 +238,7 @@
                 </div>
             </div>
 
-            <!-- Botões -->
+            <!-- BotÃµes -->
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between flex-wrap gap-2">
@@ -265,17 +265,17 @@
     <div class="col-lg-3">
         <div class="card sticky-top help-sidebar" style="top: 80px;">
             <div class="card-header bg-info text-white">
-                <i class="bi bi-question-circle-fill"></i> O que é GES?
+                <i class="bi bi-question-circle-fill"></i> O que Ã© GES?
             </div>
             <div class="card-body">
                 <p class="small">
-                    <strong>GES (Grupo de Exposição Similar)</strong> é um conjunto de trabalhadores
-                    que experimentam exposição semelhante aos riscos ocupacionais.
+                    <strong>GES (Grupo de ExposiÃ§Ã£o Similar)</strong> Ã© um conjunto de trabalhadores
+                    que experimentam exposiÃ§Ã£o semelhante aos riscos ocupacionais.
                 </p>
                 <hr>
-                <h6>Critérios para agrupar</h6>
+                <h6>CritÃ©rios para agrupar</h6>
                 <ul class="small">
-                    <li>Mesmo cargo/função</li>
+                    <li>Mesmo cargo/funÃ§Ã£o</li>
                     <li>Mesmas atividades</li>
                     <li>Mesmo ambiente</li>
                     <li>Mesmos riscos</li>
@@ -311,14 +311,14 @@ $(document).ready(function() {
         }
     });
 
-    // Sugestão padrão jornada
+    // SugestÃ£o padrÃ£o jornada
     $('#id_jornada_trabalho').on('focus', function() {
         if (!$(this).val()) $(this).val('44 horas semanais');
     });
 
-    // Sugestão padrão horário
+    // SugestÃ£o padrÃ£o horÃ¡rio
     $('#id_horario_trabalho').on('focus', function() {
-        if (!$(this).val()) $(this).val('08:00 às 17:00');
+        if (!$(this).val()) $(this).val('08:00 Ã s 17:00');
     });
 });
 </script>

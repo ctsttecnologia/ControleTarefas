@@ -1,6 +1,6 @@
-
+﻿
 {% comment %}
-Componente reutilizável de paginação Bootstrap 5.
+Componente reutilizÃ¡vel de paginaÃ§Ã£o Bootstrap 5.
 
 Uso:
   {% include 'cliente/_includes/_pagination.html' %}
@@ -9,22 +9,22 @@ Requer no contexto:
   - is_paginated (bool)
   - page_obj
   - paginator
-  - termo_pesquisa (opcional, para manter a busca entre páginas)
+  - termo_pesquisa (opcional, para manter a busca entre pÃ¡ginas)
 {% endcomment %}
 
 {% if is_paginated %}
 <div class="card-footer bg-white border-top py-3">
     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
 
-        {# ── Contador ── #}
+        {# â”€â”€ Contador â”€â”€ #}
         <small class="text-muted">
-            Página {{ page_obj.number }} de {{ paginator.num_pages }}
-            <span class="mx-1">·</span>
+            PÃ¡gina {{ page_obj.number }} de {{ paginator.num_pages }}
+            <span class="mx-1">Â·</span>
             {{ paginator.count }} registro{{ paginator.count|pluralize:"s" }}
         </small>
 
-        {# ── Navegação ── #}
-        <nav aria-label="Paginação">
+        {# â”€â”€ NavegaÃ§Ã£o â”€â”€ #}
+        <nav aria-label="PaginaÃ§Ã£o">
             <ul class="pagination pagination-sm mb-0">
 
                 {# Anterior #}
@@ -37,7 +37,7 @@ Requer no contexto:
                 </li>
                 {% endif %}
 
-                {# Números #}
+                {# NÃºmeros #}
                 {% for i in paginator.page_range %}
                     {% if page_obj.number == i %}
                         <li class="page-item active"><span class="page-link">{{ i }}</span></li>
@@ -52,11 +52,11 @@ Requer no contexto:
                                href="?page={{ i }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">{{ i }}</a>
                         </li>
                     {% elif i == page_obj.number|add:"-3" or i == page_obj.number|add:"3" %}
-                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                        <li class="page-item disabled"><span class="page-link">â€¦</span></li>
                     {% endif %}
                 {% endfor %}
 
-                {# Próximo #}
+                {# PrÃ³ximo #}
                 {% if page_obj.has_next %}
                 <li class="page-item">
                     <a class="page-link"

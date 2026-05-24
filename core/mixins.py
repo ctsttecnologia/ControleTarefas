@@ -14,6 +14,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 from PIL import Image
 from core.magic_utils import get_mime_type
+from core.utils import get_filial_ativa
 from core.validators import SecureFileValidator
 from .forms import ChangeFilialForm
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -21,6 +22,22 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse, NoReverseMatch
 from django.contrib.auth.mixins import UserPassesTestMixin
 
+
+class RequireActiveFilialMixin:
+    """
+    Garante que o usuário tenha uma filial ativa antes de acessar a view.
+    Caso contrário, redireciona com mensagem.
+    """
+    filial_required_redirect_url = "usuario:selecionar_filial"  # ajuste se necessário
+    filial_required_message = "Selecione uma filial para continuar."
+
+    def dispatch(self, request, *args, **kwargs):
+        filial = get_filial_ativa(request.user, request)
+        if filial is None:
+            messages.warning(request, self.filial_required_message)
+            return redirect(self.filial_required_redirect_url)
+        request.filial_ativa = filial  # disponibiliza na view
+        return super().dispatch(request, *args, **kwargs)
 
 # =============================================================================
 # == MIXINS DE PERMISSÃO E ESCOPO (ARQUITETURA DE 3 NÍVEIS)
@@ -63,7 +80,10 @@ class ViewFilialScopedMixin:
          pelo campo 'filial' do model (se existir).
     """
 
-    # Nome do FK no model — pode ser sobrescrito pela view se diferente
+    """
+    Restringe o queryset da view à filial ativa do usuário.
+    Espera que o model tenha um campo FK `filial`.
+    """
     filial_field = 'filial'
 
     def get_filial_ativa(self):
@@ -88,26 +108,11 @@ class ViewFilialScopedMixin:
         return Filial.objects.filter(pk=filial_id).first()
 
     def get_queryset(self):
-        parent = super()
-        if hasattr(parent, 'get_queryset'):
-            qs = parent.get_queryset()
-        elif getattr(self, 'model', None) is not None:
-            qs = self.model._default_manager.all()
-        else:
-            raise ImproperlyConfigured(
-                f"{self.__class__.__name__} precisa definir 'model' "
-                f"ou herdar de uma view com get_queryset()."
-            )
-
-        if hasattr(qs, 'for_request'):
-            return qs.for_request(self.request)
-
-        filial = self.get_filial_ativa()
-        model = getattr(qs, 'model', None)
-        if filial and model and hasattr(model, self.filial_field):
-            qs = qs.filter(**{self.filial_field: filial})
-
-        return qs
+        qs = super().get_queryset()
+        filial = get_filial_ativa(self.request.user, self.request)
+        if filial is None:
+            return qs.none()
+        return qs.filter(**{self.filial_field: filial})
 
 class TecnicoScopeMixin:
     """
@@ -343,18 +348,29 @@ class AtividadeLogMixin:
     Mixin para criar logs de atividade para Ferramentas ou Malas.
     """
 
-    def _log_atividade(self, tipo, descricao, ferramenta=None, mala=None):
-        if not ferramenta and not mala:
-            raise ValueError("A função _log_atividade requer um objeto 'ferramenta' ou 'mala'.")
+    def _log_atividade(self, ferramenta=None, tipo=None, descricao="", mala=None):
+        # ✅ Validação: precisa de ferramenta OU mala
+        if ferramenta is None and mala is None:
+            raise ValueError("_log_atividade requer 'ferramenta' ou 'mala'.")
 
-        item = ferramenta or mala
+        item = ferramenta if ferramenta is not None else mala
+
+        # ✅ Validação: item precisa ter atributo 'filial' (proteção contra args trocados)
+        if not hasattr(item, 'filial'):
+            raise TypeError(
+                f"_log_atividade recebeu item inválido: {item!r} "
+                f"({type(item).__name__}). Esperado objeto com atributo 'filial'."
+            )
+
+        if tipo is None:
+            raise ValueError("_log_atividade requer 'tipo'.")
 
         if not hasattr(self, 'request') or not hasattr(self.request, 'user'):
             raise TypeError(
                 f"O {self.__class__.__name__} deve ter acesso ao 'request.user' para logar atividades."
             )
 
-        # ✅ Import lazy — evita circular import no carregamento dos models
+        # ✅ Import lazy — evita circular import
         from ferramentas.models import Atividade
 
         Atividade.objects.create(
@@ -365,6 +381,7 @@ class AtividadeLogMixin:
             descricao=descricao,
             usuario=self.request.user,
         )
+
 
 class HTMXModalFormMixin:
     """

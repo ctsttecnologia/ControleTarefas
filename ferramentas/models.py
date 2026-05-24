@@ -3,8 +3,9 @@
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from core.managers import FilialManager 
+from suprimentos.models import PedidoCompra
 from usuario.models import Filial, Usuario
-from core.models import BaseModel
+
 from cliente.models import Cliente
 # ferramentas/models.py
 import qrcode
@@ -198,6 +199,8 @@ class Ferramenta(models.Model):
         Filial, on_delete=models.PROTECT,
         related_name='ferramentas', null=True
     )
+    pedido_compra_origem = models.ForeignKey(PedidoCompra, on_delete=models.SET_NULL, null=True, blank=True)
+    
     fornecedor = models.ForeignKey(
         'suprimentos.Parceiro', on_delete=models.SET_NULL,
         related_name='ferramentas_fornecidas',

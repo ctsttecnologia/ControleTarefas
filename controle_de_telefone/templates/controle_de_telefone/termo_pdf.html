@@ -1,11 +1,11 @@
-
+﻿
 
 {% load static %}
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Termo de Responsabilidade — {{ vinculo.funcionario }}</title>
+    <title>Termo de Responsabilidade â€” {{ vinculo.funcionario }}</title>
     <style type="text/css">
         @page {
             size: a4 portrait;
@@ -130,7 +130,7 @@
 </head>
 <body>
 
-    <!-- Cabeçalho -->
+    <!-- CabeÃ§alho -->
     <div class="header">
         <table class="header-table">
             <tr>
@@ -142,7 +142,7 @@
                 <td class="header-title">
                     <h1>Termo de Responsabilidade</h1>
                     <div class="subtitle">
-                        Aparelho/Linha Corporativa · Documento nº {{ vinculo.pk }}
+                        Aparelho/Linha Corporativa Â· Documento nÂº {{ vinculo.pk }}
                     </div>
                 </td>
             </tr>
@@ -153,16 +153,16 @@
 
     <p>
         Pelo presente instrumento, <strong>{{ vinculo.funcionario.nome_completo|default:vinculo.funcionario }}</strong>,
-        {% if rg_numero and rg_numero != "Documento não encontrado" and rg_numero != "RG não encontrado" %}
-        portador(a) do RG nº <strong>{{ rg_numero }}</strong>,
+        {% if rg_numero and rg_numero != "Documento nÃ£o encontrado" and rg_numero != "RG nÃ£o encontrado" %}
+        portador(a) do RG nÂº <strong>{{ rg_numero }}</strong>,
         {% endif %}
-        doravante denominado(a) <strong>RESPONSÁVEL</strong>,
-        declara ter recebido da empresa, em perfeitas condições de uso, o(s) seguinte(s) item(ns)
-        destinado(s) ao exercício de suas atividades profissionais:
+        doravante denominado(a) <strong>RESPONSÃVEL</strong>,
+        declara ter recebido da empresa, em perfeitas condiÃ§Ãµes de uso, o(s) seguinte(s) item(ns)
+        destinado(s) ao exercÃ­cio de suas atividades profissionais:
     </p>
 
-    <!-- Dados do Funcionário -->
-    <div class="section-title">1. Dados do Responsável</div>
+    <!-- Dados do FuncionÃ¡rio -->
+    <div class="section-title">1. Dados do ResponsÃ¡vel</div>
     <table class="info-table">
         <tr>
             <td class="label">Nome Completo</td>
@@ -170,7 +170,7 @@
         </tr>
         {% if vinculo.funcionario.matricula %}
         <tr>
-            <td class="label">Matrícula</td>
+            <td class="label">MatrÃ­cula</td>
             <td>{{ vinculo.funcionario.matricula }}</td>
         </tr>
         {% endif %}
@@ -186,7 +186,7 @@
             <td>{{ vinculo.funcionario.filial.nome }}</td>
         </tr>
         {% endif %}
-        {% if rg_numero and rg_numero != "Documento não encontrado" and rg_numero != "RG não encontrado" %}
+        {% if rg_numero and rg_numero != "Documento nÃ£o encontrado" and rg_numero != "RG nÃ£o encontrado" %}
         <tr>
             <td class="label">RG</td>
             <td>{{ rg_numero }}</td>
@@ -214,13 +214,13 @@
         {% endif %}
         {% if vinculo.aparelho.numero_serie %}
         <tr>
-            <td class="label">Nº de Série</td>
+            <td class="label">NÂº de SÃ©rie</td>
             <td>{{ vinculo.aparelho.numero_serie }}</td>
         </tr>
         {% endif %}
         {% if vinculo.aparelho.acessorios %}
         <tr>
-            <td class="label">Acessórios</td>
+            <td class="label">AcessÃ³rios</td>
             <td>{{ vinculo.aparelho.acessorios }}</td>
         </tr>
         {% endif %}
@@ -229,10 +229,10 @@
 
     <!-- Dados da Linha -->
     {% if vinculo.linha %}
-    <div class="section-title">{% if vinculo.aparelho %}3{% else %}2{% endif %}. Dados da Linha Telefônica</div>
+    <div class="section-title">{% if vinculo.aparelho %}3{% else %}2{% endif %}. Dados da Linha TelefÃ´nica</div>
     <table class="info-table">
         <tr>
-            <td class="label">Número</td>
+            <td class="label">NÃºmero</td>
             <td>{{ vinculo.linha.numero }}</td>
         </tr>
         <tr>
@@ -259,37 +259,37 @@
         </tr>
         {% if vinculo.data_devolucao %}
         <tr>
-            <td class="label">Data de Devolução</td>
+            <td class="label">Data de DevoluÃ§Ã£o</td>
             <td>{{ vinculo.data_devolucao|date:"d/m/Y" }}</td>
         </tr>
         {% endif %}
     </table>
 
-    <!-- Cláusulas -->
-    <div class="section-title">Cláusulas de Responsabilidade</div>
+    <!-- ClÃ¡usulas -->
+    <div class="section-title">ClÃ¡usulas de Responsabilidade</div>
     <div class="clauses">
         <p>
-            <strong>1.</strong> O(A) RESPONSÁVEL compromete-se a utilizar o(s) item(ns) descrito(s) acima
-            <strong>exclusivamente para fins profissionais</strong>, relacionados ao exercício de suas
-            atribuições na empresa.
+            <strong>1.</strong> O(A) RESPONSÃVEL compromete-se a utilizar o(s) item(ns) descrito(s) acima
+            <strong>exclusivamente para fins profissionais</strong>, relacionados ao exercÃ­cio de suas
+            atribuiÃ§Ãµes na empresa.
         </p>
         <p>
-            <strong>2.</strong> O(A) RESPONSÁVEL obriga-se a zelar pela integridade, guarda e conservação
-            do(s) item(ns), utilizando-o(s) com a devida diligência e cuidado.
+            <strong>2.</strong> O(A) RESPONSÃVEL obriga-se a zelar pela integridade, guarda e conservaÃ§Ã£o
+            do(s) item(ns), utilizando-o(s) com a devida diligÃªncia e cuidado.
         </p>
         <p>
             <strong>3.</strong> Em caso de <strong>dano, extravio, roubo, furto ou mau uso</strong> do(s) item(ns),
-            o(a) RESPONSÁVEL obriga-se a comunicar imediatamente à empresa e a arcar com os custos
-            de reparo ou reposição, conforme apuração de responsabilidade.
+            o(a) RESPONSÃVEL obriga-se a comunicar imediatamente Ã  empresa e a arcar com os custos
+            de reparo ou reposiÃ§Ã£o, conforme apuraÃ§Ã£o de responsabilidade.
         </p>
         <p>
-            <strong>4.</strong> O(A) RESPONSÁVEL declara estar ciente de que o(s) item(ns) pertence(m) à
-            empresa e deverá(ão) ser devolvido(s) em caso de desligamento, solicitação da empresa ou
-            término do uso profissional.
+            <strong>4.</strong> O(A) RESPONSÃVEL declara estar ciente de que o(s) item(ns) pertence(m) Ã 
+            empresa e deverÃ¡(Ã£o) ser devolvido(s) em caso de desligamento, solicitaÃ§Ã£o da empresa ou
+            tÃ©rmino do uso profissional.
         </p>
         <p>
-            <strong>5.</strong> É vedado o compartilhamento do(s) item(ns) com terceiros, bem como a
-            instalação de softwares não autorizados ou o uso para fins que violem as políticas da empresa.
+            <strong>5.</strong> Ã‰ vedado o compartilhamento do(s) item(ns) com terceiros, bem como a
+            instalaÃ§Ã£o de softwares nÃ£o autorizados ou o uso para fins que violem as polÃ­ticas da empresa.
         </p>
     </div>
 
@@ -301,9 +301,9 @@
                 {{ vinculo.funcionario.nome_completo|default:vinculo.funcionario }}
             </div>
             <div class="signature-date">
-                Assinado em {{ vinculo.data_assinatura|date:"d/m/Y \à\s H:i" }}
+                Assinado em {{ vinculo.data_assinatura|date:"d/m/Y \Ã \s H:i" }}
                 <br>
-                <span class="badge-status badge-assinado">✓ DOCUMENTO ASSINADO DIGITALMENTE</span>
+                <span class="badge-status badge-assinado">âœ“ DOCUMENTO ASSINADO DIGITALMENTE</span>
             </div>
         {% else %}
             <div style="height: 70px;"></div>
@@ -311,15 +311,15 @@
                 {{ vinculo.funcionario.nome_completo|default:vinculo.funcionario }}
             </div>
             <div class="signature-date">
-                <span class="badge-status badge-pendente">⧗ PENDENTE DE ASSINATURA</span>
+                <span class="badge-status badge-pendente">â§— PENDENTE DE ASSINATURA</span>
             </div>
         {% endif %}
     </div>
 
-    <!-- Rodapé -->
+    <!-- RodapÃ© -->
     <div id="footerContent" class="footer">
         Documento gerado em {{ vinculo.atualizado_em|date:"d/m/Y H:i" }}
-        · Página <pdf:pagenumber> de <pdf:pagecount>
+        Â· PÃ¡gina <pdf:pagenumber> de <pdf:pagecount>
     </div>
 
 </body>

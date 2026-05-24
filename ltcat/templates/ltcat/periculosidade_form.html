@@ -1,7 +1,7 @@
-
+﻿
 {% extends "ltcat/base_ltcat.html" %}
 
-{% block ltcat_title %}Avaliação de Periculosidade - LTCAT{% endblock %}
+{% block ltcat_title %}AvaliaÃ§Ã£o de Periculosidade - LTCAT{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_list' %}">Laudos</a></li>
@@ -23,10 +23,10 @@
                     </div>
                     <div class="min-w-0">
                         <h5 class="mb-0 text-white fw-bold">
-                            {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação de Periculosidade
+                            {% if form.instance.pk %}Editar{% else %}Nova{% endif %} AvaliaÃ§Ã£o de Periculosidade
                         </h5>
                         <small class="text-white-50 text-truncate d-block">
-                            Seção 8 — NR-16 e Anexos | {{ ltcat.codigo_documento }}
+                            SeÃ§Ã£o 8 â€” NR-16 e Anexos | {{ ltcat.codigo_documento }}
                         </small>
                     </div>
                 </div>
@@ -36,9 +36,9 @@
                 <div class="alert border-0 py-2 mb-4" style="background: var(--bs-danger-bg-subtle, #f8d7da); color: var(--bs-danger-text-emphasis, #58151c);">
                     <i class="fas fa-shield-alt me-2"></i>
                     <small>
-                        A <strong>Seção 8</strong> avalia cada tipo de periculosidade conforme a NR-16 e seus anexos:
-                        Explosivos (Anexo 01), Inflamáveis (Anexo 02), Violência (Anexo 03),
-                        Eletricidade (Anexo 04), Trânsito (Anexo 06) e Radiações Ionizantes.
+                        A <strong>SeÃ§Ã£o 8</strong> avalia cada tipo de periculosidade conforme a NR-16 e seus anexos:
+                        Explosivos (Anexo 01), InflamÃ¡veis (Anexo 02), ViolÃªncia (Anexo 03),
+                        Eletricidade (Anexo 04), TrÃ¢nsito (Anexo 06) e RadiaÃ§Ãµes Ionizantes.
                     </small>
                 </div>
 
@@ -55,7 +55,7 @@
                     </div>
                     {% endif %}
 
-                    {# ═══════════ TIPO E APLICABILIDADE ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• TIPO E APLICABILIDADE â•â•â•â•â•â•â•â•â•â•â• #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
                             <i class="fas fa-shield-alt me-2"></i>Tipo de Periculosidade
@@ -79,7 +79,7 @@
                                             <label class="form-label fw-semibold mb-0 d-block">
                                                 {{ form.aplicavel.label }}
                                             </label>
-                                            <small class="text-muted" id="labelAplicavelDesc">Não aplicável</small>
+                                            <small class="text-muted" id="labelAplicavelDesc">NÃ£o aplicÃ¡vel</small>
                                         </div>
                                         <div class="form-check form-switch mb-0">
                                             {{ form.aplicavel }}
@@ -95,18 +95,18 @@
                         </div>
                     </fieldset>
 
-                    {# ═══════════ FUNÇÕES EXPOSTAS ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• FUNÃ‡Ã•ES EXPOSTAS â•â•â•â•â•â•â•â•â•â•â• #}
                     <fieldset class="mb-4" id="fieldset-funcoes-expostas">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-users me-2"></i>Funções Expostas
+                            <i class="fas fa-users me-2"></i>FunÃ§Ãµes Expostas
                         </legend>
                         <label for="{{ form.funcoes_expostas.id_for_label }}" class="form-label fw-semibold">
                             {{ form.funcoes_expostas.label }}
                         </label>
                         {{ form.funcoes_expostas }}
                         <div class="form-text">
-                            Selecione as funções que estão expostas a este tipo de periculosidade.
-                            Segure <kbd>Ctrl</kbd> para selecionar múltiplas.
+                            Selecione as funÃ§Ãµes que estÃ£o expostas a este tipo de periculosidade.
+                            Segure <kbd>Ctrl</kbd> para selecionar mÃºltiplas.
                         </div>
                         {% for error in form.funcoes_expostas.errors %}
                         <div class="invalid-feedback d-block">
@@ -115,17 +115,17 @@
                         {% endfor %}
                     </fieldset>
 
-                    {# ═══════════ JUSTIFICATIVA ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• JUSTIFICATIVA â•â•â•â•â•â•â•â•â•â•â• #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-file-alt me-2"></i>Descrição / Justificativa
+                            <i class="fas fa-file-alt me-2"></i>DescriÃ§Ã£o / Justificativa
                         </legend>
                         <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">
                             {{ form.descricao.label }}
                         </label>
                         {{ form.descricao }}
                         <div class="form-text">
-                            Ex: <em>As funções avaliadas não lidam com explosivos e não trabalham em área de risco normatizada.</em>
+                            Ex: <em>As funÃ§Ãµes avaliadas nÃ£o lidam com explosivos e nÃ£o trabalham em Ã¡rea de risco normatizada.</em>
                         </div>
                         {% for error in form.descricao.errors %}
                         <div class="invalid-feedback d-block">
@@ -134,7 +134,7 @@
                         {% endfor %}
                     </fieldset>
 
-                    {# ═══════════ BOTÕES ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• BOTÃ•ES â•â•â•â•â•â•â•â•â•â•â• #}
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
                         <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}" class="btn btn-outline-secondary order-2 order-sm-1">
                             <i class="fas fa-arrow-left me-1"></i> Voltar ao Documento
@@ -162,10 +162,10 @@
     function toggle() {
         if (!chk) return;
         if (chk.checked) {
-            if (desc) { desc.textContent = 'APLICÁVEL'; desc.classList.add('text-danger', 'fw-bold'); desc.classList.remove('text-muted'); }
+            if (desc) { desc.textContent = 'APLICÃVEL'; desc.classList.add('text-danger', 'fw-bold'); desc.classList.remove('text-muted'); }
             if (fieldsetFuncoes) { fieldsetFuncoes.style.opacity = '1'; fieldsetFuncoes.style.pointerEvents = 'auto'; }
         } else {
-            if (desc) { desc.textContent = 'Não aplicável'; desc.classList.remove('text-danger', 'fw-bold'); desc.classList.add('text-muted'); }
+            if (desc) { desc.textContent = 'NÃ£o aplicÃ¡vel'; desc.classList.remove('text-danger', 'fw-bold'); desc.classList.add('text-muted'); }
             if (fieldsetFuncoes) { fieldsetFuncoes.style.opacity = '0.5'; fieldsetFuncoes.style.pointerEvents = 'none'; }
         }
     }

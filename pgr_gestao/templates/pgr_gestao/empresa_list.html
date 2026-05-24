@@ -1,4 +1,4 @@
-{# Lista de Empresas Cadastradas para PGR #}
+﻿{# Lista de Empresas Cadastradas para PGR #}
 {% extends "pgr_gestao/pgr_base.html" %}
 {% load static %}
 
@@ -23,7 +23,7 @@
     </div>
 </div>
 
-<!-- Estatísticas -->
+<!-- EstatÃ­sticas -->
 <div class="row mb-4 g-3">
     <div class="col-md-4 col-6">
         <div class="card stats-card text-center h-100">
@@ -72,7 +72,7 @@
                 <select name="grau_risco" class="form-select">
                     <option value="">Todos</option>
                     <option value="1" {% if request.GET.grau_risco == '1' %}selected{% endif %}>1 - Baixo</option>
-                    <option value="2" {% if request.GET.grau_risco == '2' %}selected{% endif %}>2 - Médio</option>
+                    <option value="2" {% if request.GET.grau_risco == '2' %}selected{% endif %}>2 - MÃ©dio</option>
                     <option value="3" {% if request.GET.grau_risco == '3' %}selected{% endif %}>3 - Alto</option>
                     <option value="4" {% if request.GET.grau_risco == '4' %}selected{% endif %}>4 - Muito Alto</option>
                 </select>
@@ -87,7 +87,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Buscar</label>
-                <input type="text" name="search" class="form-control" placeholder="Razão social, CNPJ..."
+                <input type="text" name="search" class="form-control" placeholder="RazÃ£o social, CNPJ..."
                        value="{{ request.GET.search }}">
             </div>
             <div class="col-md-1 d-flex align-items-end">
@@ -112,7 +112,7 @@
             <table class="table table-hover table-clickable align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Razão Social</th>
+                        <th>RazÃ£o Social</th>
                         <th>CNPJ</th>
                         <th>Tipo</th>
                         <th>CNAE</th>
@@ -121,7 +121,7 @@
                         <th>Cidade/UF</th>
                         <th class="text-center">Status</th>
                         <th class="text-center">PGRs</th>
-                        <th class="text-center">Ações</th>
+                        <th class="text-center">AÃ§Ãµes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -141,7 +141,7 @@
                                 Grau {{ empresa.grau_risco }}
                             </span>
                             {% else %}
-                            <span class="text-muted">—</span>
+                            <span class="text-muted">â€”</span>
                             {% endif %}
                         </td>
                         <td class="text-center">{{ empresa.numero_empregados|default:"-" }}</td>
@@ -194,7 +194,7 @@
             </table>
         </div>
 
-        <!-- Paginação -->
+        <!-- PaginaÃ§Ã£o -->
         {% if empresas.has_other_pages %}
         <nav class="mt-4">
             <ul class="pagination justify-content-center mb-0">

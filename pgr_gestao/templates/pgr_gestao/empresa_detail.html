@@ -1,4 +1,4 @@
-{# Empresa - Detalhes da Empresa e seus Documentos PGR #}
+﻿{# Empresa - Detalhes da Empresa e seus Documentos PGR #}
 {% extends "pgr_gestao/pgr_base.html" %}
 {% load static %}
 
@@ -51,12 +51,12 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <p><strong>Razão Social:</strong> {{ empresa.razao_social }}</p>
+                        <p><strong>RazÃ£o Social:</strong> {{ empresa.razao_social }}</p>
                         <p><strong>CNPJ:</strong> {{ empresa.cnpj }}</p>
                         <p><strong>Tipo:</strong> {{ empresa.get_tipo_empresa_display }}</p>
                         <p><strong>CNAE:</strong> {{ empresa.cnae|default:"N/A" }}</p>
                         {% if empresa.descricao_cnae %}
-                        <p><strong>Descrição CNAE:</strong> {{ empresa.descricao_cnae }}</p>
+                        <p><strong>DescriÃ§Ã£o CNAE:</strong> {{ empresa.descricao_cnae }}</p>
                         {% endif %}
                     </div>
                     <div class="col-md-6">
@@ -87,27 +87,27 @@
             </div>
         </div>
 
-        <!-- Endereço -->
+        <!-- EndereÃ§o -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-geo-alt-fill"></i> Endereço
+                <i class="bi bi-geo-alt-fill"></i> EndereÃ§o
             </div>
             <div class="card-body">
                 {% if empresa.endereco_completo %}
                 <p class="mb-0">{{ empresa.endereco_completo }}</p>
                 {% else %}
                 <p class="text-muted mb-0">
-                    <i class="bi bi-info-circle"></i> Endereço não cadastrado
+                    <i class="bi bi-info-circle"></i> EndereÃ§o nÃ£o cadastrado
                 </p>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Locais de Prestação -->
+        <!-- Locais de PrestaÃ§Ã£o -->
         {% if locais_prestacao %}
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-pin-map-fill"></i> Locais de Prestação de Serviço
+                <i class="bi bi-pin-map-fill"></i> Locais de PrestaÃ§Ã£o de ServiÃ§o
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
@@ -138,10 +138,10 @@
 
     <!-- Sidebar -->
     <div class="col-lg-4">
-        <!-- Estatísticas -->
+        <!-- EstatÃ­sticas -->
         <div class="card mb-3">
             <div class="card-header bg-primary text-white">
-                <i class="bi bi-pie-chart-fill"></i> Estatísticas
+                <i class="bi bi-pie-chart-fill"></i> EstatÃ­sticas
             </div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
@@ -157,7 +157,7 @@
                     <strong class="text-danger">{{ pgrs_vencidos }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
-                    <span>Locais de Prestação:</span>
+                    <span>Locais de PrestaÃ§Ã£o:</span>
                     <strong>{{ locais_prestacao.count }}</strong>
                 </div>
                 <hr>
@@ -166,16 +166,16 @@
                     <strong>{{ total_riscos }}</strong>
                 </div>
                 <div class="d-flex justify-content-between">
-                    <span>Riscos Críticos:</span>
+                    <span>Riscos CrÃ­ticos:</span>
                     <strong class="text-danger">{{ riscos_criticos }}</strong>
                 </div>
             </div>
         </div>
 
-        <!-- Informações Adicionais -->
+        <!-- InformaÃ§Ãµes Adicionais -->
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-clipboard-data"></i> Informações Adicionais
+                <i class="bi bi-clipboard-data"></i> InformaÃ§Ãµes Adicionais
             </div>
             <div class="card-body">
                 <p class="mb-2">
@@ -185,7 +185,7 @@
                 </p>
                 <p class="mb-2">
                     <i class="bi bi-pencil-square text-warning"></i>
-                    <strong>Última atualização:</strong><br>
+                    <strong>Ãšltima atualizaÃ§Ã£o:</strong><br>
                     <small class="text-muted">{{ empresa.atualizado_em|date:"d/m/Y H:i" }}</small>
                 </p>
                 <p class="mb-0">
@@ -214,14 +214,14 @@
             <table class="table table-hover table-clickable align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Código</th>
+                        <th>CÃ³digo</th>
                         <th>Local</th>
                         <th>Status</th>
-                        <th>Elaboração</th>
+                        <th>ElaboraÃ§Ã£o</th>
                         <th>Vencimento</th>
-                        <th>Versão</th>
-                        <th>Conclusão</th>
-                        <th class="text-center">Ações</th>
+                        <th>VersÃ£o</th>
+                        <th>ConclusÃ£o</th>
+                        <th class="text-center">AÃ§Ãµes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -235,7 +235,7 @@
                             {% elif doc.status == 'vencido' %}
                             <span class="badge badge-status-vencido">Vencido</span>
                             {% elif doc.status == 'em_revisao' %}
-                            <span class="badge badge-status-em-revisao">Em Revisão</span>
+                            <span class="badge badge-status-em-revisao">Em RevisÃ£o</span>
                             {% endif %}
                         </td>
                         <td>{{ doc.data_elaboracao|date:"d/m/Y" }}</td>

@@ -1,4 +1,4 @@
-
+﻿
 
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load widget_tweaks %}
@@ -37,10 +37,10 @@
                     </div>
                     {% endif %}
 
-                    <!-- Informações Principais -->
+                    <!-- InformaÃ§Ãµes Principais -->
                     <div class="sst-section-title">
                         <i class="bi bi-building"></i>
-                        Informações Principais
+                        InformaÃ§Ãµes Principais
                     </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-8">
@@ -67,7 +67,7 @@
                             </label>
                             <div class="input-group">
                                 {% render_field form.endereco class+="form-select" %}
-                                <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="sst-btn-outline" target="_blank" title="Cadastrar novo endereço" style="border-radius: 0 0.45rem 0.45rem 0;">
+                                <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="sst-btn-outline" target="_blank" title="Cadastrar novo endereÃ§o" style="border-radius: 0 0.45rem 0.45rem 0;">
                                     <i class="bi bi-plus-lg"></i>
                                 </a>
                             </div>
@@ -88,7 +88,7 @@
                     <!-- Contato -->
                     <div class="sst-section-title">
                         <i class="bi bi-telephone"></i>
-                        Informações de Contato
+                        InformaÃ§Ãµes de Contato
                     </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
@@ -138,10 +138,10 @@
                         </div>
                     </div>
 
-                    <!-- Observações -->
+                    <!-- ObservaÃ§Ãµes -->
                     <div class="sst-section-title">
                         <i class="bi bi-chat-left-text"></i>
-                        Observações
+                        ObservaÃ§Ãµes
                     </div>
                     <div class="row g-3 mb-2">
                         <div class="col-12">
@@ -157,7 +157,7 @@
                     <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="sst-btn-cancel">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </a>
-                    {% if permission.seguranca_trabalho.add_fabricante or user.is_superuser %}
+                    {% if perms.seguranca_trabalho.add_fabricante or user.is_superuser %}
                     <button type="submit" class="sst-btn-primary">
                         <i class="bi bi-check-lg"></i> Salvar
                     </button>

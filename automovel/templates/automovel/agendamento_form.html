@@ -1,4 +1,4 @@
-<!-- Formulário para Criar/Editar Agendamento -->
+﻿<!-- FormulÃ¡rio para Criar/Editar Agendamento -->
 {% extends "automovel/_base_automovel.html" %}
 {% load static crispy_forms_tags %}
 
@@ -92,7 +92,7 @@
                     <i class="bi bi-plus-square-dotted me-2"></i>Novo Agendamento
                     {% endif %}
                 </h1>
-                <p>{% if form.instance.id %}Atualize os dados do agendamento{% else %}Registre um novo agendamento de veículo{% endif %}</p>
+                <p>{% if form.instance.id %}Atualize os dados do agendamento{% else %}Registre um novo agendamento de veÃ­culo{% endif %}</p>
             </div>
             <a href="{% if form.instance.id %}{% url 'automovel:agendamento_detail' form.instance.id %}{% else %}{% url 'automovel:agendamento_list' %}{% endif %}"
                class="btn btn-sm btn-outline-light">

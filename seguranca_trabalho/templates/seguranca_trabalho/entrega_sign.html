@@ -1,4 +1,4 @@
-
+﻿
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load static %}
 
@@ -7,9 +7,9 @@
 {% block extra_css %}
 {{ block.super }}
 <style>
-    /* ═══════════════════════════════════════════════════════
-       ASSINATURA — TEMA CLARO
-       ═══════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       ASSINATURA â€” TEMA CLARO
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     :root,
     [data-bs-theme="light"] {
         --as-bg:              #ffffff;
@@ -59,7 +59,7 @@
         --as-detail-icon-bg:  rgba(96,165,250,.1);
     }
 
-    /* ── Page Header ── */
+    /* â”€â”€ Page Header â”€â”€ */
     .as-header {
         background: var(--as-header-gradient);
         border-radius: 0.75rem;
@@ -117,7 +117,7 @@
         color: #fff;
     }
 
-    /* ── Cards ── */
+    /* â”€â”€ Cards â”€â”€ */
     .as-card {
         background: var(--as-bg);
         border: 1px solid var(--as-border);
@@ -163,7 +163,7 @@
         padding: 1.5rem;
     }
 
-    /* ── Detail Grid ── */
+    /* â”€â”€ Detail Grid â”€â”€ */
     .as-detail-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -198,7 +198,7 @@
         font-size: 0.85rem;
     }
 
-    /* ── Declaração ── */
+    /* â”€â”€ DeclaraÃ§Ã£o â”€â”€ */
     .as-declaration {
         background: var(--as-info-bg);
         border: 1px solid var(--as-info-border);
@@ -213,7 +213,7 @@
         gap: 0.6rem;
     }
 
-    /* ── Tabs ── */
+    /* â”€â”€ Tabs â”€â”€ */
     .as-tabs {
         display: flex;
         gap: 0;
@@ -254,7 +254,7 @@
         border-radius: 2px 2px 0 0;
     }
 
-    /* ── Canvas ── */
+    /* â”€â”€ Canvas â”€â”€ */
     .as-canvas-wrapper {
         border: 2px dashed var(--as-canvas-border);
         border-radius: 0.5rem;
@@ -285,7 +285,7 @@
         gap: 0.35rem;
     }
 
-    /* ── Tab Content ── */
+    /* â”€â”€ Tab Content â”€â”€ */
     .as-tab-pane {
         padding: 1.25rem 0 0;
     }
@@ -310,7 +310,7 @@
         box-shadow: 0 0 0 3px rgba(59,130,246,.15);
     }
 
-    /* ── Footer ── */
+    /* â”€â”€ Footer â”€â”€ */
     .as-card-footer {
         display: flex;
         justify-content: space-between;
@@ -381,7 +381,7 @@
         color: #fff;
     }
 
-    /* ── Responsive ── */
+    /* â”€â”€ Responsive â”€â”€ */
     @media (max-width: 768px) {
         .as-header {
             padding: 1rem 1.25rem;
@@ -395,9 +395,9 @@
 
 {% block sst_content %}
 
-<!-- ═══════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <!-- PAGE HEADER                                             -->
-<!-- ═══════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="as-header">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
@@ -417,9 +417,9 @@
 <div class="row justify-content-center">
     <div class="col-lg-8">
 
-        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <!-- DETALHES DA ENTREGA                                     -->
-        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <div class="as-card">
             <div class="as-card-header">
                 <i class="bi bi-box-seam"></i>
@@ -441,7 +441,7 @@
                     </div>
                     {% if entrega.numero_serie %}
                     <div class="as-detail-item">
-                        <span class="as-detail-label">Número de Série</span>
+                        <span class="as-detail-label">NÃºmero de SÃ©rie</span>
                         <span class="as-detail-value"><code>{{ entrega.numero_serie }}</code></span>
                     </div>
                     {% endif %}
@@ -455,9 +455,9 @@
             </div>
         </div>
 
-        <!-- ═══════════════════════════════════════════════════════ -->
-        <!-- FORMULÁRIO DE ASSINATURA                                -->
-        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- FORMULÃRIO DE ASSINATURA                                -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <div class="as-card">
             <div class="as-card-header as-card-header--success">
                 <i class="bi bi-pen"></i>
@@ -470,7 +470,7 @@
 
                     <input type="hidden" name="assinatura_base64" id="assinatura_base64">
 
-                    <!-- Declaração -->
+                    <!-- DeclaraÃ§Ã£o -->
                     <div class="as-declaration">
                         <i class="bi bi-person-check-fill"></i>
                         <span>

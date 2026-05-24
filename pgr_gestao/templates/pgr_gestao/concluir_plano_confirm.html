@@ -1,12 +1,12 @@
-{# Concluir Plano de Ação - Confirmação e Registro de Evidências #}
+﻿{# Concluir Plano de AÃ§Ã£o - ConfirmaÃ§Ã£o e Registro de EvidÃªncias #}
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 {% load widget_tweaks %}
 
-{% block title %}Concluir Plano de Ação{% endblock %}
+{% block title %}Concluir Plano de AÃ§Ã£o{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:plano_acao_list' %}">Planos de Ação</a></li>
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:plano_acao_list' %}">Planos de AÃ§Ã£o</a></li>
 <li class="breadcrumb-item">
     <a href="{% url 'pgr_gestao:plano_acao_detail' plano.pk %}">Plano #{{ plano.pk }}</a>
 </li>
@@ -17,8 +17,8 @@
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div>
-            <h1><i class="bi bi-check-circle-fill"></i> Concluir Plano de Ação</h1>
-            <p class="mb-0">Confirme a conclusão e registre evidências</p>
+            <h1><i class="bi bi-check-circle-fill"></i> Concluir Plano de AÃ§Ã£o</h1>
+            <p class="mb-0">Confirme a conclusÃ£o e registre evidÃªncias</p>
         </div>
         <a href="{% url 'pgr_gestao:plano_acao_detail' plano.pk %}" class="btn btn-light">
             <i class="bi bi-arrow-left"></i> Voltar
@@ -30,14 +30,14 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header bg-success text-white">
-                <i class="bi bi-clipboard-check"></i> Detalhes do Plano a ser Concluído
+                <i class="bi bi-clipboard-check"></i> Detalhes do Plano a ser ConcluÃ­do
             </div>
             <div class="card-body">
                 <!-- Resumo do plano -->
                 <div class="row mb-3">
                     <div class="col-md-12 mb-2">
                         <small class="text-muted text-uppercase fw-semibold">
-                            <i class="bi bi-card-text"></i> Descrição
+                            <i class="bi bi-card-text"></i> DescriÃ§Ã£o
                         </small>
                         <p class="mb-0">{{ plano.descricao_acao }}</p>
                     </div>
@@ -49,7 +49,7 @@
                     </div>
                     <div class="col-md-6 mb-2">
                         <small class="text-muted text-uppercase fw-semibold">
-                            <i class="bi bi-person-badge"></i> Responsável
+                            <i class="bi bi-person-badge"></i> ResponsÃ¡vel
                         </small>
                         <p class="mb-0">{{ plano.responsavel }}</p>
                     </div>
@@ -68,7 +68,7 @@
                     </div>
                     <div class="col-md-6 mb-2">
                         <small class="text-muted text-uppercase fw-semibold">
-                            <i class="bi bi-calendar-check"></i> Data de Conclusão
+                            <i class="bi bi-calendar-check"></i> Data de ConclusÃ£o
                         </small>
                         <p class="mb-0 text-success fw-bold">
                             <i class="bi bi-check-circle-fill"></i> {% now "d/m/Y" %}
@@ -78,7 +78,7 @@
 
                 <hr>
 
-                <!-- Formulário de conclusão -->
+                <!-- FormulÃ¡rio de conclusÃ£o -->
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
 
@@ -93,7 +93,7 @@
                         <label for="{{ form.comentarios_conclusao.id_for_label }}" class="form-label fw-semibold">
                             <i class="bi bi-chat-left-text"></i> {{ form.comentarios_conclusao.label }}
                         </label>
-                        {% render_field form.comentarios_conclusao class="form-control" rows="4" placeholder="Descreva como a ação foi concluída, resultados obtidos..." %}
+                        {% render_field form.comentarios_conclusao class="form-control" rows="4" placeholder="Descreva como a aÃ§Ã£o foi concluÃ­da, resultados obtidos..." %}
                         {% if form.comentarios_conclusao.errors %}
                         <div class="text-danger small mt-1">{{ form.comentarios_conclusao.errors }}</div>
                         {% endif %}
@@ -108,18 +108,18 @@
                         <div class="text-danger small mt-1">{{ form.evidencia.errors }}</div>
                         {% endif %}
                         <small class="text-muted">
-                            Anexe foto, documento ou comprovante da conclusão (PDF, JPG, PNG)
+                            Anexe foto, documento ou comprovante da conclusÃ£o (PDF, JPG, PNG)
                         </small>
                     </div>
 
                     <div class="alert alert-warning">
                         <h6 class="alert-heading">
-                            <i class="bi bi-exclamation-triangle-fill"></i> Atenção
+                            <i class="bi bi-exclamation-triangle-fill"></i> AtenÃ§Ã£o
                         </h6>
                         <p class="mb-0 small">
-                            Ao confirmar, o status do plano será alterado para <strong>"Concluído"</strong>
-                            e a data de hoje será registrada como data de conclusão.
-                            Esta ação <strong>não pode ser desfeita facilmente</strong>.
+                            Ao confirmar, o status do plano serÃ¡ alterado para <strong>"ConcluÃ­do"</strong>
+                            e a data de hoje serÃ¡ registrada como data de conclusÃ£o.
+                            Esta aÃ§Ã£o <strong>nÃ£o pode ser desfeita facilmente</strong>.
                         </p>
                     </div>
 
@@ -130,7 +130,7 @@
                             <i class="bi bi-x-lg"></i> Cancelar
                         </a>
                         <button type="submit" class="btn btn-success btn-lg">
-                            <i class="bi bi-check-circle-fill"></i> Confirmar Conclusão
+                            <i class="bi bi-check-circle-fill"></i> Confirmar ConclusÃ£o
                         </button>
                     </div>
                 </form>

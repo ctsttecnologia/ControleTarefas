@@ -47,7 +47,7 @@ from .utils import get_logo_base64
 
 
 _APP = 'controle_de_telefone'
-_FILIAL_SESSION_KEY = 'active_filial_id'
+SESSION_FILIAL_ATIVA = 'active_filial_id'
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -61,7 +61,7 @@ class FilialAtivaMixin:
     """
 
     def get_filial_ativa(self):
-        filial_id = self.request.session.get(_FILIAL_SESSION_KEY)
+        filial_id = self.request.session.get(SESSION_FILIAL_ATIVA)
 
         if filial_id:
             try:
@@ -90,11 +90,12 @@ class FilialAtivaMixin:
 
 def _get_filial_id(request):
     """Helper para FBVs — prioriza sessão, depois user.filial_ativa."""
-    filial_id = request.session.get(_FILIAL_SESSION_KEY)
+    SESSION_FILIAL_ATIVA = 'active_filial_id'
+    filial_id = request.session.get(SESSION_FILIAL_ATIVA)
     if filial_id:
         return filial_id
     filial = getattr(request.user, 'filial_ativa', None)
-    return filial.id if filial else None
+    from core.constants import SESSION_FILIAL_ATIVA
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

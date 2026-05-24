@@ -1,8 +1,8 @@
-<!-- templates/tarefas/relatorio_display.html -->
+﻿<!-- templates/tarefas/relatorio_display.html -->
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Resultado do Relatório{% endblock %}
+{% block title %}Resultado do RelatÃ³rio{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -136,7 +136,7 @@
     <!-- Header -->
     <div class="rd-header">
         <div>
-            <h1 class="rd-title"><i class="bi bi-file-earmark-text me-2"></i>Resultado do Relatório</h1>
+            <h1 class="rd-title"><i class="bi bi-file-earmark-text me-2"></i>Resultado do RelatÃ³rio</h1>
             <p class="rd-subtitle">
                 {{ total_tarefas|default:0 }} tarefa{{ total_tarefas|pluralize:"s" }} encontrada{{ total_tarefas|pluralize:"s" }}
             </p>
@@ -149,7 +149,7 @@
                 <i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline">Novos Filtros</span>
             </a>
             <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i><span class="d-none d-sm-inline">Relatórios</span>
+                <i class="bi bi-arrow-left me-1"></i><span class="d-none d-sm-inline">RelatÃ³rios</span>
             </a>
         </div>
     </div>
@@ -174,7 +174,7 @@
         {% if current_filters.responsavel %}
         <span class="rd-filter-tag">
             <i class="bi bi-person-fill"></i>
-            Responsável:
+            ResponsÃ¡vel:
             {% for user in responsaveis %}
                 {% if user.pk|stringformat:"d" == current_filters.responsavel %}
                     {{ user.get_full_name|default:user.username }}
@@ -193,7 +193,7 @@
             <span class="rd-count">{{ total_tarefas|default:0 }}</span>
         </div>
 
-        <!-- ═══ BARRA DE FILTRO POR RESPONSÁVEL ═══ -->
+        <!-- â•â•â• BARRA DE FILTRO POR RESPONSÃVEL â•â•â• -->
         <form method="get" class="rd-filter-bar">
             <!-- Preservar filtros existentes -->
             {% if current_filters.status %}
@@ -203,9 +203,9 @@
             <input type="hidden" name="prioridade" value="{{ current_filters.prioridade }}">
             {% endif %}
 
-            <label for="responsavel"><i class="bi bi-person me-1"></i>Responsável:</label>
+            <label for="responsavel"><i class="bi bi-person me-1"></i>ResponsÃ¡vel:</label>
             <select name="responsavel" id="responsavel" class="rd-filter-select" onchange="this.form.submit()">
-                <option value="">Todos os responsáveis</option>
+                <option value="">Todos os responsÃ¡veis</option>
                 {% for user in responsaveis %}
                 <option value="{{ user.pk }}" {% if current_filters.responsavel == user.pk|stringformat:"d" %}selected{% endif %}>
                     {{ user.get_full_name|default:user.username }}
@@ -215,7 +215,7 @@
 
             {% if current_filters.responsavel %}
             <a href="?{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.prioridade %}prioridade={{ current_filters.prioridade }}{% endif %}"
-               class="btn btn-sm btn-outline-danger" title="Limpar filtro de responsável">
+               class="btn btn-sm btn-outline-danger" title="Limpar filtro de responsÃ¡vel">
                 <i class="bi bi-x-lg"></i>
             </a>
             {% endif %}
@@ -225,11 +225,11 @@
             <table class="rd-table">
                 <thead>
                     <tr>
-                        <th>Título</th>
-                        <th>Responsável</th>
+                        <th>TÃ­tulo</th>
+                        <th>ResponsÃ¡vel</th>
                         <th>Status</th>
                         <th>Prioridade</th>
-                        <th>Criação</th>
+                        <th>CriaÃ§Ã£o</th>
                         <th>Prazo</th>
                     </tr>
                 </thead>
@@ -237,7 +237,7 @@
                     {% for tarefa in tarefas %}
                     <tr>
                         <td><strong>{{ tarefa.titulo }}</strong></td>
-                        <td>{% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}</td>
+                        <td>{% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}â€”{% endif %}</td>
                         <td>
                             <span class="rd-badge rd-badge-{{ tarefa.status }}">
                                 {{ tarefa.get_status_display }}
@@ -245,7 +245,7 @@
                         </td>
                         <td>{{ tarefa.get_prioridade_display }}</td>
                         <td>{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
-                        <td>{{ tarefa.prazo|date:"d/m/Y"|default:"—" }}</td>
+                        <td>{{ tarefa.prazo|date:"d/m/Y"|default:"â€”" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -261,7 +261,7 @@
             </table>
         </div>
 
-        <!-- ═══ ANÁLISE POR STATUS E PRIORIDADE ═══ -->
+        <!-- â•â•â• ANÃLISE POR STATUS E PRIORIDADE â•â•â• -->
         {% if status_data or prioridade_data %}
         <div style="padding: 1.15rem; border-top: 1px solid var(--rd-divider);">
             <div class="row g-4">
@@ -269,7 +269,7 @@
                 {% if status_data %}
                 <div class="col-md-6">
                     <h6 style="font-size: 0.78rem; font-weight: 700; margin-bottom: 0.75rem;">
-                        <i class="bi bi-pie-chart me-1"></i>Análise por Status
+                        <i class="bi bi-pie-chart me-1"></i>AnÃ¡lise por Status
                     </h6>
                     {% for item in status_data %}
                     <div class="mb-2">
@@ -298,7 +298,7 @@
                 {% if prioridade_data %}
                 <div class="col-md-6">
                     <h6 style="font-size: 0.78rem; font-weight: 700; margin-bottom: 0.75rem;">
-                        <i class="bi bi-flag me-1"></i>Análise por Prioridade
+                        <i class="bi bi-flag me-1"></i>AnÃ¡lise por Prioridade
                     </h6>
                     {% for item in prioridade_data %}
                     <div class="mb-2">

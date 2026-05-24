@@ -1,16 +1,16 @@
-
+﻿
 {% extends "controle_de_telefone/_base_telefone.html" %}
 
-{% block title %}Linhas Telefônicas{% endblock %}
+{% block title %}Linhas TelefÃ´nicas{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- Cabeçalho -->
+    <!-- CabeÃ§alho -->
     <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
         <div class="mb-3 mb-md-0">
             <h2 class="h4 fw-bold mb-1">
-                <i class="bi bi-sim text-success me-2"></i>Linhas Telefônicas
+                <i class="bi bi-sim text-success me-2"></i>Linhas TelefÃ´nicas
             </h2>
             <small class="text-muted">{{ linhas|length }} linha{{ linhas|length|pluralize:"s" }} cadastrada{{ linhas|length|pluralize:"s" }}</small>
         </div>
@@ -32,11 +32,11 @@
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr class="text-muted" style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px;">
-                        <th class="fw-semibold py-3 px-3 border-bottom">Número</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom">NÃºmero</th>
                         <th class="fw-semibold py-3 px-3 border-bottom">Plano</th>
                         <th class="fw-semibold py-3 px-3 border-bottom">Filial</th>
                         <th class="fw-semibold py-3 px-3 border-bottom text-center">Status</th>
-                        <th class="fw-semibold py-3 px-3 border-bottom text-end">Ações</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom text-end">AÃ§Ãµes</th>
                     </tr>
                 </thead>
                 <tbody>

@@ -1,8 +1,8 @@
-<!-- Página de Relatório de Treinamentos -->
+﻿<!-- PÃ¡gina de RelatÃ³rio de Treinamentos -->
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Relatório de Treinamentos{% endblock %}
+{% block title %}RelatÃ³rio de Treinamentos{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -145,11 +145,11 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- ═══ HERO ═══ -->
+    <!-- â•â•â• HERO â•â•â• -->
     <div class="page-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
-                <h1><i class="bi bi-bar-chart-line-fill me-2"></i>Relatório de Treinamentos</h1>
+                <h1><i class="bi bi-bar-chart-line-fill me-2"></i>RelatÃ³rio de Treinamentos</h1>
                 <p>Visualize, filtre e exporte os dados dos treinamentos realizados</p>
             </div>
             <div class="d-flex gap-2 flex-wrap no-print">
@@ -167,10 +167,10 @@
         </div>
     </div>
 
-    <!-- ═══ FILTROS ═══ -->
+    <!-- â•â•â• FILTROS â•â•â• -->
     <div class="card filter-card shadow-sm mb-4 no-print">
         <div class="card-header">
-            <i class="bi bi-funnel text-muted"></i> Filtros do Relatório
+            <i class="bi bi-funnel text-muted"></i> Filtros do RelatÃ³rio
         </div>
         <div class="card-body">
             <form method="get" class="row g-3 align-items-end">
@@ -209,7 +209,7 @@
         </div>
     </div>
 
-    <!-- ═══ RESULTADOS ═══ -->
+    <!-- â•â•â• RESULTADOS â•â•â• -->
     <div class="card data-card shadow-sm">
         <div class="card-header">
             <span><i class="bi bi-table me-2 text-muted"></i>Resultados</span>
@@ -226,11 +226,11 @@
                         <tr>
                             <th style="min-width: 220px;">Treinamento</th>
                             <th>Tipo</th>
-                            <th>Início</th>
+                            <th>InÃ­cio</th>
                             <th>Vencimento</th>
                             <th class="text-center">Status</th>
-                            <th>Responsável</th>
-                            <th class="text-center no-print" style="width: 80px;">Relatório</th>
+                            <th>ResponsÃ¡vel</th>
+                            <th class="text-center no-print" style="width: 80px;">RelatÃ³rio</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -243,13 +243,13 @@
                             </td>
                             <td>{{ treinamento.tipo_curso }}</td>
                             <td>{{ treinamento.data_inicio|date:"d/m/Y" }}</td>
-                            <td>{{ treinamento.data_vencimento|date:"d/m/Y"|default:"—" }}</td>
+                            <td>{{ treinamento.data_vencimento|date:"d/m/Y"|default:"â€”" }}</td>
                             <td class="text-center">
                                 <span class="status-badge status-{{ treinamento.status }}">
                                     {{ treinamento.get_status_display }}
                                 </span>
                             </td>
-                            <td>{{ treinamento.responsavel|default:"—" }}</td>
+                            <td>{{ treinamento.responsavel|default:"â€”" }}</td>
                             <td class="text-center no-print">
                                 <a href="{% url 'treinamentos:relatorio_treinamento_word' pk=treinamento.pk %}"
                                    class="btn-export btn-export-word" title="Gerar Word"

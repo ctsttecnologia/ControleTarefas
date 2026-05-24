@@ -1,4 +1,4 @@
-<!-- Catálago Template para listar os cursos EAD -->
+﻿<!-- CatÃ¡lago Template para listar os cursos EAD -->
 {% extends "base.html" %}
 {% load static %}
 
@@ -6,7 +6,7 @@
 
 {% block extra_css %}
 <style>
-    /* ═══ HERO padronizado com Dashboard ═══ */
+    /* â•â•â• HERO padronizado com Dashboard â•â•â• */
     .ead-hero {
         background: linear-gradient(135deg, #00b8d4 0%, #667eea 100%);
         border-radius: 0 0 1rem 1rem;
@@ -29,7 +29,7 @@
     .ead-hero h1 { color: #fff; font-weight: 700; }
     .ead-hero p { color: rgba(255,255,255,.7); }
 
-    /* ═══ CARDS padronizados ═══ */
+    /* â•â•â• CARDS padronizados â•â•â• */
     .curso-card {
         transition: transform .2s, box-shadow .2s;
         border: none;
@@ -68,7 +68,7 @@
         padding: 1rem 0;
     }
 
-    /* ═══ Botão primário padronizado ═══ */
+    /* â•â•â• BotÃ£o primÃ¡rio padronizado â•â•â• */
     .btn-primary {
         background-color: #00b8d4;
         border-color: #00b8d4;
@@ -128,7 +128,7 @@
             </div>
             <div class="col-md-3">
                 <select name="tipo" class="form-select">
-                    <option value="">Todas as áreas</option>
+                    <option value="">Todas as Ã¡reas</option>
                     {% for tipo in tipos_curso %}
                     <option value="{{ tipo.pk }}" {% if filtro_tipo == tipo.pk|stringformat:"d" %}selected{% endif %}>
                         {{ tipo.nome }}
@@ -138,7 +138,7 @@
             </div>
             <div class="col-md-3">
                 <select name="nivel" class="form-select">
-                    <option value="">Todos os níveis</option>
+                    <option value="">Todos os nÃ­veis</option>
                     {% for value, label in niveis %}
                     <option value="{{ value }}" {% if filtro_nivel == value %}selected{% endif %}>
                         {{ label }}
@@ -188,7 +188,7 @@
 
                     <div class="d-flex justify-content-between text-muted small mb-2">
                         <span><i class="bi bi-clock me-1"></i>{{ curso.carga_horaria_total }}h</span>
-                        <span><i class="bi bi-collection me-1"></i>{{ curso.total_modulos_count }} mód.</span>
+                        <span><i class="bi bi-collection me-1"></i>{{ curso.total_modulos_count }} mÃ³d.</span>
                         <span><i class="bi bi-film me-1"></i>{{ curso.total_aulas_count }} aulas</span>
                     </div>
 
@@ -240,7 +240,7 @@
             {% if page_obj.has_next %}
             <li class="page-item">
                 <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ filtro_q }}&tipo={{ filtro_tipo }}&nivel={{ filtro_nivel }}">
-                    Próxima <i class="bi bi-chevron-right"></i>
+                    PrÃ³xima <i class="bi bi-chevron-right"></i>
                 </a>
             </li>
             {% endif %}

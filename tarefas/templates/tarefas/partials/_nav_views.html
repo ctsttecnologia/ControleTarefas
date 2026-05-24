@@ -1,6 +1,6 @@
-<!-- templates/tarefas/partials/_nav_views.html -->
+﻿<!-- templates/tarefas/partials/_nav_views.html -->
 
-<nav class="views-nav" aria-label="Navegação de visualizações">
+<nav class="views-nav" aria-label="NavegaÃ§Ã£o de visualizaÃ§Ãµes">
     <div class="views-nav-inner">
         <a href="{% url 'tarefas:listar_tarefas' %}"
            class="views-nav-item {% if active_view == 'lista' %}active{% endif %}"
@@ -16,9 +16,9 @@
         </a>
         <a href="{% url 'tarefas:calendario_tarefas' %}"
            class="views-nav-item {% if active_view == 'calendario' %}active{% endif %}"
-           title="Calendário">
+           title="CalendÃ¡rio">
             <i class="bi bi-calendar3"></i>
-            <span>Calendário</span>
+            <span>CalendÃ¡rio</span>
         </a>
         <a href="{% url 'tarefas:dashboard' %}"
            class="views-nav-item {% if active_view == 'dashboard' %}active{% endif %}"
@@ -28,9 +28,9 @@
         </a>
         <a href="{% url 'tarefas:relatorio_tarefas' %}"
            class="views-nav-item {% if active_view == 'relatorio' %}active{% endif %}"
-           title="Relatórios">
+           title="RelatÃ³rios">
             <i class="bi bi-file-earmark-bar-graph"></i>
-            <span>Relatórios</span>
+            <span>RelatÃ³rios</span>
         </a>
     </div>
 </nav>

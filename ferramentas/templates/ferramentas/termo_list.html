@@ -1,4 +1,4 @@
-
+﻿
 {# ferramentas/termo_list.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
 
@@ -31,7 +31,7 @@
                 <div class="input-group">
                     <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
                     <input type="text" name="q" class="form-control border-start-0"
-                           placeholder="Buscar por responsável, contrato ou nº..."
+                           placeholder="Buscar por responsÃ¡vel, contrato ou nÂº..."
                            value="{{ query|default:'' }}">
                 </div>
             </div>
@@ -66,23 +66,23 @@
             <thead class="table-light">
                 <tr>
                     <th class="ps-3" style="width: 60px;">#</th>
-                    <th>Responsável</th>
+                    <th>ResponsÃ¡vel</th>
                     <th>Contrato</th>
                     <th>Tipo</th>
-                    <th>Emissão</th>
+                    <th>EmissÃ£o</th>
                     <th class="text-center">Status</th>
-                    <th class="text-center" style="width: 140px;">Ações</th>
+                    <th class="text-center" style="width: 140px;">AÃ§Ãµes</th>
                 </tr>
             </thead>
             <tbody>
                 {% for termo in termos %}
                 <tr>
-                    {# Nº do Termo #}
+                    {# NÂº do Termo #}
                     <td class="ps-3">
                         <span class="fw-bold text-muted">#{{ termo.pk }}</span>
                     </td>
 
-                    {# Responsável #}
+                    {# ResponsÃ¡vel #}
                     <td>
                         <div class="fw-semibold">{{ termo.responsavel }}</div>
                         <small class="text-muted">{{ termo.filial.nome }}</small>
@@ -135,7 +135,7 @@
                         {% endif %}
                     </td>
 
-                    {# Ações #}
+                    {# AÃ§Ãµes #}
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             {% if perms.ferramentas.view_termo_detail or user.is_superuser %}
@@ -174,11 +174,11 @@
     </div>
 
     {# ================================================================
-       PAGINAÇÃO
+       PAGINAÃ‡ÃƒO
        ================================================================ #}
     {% if is_paginated %}
     <div class="card-footer">
-        <nav aria-label="Paginação">
+        <nav aria-label="PaginaÃ§Ã£o">
             <ul class="pagination pagination-sm justify-content-center mb-0">
                 {# Anterior #}
                 {% if page_obj.has_previous %}
@@ -191,7 +191,7 @@
                 <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
                 {% endif %}
 
-                {# Números de página #}
+                {# NÃºmeros de pÃ¡gina #}
                 {% for i in paginator.page_range %}
                     {% if page_obj.number == i %}
                     <li class="page-item active"><span class="page-link">{{ i }}</span></li>
@@ -202,7 +202,7 @@
                     {% endif %}
                 {% endfor %}
 
-                {# Próxima #}
+                {# PrÃ³xima #}
                 {% if page_obj.has_next %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}">

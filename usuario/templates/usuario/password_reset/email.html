@@ -1,18 +1,18 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Redefinição de senha</title>
+    <title>RedefiniÃ§Ã£o de senha</title>
 </head>
 <body style="font-family: Arial, sans-serif; background:#f5f5f5; padding:20px;">
     <div style="max-width:600px; margin:0 auto; background:#fff; border-radius:8px; padding:30px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
         
-        <h2 style="color:#0d6efd; margin-top:0;">Redefinição de Senha</h2>
+        <h2 style="color:#0d6efd; margin-top:0;">RedefiniÃ§Ã£o de Senha</h2>
         
-        <p>Olá <strong>{{ user.get_full_name|default:user.username }}</strong>,</p>
-        <p>Você solicitou a redefinição de senha da sua conta no sistema <strong>Cetest Minas</strong>.</p>
-        <p>Clique no botão abaixo para criar uma nova senha:</p>
+        <p>OlÃ¡ <strong>{{ user.get_full_name|default:user.username }}</strong>,</p>
+        <p>VocÃª solicitou a redefiniÃ§Ã£o de senha da sua conta no sistema <strong>Cetest Minas</strong>.</p>
+        <p>Clique no botÃ£o abaixo para criar uma nova senha:</p>
         
         <p style="text-align:center; margin:30px 0;">
             <a href="{{ protocol }}://{{ domain }}{% url 'usuario:password_reset_confirm' uidb64=uid token=token %}"
@@ -29,19 +29,19 @@
         <hr style="border:none; border-top:1px solid #eee; margin:25px 0;">
         
         <p style="font-size:13px; color:#666;">
-            Seu nome de usuário: <strong>{{ user.get_username }}</strong>
+            Seu nome de usuÃ¡rio: <strong>{{ user.get_username }}</strong>
         </p>
         <p style="font-size:12px; color:#999;">
-            Se você <strong>não</strong> solicitou esta redefinição, ignore este e-mail. Sua senha continuará a mesma.
+            Se vocÃª <strong>nÃ£o</strong> solicitou esta redefiniÃ§Ã£o, ignore este e-mail. Sua senha continuarÃ¡ a mesma.
         </p>
         
-        <!-- Rodapé textual -->
+        <!-- RodapÃ© textual -->
         <div style="text-align:center; margin-top:25px; padding-top:15px; border-top:1px solid #eee;">
             <p style="font-size:11px; color:#999; margin:0;">
-                © {% now "Y" %} <strong>Cetest Minas</strong> — Sistema de Gestão de Tarefas
+                Â© {% now "Y" %} <strong>Cetest Minas</strong> â€” Sistema de GestÃ£o de Tarefas
             </p>
             <p style="font-size:11px; color:#bbb; margin:5px 0 0 0;">
-                Este é um e-mail automático, não responda.
+                Este Ã© um e-mail automÃ¡tico, nÃ£o responda.
             </p>
         </div>
     </div>

@@ -1,13 +1,13 @@
-{# templates/logradouro/lista_logradouros.html #}
+﻿{# templates/logradouro/lista_logradouros.html #}
 {% extends 'logradouro/base_logradouro.html' %}
 {% load static %}
 {% load i18n %}
 
-{% block logradouro_title %}{% trans "Gestão de Endereços" %}{% endblock logradouro_title %}
+{% block logradouro_title %}{% trans "GestÃ£o de EndereÃ§os" %}{% endblock logradouro_title %}
 
 {% block logradouro_content %}
 
-    {# ═══════════════════════════ BREADCRUMB ═══════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• BREADCRUMB â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <nav class="log-breadcrumb" aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item active">
@@ -16,16 +16,16 @@
         </ol>
     </nav>
 
-    {# ═══════════════════════════ HERO HEADER ═══════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HERO HEADER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <div class="log-hero">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
                 <h1>
-                    <i class="bi bi-geo-alt-fill me-2"></i>{% trans "Gestão de Endereços" %}
+                    <i class="bi bi-geo-alt-fill me-2"></i>{% trans "GestÃ£o de EndereÃ§os" %}
                 </h1>
                 <p>
                     {% blocktrans with filtrados=total_filtrados total=total_logradouros %}
-                        Exibindo {{ filtrados }} de {{ total }} endereços cadastrados
+                        Exibindo {{ filtrados }} de {{ total }} endereÃ§os cadastrados
                     {% endblocktrans %}
                 </p>
             </div>
@@ -42,14 +42,14 @@
                 {% endif %}
                 {% if perms.logradouro.add_logradouro or user.is_superuser %}
                     <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn-hero btn-hero-primary">
-                        <i class="bi bi-plus-circle me-1"></i> {% trans "Novo Endereço" %}
+                        <i class="bi bi-plus-circle me-1"></i> {% trans "Novo EndereÃ§o" %}
                     </a>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    {# ═══════════════════════════ CARDS KPI ═══════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARDS KPI â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3">
             <div class="log-stat-card stat-primary">
@@ -82,7 +82,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="log-stat-label">{% trans "Cidades" %}</div>
-                        <div class="log-stat-value">{{ total_cidades|default:"—" }}</div>
+                        <div class="log-stat-value">{{ total_cidades|default:"â€”" }}</div>
                     </div>
                     <div class="log-stat-icon icon-info">
                         <i class="bi bi-building"></i>
@@ -95,7 +95,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="log-stat-label">{% trans "Estados" %}</div>
-                        <div class="log-stat-value">{{ total_estados|default:"—" }}</div>
+                        <div class="log-stat-value">{{ total_estados|default:"â€”" }}</div>
                     </div>
                     <div class="log-stat-icon icon-warning">
                         <i class="bi bi-map"></i>
@@ -105,19 +105,19 @@
         </div>
     </div>
 
-    {# ═══════════════════════════ FILTROS ═══════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• FILTROS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <div class="log-toolbar">
         <form method="get">
             <div class="row g-3 align-items-end">
                 <div class="col-md-5">
                     <label for="q_endereco" class="form-label">
-                        {% trans "Buscar por Endereço" %}
+                        {% trans "Buscar por EndereÃ§o" %}
                     </label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input type="text" class="form-control" id="q_endereco" name="q_endereco"
                                value="{{ request.GET.q_endereco }}"
-                               placeholder="{% trans 'Digite o endereço...' %}">
+                               placeholder="{% trans 'Digite o endereÃ§o...' %}">
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -151,7 +151,7 @@
                 {% if request.GET.q_endereco %}
                     <span class="log-badge log-badge-primary">
                         <i class="bi bi-geo-alt"></i>
-                        {% trans "Endereço" %}: "{{ request.GET.q_endereco }}"
+                        {% trans "EndereÃ§o" %}: "{{ request.GET.q_endereco }}"
                     </span>
                 {% endif %}
                 {% if request.GET.q_cep %}
@@ -165,12 +165,12 @@
         </form>
     </div>
 
-    {# ═══════════════════════════ TABELA ═══════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• TABELA â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     {% if logradouros %}
     <div class="log-table-container">
         <div class="log-card-header">
             <h5>
-                <i class="bi bi-table me-2" style="color: var(--log-primary);"></i>{% trans "Lista de Endereços" %}
+                <i class="bi bi-table me-2" style="color: var(--log-primary);"></i>{% trans "Lista de EndereÃ§os" %}
             </h5>
             <span class="log-badge log-badge-secondary">
                 {{ total_filtrados }} {% trans "registro" %}{{ total_filtrados|pluralize:"s" }}
@@ -180,13 +180,13 @@
             <table class="table log-table mb-0">
                 <thead>
                     <tr>
-                        <th>{% trans "Endereço" %}</th>
-                        <th style="width: 80px;">{% trans "Nº" %}</th>
+                        <th>{% trans "EndereÃ§o" %}</th>
+                        <th style="width: 80px;">{% trans "NÂº" %}</th>
                         <th class="d-none d-md-table-cell">{% trans "Complemento" %}</th>
                         <th style="width: 110px;">{% trans "CEP" %}</th>
                         <th class="d-none d-lg-table-cell">{% trans "Bairro" %}</th>
                         <th>{% trans "Cidade/UF" %}</th>
-                        <th class="text-center" style="width: 120px;">{% trans "Ações" %}</th>
+                        <th class="text-center" style="width: 120px;">{% trans "AÃ§Ãµes" %}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -200,7 +200,7 @@
                         </td>
                         <td>{{ logradouro.numero }}</td>
                         <td class="d-none d-md-table-cell">
-                            <span class="text-muted">{{ logradouro.complemento|default:"—" }}</span>
+                            <span class="text-muted">{{ logradouro.complemento|default:"â€”" }}</span>
                         </td>
                         <td>
                             <code>{{ logradouro.cep_formatado }}</code>
@@ -241,16 +241,16 @@
             </table>
         </div>
 
-        {# ═══════════════════════════ PAGINAÇÃO ═══════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PAGINAÃ‡ÃƒO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         {% if is_paginated %}
         <div class="log-pagination">
             <small class="page-info">
                 {% blocktrans with current=page_obj.number total=page_obj.paginator.num_pages %}
-                    Página {{ current }} de {{ total }}
+                    PÃ¡gina {{ current }} de {{ total }}
                 {% endblocktrans %}
             </small>
 
-            <nav aria-label="{% trans 'Paginação' %}">
+            <nav aria-label="{% trans 'PaginaÃ§Ã£o' %}">
                 <ul class="pagination pagination-sm mb-0">
                     {# Primeira / Anterior #}
                     {% if page_obj.has_previous %}
@@ -277,7 +277,7 @@
                         </li>
                     {% endif %}
 
-                    {# Números das páginas #}
+                    {# NÃºmeros das pÃ¡ginas #}
                     {% for num in page_obj.paginator.page_range %}
                         {% if page_obj.number == num %}
                             <li class="page-item active">
@@ -299,24 +299,24 @@
                             </li>
                         {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
                             <li class="page-item disabled">
-                                <span class="page-link">…</span>
+                                <span class="page-link">â€¦</span>
                             </li>
                         {% endif %}
                     {% endfor %}
 
-                    {# Próxima / Última #}
+                    {# PrÃ³xima / Ãšltima #}
                     {% if page_obj.has_next %}
                         <li class="page-item">
                             <a class="page-link"
                                href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}"
-                               title="{% trans 'Próxima' %}">
+                               title="{% trans 'PrÃ³xima' %}">
                                 <i class="bi bi-chevron-right"></i>
                             </a>
                         </li>
                         <li class="page-item">
                             <a class="page-link"
                                href="?page={{ page_obj.paginator.num_pages }}{% if query_string %}&{{ query_string }}{% endif %}"
-                               title="{% trans 'Última' %}">
+                               title="{% trans 'Ãšltima' %}">
                                 <i class="bi bi-chevron-double-right"></i>
                             </a>
                         </li>
@@ -337,14 +337,14 @@
 
     {% else %}
 
-    {# ═══════════════════════════ EMPTY STATE ═══════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• EMPTY STATE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <div class="log-card">
         <div class="log-empty-state">
             <div class="log-empty-state-icon">
                 <i class="bi bi-geo"></i>
             </div>
-            <h5>{% trans "Nenhum endereço encontrado" %}</h5>
-            <p>{% trans "Tente ajustar os filtros ou cadastre um novo endereço." %}</p>
+            <h5>{% trans "Nenhum endereÃ§o encontrado" %}</h5>
+            <p>{% trans "Tente ajustar os filtros ou cadastre um novo endereÃ§o." %}</p>
             <div class="d-flex justify-content-center gap-2 flex-wrap">
                 {% if request.GET.q_endereco or request.GET.q_cep %}
                     <a href="{% url 'logradouro:listar_logradouros' %}"
@@ -355,7 +355,7 @@
                 {% if perms.logradouro.add_logradouro or user.is_superuser %}
                     <a href="{% url 'logradouro:cadastrar_logradouro' %}"
                        class="btn btn-primary" style="border-radius: var(--log-radius-sm);">
-                        <i class="bi bi-plus-circle me-1"></i> {% trans "Cadastrar Endereço" %}
+                        <i class="bi bi-plus-circle me-1"></i> {% trans "Cadastrar EndereÃ§o" %}
                     </a>
                 {% endif %}
             </div>
@@ -370,7 +370,7 @@
 (function () {
     'use strict';
 
-    // ═══ Máscara de CEP no filtro ═══
+    // â•â•â• MÃ¡scara de CEP no filtro â•â•â•
     const cepFilter = document.getElementById('q_cep');
     if (cepFilter) {
         cepFilter.addEventListener('input', function () {
@@ -382,7 +382,7 @@
         });
     }
 
-    // ═══ Highlight da linha ao hover (acessibilidade) ═══
+    // â•â•â• Highlight da linha ao hover (acessibilidade) â•â•â•
     document.querySelectorAll('.log-table tbody tr').forEach(function (row) {
         row.style.cursor = 'default';
     });

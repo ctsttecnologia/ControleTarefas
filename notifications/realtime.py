@@ -1,4 +1,3 @@
-
 # notifications/realtime.py
 """
 Helpers para enviar atualizações em tempo real via WebSocket
@@ -19,18 +18,16 @@ Resiliência:
 import logging
 from typing import Optional, Union
 
+from django.conf import settings
+from django.contrib.auth.models import AbstractBaseUser as User
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
 
 # ───────────────────────────────────────────────────────────────────────
 # Detecção de erros de conexão (Redis / rede)
 # ───────────────────────────────────────────────────────────────────────
-# Importa de forma defensiva: se redis não estiver instalado, usa OSError
-# como fallback (ConnectionRefusedError herda dele).
 try:
     from redis.exceptions import (
         ConnectionError as RedisConnectionError,
@@ -87,31 +84,29 @@ def _safe_group_send(channel_layer, group: str, message: dict, *, ctx: str) -> b
     """
     Wrapper que executa group_send protegendo contra Redis offline.
 
-    Args:
-        channel_layer: instância do channel layer (já validada)
-        group:   nome do grupo Channels
-        message: payload do evento
-        ctx:     descrição curta do contexto (para logs)
-
     Returns:
         True  -> push enviado
-        False -> Redis offline OU outro erro (não-fatal)
+        False -> Redis offline, desativado ou outro erro (não-fatal)
     """
+    # 🛡️ Em testes (ou quando desativado), não envia nada
+    if not getattr(settings, "NOTIFICATIONS_REALTIME_ENABLED", True):
+        return False
+
+    if channel_layer is None:
+        return False
+
     try:
         async_to_sync(channel_layer.group_send)(group, message)
         return True
-
     except _CONNECTION_ERRORS as e:
-        # Redis offline → degrada silenciosamente. Log curto, sem stack trace.
-        # Usa nível WARNING (não ERROR) porque é uma condição esperada em dev.
+        # Redis offline → log compacto e silencioso
         logger.warning(
-            "⚠ Redis indisponível — push WS pulado [%s, group=%s]: %s",
-            ctx, group, str(e).splitlines()[0][:120],
+            "Redis indisponível no push WS [%s, group=%s]: %s",
+            ctx, group, e,
         )
         return False
-
     except Exception as e:
-        # Erro inesperado (bug real) → loga com stack trace completo.
+        # Erro inesperado → log completo com stack trace
         logger.exception(
             "Erro inesperado no push WS [%s, group=%s]: %s",
             ctx, group, e,
@@ -124,19 +119,12 @@ def _safe_group_send(channel_layer, group: str, message: dict, *, ctx: str) -> b
 # ───────────────────────────────────────────────────────────────────────
 
 def push_notification_count(
-    user: Union['User', int, None],
+    user: Optional[Union[User, int]],
     count: Optional[int] = None,
 ) -> bool:
     """
     Envia a contagem de notificações não lidas via WebSocket.
     Atualiza o badge do sino em tempo real.
-
-    Args:
-        user:  instância de User OU user_id (int)
-        count: contagem opcional pré-calculada. Se None, calcula do banco.
-
-    Returns:
-        True se o evento foi enviado com sucesso, False caso contrário.
     """
     user_id = _resolve_user_id(user)
     if user_id is None:
@@ -178,13 +166,6 @@ def push_new_notification(user, notificacao) -> bool:
     """
     Envia uma nova notificação completa (para toast/popup) +
     atualiza o badge.
-
-    Args:
-        user:        instância de User (ou user_id)
-        notificacao: instância de Notificacao
-
-    Returns:
-        True se enviou com sucesso.
     """
     user_id = _resolve_user_id(user)
     if user_id is None:
@@ -207,8 +188,7 @@ def push_new_notification(user, notificacao) -> bool:
         ctx=f"new user={user_id} notif={notificacao.pk}",
     )
 
-    # 2) Atualiza badge (mesmo se o push acima falhar — tenta de novo)
-    #    Se Redis estiver offline, ambos retornam False rapidamente.
+    # 2) Atualiza badge
     ok_count = push_notification_count(user_id)
 
     if ok_new:
@@ -244,3 +224,4 @@ def push_notification_read(user, notificacao_id: int) -> bool:
     # Atualiza badge também
     push_notification_count(user_id)
     return ok
+

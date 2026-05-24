@@ -1,9 +1,9 @@
-{# Profissional — Formulário de criação/edição #}
+﻿{# Profissional â€” FormulÃ¡rio de criaÃ§Ã£o/ediÃ§Ã£o #}
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 {% load widget_tweaks %}
 
-{% block title %}{{ page_title|default:"Formulário de Profissional" }}{% endblock %}
+{% block title %}{{ page_title|default:"FormulÃ¡rio de Profissional" }}{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{% url 'pgr_gestao:profissional_list' %}">Profissionais</a></li>
@@ -16,9 +16,9 @@
         <div>
             <h1>
                 <i class="bi bi-person-badge"></i>
-                {{ page_title|default:"Formulário de Profissional" }}
+                {{ page_title|default:"FormulÃ¡rio de Profissional" }}
             </h1>
-            <p class="mb-0">Gerenciamento de Profissionais Responsáveis pelo PGR</p>
+            <p class="mb-0">Gerenciamento de Profissionais ResponsÃ¡veis pelo PGR</p>
         </div>
         <a href="{% url 'pgr_gestao:profissional_list' %}" class="btn btn-light">
             <i class="bi bi-arrow-left"></i> Voltar
@@ -41,25 +41,25 @@
             </div>
             {% endif %}
 
-            <!-- Identificação -->
+            <!-- IdentificaÃ§Ã£o -->
             <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                <i class="bi bi-person-vcard"></i> Identificação
+                <i class="bi bi-person-vcard"></i> IdentificaÃ§Ã£o
             </h6>
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <label for="{{ form.nome_completo.id_for_label }}" class="form-label fw-semibold required-field">
                         Nome Completo
                     </label>
-                    {% render_field form.nome_completo class="form-control" placeholder="Ex: João da Silva Santos" %}
+                    {% render_field form.nome_completo class="form-control" placeholder="Ex: JoÃ£o da Silva Santos" %}
                     {% if form.nome_completo.errors %}
                     <div class="text-danger small mt-1">{{ form.nome_completo.errors }}</div>
                     {% endif %}
                 </div>
                 <div class="col-md-6">
                     <label for="{{ form.funcao.id_for_label }}" class="form-label fw-semibold required-field">
-                        Função / Cargo
+                        FunÃ§Ã£o / Cargo
                     </label>
-                    {% render_field form.funcao class="form-control" placeholder="Ex: Engenheiro de Segurança" %}
+                    {% render_field form.funcao class="form-control" placeholder="Ex: Engenheiro de SeguranÃ§a" %}
                     {% if form.funcao.errors %}
                     <div class="text-danger small mt-1">{{ form.funcao.errors }}</div>
                     {% endif %}
@@ -73,7 +73,7 @@
             <div class="row g-3 mb-4">
                 <div class="col-md-4">
                     <label for="{{ form.orgao_classe.id_for_label }}" class="form-label fw-semibold">
-                        Órgão de Classe
+                        Ã“rgÃ£o de Classe
                     </label>
                     {% render_field form.orgao_classe class="form-control" placeholder="Ex: CREA, MTE, CRM" %}
                     {% if form.orgao_classe.errors %}
@@ -84,7 +84,7 @@
                     <label for="{{ form.registro_classe.id_for_label }}" class="form-label fw-semibold">
                         Registro de Classe
                     </label>
-                    {% render_field form.registro_classe class="form-control" placeholder="Nº do registro" %}
+                    {% render_field form.registro_classe class="form-control" placeholder="NÂº do registro" %}
                     {% if form.registro_classe.errors %}
                     <div class="text-danger small mt-1">{{ form.registro_classe.errors }}</div>
                     {% endif %}
@@ -93,7 +93,7 @@
                     <label for="{{ form.especialidade.id_for_label }}" class="form-label fw-semibold">
                         Especialidade
                     </label>
-                    {% render_field form.especialidade class="form-control" placeholder="Ex: Segurança do Trabalho" %}
+                    {% render_field form.especialidade class="form-control" placeholder="Ex: SeguranÃ§a do Trabalho" %}
                     {% if form.especialidade.errors %}
                     <div class="text-danger small mt-1">{{ form.especialidade.errors }}</div>
                     {% endif %}
@@ -125,9 +125,9 @@
                 </div>
             </div>
 
-            <!-- Vinculação -->
+            <!-- VinculaÃ§Ã£o -->
             <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                <i class="bi bi-building"></i> Vinculação e Status
+                <i class="bi bi-building"></i> VinculaÃ§Ã£o e Status
             </h6>
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
@@ -138,7 +138,7 @@
                             <strong>{{ request.user.filial_ativa }}</strong>
                         {% else %}
                             <i class="bi bi-exclamation-triangle text-warning me-1"></i>
-                            <span class="text-warning">Usuário sem filial ativa</span>
+                            <span class="text-warning">UsuÃ¡rio sem filial ativa</span>
                         {% endif %}
                     </div>
                     {% if form.filial %}
@@ -159,7 +159,7 @@
                     {% if form.ativo.errors %}
                     <div class="text-danger small mt-1">{{ form.ativo.errors }}</div>
                     {% endif %}
-                    <small class="text-muted">Profissionais inativos não aparecem como opção em novos PGRs.</small>
+                    <small class="text-muted">Profissionais inativos nÃ£o aparecem como opÃ§Ã£o em novos PGRs.</small>
                 </div>
             </div>
 
@@ -170,7 +170,7 @@
                 </a>
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-save"></i>
-                    {% if form.instance.pk %}Salvar Alterações{% else %}Cadastrar Profissional{% endif %}
+                    {% if form.instance.pk %}Salvar AlteraÃ§Ãµes{% else %}Cadastrar Profissional{% endif %}
                 </button>
             </div>
         </form>
@@ -181,7 +181,7 @@
 {% block extra_pgr_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle dinâmico do label de status
+    // Toggle dinÃ¢mico do label de status
     const ativoCheck = document.getElementById('{{ form.ativo.id_for_label }}');
     const statusLabel = document.getElementById('status-label');
 

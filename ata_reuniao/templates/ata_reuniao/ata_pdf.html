@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Relatório de Atas de Reunião</title>
+    <title>RelatÃ³rio de Atas de ReuniÃ£o</title>
     <style>
         @page {
             size: A4 landscape;
@@ -20,7 +20,7 @@
             print-color-adjust: exact;
         }
 
-        /* ═══ HEADER ═══ */
+        /* â•â•â• HEADER â•â•â• */
         .report-header {
             display: flex;
             justify-content: space-between;
@@ -33,7 +33,7 @@
         .report-subtitle { font-size: 8pt; color: #858796; margin-top: 2px; }
         .report-date { font-size: 8pt; color: #858796; text-align: right; }
 
-        /* ═══ TABLE ═══ */
+        /* â•â•â• TABLE â•â•â• */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -57,7 +57,7 @@
         }
         tbody tr:nth-child(even) { background: #f8f9fc; }
 
-        /* ═══ STATUS BADGES ═══ */
+        /* â•â•â• STATUS BADGES â•â•â• */
         .status {
             display: inline-block;
             padding: 2px 8px;
@@ -66,12 +66,12 @@
             font-weight: 700;
             text-align: center;
         }
-        .status-concluido, .status-concluído { background: #d4edda; color: #155724; }
+        .status-concluido, .status-concluÃ­do { background: #d4edda; color: #155724; }
         .status-andamento, .status-em_andamento { background: #cce5ff; color: #004085; }
         .status-pendente { background: #fff3cd; color: #856404; }
         .status-cancelado { background: #f8d7da; color: #721c24; }
 
-        /* ═══ FOOTER ═══ */
+        /* â•â•â• FOOTER â•â•â• */
         .report-footer {
             position: fixed;
             bottom: 0;
@@ -84,7 +84,7 @@
             padding-top: 5px;
         }
 
-        /* ═══ SUMMARY ═══ */
+        /* â•â•â• SUMMARY â•â•â• */
         .summary-bar {
             display: flex;
             gap: 20px;
@@ -106,11 +106,11 @@
     <!-- Header -->
     <div class="report-header">
         <div>
-            <div class="report-title">Relatório de Atas de Reunião</div>
-            <div class="report-subtitle">Gerado pelo Sistema de Gestão</div>
+            <div class="report-title">RelatÃ³rio de Atas de ReuniÃ£o</div>
+            <div class="report-subtitle">Gerado pelo Sistema de GestÃ£o</div>
         </div>
         <div class="report-date">
-            Gerado em: {% now "d/m/Y \à\s H:i" %}<br>
+            Gerado em: {% now "d/m/Y \Ã \s H:i" %}<br>
             Total: {{ atas|length }} registro{{ atas|length|pluralize:"s" }}
         </div>
     </div>
@@ -129,7 +129,7 @@
                 <th style="width: 40px;">ID</th>
                 <th style="width: 20%;">Contrato</th>
                 <th>Coordenador</th>
-                <th>Responsável</th>
+                <th>ResponsÃ¡vel</th>
                 <th>Natureza</th>
                 <th style="width: 75px;">Entrada</th>
                 <th style="width: 75px;">Prazo</th>
@@ -145,7 +145,7 @@
                 <td>{{ ata.responsavel }}</td>
                 <td>{{ ata.get_natureza_display }}</td>
                 <td>{{ ata.entrada|date:"d/m/Y" }}</td>
-                <td>{{ ata.prazo|date:"d/m/Y"|default:"—" }}</td>
+                <td>{{ ata.prazo|date:"d/m/Y"|default:"â€”" }}</td>
                 <td>
                     <span class="status status-{{ ata.status|lower }}">
                         {{ ata.get_status_display }}
@@ -155,7 +155,7 @@
             {% empty %}
             <tr>
                 <td colspan="8" style="text-align: center; padding: 30px; color: #a0aec0;">
-                    Nenhuma ata encontrada para o período selecionado.
+                    Nenhuma ata encontrada para o perÃ­odo selecionado.
                 </td>
             </tr>
             {% endfor %}
@@ -164,7 +164,7 @@
 
     <!-- Footer -->
     <div class="report-footer">
-        Documento gerado automaticamente — Sistema de Gestão | {% now "Y" %}
+        Documento gerado automaticamente â€” Sistema de GestÃ£o | {% now "Y" %}
     </div>
 
 </body>

@@ -15,3 +15,7 @@ class BaseModel(models.Model):
         abstract = False
         ordering = ['-criado_em']
 
+    def save(self, *args, **kwargs):
+        if self.codigo_identificacao and not self.qr_code:
+            self._gerar_qr_code()
+        super().save(*args, **kwargs)  

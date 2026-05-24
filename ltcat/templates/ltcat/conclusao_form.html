@@ -1,7 +1,7 @@
-
+﻿
 {% extends "ltcat/base_ltcat.html" %}
 
-{% block ltcat_title %}Conclusão por Função - LTCAT{% endblock %}
+{% block ltcat_title %}ConclusÃ£o por FunÃ§Ã£o - LTCAT{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item">
@@ -12,7 +12,7 @@
     <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}">{{ ltcat.codigo_documento }}</a>
     {% endif %}
 </li>
-<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Conclusão</li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} ConclusÃ£o</li>
 {% endblock %}
 
 {% block ltcat_content %}
@@ -29,10 +29,10 @@
                     </div>
                     <div class="min-w-0">
                         <h5 class="mb-0 text-white fw-bold">
-                            {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Conclusão por Função
+                            {% if form.instance.pk %}Editar{% else %}Nova{% endif %} ConclusÃ£o por FunÃ§Ã£o
                         </h5>
                         <small class="text-white-50 text-truncate d-block">
-                            Seção 9 — Conclusões Finais | {{ ltcat.codigo_documento }}
+                            SeÃ§Ã£o 9 â€” ConclusÃµes Finais | {{ ltcat.codigo_documento }}
                         </small>
                     </div>
                 </div>
@@ -42,8 +42,8 @@
                 <div class="alert border-0 py-2 mb-4" style="background: var(--bs-success-bg-subtle, #d1e7dd); color: var(--bs-success-text-emphasis, #0a3622);">
                     <i class="fas fa-balance-scale me-2"></i>
                     <small>
-                        A <strong>Seção 9</strong> define se cada função <strong>FAZ JUS</strong> ou <strong>NÃO FAZ JUS</strong>
-                        a insalubridade, periculosidade ou aposentadoria especial, com base nos riscos avaliados na Seção 7.
+                        A <strong>SeÃ§Ã£o 9</strong> define se cada funÃ§Ã£o <strong>FAZ JUS</strong> ou <strong>NÃƒO FAZ JUS</strong>
+                        a insalubridade, periculosidade ou aposentadoria especial, com base nos riscos avaliados na SeÃ§Ã£o 7.
                     </small>
                 </div>
 
@@ -60,10 +60,10 @@
                     </div>
                     {% endif %}
 
-                    {# ═══════════ FUNÇÃO E CLASSIFICAÇÃO ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• FUNÃ‡ÃƒO E CLASSIFICAÃ‡ÃƒO â•â•â•â•â•â•â•â•â•â•â• #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-user-tie me-2"></i>Função e Classificação
+                            <i class="fas fa-user-tie me-2"></i>FunÃ§Ã£o e ClassificaÃ§Ã£o
                         </legend>
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -91,10 +91,10 @@
                         </div>
                     </fieldset>
 
-                    {# ═══════════ CÓDIGO GFIP ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• CÃ“DIGO GFIP â•â•â•â•â•â•â•â•â•â•â• #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-barcode me-2"></i>Código GFIP / SEFIP
+                            <i class="fas fa-barcode me-2"></i>CÃ³digo GFIP / SEFIP
                         </legend>
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -103,7 +103,7 @@
                                 </label>
                                 {{ form.codigo_gfip }}
                                 <div class="form-text">
-                                    Códigos 00-08 conforme a Seção 4 do LTCAT
+                                    CÃ³digos 00-08 conforme a SeÃ§Ã£o 4 do LTCAT
                                 </div>
                                 {% for error in form.codigo_gfip.errors %}
                                 <div class="invalid-feedback d-block">
@@ -114,7 +114,7 @@
                         </div>
                     </fieldset>
 
-                    {# ═══════════ DIREITOS DO TRABALHADOR ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• DIREITOS DO TRABALHADOR â•â•â•â•â•â•â•â•â•â•â• #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
                             <i class="fas fa-balance-scale me-2"></i>Direitos do Trabalhador
@@ -134,7 +134,7 @@
                                                     <i class="fas fa-thermometer-full text-danger me-1"></i>
                                                     Insalubridade
                                                 </label>
-                                                <small class="text-muted">10%, 20% ou 40% do salário mínimo</small>
+                                                <small class="text-muted">10%, 20% ou 40% do salÃ¡rio mÃ­nimo</small>
                                             </div>
                                         </div>
                                     </div>
@@ -150,7 +150,7 @@
                                                     <i class="fas fa-bolt text-warning me-1"></i>
                                                     Periculosidade
                                                 </label>
-                                                <small class="text-muted">30% sobre o salário base</small>
+                                                <small class="text-muted">30% sobre o salÃ¡rio base</small>
                                             </div>
                                         </div>
                                     </div>
@@ -175,17 +175,17 @@
                         </div>
                     </fieldset>
 
-                    {# ═══════════ FUNDAMENTAÇÃO ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• FUNDAMENTAÃ‡ÃƒO â•â•â•â•â•â•â•â•â•â•â• #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-book me-2"></i>Fundamentação / Justificativa
+                            <i class="fas fa-book me-2"></i>FundamentaÃ§Ã£o / Justificativa
                         </legend>
                         <label for="{{ form.justificativa.id_for_label }}" class="form-label fw-semibold">
                             {{ form.justificativa.label }}
                         </label>
                         {{ form.justificativa }}
                         <div class="form-text">
-                            Base legal e técnica da conclusão. Se vazio, o texto padrão será gerado automaticamente no PDF
+                            Base legal e tÃ©cnica da conclusÃ£o. Se vazio, o texto padrÃ£o serÃ¡ gerado automaticamente no PDF
                             conforme os direitos marcados acima.
                         </div>
                         {% for error in form.justificativa.errors %}
@@ -195,7 +195,7 @@
                         {% endfor %}
                     </fieldset>
 
-                    {# ═══════════ BOTÕES ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• BOTÃ•ES â•â•â•â•â•â•â•â•â•â•â• #}
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
                         <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}" class="btn btn-outline-secondary order-2 order-sm-1">
                             <i class="fas fa-arrow-left me-1"></i> Voltar ao Documento
@@ -203,7 +203,7 @@
                         <button type="submit" class="btn px-4 text-white order-1 order-sm-2"
                                 style="background: linear-gradient(135deg, #10b981, #059669);">
                             <i class="fas fa-save me-1"></i>
-                            {% if form.instance.pk %}Atualizar Conclusão{% else %}Cadastrar Conclusão{% endif %}
+                            {% if form.instance.pk %}Atualizar ConclusÃ£o{% else %}Cadastrar ConclusÃ£o{% endif %}
                         </button>
                     </div>
                 </form>

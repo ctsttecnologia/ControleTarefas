@@ -1,4 +1,4 @@
-{% extends "departamento_pessoal/_base_dp.html" %}
+﻿{% extends "departamento_pessoal/_base_dp.html" %}
 {% load widget_tweaks %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
@@ -23,7 +23,7 @@
 
                         <div class="mb-3">
                             <label for="{{ form.registro.id_for_label }}" class="form-label">
-                                Nº Registro <span class="text-danger">*</span>
+                                NÂº Registro <span class="text-danger">*</span>
                             </label>
                             {% render_field form.registro class+="form-control" placeholder="Ex: 000" %}
                             {% if form.registro.errors %}

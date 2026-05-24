@@ -1,6 +1,7 @@
 {
     "python.analysis.extraPaths": [
-        "./gerenciandoTarefas"
+        "./gerenciandoTarefas",
+        "./suprimentos/models"
     ],
     "python-envs.defaultEnvManager": "ms-python.python:system"
 }

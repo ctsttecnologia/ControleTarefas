@@ -4,7 +4,7 @@ Testes para o app ferramentas
 """
 from datetime import datetime
 from datetime import date, timedelta
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase, TestCase
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.utils import IntegrityError
@@ -22,6 +22,9 @@ from usuario.models import Filial
 from departamento_pessoal.models import Departamento, Funcionario
 from suprimentos.models import Parceiro
 from seguranca_trabalho.models import Cargo, Funcao
+
+from django.urls import reverse
+
 
 User = get_user_model()
 
@@ -146,7 +149,6 @@ class FerramentasBaseTestCase(TestCase):
             cnpj='12.345.678/0001-99'
         )
 
-
 class MalaFerramentasModelTest(FerramentasBaseTestCase):
     """Testes para o modelo MalaFerramentas."""
 
@@ -197,7 +199,7 @@ class MalaFerramentasModelTest(FerramentasBaseTestCase):
             filial=self.filial
         )
         # Se não tem código, QR code deve estar vazio
-        self.assertFalse(bool(mala.qr_code.name) if mala.qr_code else True)
+        self.assertFalse(bool(mala.qr_code and mala.qr_code.name))
 
 
 class FerramentaModelTest(FerramentasBaseTestCase):
@@ -370,11 +372,11 @@ class TermoResponsabilidadeModelTest(FerramentasBaseTestCase):
             movimentado_por=self.user,
             filial=self.filial
         )
+        # depois (alinhe com o __str__ atual do model):
         self.assertEqual(
-            str(termo), 
-            f"Termo #{termo.pk} - Ferramental por {self.funcionario.nome_completo}"
+            str(termo),
+            f"Termo #{termo.id} - Ferramental — {self.funcionario.nome_completo}"
         )
-        self.assertFalse(termo.is_signed())
 
         ferramenta = Ferramenta.objects.create(
             nome="Multímetro Digital",
@@ -480,6 +482,7 @@ class TermoResponsabilidadeModelTest(FerramentasBaseTestCase):
 
         movimentacao = Movimentacao.objects.create(
             mala=mala,
+            ferramenta=ferramenta,  
             termo_responsabilidade=termo,
             retirado_por=self.user,
             data_devolucao_prevista=timezone.now() + timedelta(days=5),

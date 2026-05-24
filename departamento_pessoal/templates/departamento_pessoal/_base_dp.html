@@ -1,13 +1,13 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 
 {% block extra_css %}
 <style>
     /* ============================================
-       CSS VARIABLES - ADAPTÁVEIS AO TEMA
+       CSS VARIABLES - ADAPTÃVEIS AO TEMA
        ============================================ */
     :root {
-        /* Cores do módulo */
+        /* Cores do mÃ³dulo */
         --dp-primary: #1e40af;
         --dp-primary-light: #3b82f6;
         --dp-primary-dark: #1e3a8a;
@@ -121,7 +121,7 @@
     }
 
     /* ============================================
-       HEADER DO MÓDULO (Gradiente)
+       HEADER DO MÃ“DULO (Gradiente)
        ============================================ */
     .module-header {
         background: linear-gradient(135deg, var(--dp-primary-dark) 0%, var(--dp-primary) 50%, var(--dp-primary-light) 100%);
@@ -164,7 +164,7 @@
     }
 
     /* ============================================
-       PROFILE HEADER (Detalhe do Funcionário)
+       PROFILE HEADER (Detalhe do FuncionÃ¡rio)
        ============================================ */
     .profile-header {
         display: flex;
@@ -308,7 +308,7 @@
     }
 
     /* ============================================
-       TABS INTERNAS (Dados Pessoais, Admissão, etc)
+       TABS INTERNAS (Dados Pessoais, AdmissÃ£o, etc)
        ============================================ */
     .detail-tabs {
         border-bottom: 1px solid var(--dp-border-color);
@@ -511,21 +511,21 @@
         <div class="mb-4">
             <nav class="module-subnav">
                 {% if perms.departamento_pessoal.view_funcionario or user.is_superuser %}
-                <!-- Dashboard: visível para todos que acessam o módulo DP -->
+                <!-- Dashboard: visÃ­vel para todos que acessam o mÃ³dulo DP -->
                 <a class="nav-link {% if 'painel' in request.resolver_match.url_name %}active{% endif %}" 
                 href="{% url 'departamento_pessoal:painel_dp' %}">
                     <i class="bi bi-speedometer2 me-1"></i> Dashboard
                 </a>
                 {% endif %}
-                <!-- Funcionários: exige permissão de visualizar funcionário -->
+                <!-- FuncionÃ¡rios: exige permissÃ£o de visualizar funcionÃ¡rio -->
                 {% if perms.departamento_pessoal.view_funcionario or user.is_superuser %}
                 <a class="nav-link {% if 'funcionario' in request.resolver_match.url_name %}active{% endif %}" 
                 href="{% url 'departamento_pessoal:lista_funcionarios' %}">
-                    <i class="bi bi-people me-1"></i> Funcionários
+                    <i class="bi bi-people me-1"></i> FuncionÃ¡rios
                 </a>
                 {% endif %}
 
-                <!-- Departamentos: exige permissão de visualizar departamento -->
+                <!-- Departamentos: exige permissÃ£o de visualizar departamento -->
                 {% if perms.departamento_pessoal.view_departamento or user.is_superuser %}
                 <a class="nav-link {% if 'departamento' in request.resolver_match.url_name %}active{% endif %}" 
                 href="{% url 'departamento_pessoal:lista_departamento' %}">
@@ -533,7 +533,7 @@
                 </a>
                 {% endif %}
 
-                <!-- Cargos: exige permissão de visualizar cargo -->
+                <!-- Cargos: exige permissÃ£o de visualizar cargo -->
                 {% if perms.departamento_pessoal.view_cargo or user.is_superuser %}
                 <a class="nav-link {% if 'cargo' in request.resolver_match.url_name %}active{% endif %}" 
                 href="{% url 'departamento_pessoal:lista_cargo' %}">
@@ -541,7 +541,7 @@
                 </a>
                 {% endif %}
 
-                <!-- Documentos: exige permissão de visualizar documento -->
+                <!-- Documentos: exige permissÃ£o de visualizar documento -->
                 {% if perms.departamento_pessoal.view_documentofuncionario or user.is_superuser %}
                 <a class="nav-link {% if 'documento' in request.resolver_match.url_name %}active{% endif %}" 
                 href="{% url 'departamento_pessoal:lista_documentos' %}">
@@ -553,7 +553,7 @@
         </div>
         <!-- Toast Messages -->
         <!--{% include 'departamento_pessoal/partials/_toast_messages.html' %}-->
-        <!-- Conteúdo do Módulo -->
+        <!-- ConteÃºdo do MÃ³dulo -->
         {% block dp_content %}{% endblock %}
     </div>
 </div>

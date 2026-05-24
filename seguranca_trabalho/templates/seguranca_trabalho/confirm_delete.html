@@ -1,15 +1,15 @@
-
+﻿
 
 {% extends "seguranca_trabalho/_base_sst.html" %}
 
-{% block title %}Confirmar Exclusão{% endblock %}
+{% block title %}Confirmar ExclusÃ£o{% endblock %}
 
 {% block extra_css %}
 {{ block.super }}
 <style>
-    /* ═══════════════════════════════════════════════════════
-       CONFIRM DELETE — TEMA CLARO
-       ═══════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       CONFIRM DELETE â€” TEMA CLARO
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     :root,
     [data-bs-theme="light"] {
         --cd-bg:            #ffffff;
@@ -95,7 +95,7 @@
         padding: 1.75rem;
     }
 
-    /* ── Alerta de bloqueio ── */
+    /* â”€â”€ Alerta de bloqueio â”€â”€ */
     .cd-blocked {
         background: var(--cd-warning-bg);
         border: 1px solid var(--cd-warning-border);
@@ -133,7 +133,7 @@
         line-height: 1.5;
     }
 
-    /* ── Confirmação permitida ── */
+    /* â”€â”€ ConfirmaÃ§Ã£o permitida â”€â”€ */
     .cd-confirm-icon {
         width: 64px;
         height: 64px;
@@ -174,7 +174,7 @@
         margin-top: 0.5rem;
     }
 
-    /* ── Footer / Actions ── */
+    /* â”€â”€ Footer / Actions â”€â”€ */
     .cd-card-footer {
         display: flex;
         justify-content: flex-end;
@@ -235,28 +235,28 @@
                 <i class="bi bi-exclamation-triangle-fill"></i>
             </span>
             <div>
-                <h5>Confirmar Exclusão</h5>
-                <small>Esta ação é irreversível</small>
+                <h5>Confirmar ExclusÃ£o</h5>
+                <small>Esta aÃ§Ã£o Ã© irreversÃ­vel</small>
             </div>
         </div>
 
         <div class="cd-card-body">
             {% if has_entregas %}
-            <!-- ══════════ BLOQUEIO ══════════ -->
+            <!-- â•â•â•â•â•â•â•â•â•â• BLOQUEIO â•â•â•â•â•â•â•â•â•â• -->
             <div class="cd-blocked">
                 <span class="cd-blocked-icon">
                     <i class="bi bi-shield-exclamation"></i>
                 </span>
                 <div>
-                    <h6>Exclusão bloqueada</h6>
+                    <h6>ExclusÃ£o bloqueada</h6>
                     <p>
                         Esta ficha possui <strong>{{ entregas_count }} entrega(s) de EPI</strong> vinculada(s).
-                        Remova ou registre a devolução de todas as entregas antes de excluir a ficha.
+                        Remova ou registre a devoluÃ§Ã£o de todas as entregas antes de excluir a ficha.
                     </p>
                 </div>
             </div>
             {% else %}
-            <!-- ══════════ PERMITIDO ══════════ -->
+            <!-- â•â•â•â•â•â•â•â•â•â• PERMITIDO â•â•â•â•â•â•â•â•â•â• -->
             <div class="cd-confirm-icon">
                 <i class="bi bi-trash3"></i>
             </div>
@@ -266,7 +266,7 @@
             </div>
             <p class="cd-confirm-warning">
                 <i class="bi bi-info-circle me-1"></i>
-                Esta ação não poderá ser desfeita.
+                Esta aÃ§Ã£o nÃ£o poderÃ¡ ser desfeita.
             </p>
             {% endif %}
         </div>

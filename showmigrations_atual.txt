@@ -1,0 +1,182 @@
+﻿admin
+ [X] 0001_initial
+ [X] 0002_logentry_remove_auto_add
+ [X] 0003_logentry_add_action_flag_choices
+api
+ (no migrations)
+ata_reuniao
+ [X] 0001_initial
+ [X] 0002_initial
+ [X] 0003_initial
+ [X] 0004_initial
+ [X] 0005_alter_atareuniao_options
+auth
+ [X] 0001_initial
+ [X] 0002_alter_permission_name_max_length
+ [X] 0003_alter_user_email_max_length
+ [X] 0004_alter_user_username_opts
+ [X] 0005_alter_user_last_login_null
+ [X] 0006_require_contenttypes_0002
+ [X] 0007_alter_validators_add_error_messages
+ [X] 0008_alter_user_username_max_length
+ [X] 0009_alter_user_last_name_max_length
+ [X] 0010_alter_group_name_max_length
+ [X] 0011_update_proxy_permissions
+ [X] 0012_alter_user_first_name_max_length
+authtoken
+ [X] 0001_initial
+ [X] 0002_auto_20160226_1747
+ [X] 0003_tokenproxy
+ [X] 0004_alter_tokenproxy_options
+automovel
+ [X] 0001_initial
+ [X] 0002_initial
+ [X] 0003_remove_checklist_anexo_ocorrencia
+ [X] 0004_rename_agendamento_carro_agendamento_and_more
+ [X] 0005_alter_carro_agendamento_table_and_more
+ [X] 0006_alter_carro_agendamento_status_carro_rastreamento
+ [X] 0007_carro_manutencao
+ [X] 0008_alter_carro_foto_and_more
+ [X] 0009_alter_carro_options
+ [X] 0010_carro_agendamento_tracking_token
+chat
+ [X] 0001_initial
+ [X] 0002_alter_chatroom_tarefa_alter_message_file_attachment_and_more
+cliente
+ [X] 0001_initial
+ [X] 0002_initial
+ [X] 0003_alter_cliente_filial
+ [X] 0004_alter_cliente_filial_alter_cliente_logradouro_and_more
+ [X] 0005_alter_cliente_options
+contenttypes
+ [X] 0001_initial
+ [X] 0002_remove_content_type_name
+controle_de_telefone
+ [X] 0001_initial
+ [X] 0002_initial
+ [X] 0003_recargacredito
+ [X] 0004_alter_aparelho_options_alter_linhatelefonica_options_and_more
+ [X] 0005_add_filial_cadastros_auxiliares
+ [X] 0006_alter_recargacredito_options
+core
+ [X] 0001_initial
+dashboard
+ [X] 0001_initial
+departamento_pessoal
+ [X] 0001_initial
+ [X] 0002_initial
+ [X] 0003_alter_documento_funcionario_alter_funcionario_funcao
+ [X] 0004_departamento_registro
+ [X] 0005_reestruturar_documento_completo
+ [X] 0006_alter_documento_anexo_alter_funcionario_foto_3x4
+ [X] 0007_alter_funcionario_options
+ [X] 0008_alter_funcionario_options
+ [X] 0009_alter_funcionario_options
+documentos
+ [X] 0001_initial
+ [X] 0002_alter_documento_options_documento_data_atualizacao_and_more
+ [X] 0003_alter_documento_arquivo
+ [X] 0004_documento_cliente_documento_descricao_and_more
+ [X] 0005_migrate_arquivos_to_documentos
+ [X] 0006_alter_documento_arquivo
+ [X] 0007_alter_documento_arquivo
+ [X] 0008_alter_documento_options
+ [X] 0009_alter_documento_options
+ferramentas
+ [X] 0001_initial
+ [X] 0002_initial
+ [X] 0003_alter_termoderesponsabilidade_options_and_more
+gestao_riscos
+ [X] 0001_initial
+ [X] 0002_initial
+ [X] 0003_remove_inspecao_inspetor_inspecao_entrega_epi_and_more
+ [X] 0004_tiporisco
+ [X] 0005_add_tipo_ocorrencia
+ [X] 0006_alter_incidente_options_and_more
+ [X] 0007_incidente_classificacao
+ [X] 0008_alter_incidente_classificacao
+home
+ [X] 0001_initial
+logradouro
+ [X] 0001_initial
+ [X] 0002_initial
+ [X] 0003_remove_logradouro_unique_endereco_completo_and_more
+ [X] 0004_alter_logradouro_tipo_logradouro
+ltcat
+ [X] 0001_initial
+ [X] 0002_alter_localprestacaoservicoltcat_options_and_more
+ [X] 0003_add_assinatura_profissional
+ [X] 0004_anexoltcat_mime_type_alter_anexoltcat_arquivo_and_more
+notifications
+ [X] 0001_initial
+ [X] 0002_initial
+ [X] 0003_alter_notificacao_options_notificacao_categoria_and_more
+ [X] 0004_alter_notificacao_categoria_alter_notificacao_tipo_and_more
+ [X] 0005_notificacao_criada_em_notificacao_enviada_email_and_more
+ [X] 0006_remove_notificacao_criada_em
+ [X] 0007_alter_notificacao_tipo
+pgr_gestao
+ [X] 0001_initial
+ [X] 0002_pgrdocumento_escopo_and_more
+ [X] 0003_pgrsecaotextopadrao_alter_ambientetrabalho_empresa_and_more
+ [X] 0004_alter_gesgrupoexposicao_ambiente_trabalho_and_more
+ [X] 0005_alter_riscoidentificado_tipo_risco
+ [X] 0006_anexoplanoacao
+ [X] 0007_alter_avaliacaoquantitativa_unidade_medida
+ [X] 0008_pgrrevisao_ativo_pgrrevisao_criado_por_and_more
+ [X] 0009_alter_acompanhamentoplanoacao_descricao_and_more
+ [X] 0010_anexopgr
+ [X] 0011_anexopgr_mime_type_and_more
+seguranca_trabalho
+ [X] 0001_initial
+ [X] 0002_initial
+ [X] 0003_alter_cargofuncao_unique_together_cargofuncao_filial_and_more
+ [X] 0004_entregaepi_assinatura_funcionario_and_more
+ [X] 0005_remove_entregaepi_assinatura_funcionario_and_more
+ [X] 0006_alterar_entrega_associada_para_fk
+ [X] 0007_adicionar_estoque_atual_equipamento
+ [X] 0008_funcao_registro
+ [X] 0009_alter_equipamento_fabricante_and_more
+sessions
+ [X] 0001_initial
+suprimentos
+ [X] 0001_initial
+ [X] 0002_contrato_alter_parceiro_managers_pedido_material_and_more
+ [X] 0003_material_equipamento_epi_material_ferramenta_ref_and_more
+ [X] 0004_pedido_estoque_processado_and_more
+ [X] 0005_itempedido_custo_real_itempedido_total_creditos_and_more
+ [X] 0006_pedido_data_necessaria_pedido_descricao_material_and_more
+ [X] 0007_material_filial
+ [X] 0008_alter_anexopedido_arquivo_and_more
+ [X] 0009_alter_anexopedido_arquivo_and_more
+tarefas
+ [X] 0001_initial
+ [X] 0002_initial
+ [X] 0003_tarefas_participantes
+ [X] 0004_alter_comentario_anexo_alter_comentario_filial_and_more
+ [X] 0005_historicotarefa_delete_historicostatus_and_more
+ [X] 0006_alter_tarefas_status
+ [X] 0007_alter_tarefas_options
+ [X] 0008_alter_comentario_anexo_and_more
+ [X] 0009_alter_tarefas_options
+ [X] 0010_alter_tarefas_options
+ [X] 0011_alter_comentario_anexo
+ [X] 0012_historicostatus_alter_comentario_options_and_more
+ [X] 0013_alter_historicotarefa_options_historicotarefa_filial_and_more
+treinamentos
+ [X] 0001_initial
+ [X] 0002_initial
+ [X] 0003_alter_treinamento_options
+ [X] 0004_alter_tipocurso_validade_meses
+ [X] 0005_gabaritocertificado_remove_tipocurso_descricao_and_more
+ [X] 0006_popular_protocolos_existentes
+ [X] 0007_avaliacaoead_cursoead_matriculaead_planoestudo_and_more
+ [X] 0008_alter_assinatura_treinamento_responsavel_and_more
+ [X] 0009_alter_participante_protocolo_validacao
+tributacao
+ [X] 0001_initial
+ [X] 0002_ncm_arquivo_xml_tributacaofederal_documento_fiscal_and_more
+ [X] 0003_alter_grupotributario_options_alter_ncm_options
+usuario
+ [X] 0001_initial
+ [X] 0002_alter_filial_options

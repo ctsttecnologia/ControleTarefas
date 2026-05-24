@@ -1,4 +1,4 @@
-{# GES - Detalhes do Grupo de Exposição Similar #}
+﻿{# GES - Detalhes do Grupo de ExposiÃ§Ã£o Similar #}
 {% extends "pgr_gestao/pgr_base.html" %}
 {% load static %}
 
@@ -22,7 +22,7 @@
                 {% endif %}
             </h1>
             <p class="mb-0">
-                <strong>Código:</strong> {{ ges.codigo }} |
+                <strong>CÃ³digo:</strong> {{ ges.codigo }} |
                 <strong>PGR:</strong> {{ ges.pgr_documento }}
             </p>
         </div>
@@ -60,19 +60,19 @@
 <div class="alert alert-danger d-flex align-items-center mb-4">
     <i class="bi bi-exclamation-triangle-fill fs-3 me-3"></i>
     <div>
-        <strong>Este GES está inativo.</strong><br>
-        Ele não será incluído no inventário de riscos do relatório PDF do PGR.
-        Para incluí-lo novamente, clique em <strong>"Reativar GES"</strong>.
+        <strong>Este GES estÃ¡ inativo.</strong><br>
+        Ele nÃ£o serÃ¡ incluÃ­do no inventÃ¡rio de riscos do relatÃ³rio PDF do PGR.
+        Para incluÃ­-lo novamente, clique em <strong>"Reativar GES"</strong>.
     </div>
 </div>
 {% endif %}
 
-<!-- Informações Principais -->
+<!-- InformaÃ§Ãµes Principais -->
 <div class="row mb-4">
     <div class="col-lg-8">
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-info-circle"></i> Informações do GES
+                <i class="bi bi-info-circle"></i> InformaÃ§Ãµes do GES
             </div>
             <div class="card-body">
                 <div class="row">
@@ -84,12 +84,12 @@
                         </p>
                         <p><strong>Ambiente:</strong> {{ ges.ambiente_trabalho.nome|default:"N/A" }}</p>
                         <p><strong>Cargo:</strong> {{ ges.cargo.nome|default:"N/A" }}</p>
-                        <p><strong>Função:</strong> {{ ges.funcao.nome|default:"N/A" }}</p>
+                        <p><strong>FunÃ§Ã£o:</strong> {{ ges.funcao.nome|default:"N/A" }}</p>
                     </div>
                     <div class="col-md-6">
                         <p><strong>Trabalhadores:</strong> {{ ges.numero_trabalhadores|default:0 }}</p>
                         <p><strong>Jornada:</strong> {{ ges.jornada_trabalho }}</p>
-                        <p><strong>Horário:</strong> {{ ges.horario_trabalho }}</p>
+                        <p><strong>HorÃ¡rio:</strong> {{ ges.horario_trabalho }}</p>
                         <p><strong>Status:</strong>
                             {% if ges.ativo %}
                             <span class="badge bg-success">Ativo</span>
@@ -101,12 +101,12 @@
                 </div>
 
                 <hr>
-                <h6><i class="bi bi-card-text"></i> Descrição das Atividades</h6>
+                <h6><i class="bi bi-card-text"></i> DescriÃ§Ã£o das Atividades</h6>
                 <p>{{ ges.descricao_atividades|linebreaks }}</p>
 
                 {% if ges.observacoes %}
                 <hr>
-                <h6><i class="bi bi-chat-left-text"></i> Observações</h6>
+                <h6><i class="bi bi-chat-left-text"></i> ObservaÃ§Ãµes</h6>
                 <p>{{ ges.observacoes|linebreaks }}</p>
                 {% endif %}
             </div>
@@ -115,10 +115,10 @@
 
     <!-- Sidebar -->
     <div class="col-lg-4">
-        <!-- Estatísticas -->
+        <!-- EstatÃ­sticas -->
         <div class="card mb-3">
             <div class="card-header bg-primary text-white">
-                <i class="bi bi-pie-chart-fill"></i> Estatísticas
+                <i class="bi bi-pie-chart-fill"></i> EstatÃ­sticas
             </div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
@@ -126,7 +126,7 @@
                     <strong>{{ riscos.count }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
-                    <span>Riscos Críticos:</span>
+                    <span>Riscos CrÃ­ticos:</span>
                     <strong class="text-danger">{{ riscos_criticos }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
@@ -190,17 +190,17 @@
             <table class="table table-hover table-sm table-clickable align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Código</th>
+                        <th>CÃ³digo</th>
                         <th>Tipo</th>
                         <th>Agente</th>
                         <th>Fonte Geradora</th>
-                        <th>Classificação</th>
+                        <th>ClassificaÃ§Ã£o</th>
                         <th>Status</th>
                         <th class="text-center">G</th>
                         <th class="text-center">E</th>
                         <th class="text-center">S</th>
                         <th class="text-center">P</th>
-                        <th class="text-center">Ações</th>
+                        <th class="text-center">AÃ§Ãµes</th>
                     </tr>
                 </thead>
                 <tbody>

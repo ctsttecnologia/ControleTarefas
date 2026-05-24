@@ -1,13 +1,13 @@
-<!-- templates/tarefas/listar_tarefas.html -->
+﻿<!-- templates/tarefas/listar_tarefas.html -->
 <!--
-| Ação      | Superuser | view_all | change | Criador | Responsável | Participante |
+| AÃ§Ã£o      | Superuser | view_all | change | Criador | ResponsÃ¡vel | Participante |
 |-----------|-----------|----------|--------|---------|-------------|--------------|
-| Listar    | ✅       | ✅       | ✅    | ✅      | ✅         | ✅           |
-| Ver       | ✅       | ✅       | ✅    | ✅      | ✅         | ✅           |
-| Editar    | ✅       | ❌       | ✅    | ✅      | ✅         | ❌           |
-| Concluir  | ✅       | ❌       | ❌    | ✅      | ✅         | ❌           |
-| Excluir   | ✅       | ❌       | ❌    | ✅      | ❌         | ❌           |
-| Comentar  | ✅       | ✅       | ✅    | ✅      | ✅         | ✅           |
+| Listar    | âœ…       | âœ…       | âœ…    | âœ…      | âœ…         | âœ…           |
+| Ver       | âœ…       | âœ…       | âœ…    | âœ…      | âœ…         | âœ…           |
+| Editar    | âœ…       | âŒ       | âœ…    | âœ…      | âœ…         | âŒ           |
+| Concluir  | âœ…       | âŒ       | âŒ    | âœ…      | âœ…         | âŒ           |
+| Excluir   | âœ…       | âŒ       | âŒ    | âœ…      | âŒ         | âŒ           |
+| Comentar  | âœ…       | âœ…       | âœ…    | âœ…      | âœ…         | âœ…           |
 -->
 
 {% extends 'base.html' %}
@@ -116,9 +116,9 @@
     .list-table tbody td:last-child { padding-top: 0.5rem; }
     .list-actions .btn span { display: none; }
 }
-/* ═══════════════════════════════════════════════════════════
-FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
-═══════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+FILTROS â€” Aprimoramento dark mode (form-select do Bootstrap)
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .list-card-body .form-select-sm {
     background-color: var(--list-card-bg);
     border-color: var(--list-card-border);
@@ -155,7 +155,7 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
     margin-bottom: 0.4rem;
 }
 
-/* Botões de filtro alinhados na altura dos selects */
+/* BotÃµes de filtro alinhados na altura dos selects */
 .list-card-body .row.align-items-end .col-md-2 {
     padding-top: 1.45rem; /* alinha com os selects que tem label acima */
 }
@@ -231,13 +231,13 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                         </select>
                     </div>
 
-                    <!-- RESPONSÁVEL -->
+                    <!-- RESPONSÃVEL -->
                     <div class="col-12 col-md-4">
                         <label class="filter-label" for="filtroResponsavel">
-                            <i class="bi bi-person me-1"></i>Responsável
+                            <i class="bi bi-person me-1"></i>ResponsÃ¡vel
                         </label>
                         <select name="responsavel" id="filtroResponsavel" class="form-select form-select-sm">
-                            <option value="">Todos os responsáveis</option>
+                            <option value="">Todos os responsÃ¡veis</option>
                             {% for user in responsaveis %}
                             <option value="{{ user.pk }}" {% if responsavel_atual == user.pk|stringformat:"d" %}selected{% endif %}>
                                 {{ user.get_full_name|default:user.username }}
@@ -246,7 +246,7 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                         </select>
                     </div>
 
-                    <!-- BOTÕES -->
+                    <!-- BOTÃ•ES -->
                     <div class="col-12 col-md-2 d-flex gap-2">
                         <button type="submit" class="btn btn-sm btn-primary flex-fill">
                             <i class="bi bi-funnel me-1"></i> Filtrar
@@ -277,12 +277,12 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                     <tr>
                         <th>Tarefa</th>
                         <th>Projeto</th>
-                        <th>Responsável</th>
+                        <th>ResponsÃ¡vel</th>
                         <th>Prioridade</th>
                         <th>Status</th>
                         <th>Prazo</th>
                         <th style="min-width:130px;">Progresso</th>
-                        <th style="width:100px;" class="text-center">Ações</th>
+                        <th style="width:100px;" class="text-center">AÃ§Ãµes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -306,14 +306,14 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                             <span class="task-link">{{ tarefa.projeto }}</span>
                         </td>
 
-                        <!-- RESPONSÁVEL + PARTICIPANTES -->
-                        <td data-label="Responsável">
+                        <!-- RESPONSÃVEL + PARTICIPANTES -->
+                        <td data-label="ResponsÃ¡vel">
                             {% if tarefa.responsavel %}
                                 <span class="task-badge badge-responsavel">
                                     {{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username|truncatewords:10|upper }}
                                 </span>
                             {% else %}
-                                <span class="text-muted">—</span>
+                                <span class="text-muted">â€”</span>
                             {% endif %}
                             {% if tarefa.participantes.exists %}
                                 <div class="task-desc mt-1">
@@ -347,7 +347,7 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                                     <i class="bi bi-calendar-event me-1"></i>{{ tarefa.prazo|date:"d/m/Y" }}
                                 </span>
                             {% else %}
-                                <span class="task-date">—</span>
+                                <span class="task-date">â€”</span>
                             {% endif %}
                         </td>
 
@@ -366,11 +366,11 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                             </div>
                         </td>
 
-                        <!-- AÇÕES -->
-                        <td data-label="Ações" class="text-center">
+                        <!-- AÃ‡Ã•ES -->
+                        <td data-label="AÃ§Ãµes" class="text-center">
                             <div class="d-flex gap-1 justify-content-center">
 
-                                {# VER — responsável, participante, quem tem permissão ou superuser #}
+                                {# VER â€” responsÃ¡vel, participante, quem tem permissÃ£o ou superuser #}
                                 {% if perms.tarefas.view_tarefas or tarefa.responsavel == user or user in tarefa.participantes.all or user.is_superuser %}
                                     <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}"
                                     class="action-btn action-btn--view" title="Ver">
@@ -378,14 +378,14 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                                     </a>
                                 {% endif %}
 
-                                {# EDITAR — só responsável com permissão ou superuser #}
+                                {# EDITAR â€” sÃ³ responsÃ¡vel com permissÃ£o ou superuser #}
                                 {% if perms.tarefas.change_tarefas or tarefa.responsavel == user or user.is_superuser %}
                                     <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}"
                                     class="action-btn action-btn--edit" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                 {% endif %}
-                                {# EXCLUIR — só quem tem permissão ou superuser #}
+                                {# EXCLUIR â€” sÃ³ quem tem permissÃ£o ou superuser #}
                                 {% if perms.tarefas.delete_tarefas or user.is_superuser %}
                                     <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}"
                                     class="action-btn action-btn--delete" title="Excluir"
@@ -417,11 +417,11 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
             </table>
         </div>
     </div>
-    <!-- Paginação -->
+    <!-- PaginaÃ§Ã£o -->
     <div>
     {% if is_paginated %}
     <div class="content-card-body border-top"><br> 
-        <nav aria-label="Paginação de cargos">
+        <nav aria-label="PaginaÃ§Ã£o de cargos">
             <ul class="pagination justify-content-center mb-0">
                 {% if page_obj.has_previous %}
                 <li class="page-item">
@@ -462,7 +462,7 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                     </a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" title="Última">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" title="Ãšltima">
                         <i class="bi bi-chevron-double-right"></i>
                     </a>
                 </li>
@@ -476,8 +476,8 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                 {% endif %}
             </ul>
             <p class="text-center text-muted mt-2 mb-0" style="font-size: 0.8rem;">
-                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-                — {{ page_obj.paginator.count }} cargo{{ page_obj.paginator.count|pluralize:"s" }} no total
+                PÃ¡gina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                â€” {{ page_obj.paginator.count }} cargo{{ page_obj.paginator.count|pluralize:"s" }} no total
             </p>
         </nav>
     </div>

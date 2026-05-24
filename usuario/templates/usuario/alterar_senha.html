@@ -1,4 +1,4 @@
-
+﻿
 {# templates/usuario/alterar_senha.html #}
 {% extends 'usuario/base_usuario.html' %}
 {% load widget_tweaks %}
@@ -30,7 +30,7 @@
                             {{ field.label }}
                         </label>
 
-                        <!-- Input group com botão toggle -->
+                        <!-- Input group com botÃ£o toggle -->
                         <div class="input-group">
                             {% render_field field class="form-control" %}
                             <button class="bi-eye btn btn-outline-primary btn-sm mb-1 toggle-password"
@@ -50,11 +50,11 @@
                         {% endfor %}
                     </div>
 
-                    <!-- Força da senha (só aparece no campo new_password1) -->
+                    <!-- ForÃ§a da senha (sÃ³ aparece no campo new_password1) -->
                     {% if field.html_name == 'new_password1' %}
                     <div class="mb-3">
                         <div class="d-flex justify-content-between mb-1">
-                            <small class="text-muted">Força da senha</small>
+                            <small class="text-muted">ForÃ§a da senha</small>
                             <small id="password-strength-text" class="fw-semibold"></small>
                         </div>
                         <div class="progress" style="height: 5px;">
@@ -89,7 +89,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
 
-        // ─── Toggle mostrar/ocultar senha ────────────────────────────────
+        // â”€â”€â”€ Toggle mostrar/ocultar senha â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         document.querySelectorAll('.toggle-password').forEach(btn => {
             btn.addEventListener('click', () => {
                 const targetSel = btn.getAttribute('data-target');
@@ -101,7 +101,7 @@
                 const isPassword = input.type === 'password';
                 input.type = isPassword ? 'text' : 'password';
 
-                // Alterna ícones do FontAwesome (que é o que você usa no HTML)
+                // Alterna Ã­cones do FontAwesome (que Ã© o que vocÃª usa no HTML)
                 icon.classList.toggle('fa-eye',       !isPassword);
                 icon.classList.toggle('fa-eye-slash',  isPassword);
 
@@ -112,7 +112,7 @@
             }); // fecha click
         });     // fecha forEach
 
-        // ─── Indicador de força da senha ─────────────────────────────────
+        // â”€â”€â”€ Indicador de forÃ§a da senha â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const passwordInput = document.getElementById('id_new_password1');
         const bar           = document.getElementById('password-strength-bar');
         const label         = document.getElementById('password-strength-text');
@@ -125,7 +125,7 @@
                     { pct: 0,   cls: '',           text: ''            },
                     { pct: 25,  cls: 'bg-danger',  text: 'Muito fraca' },
                     { pct: 50,  cls: 'bg-warning', text: 'Fraca'       },
-                    { pct: 75,  cls: 'bg-info',    text: 'Média'       },
+                    { pct: 75,  cls: 'bg-info',    text: 'MÃ©dia'       },
                     { pct: 100, cls: 'bg-success', text: 'Forte'       },
                 ];
 
@@ -140,7 +140,7 @@
 
     }); // fecha DOMContentLoaded
 
-    // ─── Função utilitária ───────────────────────────────────────────────
+    // â”€â”€â”€ FunÃ§Ã£o utilitÃ¡ria â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function calcStrength(pwd) {
         if (!pwd) return 0;
         let score = 0;

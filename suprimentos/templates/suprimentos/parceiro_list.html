@@ -1,16 +1,30 @@
-{% extends "suprimentos/suprimentos_base.html" %}
+﻿{% extends "suprimentos/suprimentos_base.html" %}
+{% load static %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block suprimentos_content %}
 <div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-cart me-2"></i> Fornecedor </h2>
+
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
+            <h2 class="mb-0">
+                <i class="bi bi-cart-fill me-2 text-primary"></i>{{ titulo_pagina }}
+            </h2>
+            <small class="text-muted">
+                {% if is_paginated %}
+                    {{ paginator.count }} pedido(s) encontrado(s)
+                {% else %}
+                    {{ pedidos|length }} pedido(s) encontrado(s)
+                {% endif %}
+            </small>
+        </div>
+        <div class="d-flex gap-2">
             <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i> Voltar
             </a>
-            {% if perms.suprimentos.add_pedido or user.is.superuser %}
+            {% if perms.suprimentos.add_pedido or user.is_superuser %}
             <a href="{% url 'suprimentos:pedido_criar' %}" class="btn btn-success">
                 <i class="bi bi-plus-lg me-1"></i> Novo Pedido
             </a>
@@ -18,120 +32,215 @@
         </div>
     </div>
 
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARDS RESUMO POR STATUS (opcional) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <a href="?status=RASCUNHO" class="text-decoration-none">
+                <div class="card shadow-sm border-0 h-100 bg-adaptive">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="bi bi-pencil-square fs-3 text-secondary"></i>
+                            </div>
+                            <div>
+                                <small class="text-muted d-block">Rascunho</small>
+                                <strong class="text-strong">
+                                    {{ pedidos|length }}
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="?status=PENDENTE" class="text-decoration-none">
+                <div class="card shadow-sm border-0 h-100 bg-adaptive">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="bi bi-hourglass-split fs-3 text-warning"></i>
+                            </div>
+                            <div>
+                                <small class="text-muted d-block">Pendentes</small>
+                                <strong class="text-strong">Aguardando</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="?status=APROVADO" class="text-decoration-none">
+                <div class="card shadow-sm border-0 h-100 bg-adaptive">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="bi bi-check-circle-fill fs-3 text-success"></i>
+                            </div>
+                            <div>
+                                <small class="text-muted d-block">Aprovados</small>
+                                <strong class="text-strong">Em curso</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="?status=REVISAO" class="text-decoration-none">
+                <div class="card shadow-sm border-0 h-100 bg-adaptive">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="bi bi-arrow-counterclockwise fs-3 text-info"></i>
+                            </div>
+                            <div>
+                                <small class="text-muted d-block">Em RevisÃ£o</small>
+                                <strong class="text-strong">AtenÃ§Ã£o</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARD PRINCIPAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="card shadow-sm">
         <div class="card-body">
+
             <!-- Filtros -->
             <form method="get" class="row g-2 mb-4">
                 <div class="col-md-5">
+                    <label class="form-label small fw-bold mb-1">
+                        <i class="bi bi-search me-1"></i>Buscar
+                    </label>
                     <input type="text" name="q" class="form-control"
-                           placeholder="Buscar nº pedido ou cliente..."
+                           placeholder="NÂº pedido ou cliente..."
                            value="{{ filtro_q }}">
                 </div>
                 <div class="col-md-4">
+                    <label class="form-label small fw-bold mb-1">
+                        <i class="bi bi-funnel me-1"></i>Status
+                    </label>
                     <select name="status" class="form-select">
                         <option value="">Todos os Status</option>
                         {% for val, label in status_choices %}
-                            <option value="{{ val }}" {% if filtro_status == val %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ val }}" {% if filtro_status == val %}selected{% endif %}>
+                                {{ label }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <button class="btn btn-primary w-100" type="submit">
-                        <i class="bi bi-search"></i> Filtrar
+                <div class="col-md-3 d-flex align-items-end gap-1">
+                    <button class="btn btn-primary flex-grow-1" type="submit">
+                        <i class="bi bi-funnel-fill me-1"></i> Filtrar
                     </button>
+                    {% if filtro_q or filtro_status %}
+                    <a href="{% url 'suprimentos:pedido_lista' %}"
+                       class="btn btn-outline-secondary" title="Limpar filtros">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                    {% endif %}
                 </div>
             </form>
 
+            <!-- Tabela -->
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>Nº Pedido</th>
+                            <th>NÂº Pedido</th>
                             <th>Contrato</th>
                             <th>Solicitante</th>
+                            <th class="text-center">Itens</th>
                             <th>Status</th>
                             <th>Data</th>
-                            <th class="text-end">Valor Prod.</th>
-                            <th class="text-end">Impostos</th>
-                            <th class="text-end text-success">Créditos</th>
-                            <th class="text-end">NF-e</th>
-                            <th class="text-end text-primary">Custo Real</th>
-                            <th class="text-end">Ações</th>
+                            <th class="text-end">Valor Total</th>
+                            <th class="text-end">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for p in pedidos %}
-                        {% with trib=p.resumo_tributario %}
                         <tr>
                             <td>
-                                <a href="{{ p.get_absolute_url }}"><strong>{{ p.numero }}</strong></a>
+                                <a href="{{ p.get_absolute_url }}" class="text-decoration-none">
+                                    <strong class="text-strong">{{ p.numero }}</strong>
+                                </a>
+                                {% if p.solicitacao_gerada %}
+                                    <br>
+                                    <small class="text-success">
+                                        <i class="bi bi-link-45deg"></i> {{ p.solicitacao_gerada.numero }}
+                                    </small>
+                                {% endif %}
                             </td>
-                            <td>{{ p.contrato }}</td>
-                            <td>{{ p.solicitante.get_full_name }}</td>
+                            <td>
+                                <span class="d-block fw-bold">{{ p.contrato.cm }}</span>
+                                <small class="text-muted">{{ p.contrato.cliente|truncatechars:35 }}</small>
+                            </td>
+                            <td>
+                                {{ p.solicitante.get_full_name|default:p.solicitante.username }}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-box-seam me-1"></i>{{ p.qtd_itens }}
+                                </span>
+                            </td>
                             <td>
                                 <span class="badge
                                     {% if p.status == 'APROVADO' %}bg-success
                                     {% elif p.status == 'PENDENTE' %}bg-warning text-dark
                                     {% elif p.status == 'REPROVADO' %}bg-danger
                                     {% elif p.status == 'RECEBIDO' %}bg-primary
-                                    {% elif p.status == 'ENTREGUE' %}bg-info
+                                    {% elif p.status == 'ENTREGUE' %}bg-info text-dark
                                     {% elif p.status == 'CANCELADO' %}bg-dark
+                                    {% elif p.status == 'REVISAO' %}bg-warning text-dark
+                                    {% elif p.status == 'RASCUNHO' %}bg-secondary
                                     {% else %}bg-secondary{% endif %}">
                                     {{ p.get_status_display }}
                                 </span>
                             </td>
-                            <td>{{ p.data_pedido|date:"d/m/Y" }}</td>
-                            <td class="text-end">R$ {{ trib.valor_produtos|floatformat:2 }}</td>
-                            <td class="text-end">
-                                {% if trib.total_impostos > 0 %}
-                                    <span class="text-warning">R$ {{ trib.total_impostos|floatformat:2 }}</span>
-                                {% else %}
-                                    <span class="text-muted">—</span>
-                                {% endif %}
+                            <td class="text-nowrap">
+                                {{ p.data_pedido|date:"d/m/Y" }}
+                                <br>
+                                <small class="text-muted">{{ p.data_pedido|date:"H:i" }}</small>
+                            </td>
+                            <td class="text-end fw-bold text-strong">
+                                R$ {{ p.valor_total|floatformat:2 }}
                             </td>
                             <td class="text-end">
-                                {% if trib.total_creditos > 0 %}
-                                    <span class="text-success">
-                                        R$ {{ trib.total_creditos|floatformat:2 }}
-                                    </span>
-                                    <br>
-                                    <small class="text-success">↓ {{ trib.percentual_economia }}%</small>
-                                {% else %}
-                                    <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                {% if trib.total_nfe != trib.valor_produtos %}
-                                    R$ {{ trib.total_nfe|floatformat:2 }}
-                                {% else %}
-                                    <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                {% if trib.itens_com_grupo > 0 %}
-                                    <strong class="text-primary">R$ {{ trib.custo_real|floatformat:2 }}</strong>
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="bi bi-calculator"></i> {{ trib.cobertura_tributaria }}
-                                    </small>
-                                {% else %}
-                                    <span class="text-muted">R$ {{ trib.valor_produtos|floatformat:2 }}</span>
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="bi bi-exclamation-triangle"></i> s/ trib.
-                                    </small>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <a href="{{ p.get_absolute_url }}" class="btn btn-sm btn-outline-info" title="Detalhes">
+                                <a href="{{ p.get_absolute_url }}"
+                                   class="btn btn-sm btn-outline-info"
+                                   title="Ver detalhes">
                                     <i class="bi bi-eye"></i>
                                 </a>
                             </td>
                         </tr>
-                        {% endwith %}
                         {% empty %}
                         <tr>
-                            <td colspan="11" class="text-center text-muted py-4">Nenhum pedido encontrado.</td>
+                            <td colspan="8">
+                                <div class="empty-state text-center py-5">
+                                    <i class="bi bi-inbox" style="font-size: 3rem; color: var(--bs-text-muted);"></i>
+                                    <h6 class="mt-3 text-muted">Nenhum pedido encontrado.</h6>
+                                    {% if filtro_q or filtro_status %}
+                                        <p class="text-muted small">
+                                            Tente ajustar os filtros aplicados.
+                                        </p>
+                                        <a href="{% url 'suprimentos:pedido_lista' %}"
+                                           class="btn btn-outline-secondary btn-sm mt-2">
+                                            <i class="bi bi-x-lg me-1"></i> Limpar filtros
+                                        </a>
+                                    {% else %}
+                                        {% if perms.suprimentos.add_pedido or user.is_superuser %}
+                                        <a href="{% url 'suprimentos:pedido_criar' %}"
+                                           class="btn btn-success mt-3">
+                                            <i class="bi bi-plus-lg me-1"></i> Criar primeiro pedido
+                                        </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -145,5 +254,4 @@
     </div>
 </div>
 {% endblock suprimentos_content %}
-
 

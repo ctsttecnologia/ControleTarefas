@@ -1,4 +1,4 @@
-
+﻿
 {% extends "base.html" %}
 {% load static %}
 {% load ata_extras %}
@@ -14,7 +14,7 @@
         --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* ═══ HERO ═══ */
+    /* â•â•â• HERO â•â•â• */
     .page-hero {
         background: var(--primary-gradient);
         border-radius: var(--card-radius);
@@ -43,7 +43,7 @@
     .page-hero h1 { font-weight: 700; font-size: 1.65rem; margin-bottom: 0.25rem; }
     .page-hero p  { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
 
-    /* ═══ EXPORT BAR ═══ */
+    /* â•â•â• EXPORT BAR â•â•â• */
     .export-bar {
         background: #fff;
         border: 1px solid #e9ecef;
@@ -80,7 +80,7 @@
     .btn-export-excel { border-color: #1cc88a; color: #1cc88a; background: rgba(28,200,138,0.04); }
     .btn-export-excel:hover { background: #1cc88a; color: #fff; }
 
-    /* ═══ KPI CARDS ═══ */
+    /* â•â•â• KPI CARDS â•â•â• */
     .kpi-card {
         border: none;
         border-radius: 0.875rem;
@@ -146,7 +146,7 @@
         transition: width 0.6s ease;
     }
 
-    /* ═══ CHARTS ═══ */
+    /* â•â•â• CHARTS â•â•â• */
     .chart-wrapper { position: relative; height: 320px; width: 100%; }
     .chart-wrapper-donut { position: relative; height: 280px; width: 100%; max-width: 280px; margin: 0 auto; }
     .chart-card {
@@ -163,10 +163,10 @@
     }
     .chart-card .card-header h5 { font-weight: 700; font-size: 1rem; margin: 0; }
 
-    /* ═══ TOAST ═══ */
+    /* â•â•â• TOAST â•â•â• */
     .toast-container { z-index: 1100; }
 
-    /* ═══ DARK MODE ═══ */
+    /* â•â•â• DARK MODE â•â•â• */
     [data-bs-theme="dark"] .page-hero { background: linear-gradient(135deg, #224abe, #1a2d6d); }
     [data-bs-theme="dark"] .export-bar { background: var(--bs-body-bg); border-color: rgba(255,255,255,0.06); }
     [data-bs-theme="dark"] .export-bar .form-control,
@@ -185,12 +185,12 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- ═══ HERO ═══ -->
+    <!-- â•â•â• HERO â•â•â• -->
     <div class="page-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
                 <h1><i class="bi bi-clipboard-data me-2"></i>Dashboard de Atas</h1>
-                <p>Performance e fluxo de trabalho das atividades de reunião</p>
+                <p>Performance e fluxo de trabalho das atividades de reuniÃ£o</p>
             </div>
             <div class="d-flex gap-2 flex-wrap no-print">
                 <button class="btn btn-sm btn-outline-light" onclick="copyLink()" title="Copiar link">
@@ -211,11 +211,11 @@
         </div>
     </div>
 
-    <!-- ═══ EXPORT BAR ═══ -->
+    <!-- â•â•â• EXPORT BAR â•â•â• -->
     <div class="export-bar shadow-sm no-print">
         <div class="row g-3 align-items-end">
             <div class="col-md-3">
-                <label for="data_inicio_filtro">Data Início</label>
+                <label for="data_inicio_filtro">Data InÃ­cio</label>
                 <input type="date" class="form-control form-control-sm" id="data_inicio_filtro">
             </div>
             <div class="col-md-3">
@@ -233,7 +233,7 @@
         </div>
     </div>
 
-    <!-- ═══ KPIs LINHA 1: Status geral ═══ -->
+    <!-- â•â•â• KPIs LINHA 1: Status geral â•â•â• -->
     <div class="row g-3 mb-3">
         <!-- Total em Aberto -->
         <div class="col-md-6 col-xl-3">
@@ -247,14 +247,14 @@
                         <div class="kpi-value text-warning kpi-value-counter" data-target="{{ total_em_aberto }}">0</div>
                         <div class="kpi-label">Em Aberto</div>
                         <div class="kpi-percent text-muted">
-                            {{ total_pendente }} pendente{{ total_pendente|pluralize:"s" }} · {{ total_andamento }} em andamento
+                            {{ total_pendente }} pendente{{ total_pendente|pluralize:"s" }} Â· {{ total_andamento }} em andamento
                         </div>
                     </div>
                 </div>
             </a>
         </div>
 
-        <!-- 🆕 VENCIDAS -->
+        <!-- ðŸ†• VENCIDAS -->
         <div class="col-md-6 col-xl-3">
             <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?vencidas=1" class="card kpi-card shadow-sm h-100">
                 <div class="kpi-indicator bg-danger"></div>
@@ -268,7 +268,7 @@
                         <div class="kpi-label">Vencidas</div>
                         <div class="kpi-percent text-danger">
                             {% if total_vencidas > 0 %}
-                                <i class="bi bi-arrow-up-right"></i> Ação necessária
+                                <i class="bi bi-arrow-up-right"></i> AÃ§Ã£o necessÃ¡ria
                             {% else %}
                                 <i class="bi bi-check-circle"></i> Tudo em dia
                             {% endif %}
@@ -278,7 +278,7 @@
             </a>
         </div>
 
-        <!-- 🆕 VENCENDO (próximos 7 dias) -->
+        <!-- ðŸ†• VENCENDO (prÃ³ximos 7 dias) -->
         <div class="col-md-6 col-xl-3">
             <div class="card kpi-card shadow-sm h-100">
                 <div class="kpi-indicator" style="background: #f6c23e;"></div>
@@ -289,15 +289,15 @@
                     <div class="flex-grow-1">
                         <div class="kpi-value kpi-value-counter" data-target="{{ total_vencendo }}" style="color: #f6c23e;">0</div>
                         <div class="kpi-label">Vencendo (7 dias)</div>
-                        <div class="kpi-percent text-muted">Atenção próxima</div>
+                        <div class="kpi-percent text-muted">AtenÃ§Ã£o prÃ³xima</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Total Concluído -->
+        <!-- Total ConcluÃ­do -->
         <div class="col-md-6 col-xl-3">
-            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=Concluído" class="card kpi-card shadow-sm h-100">
+            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=ConcluÃ­do" class="card kpi-card shadow-sm h-100">
                 <div class="kpi-indicator bg-success"></div>
                 <div class="card-body d-flex align-items-center gap-3">
                     <div class="kpi-icon-wrapper bg-success bg-opacity-10">
@@ -305,18 +305,18 @@
                     </div>
                     <div class="flex-grow-1">
                         <div class="kpi-value text-success kpi-value-counter" data-target="{{ total_concluido }}">0</div>
-                        <div class="kpi-label">Concluídas</div>
+                        <div class="kpi-label">ConcluÃ­das</div>
                         <div class="kpi-mini-progress">
                             <div class="kpi-mini-progress-bar bg-success" style="width: {{ taxa_conclusao|floatformat:0 }}%"></div>
                         </div>
-                        <div class="kpi-percent text-success">{{ taxa_conclusao|floatformat:1 }}% taxa de conclusão</div>
+                        <div class="kpi-percent text-success">{{ taxa_conclusao|floatformat:1 }}% taxa de conclusÃ£o</div>
                     </div>
                 </div>
             </a>
         </div>
     </div>
 
-    <!-- ═══ KPIs LINHA 2: Qualidade das conclusões ═══ -->
+    <!-- â•â•â• KPIs LINHA 2: Qualidade das conclusÃµes â•â•â• -->
     <div class="row g-3 mb-4">
         <div class="col-md-6 col-xl-4">
             <div class="card kpi-card shadow-sm h-100">
@@ -327,11 +327,11 @@
                     </div>
                     <div class="flex-grow-1">
                         <div class="kpi-value text-primary kpi-value-counter" data-target="{{ concluido_no_prazo }}">0</div>
-                        <div class="kpi-label">Concluídas no Prazo</div>
+                        <div class="kpi-label">ConcluÃ­das no Prazo</div>
                         <div class="kpi-mini-progress">
                             <div class="kpi-mini-progress-bar bg-primary" style="width: {{ percentual_no_prazo|floatformat:0 }}%"></div>
                         </div>
-                        <div class="kpi-percent text-primary">{{ percentual_no_prazo|floatformat:1 }}% das concluídas</div>
+                        <div class="kpi-percent text-primary">{{ percentual_no_prazo|floatformat:1 }}% das concluÃ­das</div>
                     </div>
                 </div>
             </div>
@@ -346,11 +346,11 @@
                     </div>
                     <div class="flex-grow-1">
                         <div class="kpi-value kpi-value-counter" data-target="{{ concluido_com_atraso }}" style="color: #e67e22;">0</div>
-                        <div class="kpi-label">Concluídas com Atraso</div>
+                        <div class="kpi-label">ConcluÃ­das com Atraso</div>
                         <div class="kpi-mini-progress">
                             <div class="kpi-mini-progress-bar" style="width: {{ percentual_com_atraso|floatformat:0 }}%; background: #e67e22;"></div>
                         </div>
-                        <div class="kpi-percent" style="color: #e67e22;">{{ percentual_com_atraso|floatformat:1 }}% das concluídas</div>
+                        <div class="kpi-percent" style="color: #e67e22;">{{ percentual_com_atraso|floatformat:1 }}% das concluÃ­das</div>
                     </div>
                 </div>
             </div>
@@ -373,12 +373,12 @@
         </div>
     </div>
 
-    <!-- ═══ GRÁFICOS ═══ -->
+    <!-- â•â•â• GRÃFICOS â•â•â• -->
     <div class="row g-4 mb-4">
         <div class="col-lg-7">
             <div class="card chart-card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5><i class="bi bi-bar-chart-line text-warning me-2"></i>Pendências por Responsável</h5>
+                    <h5><i class="bi bi-bar-chart-line text-warning me-2"></i>PendÃªncias por ResponsÃ¡vel</h5>
                     <span class="badge bg-warning bg-opacity-10 text-warning">Top 10</span>
                 </div>
                 <div class="card-body">
@@ -389,7 +389,7 @@
         <div class="col-lg-5">
             <div class="card chart-card h-100">
                 <div class="card-header">
-                    <h5><i class="bi bi-pie-chart text-success me-2"></i>Qualidade das Conclusões</h5>
+                    <h5><i class="bi bi-pie-chart text-success me-2"></i>Qualidade das ConclusÃµes</h5>
                 </div>
                 <div class="card-body d-flex align-items-center justify-content-center">
                     <div class="chart-wrapper-donut"><canvas id="qualidadeChart"></canvas></div>
@@ -398,12 +398,12 @@
         </div>
     </div>
 
-    <!-- ═══ GRÁFICOS LINHA 2 ═══ -->
+    <!-- â•â•â• GRÃFICOS LINHA 2 â•â•â• -->
     <div class="row g-4 mb-4">
         <div class="col-lg-5">
             <div class="card chart-card h-100">
                 <div class="card-header">
-                    <h5><i class="bi bi-pie-chart-fill text-primary me-2"></i>Distribuição por Status</h5>
+                    <h5><i class="bi bi-pie-chart-fill text-primary me-2"></i>DistribuiÃ§Ã£o por Status</h5>
                 </div>
                 <div class="card-body d-flex align-items-center justify-content-center">
                     <div class="chart-wrapper-donut"><canvas id="statusDistChart"></canvas></div>
@@ -413,7 +413,7 @@
         <div class="col-lg-7">
             <div class="card chart-card h-100">
                 <div class="card-header">
-                    <h5><i class="bi bi-graph-up text-info me-2"></i>Evolução (últimos 6 meses)</h5>
+                    <h5><i class="bi bi-graph-up text-info me-2"></i>EvoluÃ§Ã£o (Ãºltimos 6 meses)</h5>
                 </div>
                 <div class="card-body">
                     <div class="chart-wrapper"><canvas id="evolucaoChart"></canvas></div>
@@ -424,7 +424,7 @@
 
 </div>
 
-<!-- ═══ TOAST CONTAINER ═══ -->
+<!-- â•â•â• TOAST CONTAINER â•â•â• -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
     <div id="appToast" class="toast align-items-center text-white border-0" role="alert">
         <div class="d-flex">
@@ -450,7 +450,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
-    // ═══ TOAST HELPER ═══
+    // â•â•â• TOAST HELPER â•â•â•
     function showToast(msg, type = 'success') {
         const toast = document.getElementById('appToast');
         toast.className = `toast align-items-center text-white border-0 bg-${type}`;
@@ -458,14 +458,14 @@ document.addEventListener('DOMContentLoaded', function() {
         new bootstrap.Toast(toast, { delay: 3000 }).show();
     }
 
-    // ═══ COPIAR LINK ═══
+    // â•â•â• COPIAR LINK â•â•â•
     window.copyLink = function() {
         navigator.clipboard.writeText(window.location.href)
-            .then(() => showToast('🔗 Link copiado!'))
+            .then(() => showToast('ðŸ”— Link copiado!'))
             .catch(() => showToast('Erro ao copiar', 'danger'));
     };
 
-    // ═══ ANIMAÇÃO DE CONTADORES ═══
+    // â•â•â• ANIMAÃ‡ÃƒO DE CONTADORES â•â•â•
     function animateCounter(el) {
         const target = parseInt(el.dataset.target, 10) || 0;
         const duration = 1000;
@@ -496,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.querySelectorAll('.kpi-value-counter').forEach(el => observer.observe(el));
 
-    // ═══ CONFIGS DE GRÁFICO ═══
+    // â•â•â• CONFIGS DE GRÃFICO â•â•â•
     const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
     const fontColor = isDark ? 'rgba(255,255,255,0.7)' : '#858796';
     const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
@@ -520,7 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>`;
     }
 
-    // ═══ Pendências (barras) ═══
+    // â•â•â• PendÃªncias (barras) â•â•â•
     const pendenciasCtx = document.getElementById('pendenciasChart');
     if (pendenciasCtx && pendenciasLabels.length > 0) {
         new Chart(pendenciasCtx, {
@@ -528,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
             data: {
                 labels: pendenciasLabels,
                 datasets: [{
-                    label: 'Pendências',
+                    label: 'PendÃªncias',
                     data: pendenciasData,
                     backgroundColor: 'rgba(246,194,62,0.25)',
                     borderColor: '#f6c23e',
@@ -549,10 +549,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     } else if (pendenciasCtx) {
-        emptyChart(pendenciasCtx, 'Nenhuma pendência 🎉');
+        emptyChart(pendenciasCtx, 'Nenhuma pendÃªncia ðŸŽ‰');
     }
 
-    // ═══ Qualidade (donut) ═══
+    // â•â•â• Qualidade (donut) â•â•â•
     const qualidadeCtx = document.getElementById('qualidadeChart');
     if (qualidadeCtx && qualidadeData.some(v => v > 0)) {
         new Chart(qualidadeCtx, {
@@ -585,10 +585,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     } else if (qualidadeCtx) {
-        emptyChart(qualidadeCtx, 'Nenhuma ata concluída ainda');
+        emptyChart(qualidadeCtx, 'Nenhuma ata concluÃ­da ainda');
     }
 
-    // ═══ 🆕 Distribuição por Status (donut) ═══
+    // â•â•â• ðŸ†• DistribuiÃ§Ã£o por Status (donut) â•â•â•
     const statusDistCtx = document.getElementById('statusDistChart');
     if (statusDistCtx && statusDistData.some(v => v > 0)) {
         new Chart(statusDistCtx, {
@@ -624,7 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
         emptyChart(statusDistCtx);
     }
 
-    // ═══ 🆕 Evolução (linha) ═══
+    // â•â•â• ðŸ†• EvoluÃ§Ã£o (linha) â•â•â•
     const evolucaoCtx = document.getElementById('evolucaoChart');
     if (evolucaoCtx && evolucaoLabels.length > 0) {
         new Chart(evolucaoCtx, {
@@ -657,10 +657,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     } else if (evolucaoCtx) {
-        emptyChart(evolucaoCtx, 'Sem dados nos últimos 6 meses');
+        emptyChart(evolucaoCtx, 'Sem dados nos Ãºltimos 6 meses');
     }
 
-    // ═══ EXPORTAÇÃO ═══
+    // â•â•â• EXPORTAÃ‡ÃƒO â•â•â•
     const btnPdf   = document.getElementById('btn-export-pdf');
     const btnExcel = document.getElementById('btn-export-excel');
 
@@ -673,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const df = document.getElementById('data_fim_filtro')?.value;
 
             if (di && !df || !di && df) {
-                showToast('⚠️ Preencha ambas as datas ou deixe vazias', 'warning');
+                showToast('âš ï¸ Preencha ambas as datas ou deixe vazias', 'warning');
                 return;
             }
 
@@ -689,7 +689,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             window.location.href = `${baseUrl}?${params.toString()}`;
 
-            // Restaura após 3s
+            // Restaura apÃ³s 3s
             setTimeout(() => {
                 btn.innerHTML = original;
                 btn.disabled = false;
@@ -700,7 +700,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btnExcel?.addEventListener('click', (e) => handleExport(baseUrlExcel, e.currentTarget));
     }
 
-    // ═══ ATALHOS ═══
+    // â•â•â• ATALHOS â•â•â•
     document.addEventListener('keydown', (e) => {
         const tag = document.activeElement.tagName;
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
@@ -715,10 +715,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Dica de atalhos (1ª visita)
+    // Dica de atalhos (1Âª visita)
     if (!localStorage.getItem('dashShortcutsHint')) {
         setTimeout(() => {
-            showToast('💡 Atalhos: K = Kanban · L = Lista', 'info');
+            showToast('ðŸ’¡ Atalhos: K = Kanban Â· L = Lista', 'info');
             localStorage.setItem('dashShortcutsHint', '1');
         }, 1500);
     }

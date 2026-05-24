@@ -1,8 +1,8 @@
-
+﻿
 <!-- templates/tarefas/emails/email_tarefa_comentario.html -->
 {% extends 'tarefas/emails/_email_base.html' %}
 
-{% block email_title %}Novo Comentário{% endblock %}
+{% block email_title %}Novo ComentÃ¡rio{% endblock %}
 
 {% block header_color %}#8b5cf6{% endblock %}
 
@@ -10,28 +10,28 @@
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 12px auto;">
     <tr>
         <td style="width:48px; height:48px; background:rgba(255,255,255,0.2); border-radius:50%; text-align:center; line-height:48px;">
-            <span style="font-size:22px;">💬</span>
+            <span style="font-size:22px;">ðŸ’¬</span>
         </td>
     </tr>
 </table>
 {% endblock %}
 
-{% block header_title %}Novo Comentário{% endblock %}
+{% block header_title %}Novo ComentÃ¡rio{% endblock %}
 
 {% block header_subtitle %}
 <p style="margin:8px 0 0; font-size:13px; color:rgba(255,255,255,0.85);">
-    Um novo comentário foi adicionado a uma tarefa
+    Um novo comentÃ¡rio foi adicionado a uma tarefa
 </p>
 {% endblock %}
 
 {% block email_body %}
 <!-- Greeting -->
 <p style="margin:0 0 20px; font-size:15px; color:#1a1a2e; line-height:1.5;">
-    Olá,
+    OlÃ¡,
 </p>
 
 <p style="margin:0 0 24px; font-size:14px; color:#3a3f55; line-height:1.6;">
-    <strong>{{ autor.get_full_name|default:autor.username }}</strong> adicionou um comentário na tarefa abaixo.
+    <strong>{{ autor.get_full_name|default:autor.username }}</strong> adicionou um comentÃ¡rio na tarefa abaixo.
 </p>
 
 <!-- Comment Box -->
@@ -39,7 +39,7 @@
     <tr>
         <td style="background:#f5f3ff; border:1px solid #e9e5ff; border-left:4px solid #8b5cf6; border-radius:8px; padding:16px 20px;">
             <p style="margin:0 0 8px; font-size:11px; font-weight:700; color:#6d28d9; text-transform:uppercase; letter-spacing:0.04em;">
-                💬 Comentário de {{ autor.get_full_name|default:autor.username }}
+                ðŸ’¬ ComentÃ¡rio de {{ autor.get_full_name|default:autor.username }}
             </p>
             <p style="margin:0; font-size:14px; color:#3a3f55; line-height:1.6; white-space:pre-line;">{{ texto_comentario|truncatewords:80 }}</p>
         </td>
@@ -64,10 +64,10 @@
             </p>
         </td>
         <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
-            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Responsável</p>
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">ResponsÃ¡vel</p>
             <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
                 {% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}
-                {% else %}Não atribuído{% endif %}
+                {% else %}NÃ£o atribuÃ­do{% endif %}
             </p>
         </td>
     </tr>
@@ -76,7 +76,7 @@
         <td colspan="2" style="padding:12px 20px;">
             <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Prazo</p>
             <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
-                📅 {{ tarefa.prazo|date:"d/m/Y H:i" }}
+                ðŸ“… {{ tarefa.prazo|date:"d/m/Y H:i" }}
             </p>
         </td>
     </tr>
@@ -90,7 +90,7 @@
         <td style="background-color:#8b5cf6; border-radius:8px;">
             <a href="{{ tarefa_url }}"
                style="display:inline-block; padding:14px 32px; font-size:14px; font-weight:700; color:#ffffff; text-decoration:none; letter-spacing:0.02em;">
-                Ver Comentário →
+                Ver ComentÃ¡rio â†’
             </a>
         </td>
     </tr>

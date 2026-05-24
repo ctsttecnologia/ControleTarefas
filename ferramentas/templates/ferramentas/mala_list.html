@@ -1,4 +1,4 @@
-{# ferramentas/mala_list.html #}
+﻿{# ferramentas/mala_list.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
 
 {% block ferramentas_page_title %}Malas de Ferramentas{% endblock %}
@@ -25,7 +25,7 @@
         <form method="get" class="row g-2 align-items-center">
             <div class="col-lg-5 col-md-8">
                 <input type="text" name="q" class="form-control"
-                       placeholder="Buscar por nome ou código..."
+                       placeholder="Buscar por nome ou cÃ³digo..."
                        value="{{ query|default:'' }}">
             </div>
             <div class="col-auto">
@@ -49,11 +49,11 @@
             <thead class="table-light">
                 <tr>
                     <th class="ps-3">Nome da Mala</th>
-                    <th>Código</th>
+                    <th>CÃ³digo</th>
                     <th class="text-center">Status</th>
                     <th class="text-center">Itens</th>
-                    <th>Localização</th>
-                    <th class="text-center">Ações</th>
+                    <th>LocalizaÃ§Ã£o</th>
+                    <th class="text-center">AÃ§Ãµes</th>
                 </tr>
             </thead>
             <tbody>
@@ -65,7 +65,7 @@
                     <td><code class="small">{{ mala.codigo_identificacao }}</code></td>
                     <td class="text-center">
                         {% if mala.status == 'disponivel' %}
-                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Disponível</span>
+                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">DisponÃ­vel</span>
                         {% else %}
                             <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Em Uso</span>
                         {% endif %}

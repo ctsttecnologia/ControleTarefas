@@ -1,15 +1,15 @@
-{% extends "suprimentos/suprimentos_base.html" %}
+﻿{% extends "suprimentos/suprimentos_base.html" %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block suprimentos_content %}
 <style>
-    /* ═══════════════════════════════════════════════════════════════
-       Tabela com scroll horizontal — ADAPTATIVA (claro/escuro)
-       Usa variáveis globais de --surface-* e --bs-border-color
-    ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       Tabela com scroll horizontal â€” ADAPTATIVA (claro/escuro)
+       Usa variÃ¡veis globais de --surface-* e --bs-border-color
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-    /* ── Wrapper da tabela ── */
+    /* â”€â”€ Wrapper da tabela â”€â”€ */
     .table-scroll-wrapper {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
@@ -24,7 +24,7 @@
         color: var(--bs-body-color);
     }
 
-    /* ── Coluna fixa à DIREITA (Ações) ── */
+    /* â”€â”€ Coluna fixa Ã  DIREITA (AÃ§Ãµes) â”€â”€ */
     .table-scroll-wrapper th:last-child,
     .table-scroll-wrapper td:last-child {
         position: sticky;
@@ -39,7 +39,7 @@
         z-index: 3;
     }
 
-    /* ── Coluna fixa à ESQUERDA (Código) ── */
+    /* â”€â”€ Coluna fixa Ã  ESQUERDA (CÃ³digo) â”€â”€ */
     .table-scroll-wrapper th:first-child,
     .table-scroll-wrapper td:first-child {
         position: sticky;
@@ -54,13 +54,13 @@
         z-index: 3;
     }
 
-    /* ── Zebra striping adaptativo nas colunas fixas ── */
+    /* â”€â”€ Zebra striping adaptativo nas colunas fixas â”€â”€ */
     .table-scroll-wrapper tbody tr:nth-child(even) td:first-child,
     .table-scroll-wrapper tbody tr:nth-child(even) td:last-child {
         background-color: var(--surface-muted);
     }
 
-    /* ── Hover adaptativo (linha inteira + colunas fixas) ── */
+    /* â”€â”€ Hover adaptativo (linha inteira + colunas fixas) â”€â”€ */
     .table-scroll-wrapper tbody tr:hover td {
         background-color: var(--surface-hover);
     }
@@ -70,7 +70,7 @@
         background-color: var(--surface-hover);
     }
 
-    /* ── Scrollbar personalizada — TEMA CLARO ── */
+    /* â”€â”€ Scrollbar personalizada â€” TEMA CLARO â”€â”€ */
     .table-scroll-wrapper::-webkit-scrollbar {
         height: 8px;
     }
@@ -89,7 +89,7 @@
         background-color: rgba(var(--bs-primary-rgb), 0.6);
     }
 
-    /* ── Cabeçalho fixo no topo ao rolar ── */
+    /* â”€â”€ CabeÃ§alho fixo no topo ao rolar â”€â”€ */
     .table-scroll-wrapper thead th {
         position: sticky;
         top: 0;
@@ -102,7 +102,7 @@
         border-bottom: 2px solid var(--bs-border-color);
     }
 
-    /* ── Células do corpo ── */
+    /* â”€â”€ CÃ©lulas do corpo â”€â”€ */
     .table-scroll-wrapper tbody td {
         white-space: nowrap;
         font-size: 0.85rem;
@@ -111,7 +111,7 @@
         border-color: var(--bs-border-color);
     }
 
-    /* ── Indicador de scroll ── */
+    /* â”€â”€ Indicador de scroll â”€â”€ */
     .scroll-hint {
         display: none;
         text-align: center;
@@ -130,9 +130,9 @@
         }
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       Ajustes específicos para TEMA ESCURO
-    ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       Ajustes especÃ­ficos para TEMA ESCURO
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     [data-bs-theme="dark"] .table-scroll-wrapper {
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
     }
@@ -147,7 +147,7 @@
         box-shadow: 4px 0 8px rgba(0, 0, 0, 0.3);
     }
 
-    /* Badge "N/C" no dark — melhora contraste */
+    /* Badge "N/C" no dark â€” melhora contraste */
     [data-bs-theme="dark"] .badge.bg-light.text-warning {
         background-color: var(--surface-subtle) !important;
         color: #ffda6a !important;
@@ -171,7 +171,7 @@
         </div>
     </div>
 
-    {# ── Cards de Resumo do Catálogo ── #}
+    {# â”€â”€ Cards de Resumo do CatÃ¡logo â”€â”€ #}
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-6">
             <div class="card border-0 shadow-sm bg-adaptive">
@@ -184,7 +184,7 @@
         <div class="col-md-3 col-6">
             <div class="card border-0 shadow-sm bg-adaptive">
                 <div class="card-body text-center py-3">
-                    <small class="text-muted d-block"><i class="bi bi-calculator"></i> Com Grupo Tributário</small>
+                    <small class="text-muted d-block"><i class="bi bi-calculator"></i> Com Grupo TributÃ¡rio</small>
                     <strong class="fs-4 text-success">{{ com_grupo_tributario|default:"0" }}</strong>
                 </div>
             </div>
@@ -192,7 +192,7 @@
         <div class="col-md-3 col-6">
             <div class="card border-0 shadow-sm bg-adaptive">
                 <div class="card-body text-center py-3">
-                    <small class="text-muted d-block"><i class="bi bi-exclamation-triangle"></i> Sem Grupo Tributário</small>
+                    <small class="text-muted d-block"><i class="bi bi-exclamation-triangle"></i> Sem Grupo TributÃ¡rio</small>
                     <strong class="fs-4 text-warning">{{ sem_grupo_tributario|default:"0" }}</strong>
                 </div>
             </div>
@@ -209,16 +209,16 @@
 
     <div class="card shadow-sm">
         <div class="card-body">
-            {# ── Filtros ── #}
+            {# â”€â”€ Filtros â”€â”€ #}
             <form method="get" class="row g-2 mb-4">
                 <div class="col-md-3">
                     <input type="text" name="q" class="form-control"
-                           placeholder="Buscar descrição, marca ou código..."
+                           placeholder="Buscar descriÃ§Ã£o, marca ou cÃ³digo..."
                            value="{{ filtro_q }}">
                 </div>
                 <div class="col-md-2">
                     <select name="classificacao" class="form-select">
-                        <option value="">Todas Classificações</option>
+                        <option value="">Todas ClassificaÃ§Ãµes</option>
                         {% for val, label in classificacoes %}
                             <option value="{{ val }}" {% if filtro_classificacao == val %}selected{% endif %}>
                                 {{ label }}
@@ -238,12 +238,12 @@
                 </div>
                 <div class="col-md-2">
                     <select name="sem_grupo" class="form-select">
-                        <option value="">Tributação: Todos</option>
+                        <option value="">TributaÃ§Ã£o: Todos</option>
                         <option value="1" {% if filtro_sem_grupo == '1' %}selected{% endif %}>
-                            ⚠️ Sem Grupo Tributário
+                            âš ï¸ Sem Grupo TributÃ¡rio
                         </option>
                         <option value="0" {% if filtro_sem_grupo == '0' %}selected{% endif %}>
-                            ✅ Com Grupo Tributário
+                            âœ… Com Grupo TributÃ¡rio
                         </option>
                     </select>
                 </div>
@@ -264,14 +264,14 @@
                 {% endif %}
             </form>
 
-            {# ── Tabela com scroll horizontal ── #}
+            {# â”€â”€ Tabela com scroll horizontal â”€â”€ #}
             <div class="table-scroll-wrapper" id="tableWrapper">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Código</th>
-                            <th>Descrição</th>
-                            <th>Classificação</th>
+                            <th>CÃ³digo</th>
+                            <th>DescriÃ§Ã£o</th>
+                            <th>ClassificaÃ§Ã£o</th>
                             <th>Tipo</th>
                             <th>Marca</th>
                             <th>Unidade</th>
@@ -282,10 +282,10 @@
                             <th class="text-end">IPI</th>
                             <th class="text-end">PIS</th>
                             <th class="text-end">COFINS</th>
-                            <th class="text-end text-success">Créditos</th>
+                            <th class="text-end text-success">CrÃ©ditos</th>
                             <th class="text-end text-primary">Custo Real Unit.</th>
                             <th class="text-center">Status</th>
-                            <th class="text-end">Ações</th>
+                            <th class="text-end">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -321,11 +321,11 @@
                                         {{ m.ncm.codigo }}
                                     </code>
                                 {% else %}
-                                    <span class="text-muted">—</span>
+                                    <span class="text-muted">â€”</span>
                                 {% endif %}
                             </td>
 
-                            {# Grupo Tributário #}
+                            {# Grupo TributÃ¡rio #}
                             <td class="text-center">
                                 {% if m.grupo_tributario %}
                                     <span class="badge bg-primary bg-opacity-75"
@@ -335,13 +335,13 @@
                                     </span>
                                 {% else %}
                                     <span class="badge bg-light text-warning border"
-                                          title="Sem grupo tributário">
+                                          title="Sem grupo tributÃ¡rio">
                                         <i class="bi bi-exclamation-triangle"></i> N/C
                                     </span>
                                 {% endif %}
                             </td>
 
-                            {# ═══ Colunas Tributárias ═══ #}
+                            {# â•â•â• Colunas TributÃ¡rias â•â•â• #}
                             {% if calc and not calc.sem_grupo %}
                                 {# ICMS #}
                                 <td class="text-end">
@@ -373,20 +373,20 @@
                                         <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
                                     {% endif %}
                                 </td>
-                                {# Créditos #}
+                                {# CrÃ©ditos #}
                                 <td class="text-end">
                                     <strong class="text-success">R$ {{ calc.total_creditos|floatformat:2 }}</strong>
                                 </td>
-                                {# Custo Real Unitário #}
+                                {# Custo Real UnitÃ¡rio #}
                                 <td class="text-end">
                                     <strong class="text-primary">R$ {{ calc.custo_unitario|floatformat:2 }}</strong>
                                     {% if calc.percentual_economia > 0 %}
-                                        <br><small class="text-success">↓ {{ calc.percentual_economia }}%</small>
+                                        <br><small class="text-success">â†“ {{ calc.percentual_economia }}%</small>
                                     {% endif %}
                                 </td>
                             {% else %}
                                 <td class="text-center text-muted" colspan="6">
-                                    <small><i class="bi bi-dash-lg"></i> Tributação não configurada</small>
+                                    <small><i class="bi bi-dash-lg"></i> TributaÃ§Ã£o nÃ£o configurada</small>
                                 </td>
                             {% endif %}
 
@@ -417,7 +417,7 @@
                     </tbody>
                 </table>
             </div>
-            {# ── Indicador de scroll ── #}
+            {# â”€â”€ Indicador de scroll â”€â”€ #}
             <div class="scroll-hint" id="scrollHint">
                 <i class="bi bi-arrow-left-right me-1"></i>
                 Deslize para ver todas as colunas
@@ -432,7 +432,7 @@
 
 <script>
 (function() {
-    // Esconde o hint quando o usuário já rolou
+    // Esconde o hint quando o usuÃ¡rio jÃ¡ rolou
     const wrapper = document.getElementById('tableWrapper');
     const hint = document.getElementById('scrollHint');
     if (wrapper && hint) {

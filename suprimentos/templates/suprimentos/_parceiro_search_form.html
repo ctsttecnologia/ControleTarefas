@@ -1,8 +1,8 @@
-
+﻿
 
 {% extends "suprimentos/suprimentos_base.html" %}
 {% load static %}
-{% block title %}Confirmar Deleção{% endblock %}
+{% block title %}Confirmar DeleÃ§Ã£o{% endblock %}
 
 {% block suprimentos_content %}
 <div class="container mt-5">
@@ -10,11 +10,11 @@
         <div class="col-md-8">
             <div class="card border-danger shadow">
                 <div class="card-header bg-danger text-white">
-                    <h4 class="mb-0">Atenção! Confirmação Necessária</h4>
+                    <h4 class="mb-0">AtenÃ§Ã£o! ConfirmaÃ§Ã£o NecessÃ¡ria</h4>
                 </div>
                 <div class="card-body">
-                    <p class="lead">Você tem certeza que deseja deletar o parceiro <strong>"{{ object.nome_fantasia }}"</strong>?</p>
-                    <p>Esta ação não poderá ser desfeita. Todos os dados associados a este parceiro que não permitem a exclusão (como equipamentos registrados) podem causar um erro.</p>
+                    <p class="lead">VocÃª tem certeza que deseja deletar o parceiro <strong>"{{ object.nome_fantasia }}"</strong>?</p>
+                    <p>Esta aÃ§Ã£o nÃ£o poderÃ¡ ser desfeita. Todos os dados associados a este parceiro que nÃ£o permitem a exclusÃ£o (como equipamentos registrados) podem causar um erro.</p>
                     <hr>
                     <form method="post">
                         {% csrf_token %}

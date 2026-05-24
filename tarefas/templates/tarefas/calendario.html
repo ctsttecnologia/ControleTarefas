@@ -1,18 +1,18 @@
-
+﻿
 <!-- templates/tarefas/calendario.html -->
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Calendário de Tarefas{% endblock %}
+{% block title %}CalendÃ¡rio de Tarefas{% endblock %}
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet">
 <style>
 /* =============================================================================
-   CALENDÁRIO DE TAREFAS — Tema Claro / Escuro
+   CALENDÃRIO DE TAREFAS â€” Tema Claro / Escuro
    ============================================================================= */
 
-/* ── Variáveis Tema Claro ── */
+/* â”€â”€ VariÃ¡veis Tema Claro â”€â”€ */
 :root,
 [data-bs-theme="light"] {
     --cal-bg: #ffffff;
@@ -41,7 +41,7 @@
     --cal-grid-border: #edf0f5;
 }
 
-/* ── Variáveis Tema Escuro ── */
+/* â”€â”€ VariÃ¡veis Tema Escuro â”€â”€ */
 [data-bs-theme="dark"] {
     --cal-bg: #1e1e2e;
     --cal-bg-subtle: #252536;
@@ -68,7 +68,7 @@
     --cal-grid-border: #2e2e44;
 }
 
-/* ── Wrapper ── */
+/* â”€â”€ Wrapper â”€â”€ */
 .calendario-wrapper {
     padding: 1rem;
     max-width: 100%;
@@ -80,7 +80,7 @@
     }
 }
 
-/* ── Header ── */
+/* â”€â”€ Header â”€â”€ */
 .calendario-header {
     display: flex;
     flex-wrap: wrap;
@@ -109,7 +109,7 @@
     flex-shrink: 0;
 }
 
-/* ── Legenda ── */
+/* â”€â”€ Legenda â”€â”€ */
 .calendario-legenda {
     display: flex;
     flex-wrap: wrap;
@@ -143,7 +143,7 @@
 .legenda-dot--proximo   { background: #f59e0b; }
 .legenda-dot--atrasada  { background: #ef4444; }
 
-/* ── Card Container ── */
+/* â”€â”€ Card Container â”€â”€ */
 .calendario-card {
     background: var(--cal-bg);
     border: 1px solid var(--cal-border);
@@ -163,10 +163,10 @@
 }
 
 /* =============================================================================
-   FULLCALENDAR — Overrides
+   FULLCALENDAR â€” Overrides
    ============================================================================= */
 
-/* ── Toolbar / Header ── */
+/* â”€â”€ Toolbar / Header â”€â”€ */
 .fc .fc-toolbar {
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -197,7 +197,7 @@
     }
 }
 
-/* ── Buttons ── */
+/* â”€â”€ Buttons â”€â”€ */
 .fc .fc-button {
     background: var(--cal-toolbar-btn-bg) !important;
     border: 1px solid var(--cal-toolbar-btn-border) !important;
@@ -240,7 +240,7 @@
     opacity: 0.4 !important;
 }
 
-/* ── Table / Grid ── */
+/* â”€â”€ Table / Grid â”€â”€ */
 .fc .fc-scrollgrid {
     border: none !important;
 }
@@ -268,7 +268,7 @@
     border-color: var(--cal-grid-border) !important;
 }
 
-/* ── Day Cells ── */
+/* â”€â”€ Day Cells â”€â”€ */
 .fc .fc-daygrid-day {
     background: var(--cal-bg) !important;
     transition: background 0.15s ease;
@@ -306,7 +306,7 @@
     color: var(--cal-day-other) !important;
 }
 
-/* ── Events ── */
+/* â”€â”€ Events â”€â”€ */
 .fc .fc-event {
     border-radius: var(--cal-event-radius) !important;
     border: none !important;
@@ -334,7 +334,7 @@
     white-space: nowrap;
 }
 
-/* ── Event Status Colors ── */
+/* â”€â”€ Event Status Colors â”€â”€ */
 .fc-event-status-em-andamento {
     background-color: #3b82f6 !important;
     color: #fff !important;
@@ -355,7 +355,7 @@
     color: #fff !important;
 }
 
-/* ── Popover (More Events) ── */
+/* â”€â”€ Popover (More Events) â”€â”€ */
 .fc .fc-popover {
     background: var(--cal-popover-bg) !important;
     border: 1px solid var(--cal-popover-border) !important;
@@ -384,7 +384,7 @@
     text-decoration: underline !important;
 }
 
-/* ── List View ── */
+/* â”€â”€ List View â”€â”€ */
 .fc .fc-list {
     border: none !important;
 }
@@ -410,7 +410,7 @@
     color: var(--cal-text-muted) !important;
 }
 
-/* ── Week View Time Grid ── */
+/* â”€â”€ Week View Time Grid â”€â”€ */
 .fc .fc-timegrid-slot {
     border-color: var(--cal-grid-border) !important;
 }
@@ -429,7 +429,7 @@
     border-color: #ef4444 !important;
 }
 
-/* ── Responsivo ── */
+/* â”€â”€ Responsivo â”€â”€ */
 @media (max-width: 767.98px) {
     .calendario-wrapper {
         padding: 0.75rem;
@@ -460,7 +460,7 @@
     }
 }
 
-/* ── Print ── */
+/* â”€â”€ Print â”€â”€ */
 @media print {
     .calendario-actions,
     .calendario-legenda {
@@ -472,7 +472,7 @@
     }
 }
 
-/* ── Tooltip override para dark mode ── */
+/* â”€â”€ Tooltip override para dark mode â”€â”€ */
 [data-bs-theme="dark"] .tooltip-inner {
     background: #2a2a40;
     border: 1px solid #3a3a52;
@@ -492,13 +492,13 @@
     <div class="calendario-header">
         <div>
             <h1 class="calendario-title">
-                <i class="bi bi-calendar3 me-2"></i>Calendário de Tarefas
+                <i class="bi bi-calendar3 me-2"></i>CalendÃ¡rio de Tarefas
             </h1>
             <p class="calendario-subtitle">Visualize suas tarefas organizadas por data</p>
         </div>
         <div class="calendario-actions">
-            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
-                <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="RelatÃ³rios">
+                <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">RelatÃ³rios</span>
             </a>
             <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Lista">
                 <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline">Lista</span>
@@ -521,14 +521,14 @@
             <span class="legenda-dot legenda-dot--recente"></span> Recente
         </span>
         <span class="legenda-item">
-            <span class="legenda-dot legenda-dot--proximo"></span> Próximo do prazo
+            <span class="legenda-dot legenda-dot--proximo"></span> PrÃ³ximo do prazo
         </span>
         <span class="legenda-item">
             <span class="legenda-dot legenda-dot--atrasada"></span> Atrasada
         </span>
     </div>
 
-    <!-- Calendário -->
+    <!-- CalendÃ¡rio -->
     <div class="calendario-card">
         <div class="calendario-card-body">
             <div id="calendar"></div>
@@ -551,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Erro ao parsear eventos:', e);
     }
 
-    // Detectar se é mobile
+    // Detectar se Ã© mobile
     const isMobile = window.innerWidth < 768;
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -567,7 +567,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         buttonText: {
             today: 'Hoje',
-            month: 'Mês',
+            month: 'MÃªs',
             week: 'Semana',
             list: 'Lista'
         },
@@ -582,7 +582,7 @@ document.addEventListener('DOMContentLoaded', function() {
         weekNumbers: false,
         nowIndicator: true,
 
-        // Click no evento → detalhe
+        // Click no evento â†’ detalhe
         eventClick: function(info) {
             info.jsEvent.preventDefault();
             const url = info.event.url || info.event.extendedProps.url;

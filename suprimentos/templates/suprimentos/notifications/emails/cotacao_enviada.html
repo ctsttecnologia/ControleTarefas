@@ -1,16 +1,16 @@
-
+﻿
 {% extends 'notifications/emails/base_email.html' %}
 
 {% block content %}
-<h2 style="color: #0d6efd;">📊 Cotação Aguardando Validação</h2>
+<h2 style="color: #0d6efd;">ðŸ“Š CotaÃ§Ã£o Aguardando ValidaÃ§Ã£o</h2>
 
-<p>Olá {{ gerente.first_name|default:gerente.username }},</p>
+<p>OlÃ¡ {{ gerente.first_name|default:gerente.username }},</p>
 
-<p><strong>{{ comprador }}</strong> registrou a cotação da solicitação <strong>{{ solicitacao.numero }}</strong>.</p>
+<p><strong>{{ comprador }}</strong> registrou a cotaÃ§Ã£o da solicitaÃ§Ã£o <strong>{{ solicitacao.numero }}</strong>.</p>
 
 <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
     <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Nº Cotação</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">NÂº CotaÃ§Ã£o</td>
         <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ solicitacao.numero_cotacao }}</td>
     </tr>
     <tr>
@@ -29,7 +29,7 @@
 
 <div style="text-align: center; margin: 30px 0;">
     <a href="{{ url }}" style="background: #198754; color: #fff; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-        ✅ Validar Cotação
+        âœ… Validar CotaÃ§Ã£o
     </a>
 </div>
 {% endblock %}

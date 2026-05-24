@@ -1,8 +1,8 @@
-{# Local de Prestação de Serviços — Formulário #}
+﻿{# Local de PrestaÃ§Ã£o de ServiÃ§os â€” FormulÃ¡rio #}
 {% extends "pgr_gestao/pgr_base.html" %}
 {% load widget_tweaks %}
 
-{% block title %}{{ title|default:"Local de Prestação" }}{% endblock %}
+{% block title %}{{ title|default:"Local de PrestaÃ§Ã£o" }}{% endblock %}
 
 {% block breadcrumb_items %}
 {% if form.instance.empresa %}
@@ -24,7 +24,7 @@
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div>
             <h1><i class="bi bi-geo-alt-fill"></i> {{ title }}</h1>
-            <p class="mb-0">Cadastro de local de prestação de serviços</p>
+            <p class="mb-0">Cadastro de local de prestaÃ§Ã£o de serviÃ§os</p>
         </div>
         <a href="{% if object %}{{ object.empresa.get_absolute_url }}{% else %}{% url 'pgr_gestao:empresa_list' %}{% endif %}"
            class="btn btn-light">
@@ -48,9 +48,9 @@
             </div>
             {% endif %}
 
-            <!-- Identificação -->
+            <!-- IdentificaÃ§Ã£o -->
             <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                <i class="bi bi-building"></i> Identificação
+                <i class="bi bi-building"></i> IdentificaÃ§Ã£o
             </h6>
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
@@ -64,9 +64,9 @@
                 </div>
                 <div class="col-md-6">
                     <label for="{{ form.razao_social.id_for_label }}" class="form-label fw-semibold required-field">
-                        Razão Social do Local
+                        RazÃ£o Social do Local
                     </label>
-                    {% render_field form.razao_social class="form-control" placeholder="Ex: Filial São Paulo Ltda." %}
+                    {% render_field form.razao_social class="form-control" placeholder="Ex: Filial SÃ£o Paulo Ltda." %}
                     {% if form.razao_social.errors %}
                     <div class="text-danger small mt-1">{{ form.razao_social.errors }}</div>
                     {% endif %}
@@ -88,18 +88,18 @@
                     {% if form.cep.errors %}
                     <div class="text-danger small mt-1">{{ form.cep.errors }}</div>
                     {% endif %}
-                    <small class="text-muted">Preenchimento automático ao digitar</small>
+                    <small class="text-muted">Preenchimento automÃ¡tico ao digitar</small>
                 </div>
             </div>
 
-            <!-- Endereço -->
+            <!-- EndereÃ§o -->
             <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                <i class="bi bi-geo-alt"></i> Endereço
+                <i class="bi bi-geo-alt"></i> EndereÃ§o
             </h6>
             <div class="row g-3 mb-4">
                 <div class="col-md-9">
                     <label for="{{ form.endereco.id_for_label }}" class="form-label fw-semibold">
-                        Endereço (Logradouro)
+                        EndereÃ§o (Logradouro)
                     </label>
                     {% render_field form.endereco class="form-control" placeholder="Rua, Avenida, etc." %}
                     {% if form.endereco.errors %}
@@ -108,9 +108,9 @@
                 </div>
                 <div class="col-md-3">
                     <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">
-                        Número
+                        NÃºmero
                     </label>
-                    {% render_field form.numero class="form-control" placeholder="Nº" %}
+                    {% render_field form.numero class="form-control" placeholder="NÂº" %}
                     {% if form.numero.errors %}
                     <div class="text-danger small mt-1">{{ form.numero.errors }}</div>
                     {% endif %}
@@ -144,13 +144,13 @@
                 </div>
             </div>
 
-            <!-- Descrição -->
+            <!-- DescriÃ§Ã£o -->
             <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                <i class="bi bi-card-text"></i> Informações Adicionais
+                <i class="bi bi-card-text"></i> InformaÃ§Ãµes Adicionais
             </h6>
             <div class="mb-4">
-                <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">Descrição</label>
-                {% render_field form.descricao class="form-control" rows="3" placeholder="Atividades realizadas neste local, observações relevantes..." %}
+                <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">DescriÃ§Ã£o</label>
+                {% render_field form.descricao class="form-control" rows="3" placeholder="Atividades realizadas neste local, observaÃ§Ãµes relevantes..." %}
                 {% if form.descricao.errors %}
                 <div class="text-danger small mt-1">{{ form.descricao.errors }}</div>
                 {% endif %}
@@ -164,7 +164,7 @@
                 </a>
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-save"></i>
-                    {% if form.instance.pk %}Salvar Alterações{% else %}Cadastrar Local{% endif %}
+                    {% if form.instance.pk %}Salvar AlteraÃ§Ãµes{% else %}Cadastrar Local{% endif %}
                 </button>
             </div>
         </form>
@@ -174,7 +174,7 @@
 
 {% block extra_pgr_js %}
 <script>
-// 🔍 Auto-preenchimento via ViaCEP
+// ðŸ” Auto-preenchimento via ViaCEP
 document.addEventListener('DOMContentLoaded', function() {
     const cepInput = document.getElementById('cepInput');
     if (!cepInput) return;
@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 set('id_cidade', data.localidade);
                 set('id_estado', data.uf);
             })
-            .catch(err => console.warn('ViaCEP indisponível:', err));
+            .catch(err => console.warn('ViaCEP indisponÃ­vel:', err));
     });
 });
 </script>

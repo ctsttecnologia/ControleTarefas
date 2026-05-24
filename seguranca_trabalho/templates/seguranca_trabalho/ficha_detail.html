@@ -8,32 +8,13 @@
 {% block extra_css %}
 {{ block.super }}
 <style>
-    .fd-employee-info {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .fd-employee-row {
-        display: flex;
-        flex-direction: column;
-        gap: 0.2rem;
-    }
-
+    .fd-employee-info { display: flex; flex-direction: column; gap: 0.75rem; }
+    .fd-employee-row { display: flex; flex-direction: column; gap: 0.2rem; }
     .fd-employee-row small {
-        font-size: 0.72rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: var(--sst-text-muted);
+        font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+        letter-spacing: 0.04em; color: var(--sst-text-muted);
     }
-
-    .fd-employee-row p {
-        margin: 0;
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: var(--sst-text);
-    }
+    .fd-employee-row p { margin: 0; font-weight: 600; font-size: 0.9rem; color: var(--sst-text); }
 </style>
 {% endblock %}
 
@@ -44,17 +25,16 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="d-flex align-items-center">
             {% if ficha.funcionario.foto_3x4 %}
-            {% secure_url ficha.funcionario "foto_3x4" as foto_url %}
-            <img src="{{ foto_url }}" alt=""
-                 class="sst-avatar sst-avatar--lg me-3"
-                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div class="sst-avatar-placeholder sst-avatar-placeholder--lg me-3" style="display:none;">
-                <i class="bi bi-person"></i>
-            </div>
+                {% secure_url ficha.funcionario "foto_3x4" as foto_url %}
+                <img src="{{ foto_url }}" alt="" class="sst-avatar sst-avatar--lg me-3"
+                     onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="sst-avatar-placeholder sst-avatar-placeholder--lg me-3" style="display:none;">
+                    <i class="bi bi-person"></i>
+                </div>
             {% else %}
-            <div class="sst-avatar-placeholder sst-avatar-placeholder--lg me-3 d-flex">
-                <i class="bi bi-person"></i>
-            </div>
+                <div class="sst-avatar-placeholder sst-avatar-placeholder--lg me-3 d-flex">
+                    <i class="bi bi-person"></i>
+                </div>
             {% endif %}
             <div>
                 <h4>{{ ficha.funcionario.nome_completo }}</h4>
@@ -64,24 +44,31 @@
                 </span>
             </div>
         </div>
+
         <div class="d-flex gap-2 flex-wrap">
             <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="sst-btn-header">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
-            {% if permission.seguranca_trabalho.view_fichaepi %}
-            <a href="{% url 'seguranca_trabalho:ficha_pdf_template' ficha.pk %}" class="sst-btn-header sst-btn-header--primary">
-                <i class="bi bi-file-pdf"></i> PDF
-            </a>
-            {% endif %}
-            {% if permission.seguranca_trabalho.view_fichaepi %}
-                {% if not ficha.assinatura_funcionario %}
-                <a href="{% url 'seguranca_trabalho:assinar_termo' ficha.pk %}" class="sst-btn-header sst-btn-header--warning">
-                    <i class="bi bi-pen"></i> Assinar Termo
+
+            {# 🔁 perms (não permission) #}
+            {% if perms.seguranca_trabalho.view_fichaepi %}
+                <a href="{% url 'seguranca_trabalho:ficha_pdf_template' ficha.pk %}"
+                   class="sst-btn-header sst-btn-header--primary">
+                    <i class="bi bi-file-pdf"></i> PDF
                 </a>
+            {% endif %}
+
+            {% if perms.seguranca_trabalho.change_fichaepi %}
+                {% if not ficha.assinatura_funcionario %}
+                    <a href="{% url 'seguranca_trabalho:assinar_termo' ficha.pk %}"
+                       class="sst-btn-header sst-btn-header--warning">
+                        <i class="bi bi-pen"></i> Assinar Termo
+                    </a>
                 {% else %}
-                <span class="sst-btn-header--success-badge">
-                    <i class="bi bi-check-circle"></i> Termo Assinado em {{ ficha.data_assinatura_termo|date:"d/m/Y" }}
-                </span>
+                    <span class="sst-btn-header--success-badge">
+                        <i class="bi bi-check-circle"></i>
+                        Termo Assinado em {{ ficha.data_assinatura_termo|date:"d/m/Y" }}
+                    </span>
                 {% endif %}
             {% endif %}
         </div>
@@ -99,6 +86,7 @@
                 </div>
                 <span class="sst-badge sst-badge--count">{{ entregas.count }} registros</span>
             </div>
+
             {% if entregas %}
             <div class="sst-table-wrapper">
                 <table class="sst-table">
@@ -119,39 +107,40 @@
                             <td>
                                 <strong style="color:var(--sst-text);">{{ entrega.equipamento.nome }}</strong>
                                 {% if entrega.numero_serie %}
-                                <br><small class="text-muted-custom">N/S: {{ entrega.numero_serie }}</small>
+                                    <br><small class="text-muted-custom">N/S: {{ entrega.numero_serie }}</small>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if entrega.equipamento.certificado_aprovacao %}
-                                <code>{{ entrega.equipamento.certificado_aprovacao }}</code>
+                                    <code>{{ entrega.equipamento.certificado_aprovacao }}</code>
                                 {% else %}
-                                <span class="text-muted-custom">—</span>
+                                    <span class="text-muted-custom">—</span>
                                 {% endif %}
                             </td>
                             <td class="text-center">{{ entrega.quantidade }}</td>
                             <td>{{ entrega.data_entrega|date:"d/m/Y" }}</td>
                             <td>
                                 {% if entrega.data_vencimento_uso %}
-                                {{ entrega.data_vencimento_uso|date:"d/m/Y" }}
+                                    {{ entrega.data_vencimento_uso|date:"d/m/Y" }}
                                 {% else %}
-                                <span class="text-muted-custom">—</span>
+                                    <span class="text-muted-custom">—</span>
                                 {% endif %}
                             </td>
                             <td class="text-center">
                                 {% if entrega.status == "Devolvido" %}
-                                <span class="sst-badge sst-badge--muted">Devolvido</span>
+                                    <span class="sst-badge sst-badge--muted">Devolvido</span>
                                 {% elif entrega.status == "Pendente Assinatura" %}
-                                <span class="sst-badge sst-badge--warning">Pendente</span>
+                                    <span class="sst-badge sst-badge--warning">Pendente</span>
                                 {% elif entrega.status == "Vencido" %}
-                                <span class="sst-badge sst-badge--danger">Vencido</span>
+                                    <span class="sst-badge sst-badge--danger">Vencido</span>
                                 {% else %}
-                                <span class="sst-badge sst-badge--success">Ativo</span>
+                                    <span class="sst-badge sst-badge--success">Ativo</span>
                                 {% endif %}
                             </td>
                             <td class="text-center">
                                 <div class="sst-action-group">
-                                    {% if permission.seguranca_trabalho.view_fichaepi %}
+                                    {# 🔁 Assinatura: precisa permissão de change_entregaepi #}
+                                    {% if perms.seguranca_trabalho.change_entregaepi %}
                                         {% if not entrega.data_assinatura and not entrega.data_devolucao %}
                                         <button type="button" class="sst-action-btn sst-action-btn--sign"
                                                 data-bs-toggle="modal"
@@ -163,11 +152,16 @@
                                         </button>
                                         {% endif %}
                                     {% endif %}
-                                    {% if permission.seguranca_trabalho.view_fichaepi %}
+
+                                    {# 🔁 Devolução: também change_entregaepi #}
+                                    {% if perms.seguranca_trabalho.change_entregaepi %}
                                         {% if not entrega.data_devolucao %}
-                                        <form method="post" action="{% url 'seguranca_trabalho:entrega_return' entrega.pk %}" class="d-inline">
+                                        <form method="post"
+                                              action="{% url 'seguranca_trabalho:entrega_return' entrega.pk %}"
+                                              class="d-inline">
                                             {% csrf_token %}
-                                            <button type="submit" class="sst-action-btn sst-action-btn--return" title="Registrar Devolução"
+                                            <button type="submit" class="sst-action-btn sst-action-btn--return"
+                                                    title="Registrar Devolução"
                                                     onclick="return confirm('Confirma a devolução deste EPI?')">
                                                 <i class="bi bi-box-arrow-in-left"></i>
                                             </button>
@@ -217,7 +211,7 @@
         </div>
 
         <!-- Nova Entrega -->
-        {% if permission.seguranca_trabalho.add_entregaepi %}
+        {% if perms.seguranca_trabalho.add_entregaepi %}
         <div class="sst-card">
             <div class="sst-card-header sst-card-header--success">
                 <i class="bi bi-plus-circle"></i>
@@ -233,7 +227,7 @@
                         </label>
                         {% render_field form.equipamento class+="form-select" %}
                         {% for error in form.equipamento.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
+                            <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
 
@@ -254,11 +248,9 @@
                     </div>
 
                     <div class="d-grid">
-                        {% if permission.seguranca_trabalho.add_entregaepi or user.is_superuser %}
                         <button type="submit" class="sst-btn-success" style="justify-content:center;">
                             <i class="bi bi-check-lg"></i> Registrar Entrega
                         </button>
-                        {% endif %}
                     </div>
                 </form>
             </div>
@@ -271,5 +263,6 @@
 {% include "seguranca_trabalho/partials/_modal_assinatura.html" %}
 
 {% endblock %}
+
 
 

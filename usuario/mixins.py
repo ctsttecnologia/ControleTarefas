@@ -14,7 +14,7 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.db.models import Q, QuerySet
-
+from core.mixins import RequireActiveFilialMixin
 from usuario.models import Usuario
 
 

@@ -1,10 +1,10 @@
-{# templates/logradouro/form_logradouro.html #}
+﻿{# templates/logradouro/form_logradouro.html #}
 {% extends 'logradouro/base_logradouro.html' %}
 {% load i18n %}
 {% load widget_tweaks %}
 
 {% block logradouro_title %}
-    {% if form.instance.pk %}{% trans "Editar Endereço" %}{% else %}{% trans "Novo Endereço" %}{% endif %}
+    {% if form.instance.pk %}{% trans "Editar EndereÃ§o" %}{% else %}{% trans "Novo EndereÃ§o" %}{% endif %}
 {% endblock logradouro_title %}
 
 {% block logradouro_content %}
@@ -29,12 +29,12 @@
             <div>
                 <h1>
                     {% if form.instance.pk %}
-                        <i class="bi bi-pencil-square me-2"></i>{% trans "Editar Endereço" %}
+                        <i class="bi bi-pencil-square me-2"></i>{% trans "Editar EndereÃ§o" %}
                     {% else %}
-                        <i class="bi bi-plus-circle me-2"></i>{% trans "Novo Endereço" %}
+                        <i class="bi bi-plus-circle me-2"></i>{% trans "Novo EndereÃ§o" %}
                     {% endif %}
                 </h1>
-                <p>{% trans "Preencha os dados do endereço abaixo" %}</p>
+                <p>{% trans "Preencha os dados do endereÃ§o abaixo" %}</p>
             </div>
             <a href="{% url 'logradouro:listar_logradouros' %}" class="btn-hero">
                 <i class="bi bi-arrow-left me-1"></i> {% trans "Voltar" %}
@@ -42,13 +42,13 @@
         </div>
     </div>
 
-    <!-- Formulário -->
+    <!-- FormulÃ¡rio -->
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <div class="log-card">
                 <div class="log-card-header">
                     <h5>
-                        <i class="bi bi-geo-alt me-2" style="color: var(--log-primary);"></i>{% trans "Dados do Endereço" %}
+                        <i class="bi bi-geo-alt me-2" style="color: var(--log-primary);"></i>{% trans "Dados do EndereÃ§o" %}
                     </h5>
                 </div>
                 <div class="log-card-body">
@@ -62,7 +62,7 @@
                         </div>
                         {% endif %}
 
-                        <!-- ═══ Filial ═══ -->
+                        <!-- â•â•â• Filial â•â•â• -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <label for="{{ form.filial.id_for_label }}" class="form-label fw-semibold">
@@ -77,9 +77,9 @@
 
                         <hr class="log-divider">
 
-                        <!-- ═══ CEP + Tipo de Logradouro ═══ -->
+                        <!-- â•â•â• CEP + Tipo de Logradouro â•â•â• -->
                         <div class="log-section-title">
-                            <i class="bi bi-search me-1"></i>{% trans "Localização" %}
+                            <i class="bi bi-search me-1"></i>{% trans "LocalizaÃ§Ã£o" %}
                         </div>
                         <div class="row mb-4">
                             <div class="col-md-4">
@@ -92,7 +92,7 @@
                                         <i class="bi bi-search"></i>
                                     </span>
                                 </div>
-                                <div class="form-text">{% trans "Digite o CEP para busca automática" %}</div>
+                                <div class="form-text">{% trans "Digite o CEP para busca automÃ¡tica" %}</div>
                                 {% for error in form.cep.errors %}
                                     <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
@@ -108,11 +108,11 @@
                             </div>
                         </div>
 
-                        <!-- ═══ Endereço + Número ═══ -->
+                        <!-- â•â•â• EndereÃ§o + NÃºmero â•â•â• -->
                         <div class="row mb-4">
                             <div class="col-md-8">
                                 <label for="id_endereco" class="form-label fw-semibold">
-                                    {% trans "Endereço" %} <span class="text-danger">*</span>
+                                    {% trans "EndereÃ§o" %} <span class="text-danger">*</span>
                                 </label>
                                 {% render_field form.endereco class="form-control" %}
                                 {% for error in form.endereco.errors %}
@@ -121,7 +121,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label for="id_numero" class="form-label fw-semibold">
-                                    {% trans "Número" %} <span class="text-danger">*</span>
+                                    {% trans "NÃºmero" %} <span class="text-danger">*</span>
                                 </label>
                                 {% render_field form.numero class="form-control" %}
                                 {% for error in form.numero.errors %}
@@ -130,7 +130,7 @@
                             </div>
                         </div>
 
-                        <!-- ═══ Complemento + Bairro ═══ -->
+                        <!-- â•â•â• Complemento + Bairro â•â•â• -->
                         <div class="row mb-4">
                             <div class="col-md-6">
                                 <label for="id_complemento" class="form-label fw-semibold">
@@ -154,7 +154,7 @@
 
                         <hr class="log-divider">
 
-                        <!-- ═══ Cidade + Estado + País ═══ -->
+                        <!-- â•â•â• Cidade + Estado + PaÃ­s â•â•â• -->
                         <div class="log-section-title">
                             <i class="bi bi-globe-americas me-1"></i>{% trans "Localidade" %}
                         </div>
@@ -179,7 +179,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label for="id_pais" class="form-label fw-semibold">
-                                    {% trans "País" %}
+                                    {% trans "PaÃ­s" %}
                                 </label>
                                 {% render_field form.pais class="form-control" %}
                                 {% for error in form.pais.errors %}
@@ -188,13 +188,13 @@
                             </div>
                         </div>
 
-                        <!-- ═══ Ponto de Referência ═══ -->
+                        <!-- â•â•â• Ponto de ReferÃªncia â•â•â• -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <label for="id_ponto_referencia" class="form-label fw-semibold">
-                                    {% trans "Ponto de Referência" %}
+                                    {% trans "Ponto de ReferÃªncia" %}
                                 </label>
-                                {% render_field form.ponto_referencia class="form-control" placeholder="Próximo a..." %}
+                                {% render_field form.ponto_referencia class="form-control" placeholder="PrÃ³ximo a..." %}
                                 {% for error in form.ponto_referencia.errors %}
                                     <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
@@ -203,7 +203,7 @@
 
                         <hr class="log-divider">
 
-                        <!-- ═══ Coordenadas ═══ -->
+                        <!-- â•â•â• Coordenadas â•â•â• -->
                         <div class="log-section-title">
                             <i class="bi bi-pin-map me-1"></i>{% trans "Coordenadas" %}
                             <span class="text-lowercase fw-normal">({% trans "opcional" %})</span>
@@ -229,7 +229,7 @@
                             </div>
                         </div>
 
-                        <!-- ═══ Botões ═══ -->
+                        <!-- â•â•â• BotÃµes â•â•â• -->
                         <div class="border-top pt-4 mt-2 d-flex justify-content-between flex-wrap gap-2">
                             <a href="{% url 'logradouro:upload_logradouros' %}" class="btn btn-outline-info" style="border-radius: var(--log-radius-sm);">
                                 <i class="bi bi-upload me-1"></i> {% trans "Importar Planilha" %}
@@ -241,7 +241,7 @@
                                 {% if perms.logradouro.add_logradouro or user.is_superuser %}
                                 <button type="submit" class="btn btn-primary px-4" style="border-radius: var(--log-radius-sm);">
                                     {% if form.instance.pk %}
-                                        <i class="bi bi-check-lg me-1"></i> {% trans "Salvar Alterações" %}
+                                        <i class="bi bi-check-lg me-1"></i> {% trans "Salvar AlteraÃ§Ãµes" %}
                                     {% else %}
                                         <i class="bi bi-plus-lg me-1"></i> {% trans "Cadastrar" %}
                                     {% endif %}
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!cepInput) return;
 
-    // ═══ Máscara de CEP: 00000-000 ═══
+    // â•â•â• MÃ¡scara de CEP: 00000-000 â•â•â•
     cepInput.addEventListener('input', function () {
         let v = this.value.replace(/\D/g, '').substring(0, 8);
         if (v.length > 5) {
@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function () {
         this.value = v;
     });
 
-    // ═══ Busca automática via API ═══
+    // â•â•â• Busca automÃ¡tica via API â•â•â•
     cepInput.addEventListener('blur', function () {
         const cep = this.value.replace(/\D/g, '');
 
@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         fetch(url)
             .then(response => {
-                if (!response.ok) throw new Error('Erro na requisição');
+                if (!response.ok) throw new Error('Erro na requisiÃ§Ã£o');
                 return response.json();
             })
             .then(data => {
@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (cidadeInp)   cidadeInp.value   = data.cidade   || '';
                     if (estadoSel)   estadoSel.value   = data.estado   || '';
 
-                    // Focar no campo número após preencher
+                    // Focar no campo nÃºmero apÃ³s preencher
                     const numInp = document.getElementById('id_numero');
                     if (numInp) numInp.focus();
                 }
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     });
 
-    // ═══ Buscar ao pressionar Enter no CEP ═══
+    // â•â•â• Buscar ao pressionar Enter no CEP â•â•â•
     cepInput.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();

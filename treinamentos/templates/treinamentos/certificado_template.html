@@ -1,13 +1,13 @@
-<!-- Certificado Gerado -->
+﻿<!-- Certificado Gerado -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <title>Certificado - {{ participante.funcionario.get_full_name }}</title>
     <style>
-        /* ═══════════════════════════════════════════════════════ */
-        /* CERTIFICADO PDF — WEASYPRINT OPTIMIZED                 */
-        /* ═══════════════════════════════════════════════════════ */
+        /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+        /* CERTIFICADO PDF â€” WEASYPRINT OPTIMIZED                 */
+        /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
         @page {
             size: A4 landscape;
@@ -27,7 +27,7 @@
             print-color-adjust: exact;
         }
 
-        /* ═══ PÁGINA ═══ */
+        /* â•â•â• PÃGINA â•â•â• */
         .pagina {
             width: 297mm;
             height: 210mm;
@@ -49,7 +49,7 @@
             z-index: 0;
         }
 
-        /* ═══ FALLBACK: SEM IMAGEM DE FUNDO ═══ */
+        /* â•â•â• FALLBACK: SEM IMAGEM DE FUNDO â•â•â• */
         .pagina.frente {
             background: linear-gradient(135deg, #f8f9fc 0%, #eef0f7 100%);
         }
@@ -57,7 +57,7 @@
             background: linear-gradient(135deg, #f0f2f5 0%, #e8eaf0 100%);
         }
 
-        /* ═══ BORDA DECORATIVA (SEM IMAGEM) ═══ */
+        /* â•â•â• BORDA DECORATIVA (SEM IMAGEM) â•â•â• */
         .borda-decorativa {
             position: absolute;
             top: 10mm;
@@ -80,7 +80,7 @@
             border-radius: 2px;
         }
 
-        /* ═══ CONTEÚDO ═══ */
+        /* â•â•â• CONTEÃšDO â•â•â• */
         .conteudo {
             position: relative;
             z-index: 2;
@@ -93,7 +93,7 @@
             text-align: center;
         }
 
-        /* ═══ FRENTE — ELEMENTOS ═══ */
+        /* â•â•â• FRENTE â€” ELEMENTOS â•â•â• */
 
         /* Emblema topo */
         .emblema {
@@ -154,7 +154,7 @@
             font-weight: 700;
         }
 
-        /* ═══ ASSINATURAS ═══ */
+        /* â•â•â• ASSINATURAS â•â•â• */
         .assinaturas {
             display: flex;
             justify-content: center;
@@ -207,7 +207,7 @@
             line-height: 1.4;
         }
 
-        /* ═══ RODAPÉ ═══ */
+        /* â•â•â• RODAPÃ‰ â•â•â• */
         .rodape {
             font-size: 7pt;
             color: #a0aec0;
@@ -216,9 +216,9 @@
             margin-top: auto;
         }
 
-        /* ═══════════════════════════════════════ */
+        /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
         /* VERSO                                    */
-        /* ═══════════════════════════════════════ */
+        /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
         .conteudo-verso {
             text-align: left;
@@ -248,7 +248,7 @@
             margin-bottom: 1.5mm;
         }
 
-        /* ═══ VALIDAÇÃO / QR CODE ═══ */
+        /* â•â•â• VALIDAÃ‡ÃƒO / QR CODE â•â•â• */
         .validacao-qr {
             display: flex;
             align-items: center;
@@ -303,9 +303,9 @@
 </head>
 <body>
 
-    <!-- ═══════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <!-- FRENTE DO CERTIFICADO                       -->
-    <!-- ═══════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="pagina frente">
 
         {% if gabarito.imagem_fundo %}
@@ -316,13 +316,13 @@
 
         <div class="conteudo">
 
-            <div class="emblema">✦</div>
+            <div class="emblema">âœ¦</div>
 
             <div class="empresa-nome">{{ gabarito.empresa_nome }}</div>
 
             <h1 class="titulo-certificado">Certificado</h1>
 
-            <div class="subtitulo">de conclusão de treinamento</div>
+            <div class="subtitulo">de conclusÃ£o de treinamento</div>
 
             <div class="separador"></div>
 
@@ -343,7 +343,7 @@
                     <div class="cargo-assinante">Participante</div>
                 </div>
 
-                <!-- Responsável / Instrutor -->
+                <!-- ResponsÃ¡vel / Instrutor -->
                 <div class="assinatura-block">
                     {% if assinatura_responsavel.esta_assinada %}
                     <img src="{{ assinatura_responsavel.assinatura_json }}" class="assinatura-img" alt="Assinatura">
@@ -368,9 +368,9 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <!-- VERSO DO CERTIFICADO                        -->
-    <!-- ═══════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="pagina verso">
 
         {% if gabarito.imagem_fundo %}
@@ -390,12 +390,12 @@
                     {{ contexto_verso.qr_code_svg }}
                 </div>
                 <div class="qr-texto">
-                    <div class="protocolo-label">Protocolo de Verificação</div>
+                    <div class="protocolo-label">Protocolo de VerificaÃ§Ã£o</div>
                     <div class="protocolo-valor">{{ contexto_verso.protocolo }}</div>
                     <p style="margin-top: 2mm;">
                         Valide a autenticidade deste certificado
-                        apontando a câmera do seu celular para o QR Code
-                        ou acessando o link de verificação.
+                        apontando a cÃ¢mera do seu celular para o QR Code
+                        ou acessando o link de verificaÃ§Ã£o.
                     </p>
                 </div>
             </div>

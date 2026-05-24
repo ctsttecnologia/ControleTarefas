@@ -1,4 +1,4 @@
-<!-- templates/ata_reuniao/ata_reuniao_upload.html -->
+﻿<!-- templates/ata_reuniao/ata_reuniao_upload.html -->
 
 {% extends "base.html" %}
 {% load static %}
@@ -58,7 +58,7 @@
 
     .upload-body { padding: 2rem 2.5rem; }
 
-    /* ═══ INSTRUCTIONS ═══ */
+    /* â•â•â• INSTRUCTIONS â•â•â• */
     .instructions-card {
         background: #f0f4ff;
         border: 1px solid #d0dafb;
@@ -86,7 +86,7 @@
     }
     .instructions-card li:last-child { margin-bottom: 0; }
 
-    /* ═══ DROP ZONE ═══ */
+    /* â•â•â• DROP ZONE â•â•â• */
     .drop-zone {
         border: 2px dashed #d1d5db;
         border-radius: 0.875rem;
@@ -111,7 +111,7 @@
     }
     .file-selected .drop-zone-icon { color: #1cc88a; }
 
-    /* ═══ BUTTONS ═══ */
+    /* â•â•â• BUTTONS â•â•â• */
     .btn-upload {
         background: linear-gradient(135deg, #1cc88a, #17a673);
         border: none;
@@ -137,7 +137,7 @@
     }
     .btn-cancel:hover { border-color: #cbd5e0; background: #f7fafc; color: #4a5568; }
 
-    /* ═══ DARK MODE ═══ */
+    /* â•â•â• DARK MODE â•â•â• */
     [data-bs-theme="dark"] .upload-card { box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
     [data-bs-theme="dark"] .upload-body { background: var(--bs-body-bg); }
     [data-bs-theme="dark"] .instructions-card { background: rgba(78,115,223,0.08); border-color: rgba(78,115,223,0.2); }
@@ -157,7 +157,7 @@
             <div class="upload-header-icon">
                 <i class="bi bi-cloud-arrow-up-fill"></i>
             </div>
-            <h3>Importar Atas de Reunião</h3>
+            <h3>Importar Atas de ReuniÃ£o</h3>
         </div>
 
         <!-- Body -->
@@ -168,7 +168,7 @@
                 {% if has_upload_errors %}
                 <div class="mb-3 text-center">
                     <a href="{% url 'ata_reuniao:download_error_report' %}" class="btn btn-danger fw-bold" style="border-radius: 0.625rem;">
-                        <i class="bi bi-file-earmark-excel me-1"></i> Baixar Relatório de Erros
+                        <i class="bi bi-file-earmark-excel me-1"></i> Baixar RelatÃ³rio de Erros
                     </a>
                 </div>
                 {% endif %}
@@ -181,7 +181,7 @@
 
             <!-- Instructions -->
             <div class="instructions-card">
-                <h6><i class="bi bi-info-circle me-1"></i> Instruções</h6>
+                <h6><i class="bi bi-info-circle me-1"></i> InstruÃ§Ãµes</h6>
                 <ol>
                     <li>
                         <strong>Baixe o modelo:</strong>
@@ -189,7 +189,7 @@
                             <i class="bi bi-download me-1"></i> Planilha Modelo
                         </a>
                     </li>
-                    <li>Preencha a planilha com os dados. Consulte a aba <em>"Instruções e Opções"</em> para ver as opções válidas.</li>
+                    <li>Preencha a planilha com os dados. Consulte a aba <em>"InstruÃ§Ãµes e OpÃ§Ãµes"</em> para ver as opÃ§Ãµes vÃ¡lidas.</li>
                     <li>Salve a planilha preenchida no seu computador.</li>
                     <li>Selecione o arquivo abaixo e clique em <strong>"Enviar"</strong>.</li>
                 </ol>

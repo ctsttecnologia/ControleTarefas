@@ -1,4 +1,4 @@
-{# Profissional — Confirmar Exclusão #}
+﻿{# Profissional â€” Confirmar ExclusÃ£o #}
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
@@ -15,7 +15,7 @@
         <i class="bi bi-trash3-fill"></i>
         {{ page_title|default:"Excluir Profissional" }}
     </h1>
-    <p class="mb-0">Confirme a exclusão do profissional</p>
+    <p class="mb-0">Confirme a exclusÃ£o do profissional</p>
 </div>
 
 <div class="row justify-content-center">
@@ -23,7 +23,7 @@
         <div class="card border-danger shadow-sm">
             <div class="card-header bg-danger text-white">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <strong>Atenção! Esta ação é irreversível.</strong>
+                <strong>AtenÃ§Ã£o! Esta aÃ§Ã£o Ã© irreversÃ­vel.</strong>
             </div>
             <div class="card-body text-center py-4">
 
@@ -45,7 +45,7 @@
                     </h4>
                     <p class="text-muted mb-1">
                         <i class="bi bi-briefcase me-1"></i>
-                        {{ object.funcao|default:"Função não informada" }}
+                        {{ object.funcao|default:"FunÃ§Ã£o nÃ£o informada" }}
                     </p>
                     {% if object.registro_classe %}
                     <p class="text-muted mb-0">
@@ -66,9 +66,9 @@
                     <i class="bi bi-info-circle-fill me-2 mt-1"></i>
                     <div>
                         <strong>Considere desativar em vez de excluir:</strong>
-                        Se este profissional já participou de PGRs, a exclusão pode causar inconsistências.
-                        Você pode <a href="{% url 'pgr_gestao:profissional_update' object.pk %}" class="alert-link">editá-lo</a>
-                        e desmarcar a opção "Ativo".
+                        Se este profissional jÃ¡ participou de PGRs, a exclusÃ£o pode causar inconsistÃªncias.
+                        VocÃª pode <a href="{% url 'pgr_gestao:profissional_update' object.pk %}" class="alert-link">editÃ¡-lo</a>
+                        e desmarcar a opÃ§Ã£o "Ativo".
                     </div>
                 </div>
 

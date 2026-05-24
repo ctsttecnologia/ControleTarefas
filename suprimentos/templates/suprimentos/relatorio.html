@@ -1,4 +1,4 @@
-
+﻿
 {% extends "suprimentos/suprimentos_base.html" %}
 {% load static %}
 
@@ -7,9 +7,9 @@
 {% block suprimentos_content %}
 <div class="container-fluid mt-4">
 
-    {# ═══════════════════════════════════════════════ #}
-    {# CABEÇALHO + FILTROS                            #}
-    {# ═══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+    {# CABEÃ‡ALHO + FILTROS                            #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3><i class="bi bi-bar-chart-line me-2"></i>{{ titulo_pagina }}</h3>
         <div class="btn-group">
@@ -24,7 +24,7 @@
         </div>
     </div>
 
-    {# ── Filtros ── #}
+    {# â”€â”€ Filtros â”€â”€ #}
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form method="get" class="row g-3 align-items-end">
@@ -33,7 +33,7 @@
                     <input type="number" name="ano" class="form-control" value="{{ filtro_ano }}" min="2024" max="2030">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label fw-bold">Mês Início</label>
+                    <label class="form-label fw-bold">MÃªs InÃ­cio</label>
                     <select name="mes_ini" class="form-select">
                         {% for val, label in meses_choices %}
                             <option value="{{ val }}" {% if val == filtro_mes_ini %}selected{% endif %}>{{ label }}</option>
@@ -41,7 +41,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label fw-bold">Mês Fim</label>
+                    <label class="form-label fw-bold">MÃªs Fim</label>
                     <select name="mes_fim" class="form-select">
                         {% for val, label in meses_choices %}
                             <option value="{{ val }}" {% if val == filtro_mes_fim %}selected{% endif %}>{{ label }}</option>
@@ -53,7 +53,7 @@
                     <select name="contrato" class="form-select" multiple size="3">
                         {% for ct in contratos_disponiveis %}
                             <option value="{{ ct.id }}" {% if ct.id|stringformat:"s" in filtro_contratos %}selected{% endif %}>
-                                {{ ct.cm }} — {{ ct.cliente }}
+                                {{ ct.cm }} â€” {{ ct.cliente }}
                             </option>
                         {% endfor %}
                     </select>
@@ -67,14 +67,14 @@
         </div>
     </div>
 
-    {# Período #}
+    {# PerÃ­odo #}
     <div class="alert alert-info text-center">
-        <strong>Período:</strong> {{ relatorio.parametros.periodo_label }}
+        <strong>PerÃ­odo:</strong> {{ relatorio.parametros.periodo_label }}
     </div>
 
-    {# ═══════════════════════════════════════════════ #}
-    {# TABS DE NAVEGAÇÃO                              #}
-    {# ═══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+    {# TABS DE NAVEGAÃ‡ÃƒO                              #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <ul class="nav nav-tabs mb-4" id="relatorioTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-quantitativo" type="button">
@@ -108,9 +108,9 @@
 
     <div class="tab-content" id="relatorioTabContent">
 
-        {# ═══════════════════════════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         {# TAB 1: QUANTITATIVO                            #}
-        {# ═══════════════════════════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         <div class="tab-pane fade show active" id="tab-quantitativo">
 
             {# Cards resumo #}
@@ -122,7 +122,7 @@
                             <h6 class="text-muted">{{ r.categoria_label }}</h6>
                             <h3 class="mb-1">R$ {{ r.valor_total|floatformat:2 }}</h3>
                             <small class="text-muted">
-                                {{ r.qtd_pedidos }} pedidos · {{ r.qtd_unidades }} unidades · {{ r.pct_valor }}% do total
+                                {{ r.qtd_pedidos }} pedidos Â· {{ r.qtd_unidades }} unidades Â· {{ r.pct_valor }}% do total
                             </small>
                         </div>
                     </div>
@@ -130,9 +130,9 @@
                 {% endfor %}
             </div>
 
-            {# Gráfico por mês #}
+            {# GrÃ¡fico por mÃªs #}
             <div class="card shadow-sm mb-4">
-                <div class="card-header"><h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Compras por Mês</h5></div>
+                <div class="card-header"><h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Compras por MÃªs</h5></div>
                 <div class="card-body">
                     <canvas id="chartQuantitativoMes" height="80"></canvas>
                 </div>
@@ -147,7 +147,7 @@
                             <tr>
                                 <th>#</th>
                                 <th>Material</th>
-                                <th>Classificação</th>
+                                <th>ClassificaÃ§Ã£o</th>
                                 <th class="text-center">Qtd Total</th>
                                 <th class="text-end">Valor Total</th>
                                 <th class="text-center">Pedidos</th>
@@ -199,12 +199,12 @@
             </div>
         </div>
 
-        {# ═══════════════════════════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         {# TAB 2: QUALITATIVO                             #}
-        {# ═══════════════════════════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         <div class="tab-pane fade" id="tab-qualitativo">
 
-            {# Cards verba × gasto #}
+            {# Cards verba Ã— gasto #}
             <div class="row mb-4">
                 {% for r in relatorio.qualitativo.resumo_categorias %}
                 <div class="col-md-4">
@@ -256,9 +256,9 @@
                 </div>
             </div>
 
-            {# Gráfico evolução mensal #}
+            {# GrÃ¡fico evoluÃ§Ã£o mensal #}
             <div class="card shadow-sm mb-4">
-                <div class="card-header"><h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Evolução Verba × Gasto</h5></div>
+                <div class="card-header"><h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>EvoluÃ§Ã£o Verba Ã— Gasto</h5></div>
                 <div class="card-body">
                     <canvas id="chartEvolucao" height="80"></canvas>
                 </div>
@@ -266,7 +266,7 @@
 
             {# Tabela por contrato #}
             <div class="card shadow-sm mb-4">
-                <div class="card-header"><h5 class="mb-0"><i class="bi bi-building me-2"></i>Verba × Gasto por Contrato</h5></div>
+                <div class="card-header"><h5 class="mb-0"><i class="bi bi-building me-2"></i>Verba Ã— Gasto por Contrato</h5></div>
                 <div class="card-body table-responsive">
                     <table class="table table-striped table-hover table-sm">
                         <thead class="table-dark">
@@ -294,9 +294,9 @@
             </div>
         </div>
 
-        {# ═══════════════════════════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         {# TAB 3: ALERTAS                                 #}
-        {# ═══════════════════════════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         <div class="tab-pane fade" id="tab-alertas">
 
             {% if relatorio.alertas.total_alertas > 0 %}
@@ -345,7 +345,7 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th>Contrato</th>
-                                    <th>Mês</th>
+                                    <th>MÃªs</th>
                                     <th>Categoria</th>
                                     <th class="text-end">Verba</th>
                                     <th class="text-end">Gasto</th>
@@ -366,7 +366,7 @@
                                     <td class="text-center">{{ al.pct_excesso }}%</td>
                                     <td class="text-center">
                                         {% if al.severidade == 'critico' %}
-                                            <span class="badge bg-danger">CRÍTICO</span>
+                                            <span class="badge bg-danger">CRÃTICO</span>
                                         {% elif al.severidade == 'alto' %}
                                             <span class="badge bg-warning text-dark">ALTO</span>
                                         {% else %}
@@ -380,10 +380,10 @@
                     </div>
                 </div>
 
-                {# Contratos mais críticos #}
+                {# Contratos mais crÃ­ticos #}
                 {% if relatorio.alertas.contratos_criticos %}
                 <div class="card shadow-sm mb-4">
-                    <div class="card-header"><h5 class="mb-0">🔴 Contratos com Mais Desvios</h5></div>
+                    <div class="card-header"><h5 class="mb-0">ðŸ”´ Contratos com Mais Desvios</h5></div>
                     <div class="card-body">
                         <ol class="list-group list-group-numbered">
                             {% for cc in relatorio.alertas.contratos_criticos %}
@@ -400,15 +400,15 @@
             {% else %}
                 <div class="alert alert-success text-center py-5">
                     <i class="bi bi-check-circle" style="font-size: 3rem;"></i>
-                    <h4 class="mt-3">Nenhum gasto acima da meta! 🎉</h4>
-                    <p>Todos os contratos estão dentro das verbas planejadas no período.</p>
+                    <h4 class="mt-3">Nenhum gasto acima da meta! ðŸŽ‰</h4>
+                    <p>Todos os contratos estÃ£o dentro das verbas planejadas no perÃ­odo.</p>
                 </div>
             {% endif %}
         </div>
 
-        {# ═══════════════════════════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         {# TAB 4: ECONOMIAS                               #}
-        {# ═══════════════════════════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         <div class="tab-pane fade" id="tab-economias">
 
             {# Cards resumo economia #}
@@ -437,7 +437,7 @@
             {% if relatorio.economias.ranking_contratos %}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Ranking — Contratos que Mais Economizaram</h5>
+                    <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Ranking â€” Contratos que Mais Economizaram</h5>
                 </div>
                 <div class="card-body">
                     <ol class="list-group list-group-numbered">
@@ -453,22 +453,22 @@
             {% endif %}
         </div>
 
-        {# ═══════════════════════════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         {# TAB 5: ESTIMATIVAS                             #}
-        {# ═══════════════════════════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         <div class="tab-pane fade" id="tab-estimativas">
 
-            {# Cards tendência #}
+            {# Cards tendÃªncia #}
             <div class="row mb-4">
                 {% for cod, dados in relatorio.estimativas.media_por_categoria.items %}
                 <div class="col-md-4">
                     <div class="card shadow-sm">
                         <div class="card-body">
-                            <h6 class="text-muted">{{ dados.label }} — Média Mensal</h6>
+                            <h6 class="text-muted">{{ dados.label }} â€” MÃ©dia Mensal</h6>
                             <h3>R$ {{ dados.media|floatformat:2 }}</h3>
                             <div class="d-flex justify-content-between small text-muted">
-                                <span>Mín: R$ {{ dados.min|floatformat:2 }}</span>
-                                <span>Máx: R$ {{ dados.max|floatformat:2 }}</span>
+                                <span>MÃ­n: R$ {{ dados.min|floatformat:2 }}</span>
+                                <span>MÃ¡x: R$ {{ dados.max|floatformat:2 }}</span>
                             </div>
                             <div class="mt-2">
                                 {% if dados.tendencia == 'subindo' %}
@@ -476,7 +476,7 @@
                                 {% elif dados.tendencia == 'descendo' %}
                                     <span class="badge bg-success"><i class="bi bi-arrow-down"></i> Descendo {{ dados.variacao_tendencia }}%</span>
                                 {% elif dados.tendencia == 'estavel' %}
-                                    <span class="badge bg-secondary"><i class="bi bi-dash"></i> Estável</span>
+                                    <span class="badge bg-secondary"><i class="bi bi-dash"></i> EstÃ¡vel</span>
                                 {% else %}
                                     <span class="badge bg-light text-dark">Dados insuficientes</span>
                                 {% endif %}
@@ -487,24 +487,24 @@
                 {% endfor %}
             </div>
 
-            {# Gráfico projeção #}
+            {# GrÃ¡fico projeÃ§Ã£o #}
             <div class="card shadow-sm mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Histórico + Projeção (6 meses)</h5>
+                    <h5 class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i>HistÃ³rico + ProjeÃ§Ã£o (6 meses)</h5>
                 </div>
                 <div class="card-body">
                     <canvas id="chartEstimativas" height="80"></canvas>
                 </div>
             </div>
 
-            {# Tabela projeção #}
+            {# Tabela projeÃ§Ã£o #}
             <div class="card shadow-sm mb-4">
-                <div class="card-header"><h5 class="mb-0">📊 Projeção Detalhada — Próximos 6 Meses</h5></div>
+                <div class="card-header"><h5 class="mb-0">ðŸ“Š ProjeÃ§Ã£o Detalhada â€” PrÃ³ximos 6 Meses</h5></div>
                 <div class="card-body table-responsive">
                     <table class="table table-striped table-hover table-sm">
                         <thead class="table-dark">
                             <tr>
-                                <th>Mês</th>
+                                <th>MÃªs</th>
                                 <th class="text-end">Verba Total</th>
                                 <th class="text-end">Gasto Estimado</th>
                                 <th class="text-end">Saldo Estimado</th>
@@ -536,17 +536,17 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // DADOS JSON
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     const dadosMeses = JSON.parse('{{ json_quantitativo_meses|escapejs }}');
     const dadosEvolucao = JSON.parse('{{ json_evolucao|escapejs }}');
     const dadosHistorico = JSON.parse('{{ json_estimativas_hist|escapejs }}');
     const dadosProjecao = JSON.parse('{{ json_estimativas_proj|escapejs }}');
 
-    // ═══════════════════════════════════════
-    // CHART 1: Quantitativo por Mês
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // CHART 1: Quantitativo por MÃªs
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     new Chart(document.getElementById('chartQuantitativoMes'), {
         type: 'bar',
         data: {
@@ -584,9 +584,9 @@ document.addEventListener('DOMContentLoaded', function () {
         },
     });
 
-    // ═══════════════════════════════════════
-    // CHART 2: Evolução Verba × Gasto
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // CHART 2: EvoluÃ§Ã£o Verba Ã— Gasto
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     new Chart(document.getElementById('chartEvolucao'), {
         type: 'line',
         data: {
@@ -623,9 +623,9 @@ document.addEventListener('DOMContentLoaded', function () {
         },
     });
 
-    // ═══════════════════════════════════════
-    // CHART 3: Estimativas (Histórico + Projeção)
-    // ═══════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // CHART 3: Estimativas (HistÃ³rico + ProjeÃ§Ã£o)
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     const allEstData = [...dadosHistorico, ...dadosProjecao];
     const allLabels = allEstData.map(d => d.label);
     const divider = dadosHistorico.length;
@@ -636,7 +636,7 @@ document.addEventListener('DOMContentLoaded', function () {
             labels: allLabels,
             datasets: [
                 {
-                    label: 'Gasto Real (Histórico)',
+                    label: 'Gasto Real (HistÃ³rico)',
                     data: allEstData.map((d, i) => i < divider ? parseFloat(d.gasto_total || 0) : null),
                     borderColor: '#0d6efd',
                     backgroundColor: 'rgba(13, 110, 253, 0.1)',
@@ -644,7 +644,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     tension: 0.3,
                 },
                 {
-                    label: 'Gasto Estimado (Projeção)',
+                    label: 'Gasto Estimado (ProjeÃ§Ã£o)',
                     data: allEstData.map((d, i) => i >= divider ? parseFloat(d.gasto_total || 0) : null),
                     borderColor: '#fd7e14',
                     borderDash: [8, 4],

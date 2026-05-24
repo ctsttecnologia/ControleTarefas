@@ -1,4 +1,4 @@
-
+﻿
 
 {% extends "ltcat/base_ltcat.html" %}
 {% load ltcat_tags %}
@@ -16,7 +16,7 @@
             <h3 class="fw-bold mb-1">
                 <i class="fas fa-tachometer-alt me-2"></i>Dashboard LTCAT
             </h3>
-            <p class="mb-0 opacity-75">Visão geral dos Laudos Técnicos das Condições Ambientais de Trabalho</p>
+            <p class="mb-0 opacity-75">VisÃ£o geral dos Laudos TÃ©cnicos das CondiÃ§Ãµes Ambientais de Trabalho</p>
         </div>
         {% if perms.ltcat.add_ltcat or user.is_superuser %}
         <a href="{% url 'ltcat:ltcat_create' %}" class="btn btn-light">
@@ -74,10 +74,10 @@
                 <thead class="table-light">
                     <tr>
                         <th>Empresa</th>
-                        <th>Elaboração</th>
-                        <th>Responsável</th>
+                        <th>ElaboraÃ§Ã£o</th>
+                        <th>ResponsÃ¡vel</th>
                         <th>Status</th>
-                        <th class="text-end">Ações</th>
+                        <th class="text-end">AÃ§Ãµes</th>
                     </tr>
                 </thead>
                 <tbody>

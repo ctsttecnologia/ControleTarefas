@@ -1,13 +1,18 @@
 
 # core/tests/test_sanitize.py
+from datetime import timedelta, timezone
+from django.utils import timezone   # ← este precisa estar aqui
+from datetime import date  
 from io import BytesIO
-
+from api.views import TermoViewSet
+from departamento_pessoal.models import Funcionario
+from usuario.models import Filial
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import DictionaryObject, NameObject, TextStringObject
-
 from core.mixins import _sanitize_pdf, _sanitize_image
+from ferramentas.models import Ferramenta, MalaFerramentas, Movimentacao
 
 
 class SanitizePDFTestCase(TestCase):
@@ -128,6 +133,13 @@ class SanitizePDFTestCase(TestCase):
 class SanitizeImageTestCase(TestCase):
     """Testa a sanitização de imagens."""
 
+    def setUp(self):
+        # ... resto do setUp atual ...
+        self.filial = Filial.objects.create(
+            nome="Filial Teste",
+            # demais campos obrigatórios da sua Filial
+        )
+
     def _criar_imagem_com_exif(self):
         """Cria JPEG com metadados EXIF falsos."""
         from PIL import Image
@@ -153,6 +165,58 @@ class SanitizeImageTestCase(TestCase):
 
         sanitized = _sanitize_image(uploaded)
         self.assertIsNotNone(sanitized)
+    
+    def test_qr_code_nao_gerado_sem_codigo(self):
+        """Verifica se o QR code não é gerado sem um código de identificação."""
+        mala = MalaFerramentas.objects.create(
+            nome="Mala Sem Código",
+            localizacao_padrao="Armário D",
+            filial=self.filial
+        )       
+        self.assertFalse(bool(mala.qr_code))
+
+
+    def test_relacao_termo_movimentacao_mala(self):
+
+        """Testa a associação básica entre movimentação, ferramenta e mala."""
+        from datetime import date
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        user = User.objects.create_user(
+            username="user_mov_teste",
+            password="senha123",
+        )
+
+        mala = MalaFerramentas.objects.create(
+            nome="Mala Teste Sanitize",
+            codigo_identificacao="MALA-SAN-001",
+            localizacao_padrao="Almoxarifado Teste",
+            filial=self.filial,
+        )
+
+        ferramenta = Ferramenta.objects.create(
+            nome="Ferramenta Teste Sanitize",
+            patrimonio="PAT-SAN-001",
+            codigo_identificacao="FER-SAN-001",
+            localizacao_padrao="Almoxarifado Teste",
+            data_aquisicao=date.today(),
+            filial=self.filial,
+            mala=mala,
+        )
+
+        movimentacao = Movimentacao.objects.create(
+            ferramenta=ferramenta,
+            retirado_por=user,
+            tipo_uso=Movimentacao.TipoUso.VOLANTE,
+            data_devolucao_prevista=timezone.now() + timedelta(days=7),
+            condicoes_retirada="Em perfeito estado para teste.",
+        )
+
+        self.assertEqual(movimentacao.retirado_por, user)
+        self.assertEqual(movimentacao.ferramenta, ferramenta)
+        self.assertEqual(movimentacao.ferramenta.mala, mala)
+
 
 # Comando para rodar os testes:#
 # python manage.py test core.tests.test_sanitize -v 2
@@ -162,3 +226,11 @@ class SanitizeImageTestCase(TestCase):
 
 # Para rodar um teste específico: Método#
 # python manage.py test core.tests.test_sanitize.SanitizePDFTestCase.test_remove_open_action -v 2
+
+# Mantém DB de teste entre execuções (--keepdb)
+# python manage.py test notifications --settings=gerenciandoTarefas.settings_test --keepdb -v 2
+
+# Em paralelo (usa todos os cores da CPU)
+# python manage.py test notifications --settings=gerenciandoTarefas.settings_test --parallel -v 2
+
+# python manage.py test --settings=gerenciandoTarefas.settings_test -v 2

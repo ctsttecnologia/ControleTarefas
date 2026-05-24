@@ -1,8 +1,8 @@
-
+﻿
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Certificado — {{ certificado.nome_curso }}{% endblock %}
+{% block title %}Certificado â€” {{ certificado.nome_curso }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -64,7 +64,7 @@
             </div>
             <div class="col-auto text-center mx-3">
                 <strong class="d-block fs-4 text-primary">{{ certificado.carga_horaria_cumprida }}h</strong>
-                <small class="text-muted">Carga Horária</small>
+                <small class="text-muted">Carga HorÃ¡ria</small>
             </div>
         </div>
 
@@ -77,14 +77,14 @@
         <p class="mt-3 text-muted small">
             Emitido em {{ certificado.data_emissao|date:"d/m/Y" }}
             {% if certificado.data_validade %}
-            · Válido até {{ certificado.data_validade|date:"d/m/Y" }}
+            Â· VÃ¡lido atÃ© {{ certificado.data_validade|date:"d/m/Y" }}
             {% endif %}
         </p>
 
         <!-- Validade -->
         {% if certificado.esta_valido %}
         <span class="cert-valid bg-success bg-opacity-10 text-success">
-            <i class="bi bi-check-circle me-1"></i> Certificado válido
+            <i class="bi bi-check-circle me-1"></i> Certificado vÃ¡lido
         </span>
         {% else %}
         <span class="cert-valid bg-danger bg-opacity-10 text-danger">
@@ -93,7 +93,7 @@
         {% endif %}
 
         <p class="mt-3 text-muted" style="font-size:.75rem;">
-            Código de verificação: <code>{{ certificado.uuid }}</code>
+            CÃ³digo de verificaÃ§Ã£o: <code>{{ certificado.uuid }}</code>
         </p>
     </div>
 
