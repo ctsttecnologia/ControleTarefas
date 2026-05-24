@@ -1,4 +1,4 @@
-{# Criar / Editar Treinamento #}
+﻿{# Criar / Editar Treinamento #}
 {% extends 'base.html' %}
 {% load static widget_tweaks %}
 
@@ -6,7 +6,7 @@
 
 {% block extra_css %}
 <style>
-    /* ═══ HERO ═══ */
+    /* â•â•â• HERO â•â•â• */
     .form-hero {
         background: linear-gradient(135deg, #1cc88a 0%, #17a673 50%, #13855c 100%);
         border-radius: 1rem;
@@ -30,7 +30,7 @@
     .form-hero h1 { font-weight: 700; font-size: 1.5rem; margin-bottom: 0.25rem; }
     .form-hero p { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
 
-    /* ═══ SECTION TITLES ═══ */
+    /* â•â•â• SECTION TITLES â•â•â• */
     .section-header {
         display: flex;
         align-items: center;
@@ -61,14 +61,14 @@
         margin: 0;
     }
 
-    /* ═══ FORM CARD ═══ */
+    /* â•â•â• FORM CARD â•â•â• */
     .form-card {
         border: none;
         border-radius: 0.875rem;
     }
     .form-card .card-body { padding: 2rem 2.5rem; }
 
-    /* ═══ FIELD STYLES ═══ */
+    /* â•â•â• FIELD STYLES â•â•â• */
     .field-label {
         font-size: 0.78rem;
         font-weight: 600;
@@ -96,7 +96,7 @@
         box-shadow: 0 0 0 0.2rem rgba(28,200,138,0.15);
     }
 
-    /* ═══ ERROR BANNER ═══ */
+    /* â•â•â• ERROR BANNER â•â•â• */
     .error-banner {
         background: linear-gradient(135deg, #fff5f5, #fed7d7);
         border: none;
@@ -120,7 +120,7 @@
         margin-bottom: 0.25rem;
     }
 
-    /* ═══ PARTICIPANT ROWS ═══ */
+    /* â•â•â• PARTICIPANT ROWS â•â•â• */
     .participant-row {
         background: #f8f9fc;
         border: 1.5px solid #e9ecef;
@@ -173,7 +173,7 @@
         background: rgba(28,200,138,0.03);
     }
 
-    /* ═══ FOOTER ACTIONS ═══ */
+    /* â•â•â• FOOTER ACTIONS â•â•â• */
     .form-actions {
         border-top: 2px solid #f0f2f5;
         padding-top: 1.5rem;
@@ -209,7 +209,7 @@
         color: #4a5568;
     }
 
-    /* ═══ STEP INDICATOR ═══ */
+    /* â•â•â• STEP INDICATOR â•â•â• */
     .step-indicator {
         display: flex;
         align-items: center;
@@ -232,7 +232,7 @@
         font-weight: 700;
     }
 
-    /* ═══ DARK MODE ═══ */
+    /* â•â•â• DARK MODE â•â•â• */
     [data-bs-theme="dark"] .form-hero { background: linear-gradient(135deg, #13855c, #0f6848); }
     [data-bs-theme="dark"] .form-card .card-body { background: var(-color: #e2e8f0;); }
     [data-bs-theme="dark"] .section-header { border-bottom-color: rgba(255,255,255,0.06); }
@@ -249,7 +249,7 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- ═══ HERO ═══ -->
+    <!-- â•â•â• HERO â•â•â• -->
     <div class="form-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
@@ -262,7 +262,7 @@
                 </h1>
                 <p>
                     {% if form.instance.pk %}
-                    Atualize as informações do treinamento e seus participantes
+                    Atualize as informaÃ§Ãµes do treinamento e seus participantes
                     {% else %}
                     Cadastre um novo treinamento com participantes e detalhes operacionais
                     {% endif %}
@@ -274,7 +274,7 @@
         </div>
     </div>
 
-    <!-- ═══ FORM CARD ═══ -->
+    <!-- â•â•â• FORM CARD â•â•â• -->
     <div class="card form-card shadow-sm">
         <div class="card-body">
             <form method="post" novalidate>
@@ -300,13 +300,13 @@
                 </div>
                 {% endif %}
 
-                <!-- ════════════════════════════════════════ -->
-                <!-- SEÇÃO 1: DADOS DO TREINAMENTO           -->
-                <!-- ════════════════════════════════════════ -->
+                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+                <!-- SEÃ‡ÃƒO 1: DADOS DO TREINAMENTO           -->
+                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
                 <div class="mb-5">
                     <div class="step-indicator">
                         <span class="step-number bg-primary bg-opacity-10 text-primary">1</span>
-                        Informações Básicas
+                        InformaÃ§Ãµes BÃ¡sicas
                     </div>
                     <div class="section-header">
                         <div class="section-icon bg-primary bg-opacity-10">
@@ -314,7 +314,7 @@
                         </div>
                         <div>
                             <h5>Dados do Treinamento</h5>
-                            <p>Informações gerais sobre o treinamento</p>
+                            <p>InformaÃ§Ãµes gerais sobre o treinamento</p>
                         </div>
                     </div>
 
@@ -365,7 +365,7 @@
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <label for="{{ form.data_inicio.id_for_label }}" class="field-label">Data Início</label>
+                            <label for="{{ form.data_inicio.id_for_label }}" class="field-label">Data InÃ­cio</label>
                             {% render_field form.data_inicio class+="form-control" %}
                             {% if form.data_inicio.errors %}<div class="invalid-feedback d-block">{{ form.data_inicio.errors.as_text }}</div>{% endif %}
                         </div>
@@ -391,9 +391,9 @@
                     </div>
                 </div>
 
-                <!-- ════════════════════════════════════════ -->
-                <!-- SEÇÃO 2: PARTICIPANTES                  -->
-                <!-- ════════════════════════════════════════ -->
+                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+                <!-- SEÃ‡ÃƒO 2: PARTICIPANTES                  -->
+                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
                 <div class="mb-5">
                     <div class="step-indicator">
                         <span class="step-number bg-success bg-opacity-10 text-success">2</span>
@@ -405,7 +405,7 @@
                         </div>
                         <div>
                             <h5>Participantes</h5>
-                            <p>Adicione os funcionários que participarão do treinamento</p>
+                            <p>Adicione os funcionÃ¡rios que participarÃ£o do treinamento</p>
                         </div>
                     </div>
 
@@ -479,9 +479,9 @@
                     </button>
                 </div>
 
-                <!-- ════════════════════════════════════════ -->
-                <!-- SEÇÃO 3: DETALHES OPERACIONAIS          -->
-                <!-- ════════════════════════════════════════ -->
+                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+                <!-- SEÃ‡ÃƒO 3: DETALHES OPERACIONAIS          -->
+                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
                 <div class="mb-4">
                     <div class="step-indicator">
                         <span class="step-number bg-warning bg-opacity-10 text-warning">3</span>
@@ -493,7 +493,7 @@
                         </div>
                         <div>
                             <h5>Detalhes Operacionais</h5>
-                            <p>Horas, custos e previsões</p>
+                            <p>Horas, custos e previsÃµes</p>
                         </div>
                     </div>
 
@@ -522,7 +522,7 @@
                     </div>
                 </div>
 
-                <!-- ═══ FOOTER ACTIONS ═══ -->
+                <!-- â•â•â• FOOTER ACTIONS â•â•â• -->
                 <div class="form-actions d-flex justify-content-between align-items-center">
                     <a href="{% url 'treinamentos:treinamento_list' %}" class="btn btn-back">
                         <i class="bi bi-x-circle me-1"></i> Cancelar
@@ -530,7 +530,7 @@
                     {% if perms.treinamentos.add_treinamento or user.is_superuser %}
                     <button type="submit" class="btn btn-save-main">
                         <i class="bi bi-check-circle-fill me-2"></i>
-                        {% if form.instance.pk %}Salvar Alterações{% else %}Criar Treinamento{% endif %}
+                        {% if form.instance.pk %}Salvar AlteraÃ§Ãµes{% else %}Criar Treinamento{% endif %}
                     </button>
                     {% endif %}
                 </div>

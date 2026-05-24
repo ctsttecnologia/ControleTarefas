@@ -1,14 +1,14 @@
-
+﻿
 {% extends "ltcat/base_ltcat.html" %}
 
-{% block ltcat_title %}Locais de Prestação de Serviço{% endblock %}
+{% block ltcat_title %}Locais de PrestaÃ§Ã£o de ServiÃ§o{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item active">Locais de Prestação</li>
+<li class="breadcrumb-item active">Locais de PrestaÃ§Ã£o</li>
 {% endblock %}
 
 {% block ltcat_content %}
-{# ══ Mensagem de sucesso do cadastro em lote ══ #}
+{# â•â• Mensagem de sucesso do cadastro em lote â•â• #}
 {% if request.GET.msg == "bulk_created" %}
 <div class="alert alert-success alert-dismissible fade show" role="alert">
     <i class="fas fa-check-circle me-2"></i>
@@ -19,7 +19,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="fw-bold mb-0">
-        <i class="fas fa-map-marker-alt me-2"></i>Locais de Prestação de Serviço
+        <i class="fas fa-map-marker-alt me-2"></i>Locais de PrestaÃ§Ã£o de ServiÃ§o
     </h4>
     {% if perms.ltcat.add_local or user.is_superuser %}
     <a href="{% url 'ltcat:local_create' %}" class="btn btn-primary">
@@ -58,8 +58,8 @@
                         <th>Empresa (Cliente)</th>
                         <th>CNPJ</th>
                         <th>Cidade/UF</th>
-                        <th>Endereço</th>
-                        <th class="text-end">Ações</th>
+                        <th>EndereÃ§o</th>
+                        <th class="text-end">AÃ§Ãµes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -98,7 +98,7 @@
                     <tr>
                         <td colspan="6" class="text-center text-muted py-5">
                             <i class="fas fa-map-marker-alt fa-2x d-block mb-2 opacity-50"></i>
-                            <p class="mb-2">Nenhum local de prestação cadastrado.</p>
+                            <p class="mb-2">Nenhum local de prestaÃ§Ã£o cadastrado.</p>
                             {% if perms.ltcat.add_local or user.is_superuser %}
                             <a href="{% url 'ltcat:local_create' %}" class="btn btn-sm btn-primary">
                                 <i class="fas fa-plus me-1"></i> Cadastrar primeiro local
@@ -113,7 +113,7 @@
     </div>
 </div>
 
-<!-- Paginação -->
+<!-- PaginaÃ§Ã£o -->
 {% if is_paginated %}
 <nav class="mt-3">
     <ul class="pagination pagination-sm justify-content-center">

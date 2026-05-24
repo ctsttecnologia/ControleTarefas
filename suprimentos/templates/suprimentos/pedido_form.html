@@ -1,110 +1,176 @@
-
+﻿
 
 {% extends "suprimentos/suprimentos_base.html" %}
 {% load static %}
 
-{% block title %}{{ titulo_pagina }} — Suprimentos{% endblock %}
+{% block title %}{{ titulo_pagina }} â€” Suprimentos{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
+        <div class="col-lg-10">
 
-            <!-- Header -->
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <div class="d-flex justify-content-between align-items-start mb-4">
                 <div>
                     <h2 class="mb-0">{{ titulo_pagina }}</h2>
-                    <small class="text-muted">Preencha os dados do material. Seja detalhado para evitar retrabalho.</small>
+                    <small class="text-muted">
+                        Preencha os dados do pedido e adicione um ou mais itens. Seja detalhado para evitar retrabalho.
+                    </small>
                 </div>
                 <div>
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-outline-secondary me-3">
-                            <i class="bi bi-arrow-left"></i> Voltar
-                        </a>
-                    </div>
-                </div>      
+                    <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
             </div>
 
-            <!-- Form -->
-            <form method="post" enctype="multipart/form-data" novalidate>
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• FORM â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+
+            <form method="post" enctype="multipart/form-data" id="form-pedido" novalidate>
                 {% csrf_token %}
 
-                <!-- Card Dados Principais -->
+                <!-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Erros gerais â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+                {% if form.errors or itens_formset.non_form_errors %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Corrija os erros abaixo:</strong>
+                    <ul class="mb-0 mt-2">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}<li>{{ field }}: {{ error }}</li>{% endfor %}
+                        {% endfor %}
+                        {% for error in itens_formset.non_form_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARD: DADOS DO PEDIDO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0"><i class="bi bi-clipboard-list me-2"></i>Dados do Pedido</h5>
                     </div>
                     <div class="card-body">
-                        {% if form.errors %}
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            <strong>Corrija os erros abaixo:</strong>
-                            <ul class="mb-0 mt-2">
-                                {% for field, errors in form.errors.items %}
-                                    {% for error in errors %}
-                                    <li>{{ error }}</li>
-                                    {% endfor %}
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% endif %}
-
-                        <div class="row mb-3">
+                        <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Tipo de Obra <span class="text-danger">*</span></label>
+                                <label class="form-label fw-bold">
+                                    Tipo de Obra <span class="text-danger">*</span>
+                                </label>
                                 {{ form.tipo_obra }}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Obra (Contrato) <span class="text-danger">*</span></label>
+                                <label class="form-label fw-bold">
+                                    Contrato (CM) <span class="text-danger">*</span>
+                                </label>
                                 {{ form.contrato }}
                             </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">
-                                Descrição do Material <span class="text-danger">*</span>
-                            </label>
-                            {{ form.descricao_material }}
-                            <div class="form-text">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Mínimo 20 caracteres. Informe: nome, marca/modelo, dimensões, cor, especificações técnicas.
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Quantidade <span class="text-danger">*</span></label>
-                                {{ form.quantidade }}
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Unidade <span class="text-danger">*</span></label>
-                                {{ form.unidade_medida }}
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Tipo de Insumo <span class="text-danger">*</span></label>
-                                {{ form.tipo_insumo }}
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Data Necessária <span class="text-danger">*</span></label>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    Data NecessÃ¡ria <span class="text-danger">*</span>
+                                </label>
                                 {{ form.data_necessaria }}
                             </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Observações</label>
-                            {{ form.observacao }}
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">ObservaÃ§Ãµes Gerais</label>
+                                {{ form.observacao }}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Card Anexos -->
+                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARD: ITENS DO PEDIDO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Itens do Pedido</h5>
+                        <button type="button" class="btn btn-light btn-sm" id="btn-add-item">
+                            <i class="bi bi-plus-circle me-1"></i> Adicionar Item
+                        </button>
+                    </div>
+
+                    <div class="card-body">
+                        {{ itens_formset.management_form }}
+
+                        <div id="itens-container">
+                            {% for item_form in itens_formset %}
+                            <div class="item-pedido bg-adaptive p-3 mb-3" data-form-index="{{ forloop.counter0 }}">
+                                <!-- CabeÃ§alho do item -->
+                                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                    <h6 class="mb-0 text-strong">
+                                        <i class="bi bi-box-seam me-2 text-primary"></i>
+                                        Item <span class="item-numero">{{ forloop.counter }}</span>
+                                    </h6>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-item">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Hidden fields (id + DELETE) -->
+                                {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+
+                                <!-- Campos visÃ­veis -->
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">
+                                            Material <span class="text-danger">*</span>
+                                        </label>
+                                        {{ item_form.material }}
+                                        {% if item_form.material.errors %}
+                                            <div class="text-danger small mt-1">{{ item_form.material.errors|join:", " }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">
+                                            Quantidade <span class="text-danger">*</span>
+                                        </label>
+                                        {{ item_form.quantidade }}
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">
+                                            Valor UnitÃ¡rio (R$) <span class="text-danger">*</span>
+                                        </label>
+                                        {{ item_form.valor_unitario }}
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Valor Total (R$)</label>
+                                        <input type="text"
+                                               class="form-control text-end fw-bold item-total"
+                                               readonly value="0,00"
+                                               tabindex="-1">
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">ObservaÃ§Ã£o</label>
+                                        {{ item_form.observacao }}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Total geral -->
+                        <div class="alert alert-info d-flex justify-content-between align-items-center mb-0 mt-3">
+                            <span>
+                                <i class="bi bi-calculator me-2"></i>
+                                <strong>Total Geral do Pedido:</strong>
+                            </span>
+                            <h4 class="mb-0 text-strong" id="total-geral">R$ 0,00</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARD: ANEXOS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-secondary text-white">
                         <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Anexos (opcional)</h5>
                     </div>
                     <div class="card-body">
                         <p class="text-muted small mb-3">
-                            Adicione PDFs, fotos, catálogos ou especificações técnicas. Máximo 10MB por arquivo.
+                            <i class="bi bi-info-circle me-1"></i>
+                            Adicione PDFs, fotos, catÃ¡logos ou especificaÃ§Ãµes tÃ©cnicas. MÃ¡ximo 10MB por arquivo.
                         </p>
                         <div id="anexos-container">
                             <div class="input-group mb-2">
@@ -118,12 +184,12 @@
                     </div>
                 </div>
 
-                <!-- Botões -->
+                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• AÃ‡Ã•ES â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
                 <div class="d-flex justify-content-between">
                     <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-light">
                         <i class="bi bi-arrow-left me-1"></i> CANCELAR
                     </a>
-                    {% if perms.suprimentos.add_pedido or user.is.superuser %}
+                    {% if perms.suprimentos.add_pedido or user.is_superuser %}
                     <button type="submit" class="btn btn-primary btn-lg">
                         <i class="bi bi-save me-2"></i>Criar Pedido (Rascunho)
                     </button>
@@ -133,25 +199,203 @@
         </div>
     </div>
 </div>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• TEMPLATE EMPTY-FORM (clonÃ¡vel via JS) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<template id="empty-form-template">
+    <div class="item-pedido bg-adaptive p-3 mb-3" data-form-index="__prefix__">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <h6 class="mb-0 text-strong">
+                <i class="bi bi-box-seam me-2 text-primary"></i>
+                Item <span class="item-numero"></span>
+            </h6>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-item">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+
+        {% for hidden in itens_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+
+        <div class="row g-3">
+            <div class="col-12">
+                <label class="form-label fw-bold">
+                    Material <span class="text-danger">*</span>
+                </label>
+                {{ itens_formset.empty_form.material }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">
+                    Quantidade <span class="text-danger">*</span>
+                </label>
+                {{ itens_formset.empty_form.quantidade }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">
+                    Valor UnitÃ¡rio (R$) <span class="text-danger">*</span>
+                </label>
+                {{ itens_formset.empty_form.valor_unitario }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Valor Total (R$)</label>
+                <input type="text" class="form-control text-end fw-bold item-total"
+                       readonly value="0,00" tabindex="-1">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">ObservaÃ§Ã£o</label>
+                {{ itens_formset.empty_form.observacao }}
+            </div>
+        </div>
+    </div>
+</template>
 {% endblock %}
+
 
 {% block extra_js %}
 <script>
-document.getElementById('btn-add-anexo').addEventListener('click', function() {
-    const container = document.getElementById('anexos-container');
-    const div = document.createElement('div');
-    div.className = 'input-group mb-2';
-    div.innerHTML = `
-        <input type="file" name="anexos" class="form-control"
-               accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx">
-        <button type="button" class="btn btn-outline-danger btn-remove-anexo">
-            <i class="bi bi-times"></i> X
-        </button>
-    `;
-    container.appendChild(div);
-    div.querySelector('.btn-remove-anexo').addEventListener('click', function() {
-        div.remove();
+(function () {
+    'use strict';
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // FORMSET â€” Itens do Pedido
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    const $totalForms = document.querySelector('[name$="-TOTAL_FORMS"]');
+    if (!$totalForms) return;
+
+    const $container  = document.getElementById('itens-container');
+    const $template   = document.getElementById('empty-form-template');
+    const $btnAdd     = document.getElementById('btn-add-item');
+    const $totalGeral = document.getElementById('total-geral');
+
+    // Formatar BRL
+    const formatBRL = (v) => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
     });
-});
+    const formatNum = (v) => Number(v || 0).toLocaleString('pt-BR', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+
+    // Recalcular totais
+    function recalcular() {
+        let totalGeral = 0;
+        document.querySelectorAll('.item-pedido').forEach((item) => {
+            const $delete = item.querySelector('input[name$="-DELETE"]');
+            if ($delete && $delete.checked) return;
+
+            const qtd   = parseFloat(item.querySelector('[name$="-quantidade"]')?.value) || 0;
+            const valor = parseFloat(item.querySelector('[name$="-valor_unitario"]')?.value) || 0;
+            const total = qtd * valor;
+
+            const $total = item.querySelector('.item-total');
+            if ($total) $total.value = formatNum(total);
+
+            totalGeral += total;
+        });
+        $totalGeral.textContent = formatBRL(totalGeral);
+    }
+
+    // Renumerar visualmente
+    function renumerar() {
+        let visibleIdx = 0;
+        document.querySelectorAll('#itens-container .item-pedido').forEach((item) => {
+            if (item.style.display === 'none') return;
+            visibleIdx++;
+            const $num = item.querySelector('.item-numero');
+            if ($num) $num.textContent = visibleIdx;
+        });
+    }
+
+    // Inicializa Select2 num elemento (se disponÃ­vel)
+    function initSelect2(scope) {
+        if (typeof jQuery === 'undefined' || !jQuery.fn.select2) return;
+        jQuery(scope).find('.select2-material').each(function () {
+            if (!jQuery(this).hasClass('select2-hidden-accessible')) {
+                jQuery(this).select2({
+                    width: '100%',
+                    placeholder: 'â€” Selecione um material â€”',
+                    allowClear: true,
+                });
+            }
+        });
+    }
+
+    // â”€â”€â”€ Adicionar item â”€â”€â”€
+    if ($btnAdd) {
+        $btnAdd.addEventListener('click', () => {
+            const formIdx = parseInt($totalForms.value, 10);
+            const html = $template.innerHTML.replace(/__prefix__/g, formIdx);
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = html.trim();
+            const newItem = wrapper.firstElementChild;
+            $container.appendChild(newItem);
+            $totalForms.value = formIdx + 1;
+
+            initSelect2(newItem);
+            renumerar();
+            recalcular();
+        });
+    }
+
+    // â”€â”€â”€ Remover item (delegaÃ§Ã£o) â”€â”€â”€
+    $container.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-remove-item');
+        if (!btn) return;
+
+        const item = btn.closest('.item-pedido');
+        const $delete = item.querySelector('input[name$="-DELETE"]');
+        const $id     = item.querySelector('input[name$="-id"]');
+
+        // ConfirmaÃ§Ã£o
+        if (!confirm('Remover este item do pedido?')) return;
+
+        if ($id && $id.value && $delete) {
+            // Item jÃ¡ salvo â†’ marca DELETE e esconde
+            $delete.checked = true;
+            item.style.display = 'none';
+        } else {
+            // Item novo â†’ remove do DOM
+            item.remove();
+        }
+        renumerar();
+        recalcular();
+    });
+
+    // â”€â”€â”€ Recalcular ao digitar â”€â”€â”€
+    document.addEventListener('input', (e) => {
+        if (e.target.matches('[name$="-quantidade"], [name$="-valor_unitario"]')) {
+            recalcular();
+        }
+    });
+
+    // â”€â”€â”€ InicializaÃ§Ã£o â”€â”€â”€
+    initSelect2(document);
+    renumerar();
+    recalcular();
+
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ANEXOS â€” mÃºltiplos arquivos
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    const $btnAddAnexo = document.getElementById('btn-add-anexo');
+    if ($btnAddAnexo) {
+        $btnAddAnexo.addEventListener('click', function () {
+            const container = document.getElementById('anexos-container');
+            const div = document.createElement('div');
+            div.className = 'input-group mb-2';
+            div.innerHTML = `
+                <input type="file" name="anexos" class="form-control"
+                       accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx">
+                <button type="button" class="btn btn-outline-danger btn-remove-anexo">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            `;
+            container.appendChild(div);
+            div.querySelector('.btn-remove-anexo').addEventListener('click', () => div.remove());
+        });
+    }
+})();
 </script>
 {% endblock %}
+
+
+
+
+

@@ -2,6 +2,7 @@
 
 from django.db import models
 from .middleware import get_current_filial
+from core.utils import get_filial_ativa
 
 
 class FilialQuerySet(models.QuerySet):
@@ -13,39 +14,30 @@ class FilialQuerySet(models.QuerySet):
     """
 
     def for_request(self, request):
-        """
-        Filtra pela filial ativa da sessão.
-        - Superusuário → SEMPRE vê tudo (acesso irrestrito)
-        - Qualquer outro caso → filtra pelo campo/lookup de filial
-        """
-        user = request.user
+        """Filtra pelo escopo da filial ativa do request."""
+        if request is None:
+            return self.none()
+        user = getattr(request, "user", None)
+        if user is None or not getattr(user, "is_authenticated", False):
+            return self.none()
 
-        # ✅ Superuser tem acesso irrestrito, sempre
-        if user.is_superuser:
+        # Superuser vê tudo (opcional — remova se não quiser esse comportamento)
+        if getattr(user, "is_superuser", False):
             return self
 
-        filial_ativa_id = request.session.get('active_filial_id')
+        filial = get_filial_ativa(user, request)
+        if filial is None:
+            return self.none()
 
-        # Determina o ID da filial a usar
-        filial_id = filial_ativa_id
-        if not filial_id:
-            filial_ativa = getattr(user, 'filial_ativa', None)
-            if filial_ativa:
-                filial_id = filial_ativa.pk
-
-        # Se tem filial, aplica o filtro
-        if filial_id:
-            filial_field = self._get_filial_field()
-            return self.filter(**{filial_field: filial_id})
-
-        # Sem filial → não vê nada (segurança)
-        return self.none()
+        lookup = self._get_filial_field()
+        # filial_id aceita o objeto direto também
+        return self.filter(**{lookup: filial})
 
     def _get_filial_field(self):
         """
         Descobre qual campo usar para filtrar.
-        1. Se o model define `_filial_lookup` → usa esse caminho (FK do pai)
-        2. Se não → usa 'filial_id' (campo direto)
+        1. Se o model define `_filial_lookup` -> usa esse caminho (FK do pai)
+        2. Se não -> usa 'filial_id' (campo direto)
         """
         model = self.model
         if hasattr(model, '_filial_lookup'):
@@ -53,15 +45,23 @@ class FilialQuerySet(models.QuerySet):
         return 'filial_id'
 
 
-class FilialManager(models.Manager):
+class FilialManager(models.Manager.from_queryset(FilialQuerySet)):
+    """
+    Manager que:
+      - Aplica filtro automático por filial via thread-local (middleware)
+      - Expõe todos os métodos do FilialQuerySet (incluindo `for_request`)
+    """
+
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset()  # já é FilialQuerySet
         filial = get_current_filial()
         if filial is not None:
-            return qs.filter(filial=filial)
+            lookup = qs._get_filial_field()
+            return qs.filter(**{lookup: filial})
         return qs
 
     def all_filiais(self):
-        """Retorna o queryset SEM filtrar por filial."""
-        return super().get_queryset()
+        """Retorna o queryset SEM filtrar por filial (bypassa o thread-local)."""
+        return FilialQuerySet(self.model, using=self._db)
+
 

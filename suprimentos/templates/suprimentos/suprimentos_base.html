@@ -1,4 +1,4 @@
-
+﻿
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Suprimentos - {{ block.super }}{% endblock %}
@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-{# ═══════ Barra de navegação secundária do Suprimentos ═══════ #}
+{# â•â•â•â•â•â•â• Barra de navegaÃ§Ã£o secundÃ¡ria do Suprimentos â•â•â•â•â•â•â• #}
 <nav class="navbar navbar-expand-lg suprimentos-nav border-bottom shadow-sm sticky-top" style="z-index: 1020;">
     <div class="container-fluid">
         <a class="navbar-brand fw-bold" href="{% url 'suprimentos:dashboard' %}">
@@ -37,25 +37,26 @@
                         <i class="bi bi-cart me-1"></i> Pedidos
                         {% if count_pedidos_pendentes %}
                         <span class="badge rounded-pill bg-warning text-dark ms-1"
-                              title="{{ count_pedidos_pendentes }} pedido{{ count_pedidos_pendentes|pluralize }} aguardando aprovação">
+                              title="{{ count_pedidos_pendentes }} pedido{{ count_pedidos_pendentes|pluralize }} aguardando aprovaÃ§Ã£o">
                             {{ count_pedidos_pendentes }}
                         </span>
                         {% endif %}
                     </a>
                 </li>
 
-                {# Solicitações de Compra #}
+                {# SolicitaÃ§Ãµes de Compra #}
                 <li class="nav-item">
                     {% if perms.suprimentos.add_solicitacao or user.is.superuser %}
-                    <a class="nav-link position-relative {% if 'solicitacao' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
-                       href="{% url 'suprimentos:solicitacao_lista' %}">
-                        <i class="bi bi-bag-check me-1"></i> Solicitações
-                        {% if count_sol_pendentes %}
-                        <span class="badge rounded-pill bg-info ms-1"
-                              title="{{ count_sol_pendentes }} solicitaç{{ count_sol_pendentes|pluralize:"ão,ões" }} em andamento">
-                            {{ count_sol_pendentes }}
-                        </span>
-                        {% endif %}
+                    <a class="nav-link {% if request.resolver_match.url_name|slice:':12' == 'solicitacao_' %}active{% endif %}" 
+                        href="{% url 'suprimentos:solicitacao_lista' %}">
+                            <i class="bi bi-bag-check me-1"></i> SolicitaÃ§Ãµes
+                            {% if solicitacoes_pendentes_count and solicitacoes_pendentes_count > 0 %}
+                            <span class="badge bg-danger rounded-pill ms-1" 
+                                title="{{ count_sol_pendentes }} solicitaÃ§{{ count_sol_pendentes|pluralize:"Ã£o,Ãµes" }} em andamento" 
+                                style="font-size:.65rem;animation:pulse 2s infinite;">
+                                {{ solicitacoes_pendentes_count }}
+                            </span>
+                            {% endif %}
                     </a>
                     {% endif %}
                 </li>
@@ -90,18 +91,18 @@
                     {% endif %}
                 </li>
 
-                {# Relatórios (dropdown) #}
+                {# RelatÃ³rios (dropdown) #}
                 {% if perms.suprimentos.view_relatorio or user.is_superuser %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle fw-semibold
                        {% if 'relatorio' in request.resolver_match.url_name or request.resolver_match.app_name == 'tributacao' %}active{% endif %}"
                        href="#" data-bs-toggle="dropdown" style="color: #0dcaf0;">
-                        <i class="bi bi-bar-chart-line me-1"></i> Relatórios
+                        <i class="bi bi-bar-chart-line me-1"></i> RelatÃ³rios
                     </a>
                     <ul class="dropdown-menu shadow">
                         <li>
                             <a class="dropdown-item" href="{% url 'suprimentos:relatorio' %}">
-                                <i class="bi bi-eye me-2 text-info"></i> Relatório Gerencial
+                                <i class="bi bi-eye me-2 text-info"></i> RelatÃ³rio Gerencial
                             </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>
@@ -119,7 +120,7 @@
                         <li>
                             <a class="dropdown-item {% if request.resolver_match.app_name == 'tributacao' %}active{% endif %}"
                                href="{% url 'tributacao:dashboard' %}">
-                                <i class="bi bi-calculator me-2 text-primary"></i> Tributação
+                                <i class="bi bi-calculator me-2 text-primary"></i> TributaÃ§Ã£o
                             </a>
                         </li>
                     </ul>
@@ -127,7 +128,7 @@
                 {% endif %}
             </ul>
 
-            {# Botão Novo Pedido #}
+            {# BotÃ£o Novo Pedido #}
             {% if perms.suprimentos.add_pedido or user.is.superuser %}
             <a href="{% url 'suprimentos:pedido_criar' %}" class="btn btn-success btn-sm">
                 <i class="bi bi-cart-plus me-1"></i> Novo Pedido

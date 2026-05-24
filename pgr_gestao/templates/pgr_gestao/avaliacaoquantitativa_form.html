@@ -1,13 +1,13 @@
-{# Formulário de Avaliação Quantitativa - Criar/Editar #}
+﻿{# FormulÃ¡rio de AvaliaÃ§Ã£o Quantitativa - Criar/Editar #}
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
 {% block title %}
-    {% if object %}Editar Avaliação{% else %}Nova Avaliação Quantitativa{% endif %}
+    {% if object %}Editar AvaliaÃ§Ã£o{% else %}Nova AvaliaÃ§Ã£o Quantitativa{% endif %}
 {% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">Avaliações</a></li>
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">AvaliaÃ§Ãµes</a></li>
 <li class="breadcrumb-item active">
     {% if object %}Editar{% else %}Nova{% endif %}
 </li>
@@ -34,7 +34,7 @@
         margin-bottom: 0;
     }
 
-    /* Card do formulário */
+    /* Card do formulÃ¡rio */
     .form-card {
         border: none;
         border-radius: 0 0 0.75rem 0.75rem;
@@ -60,7 +60,7 @@
         font-size: 1.1rem;
     }
 
-    /* Card header com ícone */
+    /* Card header com Ã­cone */
     .form-card-header {
         background: var(--bs-primary);
         color: white;
@@ -84,7 +84,7 @@
         margin-left: 0.5rem;
     }
 
-    /* Botões de ação */
+    /* BotÃµes de aÃ§Ã£o */
     .form-actions {
         background: var(--bs-tertiary-bg);
         padding: 1rem 1.5rem;
@@ -106,7 +106,7 @@
         margin-top: 0.25rem;
     }
 
-    /* Espaçamento entre seções */
+    /* EspaÃ§amento entre seÃ§Ãµes */
     .form-section {
         margin-bottom: 2rem;
     }
@@ -124,19 +124,19 @@
     <div>
         <h1>
             <i class="bi bi-graph-up-arrow"></i>
-            {% if object %}Editar Avaliação{% else %}Nova Avaliação Quantitativa{% endif %}
+            {% if object %}Editar AvaliaÃ§Ã£o{% else %}Nova AvaliaÃ§Ã£o Quantitativa{% endif %}
         </h1>
-        <p>Registro de medição e avaliação de risco</p>
+        <p>Registro de mediÃ§Ã£o e avaliaÃ§Ã£o de risco</p>
     </div>
     <a href="{% url 'pgr_gestao:avaliacao_list' %}" class="btn btn-light">
         <i class="bi bi-arrow-left"></i> Voltar
     </a>
 </div>
 
-<!-- Card do Formulário -->
+<!-- Card do FormulÃ¡rio -->
 <div class="card form-card">
     <div class="form-card-header">
-        <i class="bi bi-pencil-square"></i> Formulário de Avaliação
+        <i class="bi bi-pencil-square"></i> FormulÃ¡rio de AvaliaÃ§Ã£o
     </div>
 
     <form method="post" enctype="multipart/form-data" novalidate id="avaliacaoForm">
@@ -144,7 +144,7 @@
 
         <div class="card-body p-4">
 
-            {# Erros não-de-campo #}
+            {# Erros nÃ£o-de-campo #}
             {% if form.non_field_errors %}
             <div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle-fill"></i>
@@ -153,11 +153,11 @@
             {% endif %}
 
             <!-- ======================================== -->
-            <!-- SEÇÃO 1: IDENTIFICAÇÃO -->
+            <!-- SEÃ‡ÃƒO 1: IDENTIFICAÃ‡ÃƒO -->
             <!-- ======================================== -->
             <div class="form-section">
                 <div class="form-section-title">
-                    <i class="bi bi-card-list"></i> Identificação
+                    <i class="bi bi-card-list"></i> IdentificaÃ§Ã£o
                 </div>
 
                 <div class="row g-3">
@@ -176,11 +176,11 @@
                         {% endif %}
                     </div>
 
-                    <!-- Tipo de Avaliação -->
+                    <!-- Tipo de AvaliaÃ§Ã£o -->
                     <div class="col-md-3">
                         <label for="{{ form.tipo_avaliacao.id_for_label }}" class="form-label fw-semibold">
                             <i class="bi bi-tag"></i>
-                            Tipo de Avaliação <span class="required-mark">*</span>
+                            Tipo de AvaliaÃ§Ã£o <span class="required-mark">*</span>
                         </label>
                         {{ form.tipo_avaliacao }}
                         {% if form.tipo_avaliacao.errors %}
@@ -188,11 +188,11 @@
                         {% endif %}
                     </div>
 
-                    <!-- Data da Avaliação -->
+                    <!-- Data da AvaliaÃ§Ã£o -->
                     <div class="col-md-3">
                         <label for="{{ form.data_avaliacao.id_for_label }}" class="form-label fw-semibold">
                             <i class="bi bi-calendar3"></i>
-                            Data da Avaliação <span class="required-mark">*</span>
+                            Data da AvaliaÃ§Ã£o <span class="required-mark">*</span>
                         </label>
                         {{ form.data_avaliacao }}
                         {% if form.data_avaliacao.errors %}
@@ -203,11 +203,11 @@
             </div>
 
             <!-- ======================================== -->
-            <!-- SEÇÃO 2: MEDIÇÃO -->
+            <!-- SEÃ‡ÃƒO 2: MEDIÃ‡ÃƒO -->
             <!-- ======================================== -->
             <div class="form-section">
                 <div class="form-section-title">
-                    <i class="bi bi-rulers"></i> Medição
+                    <i class="bi bi-rulers"></i> MediÃ§Ã£o
                 </div>
 
                 <div class="row g-3">
@@ -230,11 +230,11 @@
                         <small class="form-text text-muted">Ex: 85.5 dB(A)</small>
                     </div>
 
-                    <!-- Limite de Tolerância -->
+                    <!-- Limite de TolerÃ¢ncia -->
                     <div class="col-md-4">
                         <label for="{{ form.limite_tolerancia_nr.id_for_label }}" class="form-label fw-semibold">
                             <i class="bi bi-bookmark-check"></i>
-                            Limite de Tolerância (NR)
+                            Limite de TolerÃ¢ncia (NR)
                         </label>
                         {{ form.limite_tolerancia_nr }}
                         {% if form.limite_tolerancia_nr.errors %}
@@ -252,7 +252,7 @@
                         <div class="form-check form-switch d-flex align-items-center mt-2 ps-5">
                             {{ form.conforme }}
                             <label for="{{ form.conforme.id_for_label }}" class="form-check-label ms-3" id="conformeLabel">
-                                <span class="text-muted">Está conforme?</span>
+                                <span class="text-muted">EstÃ¡ conforme?</span>
                             </label>
                         </div>
                         {% if form.conforme.errors %}
@@ -263,7 +263,7 @@
             </div>
 
             <!-- ======================================== -->
-            <!-- SEÇÃO 3: METODOLOGIA E EQUIPAMENTO -->
+            <!-- SEÃ‡ÃƒO 3: METODOLOGIA E EQUIPAMENTO -->
             <!-- ======================================== -->
             <div class="form-section">
                 <div class="form-section-title">
@@ -294,14 +294,14 @@
                         {% if form.equipamento_utilizado.errors %}
                             <div class="field-error">{{ form.equipamento_utilizado.errors|join:", " }}</div>
                         {% endif %}
-                        <small class="form-text text-muted">Marca/modelo/nº de série</small>
+                        <small class="form-text text-muted">Marca/modelo/nÂº de sÃ©rie</small>
                     </div>
 
-                    <!-- Responsável -->
+                    <!-- ResponsÃ¡vel -->
                     <div class="col-md-6">
                         <label for="{{ form.responsavel_avaliacao.id_for_label }}" class="form-label fw-semibold">
                             <i class="bi bi-person-badge"></i>
-                            Responsável pela Avaliação
+                            ResponsÃ¡vel pela AvaliaÃ§Ã£o
                         </label>
                         {{ form.responsavel_avaliacao }}
                         {% if form.responsavel_avaliacao.errors %}
@@ -309,11 +309,11 @@
                         {% endif %}
                     </div>
 
-                    <!-- Laudo Técnico -->
+                    <!-- Laudo TÃ©cnico -->
                     <div class="col-md-12">
                         <label for="{{ form.laudo_tecnico.id_for_label }}" class="form-label fw-semibold">
                             <i class="bi bi-file-earmark-pdf"></i>
-                            Laudo Técnico
+                            Laudo TÃ©cnico
                         </label>
                         {{ form.laudo_tecnico }}
                         {% if form.laudo_tecnico.errors %}
@@ -334,23 +334,23 @@
             </div>
 
             <!-- ======================================== -->
-            <!-- SEÇÃO 4: OBSERVAÇÕES -->
+            <!-- SEÃ‡ÃƒO 4: OBSERVAÃ‡Ã•ES -->
             <!-- ======================================== -->
             <div class="form-section">
                 <div class="form-section-title">
-                    <i class="bi bi-chat-left-text"></i> Observações
+                    <i class="bi bi-chat-left-text"></i> ObservaÃ§Ãµes
                 </div>
 
                 <div class="row g-3">
                     <div class="col-md-12">
                         <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold visually-hidden">
-                            Observações
+                            ObservaÃ§Ãµes
                         </label>
                         {{ form.observacoes }}
                         {% if form.observacoes.errors %}
                             <div class="field-error">{{ form.observacoes.errors|join:", " }}</div>
                         {% endif %}
-                        <small class="form-text text-muted">Notas adicionais, condições da medição, etc.</small>
+                        <small class="form-text text-muted">Notas adicionais, condiÃ§Ãµes da mediÃ§Ã£o, etc.</small>
                     </div>
                 </div>
             </div>
@@ -358,7 +358,7 @@
         </div>
 
         <!-- ======================================== -->
-        <!-- AÇÕES DO FORMULÁRIO -->
+        <!-- AÃ‡Ã•ES DO FORMULÃRIO -->
         <!-- ======================================== -->
         <div class="form-actions">
             <a href="{% url 'pgr_gestao:avaliacao_list' %}" class="btn btn-outline-secondary">
@@ -366,7 +366,7 @@
             </a>
             <button type="submit" class="btn btn-primary">
                 <i class="bi bi-download"></i>
-                {% if object %}Atualizar Avaliação{% else %}Salvar Avaliação{% endif %}
+                {% if object %}Atualizar AvaliaÃ§Ã£o{% else %}Salvar AvaliaÃ§Ã£o{% endif %}
             </button>
         </div>
     </form>
@@ -379,7 +379,7 @@
 document.addEventListener('DOMContentLoaded', function () {
 
     // ===== Aplica classes Bootstrap aos campos do form =====
-    // (caso o forms.py não defina widgets com classes)
+    // (caso o forms.py nÃ£o defina widgets com classes)
     document.querySelectorAll('#avaliacaoForm input:not([type=checkbox]):not([type=file]):not([type=hidden])').forEach(el => {
         if (!el.classList.contains('form-control')) el.classList.add('form-control');
     });
@@ -410,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (conformeCheckbox.checked) {
             conformeLabel.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> CONFORME</span>';
         } else {
-            conformeLabel.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> NÃO CONFORME</span>';
+            conformeLabel.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> NÃƒO CONFORME</span>';
         }
     }
 
@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Estado inicial do label
     atualizarLabelConformidade();
 
-    // ===== Validação visual ao submeter =====
+    // ===== ValidaÃ§Ã£o visual ao submeter =====
     const form = document.getElementById('avaliacaoForm');
     form.addEventListener('submit', function (e) {
         let valido = true;

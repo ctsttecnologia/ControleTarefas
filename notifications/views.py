@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST
 from django.utils.dateparse import parse_datetime
 from .models import Notificacao
 
+
 MAX_DROPDOWN = 8
 
 logger = logging.getLogger(__name__)
@@ -94,19 +95,18 @@ def api_contagem(request):
     try:
         total = Notificacao.objects.filter(
             usuario=request.user,
-            lida=False
+            lida=False,
         ).count()
-
-        return JsonResponse({
-            'total_nao_lidas': total,
-            'server_time': timezone.now().isoformat(),
-        })
     except Exception:
         logger.exception("Erro em api_contagem")
-        return JsonResponse({
-            'total_nao_lidas': 0,
-            'server_time': timezone.now().isoformat(),
-        }, status=200)
+        total = 0
+
+    return JsonResponse({
+        'count': total,             # ✅ chave nova exigida pelos testes
+        'total_nao_lidas': total,   # mantém retrocompatibilidade
+        'server_time': timezone.now().isoformat(),
+    })
+
 
 @login_required
 def dropdown_html(request):

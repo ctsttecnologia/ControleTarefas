@@ -1,11 +1,11 @@
-
+﻿
 {% extends 'base.html' %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* ═══ Caixa adaptativa "Arquivo e Prazos" ═══ */
+    /* â•â•â• Caixa adaptativa "Arquivo e Prazos" â•â•â• */
     .doc-box {
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -82,7 +82,7 @@
     <div class="row justify-content-center">
         <div class="col-lg-8 col-xl-7">
 
-            {# ── Breadcrumb ── #}
+            {# â”€â”€ Breadcrumb â”€â”€ #}
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb small">
                     {% if perms.documentos.view_documento or user.is_superuser %}
@@ -97,7 +97,7 @@
             </nav>
 
             <div class="card shadow-sm border-0">
-                {# ── Header ── #}
+                {# â”€â”€ Header â”€â”€ #}
                 <div class="card-header bg-primary text-white py-3">
                     <h4 class="mb-0">
                         {% if documento_antigo %}
@@ -112,28 +112,28 @@
 
                 <div class="card-body p-4">
 
-                    {# ── Info do documento antigo (renovação) ── #}
+                    {# â”€â”€ Info do documento antigo (renovaÃ§Ã£o) â”€â”€ #}
                     {% if documento_antigo %}
                         <div class="alert alert-info d-flex align-items-start">
                             <i class="bi bi-info-circle-fill me-2 fs-5"></i>
                             <div>
-                                <strong>Você está renovando:</strong>
+                                <strong>VocÃª estÃ¡ renovando:</strong>
                                 <div class="small mt-1">
-                                    📄 <strong>{{ documento_antigo.nome }}</strong>
+                                    ðŸ“„ <strong>{{ documento_antigo.nome }}</strong>
                                     {% if documento_antigo.data_vencimento %}
-                                        — venceu/vence em
+                                        â€” venceu/vence em
                                         <strong>{{ documento_antigo.data_vencimento|date:"d/m/Y" }}</strong>
                                     {% endif %}
                                 </div>
                                 <div class="small mt-1 opacity-75">
-                                    O documento anterior será marcado como
+                                    O documento anterior serÃ¡ marcado como
                                     <strong>Renovado</strong> automaticamente.
                                 </div>
                             </div>
                         </div>
                     {% endif %}
 
-                    {# ── Info do objeto pai (anexo) ── #}
+                    {# â”€â”€ Info do objeto pai (anexo) â”€â”€ #}
                     {% if objeto_pai %}
                         <div class="alert alert-secondary small">
                             <i class="bi bi-link-45deg me-1"></i>
@@ -141,11 +141,11 @@
                         </div>
                     {% endif %}
 
-                    {# ── Alertas de Erro ── #}
+                    {# â”€â”€ Alertas de Erro â”€â”€ #}
                     {% if form.errors %}
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <strong>Atenção!</strong> Corrija os erros abaixo.
+                            <strong>AtenÃ§Ã£o!</strong> Corrija os erros abaixo.
                             {% if form.non_field_errors %}
                                 <ul class="mb-0 mt-2">
                                     {% for error in form.non_field_errors %}
@@ -184,7 +184,7 @@
                             </div>
                         </div>
 
-                        {# ── Arquivo e Prazos ── #}
+                        {# â”€â”€ Arquivo e Prazos â”€â”€ #}
                         <h6 class="text-primary mb-3 mt-4 border-bottom pb-2">
                             <i class="bi bi-file-earmark-arrow-up me-2"></i>Arquivo e Prazos
                         </h6>
@@ -204,15 +204,15 @@
                                     {% if documento_antigo %}
                                         <div class="form-text">
                                             <i class="bi bi-lightbulb me-1"></i>
-                                            Envie a <strong>nova versão</strong> do documento.
+                                            Envie a <strong>nova versÃ£o</strong> do documento.
                                         </div>
                                     {% endif %}
                                 </div>
 
-                                {# Data de Emissão #}
+                                {# Data de EmissÃ£o #}
                                 <div class="col-md-6">
                                     <label for="{{ form.data_emissao.id_for_label }}" class="form-label">
-                                        Data de Emissão
+                                        Data de EmissÃ£o
                                     </label>
                                     {{ form.data_emissao }}
                                     {% if form.data_emissao.errors %}
@@ -233,14 +233,14 @@
                             </div>
                         </div>
 
-                        {# ── Botões ── #}
+                        {# â”€â”€ BotÃµes â”€â”€ #}
                         <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
                             <a href="{% url 'documentos:lista' %}" class="btn btn-outline-secondary px-4">
                                 <i class="bi bi-arrow-left me-1"></i> Cancelar
                             </a>
                             <button type="submit" class="btn btn-success px-4">
                                 <i class="bi bi-check-lg me-1"></i>
-                                {% if documento_antigo %}Confirmar Renovação
+                                {% if documento_antigo %}Confirmar RenovaÃ§Ã£o
                                 {% elif objeto_pai %}Anexar Documento
                                 {% else %}Cadastrar Documento{% endif %}
                             </button>

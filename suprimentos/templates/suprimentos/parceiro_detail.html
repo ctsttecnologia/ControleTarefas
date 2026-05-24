@@ -1,4 +1,4 @@
-
+﻿
 <!-- suprimentos/templates/suprimentos/parceiro_detail.html -->
 {% extends "suprimentos/suprimentos_base.html" %}
 {% load humanize %}
@@ -13,21 +13,21 @@
             {% if perms.suprimentos.change_parceiro or user.is.superuser %}
             <a href="{% url 'suprimentos:parceiro_update' pk=parceiro.pk %}" class="btn btn-primary"><i class="fas fa-edit me-1"></i> Editar</a>
             {% endif %}
-            <a href="{% url 'suprimentos:parceiro_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i> Voltar à Lista</a>
+            <a href="{% url 'suprimentos:parceiro_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i> Voltar Ã  Lista</a>
         </div>
     </div>
 
     <div class="card shadow-sm">
         <div class="card-header">
-            <h5 class="mb-0">Informações do Parceiro</h5>
+            <h5 class="mb-0">InformaÃ§Ãµes do Parceiro</h5>
         </div>
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
-                    <p><strong>Razão Social:</strong> {{ parceiro.razao_social|default:"Não informado" }}</p>
-                    <p><strong>CNPJ:</strong> {{ parceiro.cnpj|default:"Não informado" }}</p>
-                    <p><strong>Inscrição Estadual:</strong> {{ parceiro.inscricao_estadual|default:"Não informado" }}</p>
-                    <p><strong>Endereço:</strong> {{ parceiro.endereco|default:"Não informado" }}</p>
+                    <p><strong>RazÃ£o Social:</strong> {{ parceiro.razao_social|default:"NÃ£o informado" }}</p>
+                    <p><strong>CNPJ:</strong> {{ parceiro.cnpj|default:"NÃ£o informado" }}</p>
+                    <p><strong>InscriÃ§Ã£o Estadual:</strong> {{ parceiro.inscricao_estadual|default:"NÃ£o informado" }}</p>
+                    <p><strong>EndereÃ§o:</strong> {{ parceiro.endereco|default:"NÃ£o informado" }}</p>
                     <hr>
                     <p><strong>Tipo:</strong> 
                         {% if parceiro.eh_fabricante %}<span class="badge bg-info">Fabricante</span>{% endif %}
@@ -43,17 +43,17 @@
                 </div>
                 <div class="col-md-6">
                     <h5 class="text-muted">Contato</h5>
-                    <p><strong>Pessoa de Contato:</strong> {{ parceiro.contato|default:"Não informado" }}</p>
-                    <p><strong>Telefone:</strong> {{ parceiro.telefone|default:"Não informado" }}</p>
-                    <p><strong>Celular:</strong> {{ parceiro.celular|default:"Não informado" }}</p>
-                    <p><strong>E-mail:</strong> <a href="mailto:{{ parceiro.email }}">{{ parceiro.email|default:"Não informado" }}</a></p>
-                    <p><strong>Site:</strong> <a href="{{ parceiro.site }}" target="_blank">{{ parceiro.site|default:"Não informado" }}</a></p>
+                    <p><strong>Pessoa de Contato:</strong> {{ parceiro.contato|default:"NÃ£o informado" }}</p>
+                    <p><strong>Telefone:</strong> {{ parceiro.telefone|default:"NÃ£o informado" }}</p>
+                    <p><strong>Celular:</strong> {{ parceiro.celular|default:"NÃ£o informado" }}</p>
+                    <p><strong>E-mail:</strong> <a href="mailto:{{ parceiro.email }}">{{ parceiro.email|default:"NÃ£o informado" }}</a></p>
+                    <p><strong>Site:</strong> <a href="{{ parceiro.site }}" target="_blank">{{ parceiro.site|default:"NÃ£o informado" }}</a></p>
                 </div>
             </div>
             <hr>
             <div>
-                <h5>Observações</h5>
-                <p>{{ parceiro.observacoes|linebreaksbr|default:"Nenhuma observação." }}</p>
+                <h5>ObservaÃ§Ãµes</h5>
+                <p>{{ parceiro.observacoes|linebreaksbr|default:"Nenhuma observaÃ§Ã£o." }}</p>
             </div>
         </div>
     </div>

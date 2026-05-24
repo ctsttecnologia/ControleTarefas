@@ -57,19 +57,17 @@ _APP = 'ferramentas'
 
 class FilialAtribuicaoMixin:
     """
-    Mixin para atribuir automaticamente a filial ao criar objetos.
-    Prioriza: sessão (superuser) > filial_ativa do usuário.
+    Mixin para atribuir a filial ativa ao instance antes de salvar.
+    Usa a função canônica `get_filial_ativa` (fonte única de verdade).
     """
     def _atribuir_filial(self, instance):
-        user = self.request.user
-        session_filial = self.request.session.get('active_filial_id')
+        from core.utils import get_filial_ativa
 
-        if user.is_superuser and session_filial:
-            instance.filial_id = session_filial
-        elif user.filial_ativa:
-            instance.filial = user.filial_ativa
-        else:
+        filial = get_filial_ativa(self.request.user, self.request)
+        if filial is None:
             raise ValueError("Usuário sem filial ativa. Impossível criar registro.")
+        instance.filial = filial
+
 
 
 class ItemRetrievalMixin:
@@ -473,7 +471,11 @@ class IniciarManutencaoView(AcaoFerramentaBaseView):
 
         ferramenta.status = Ferramenta.Status.EM_MANUTENCAO
         ferramenta.save(update_fields=['status'])
-        self._log_atividade(ferramenta, Atividade.TipoAtividade.MANUTENCAO_INICIO, "Manutenção iniciada.")
+        self._log_atividade(
+            tipo=Atividade.TipoAtividade.MANUTENCAO_INICIO,
+            descricao="Manutenção iniciada.",
+            ferramenta=ferramenta,
+        )
         messages.success(request, f"'{ferramenta.nome}' colocada em manutenção.")
         return redirect(ferramenta.get_absolute_url())
 
@@ -487,7 +489,11 @@ class FinalizarManutencaoView(AcaoFerramentaBaseView):
 
         ferramenta.status = Ferramenta.Status.DISPONIVEL
         ferramenta.save(update_fields=['status'])
-        self._log_atividade(ferramenta, Atividade.TipoAtividade.MANUTENCAO_FIM, "Manutenção finalizada.")
+        self._log_atividade(
+            ferramenta=ferramenta,
+            tipo=Atividade.TipoAtividade.MANUTENCAO_FIM,
+            descricao="Manutenção finalizada."
+        )
         messages.success(request, f"Manutenção de '{ferramenta.nome}' finalizada.")
         return redirect(ferramenta.get_absolute_url())
 

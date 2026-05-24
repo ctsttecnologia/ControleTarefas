@@ -1,4 +1,4 @@
-
+﻿
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load widget_tweaks %}
 
@@ -14,7 +14,7 @@
                 <i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
                 {% if object %}Editar Equipamento{% else %}Novo Equipamento{% endif %}
             </h4>
-            <span class="sst-page-subtitle">Cadastro de EPIs e equipamentos de segurança</span>
+            <span class="sst-page-subtitle">Cadastro de EPIs e equipamentos de seguranÃ§a</span>
         </div>
         <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="sst-btn-header">
             <i class="bi bi-arrow-left"></i> Voltar
@@ -36,10 +36,10 @@
                     </div>
                     {% endif %}
 
-                    <!-- Informações Principais -->
+                    <!-- InformaÃ§Ãµes Principais -->
                     <div class="sst-section-title">
                         <i class="bi bi-info-circle"></i>
-                        Informações Principais
+                        InformaÃ§Ãµes Principais
                     </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
@@ -71,10 +71,10 @@
                         </div>
                     </div>
 
-                    <!-- Certificação e Vida Útil -->
+                    <!-- CertificaÃ§Ã£o e Vida Ãštil -->
                     <div class="sst-section-title">
                         <i class="bi bi-award"></i>
-                        Certificação e Vida Útil
+                        CertificaÃ§Ã£o e Vida Ãštil
                     </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
@@ -132,7 +132,7 @@
                                 </span>
                                 {% elif object.estoque_status == 'critico' %}
                                 <span class="sst-badge sst-badge--warning">
-                                    <i class="bi bi-exclamation-triangle-fill"></i> Estoque Crítico
+                                    <i class="bi bi-exclamation-triangle-fill"></i> Estoque CrÃ­tico
                                 </span>
                                 {% else %}
                                 <span class="sst-badge sst-badge--success">
@@ -209,7 +209,7 @@
                     <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="sst-btn-cancel">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </a>
-                    {% if permission.seguranca_trabalho.add_equipamento or user.is_superuser %}
+                    {% if perms.seguranca_trabalho.add_equipamento or user.is_superuser %}
                     <button type="submit" class="sst-btn-primary">
                         <i class="bi bi-check-lg"></i> Salvar
                     </button>

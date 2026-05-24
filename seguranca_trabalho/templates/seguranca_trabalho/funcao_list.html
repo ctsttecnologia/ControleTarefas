@@ -1,24 +1,24 @@
-
+﻿
 {% extends "seguranca_trabalho/_base_sst.html" %}
 
-{% block title %}Funções{% endblock %}
+{% block title %}FunÃ§Ãµes{% endblock %}
 
 {% block sst_content %}
 
 <div class="sst-page-header">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h4><i class="bi bi-briefcase me-2"></i>Funções</h4>
-            <span class="sst-page-subtitle">Gerenciamento de funções para associação de EPIs</span>
+            <h4><i class="bi bi-briefcase me-2"></i>FunÃ§Ãµes</h4>
+            <span class="sst-page-subtitle">Gerenciamento de funÃ§Ãµes para associaÃ§Ã£o de EPIs</span>
         </div>
-        {% if permission.seguranca_trabalho.add_funcao or user.is_superuser %}
+        {% if perms.seguranca_trabalho.add_funcao or user.is_superuser %}
         <button type="button" class="sst-btn-header sst-btn-header--secundary"
-                title="Nova Função"
+                title="Nova FunÃ§Ã£o"
                 hx-get="{% url 'seguranca_trabalho:funcao_create' %}"
                 hx-target="#modal-content"
                 data-bs-toggle="modal"
                 data-bs-target="#genericModal">
-            <i class="bi bi-plus-circle"></i> Nova Função
+            <i class="bi bi-plus-circle"></i> Nova FunÃ§Ã£o
         </button>
         {% endif %}
     </div>
@@ -33,7 +33,7 @@
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                     <input type="text" class="form-control" id="q" name="q"
-                           value="{{ request.GET.q }}" placeholder="Nome da função ou cargo...">
+                           value="{{ request.GET.q }}" placeholder="Nome da funÃ§Ã£o ou cargo...">
                 </div>
             </div>
             <div class="col-md-4 d-flex gap-2">
@@ -52,18 +52,18 @@
 <div class="sst-card">
     <div class="sst-card-header">
         <i class="bi bi-table"></i>
-        <h6>Lista de Funções</h6>
+        <h6>Lista de FunÃ§Ãµes</h6>
     </div>
     <div class="sst-table-wrapper">
         <table class="sst-table">
             <thead>
                 <tr>
-                    <th title="Registro da Função" class="text-center">Nº</th>
-                    <th>Nome da Função</th>
-                    <th>Descrição</th>
+                    <th title="Registro da FunÃ§Ã£o" class="text-center">NÂº</th>
+                    <th>Nome da FunÃ§Ã£o</th>
+                    <th>DescriÃ§Ã£o</th>
                     <th>Cargos Associados</th>
                     <th class="text-center">Status</th>
-                    <th class="text-center" style="width: 120px;">Ações</th>
+                    <th class="text-center" style="width: 120px;">AÃ§Ãµes</th>
                 </tr>
             </thead>
             <tbody>
@@ -77,7 +77,7 @@
                         <strong style="color:var(--sst-text);">{{ funcao.nome }}</strong>
                     </td>
                     <td>
-                        <span class="text-muted-custom">{{ funcao.descricao|truncatechars:50|default:"—" }}</span>
+                        <span class="text-muted-custom">{{ funcao.descricao|truncatechars:50|default:"â€”" }}</span>
                     </td>
                     <td>
                         {% for cf in funcao.funcoes_cargo.all %}
@@ -95,7 +95,7 @@
                     </td>
                     <td class="text-center">
                         <div class="sst-action-group">
-                            {% if permission.seguranca_trabalho.change_funcao %}
+                            {% if perms.seguranca_trabalho.change_funcao %}
                             <button type="button" class="sst-action-btn sst-action-btn--edit" title="Editar"
                                     hx-get="{% url 'seguranca_trabalho:funcao_update' funcao.pk %}"
                                     hx-target="#modal-content"
@@ -104,7 +104,7 @@
                                 <i class="bi bi-pencil"></i>
                             </button>
                             {% endif %}
-                            {% if permission.seguranca_trabalho.delete_funcao %}
+                            {% if perms.seguranca_trabalho.delete_funcao %}
                             <a href="{% url 'seguranca_trabalho:funcao_delete' funcao.pk %}" class="sst-action-btn sst-action-btn--delete" title="Excluir">
                                 <i class="bi bi-trash3"></i>
                             </a>
@@ -117,8 +117,8 @@
                     <td colspan="6">
                         <div class="sst-empty">
                             <div class="sst-empty-icon"><i class="bi bi-inbox"></i></div>
-                            <h6>Nenhuma função cadastrada</h6>
-                            {% if permission.seguranca_trabalho.add_funcao %}
+                            <h6>Nenhuma funÃ§Ã£o cadastrada</h6>
+                            {% if perms.seguranca_trabalho.add_funcao %}
                             <button type="button" class="sst-btn-primary mt-2" style="font-size:.82rem; padding:.4rem 1rem;"
                                     hx-get="{% url 'seguranca_trabalho:funcao_create' %}"
                                     hx-target="#modal-content"
@@ -141,7 +141,7 @@
     {% endif %}
 </div>
 
-<!-- Modal Genérico -->
+<!-- Modal GenÃ©rico -->
 <div class="modal fade" id="genericModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content" id="modal-content"></div>

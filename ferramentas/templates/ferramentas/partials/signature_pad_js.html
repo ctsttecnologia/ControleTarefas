@@ -1,4 +1,4 @@
-
+﻿
 {# ferramentas/partials/signature_pad_js.html #}
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 <script>
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
         : null;
 
     if (!form || !signatureDataInput) {
-        console.error("Formulário ou campo 'assinatura_base64' não encontrado.");
+        console.error("FormulÃ¡rio ou campo 'assinatura_base64' nÃ£o encontrado.");
         return;
     }
 
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     form.addEventListener('submit', function (event) {
         if (signaturePad.isEmpty()) {
-            alert("Por favor, forneça uma assinatura para continuar.");
+            alert("Por favor, forneÃ§a uma assinatura para continuar.");
             event.preventDefault();
         } else {
             signatureDataInput.value = signaturePad.toDataURL('image/png');

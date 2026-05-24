@@ -1,8 +1,8 @@
-
-<!-- Template para exibir o formulário de criação/edição de uma Inspeção de Risco -->
+﻿
+<!-- Template para exibir o formulÃ¡rio de criaÃ§Ã£o/ediÃ§Ã£o de uma InspeÃ§Ã£o de Risco -->
 {% extends "base.html" %}
 
-{% block title %}{{ titulo_pagina|default:"Agendar Inspeção" }}{% endblock %}
+{% block title %}{{ titulo_pagina|default:"Agendar InspeÃ§Ã£o" }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -13,12 +13,12 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h4 class="mb-1">
-                        <i class="bi bi-calendar-plus me-2"></i>{{ titulo_pagina|default:"Agendar Inspeção" }}
+                        <i class="bi bi-calendar-plus me-2"></i>{{ titulo_pagina|default:"Agendar InspeÃ§Ã£o" }}
                     </h4>
-                    <small class="opacity-75">Preencha os dados para agendar uma nova inspeção</small>
+                    <small class="opacity-75">Preencha os dados para agendar uma nova inspeÃ§Ã£o</small>
                 </div>
                 <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-outline-light">
-                    <i class="bi bi-calendar3 me-1"></i> Ver Calendário
+                    <i class="bi bi-calendar3 me-1"></i> Ver CalendÃ¡rio
                 </a>
             </div>
         </div>
@@ -29,7 +29,7 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">
-                        <i class="bi bi-pencil-square text-primary me-2"></i>Dados da Inspeção
+                        <i class="bi bi-pencil-square text-primary me-2"></i>Dados da InspeÃ§Ã£o
                     </h6>
                 </div>
                 <div class="card-body p-4">
@@ -63,7 +63,7 @@
                         </div>
                         {% endfor %}
 
-                        <!-- Botões -->
+                        <!-- BotÃµes -->
                         <div class="border-top pt-4 mt-4 d-flex justify-content-between">
                             <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-lg me-1"></i> Cancelar
@@ -71,7 +71,7 @@
                             {% if perms.gestao_riscos.add_inspecao or user.is_superuser %}
                             <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="bi bi-check-lg me-1"></i>
-                                {{ botao_submit_texto|default:"Agendar Inspeção" }}
+                                {{ botao_submit_texto|default:"Agendar InspeÃ§Ã£o" }}
                             </button>
                             {% endif %}
                         </div>
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         || entregaSelect.parentElement;
 
     function toggleEntrega() {
-        // Mostra o campo só se tiver opções além do "--------"
+        // Mostra o campo sÃ³ se tiver opÃ§Ãµes alÃ©m do "--------"
         if (entregaWrapper) {
             entregaWrapper.style.display = (entregaSelect.options.length > 1) ? '' : 'none';
         }

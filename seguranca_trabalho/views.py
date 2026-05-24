@@ -7,6 +7,7 @@ import json
 import logging
 from datetime import timedelta
 from pathlib import Path
+from coverage import context
 from django.views.generic.detail import SingleObjectMixin
 from celery.exceptions import ImproperlyConfigured
 from django.conf import settings
@@ -250,14 +251,7 @@ class SSTBaseMixin(
                 try:
                     _ = request.user.funcionario
                 except Funcionario.DoesNotExist:
-                    return render(request, 'seguranca_trabalho/acesso_negado.html', {
-                        'titulo': 'Acesso Restrito',
-                        'mensagem': (
-                            'Sua conta não está vinculada a um registro de '
-                            'funcionário, por isso não pode acessar o módulo '
-                            'de Segurança do Trabalho.'
-                        ),
-                    }, status=403)
+                    return render(request, 'erros/acesso_negado.html', context)
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):

@@ -1,7 +1,7 @@
-
+﻿
 {% extends "ltcat/base_ltcat.html" %}
 
-{% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Local de Prestação{% endblock %}
+{% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Local de PrestaÃ§Ã£o{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{% url 'ltcat:local_list' %}">Locais</a></li>
@@ -12,7 +12,7 @@
 <!-- TomSelect CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.bootstrap5.min.css">
 <style>
-    /* ══ TomSelect customização para logradouro ══ */
+    /* â•â• TomSelect customizaÃ§Ã£o para logradouro â•â• */
     .ts-wrapper.logradouro-select .ts-control {
         min-height: 38px;
         border-radius: 0.375rem;
@@ -50,7 +50,7 @@
         border-color: #4caf50;
     }
 
-    /* ══ Unidades empilhadas ══ */
+    /* â•â• Unidades empilhadas â•â• */
     .unidade-card {
         background: #ffffff;
         border: 1px solid #dee2e6;
@@ -91,7 +91,7 @@
         to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ══ Accordion do formulário + unidade ══ */
+    /* â•â• Accordion do formulÃ¡rio + unidade â•â• */
     #form-nova-unidade {
         transition: all 0.4s ease;
     }
@@ -107,14 +107,14 @@
         opacity: 1;
     }
 
-    /* ══ Contador de unidades ══ */
+    /* â•â• Contador de unidades â•â• */
     .badge-counter {
         font-size: 0.85rem;
         padding: 4px 10px;
         border-radius: 20px;
     }
 
-    /* ══ Botão toggle ══ */
+    /* â•â• BotÃ£o toggle â•â• */
     .btn-toggle-form i.fa-chevron-down {
         transition: transform 0.3s ease;
     }
@@ -122,7 +122,7 @@
         transform: rotate(180deg);
     }
 
-    /* ══ Empty state ══ */
+    /* â•â• Empty state â•â• */
     .empty-state {
         text-align: center;
         padding: 30px;
@@ -150,12 +150,12 @@
 
         {% if form.instance.pk %}
 
-        {# MODO EDIÇÃO — formulário simples  #}
+        {# MODO EDIÃ‡ÃƒO â€” formulÃ¡rio simples  #}
 
         <div class="card shadow-sm">
             <div class="card-header">
                 <h5 class="mb-0 fw-semibold">
-                    <i class="fas fa-edit me-2"></i> Editar Local de Prestação
+                    <i class="fas fa-edit me-2"></i> Editar Local de PrestaÃ§Ã£o
                 </h5>
             </div>
             <div class="card-body">
@@ -169,7 +169,7 @@
                         </a>
                         {% if perms.ltcat.change_local or user.is_superuser %}
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-check me-1"></i> Salvar Alterações
+                            <i class="fas fa-check me-1"></i> Salvar AlteraÃ§Ãµes
                         </button>
                         {% endif %}
                     </div>
@@ -179,13 +179,13 @@
 
         {% else %}
 
-        {# MODO CRIAÇÃO — múltiplas unidades em lote            #}
-        <!-- ── Card: Empresa (Cliente) ── -->
+        {# MODO CRIAÃ‡ÃƒO â€” mÃºltiplas unidades em lote            #}
+        <!-- â”€â”€ Card: Empresa (Cliente) â”€â”€ -->
         <div class="card shadow-sm mb-4">
             <div class="card-header">
                 <h5 class="mb-0 fw-semibold">
                     <i class="fas fa-map-marker-alt me-2"></i>
-                    Cadastrar Locais de Prestação de Serviço
+                    Cadastrar Locais de PrestaÃ§Ã£o de ServiÃ§o
                 </h5>
             </div>
             <div class="card-body">
@@ -209,14 +209,14 @@
                     <div class="col-md-4 d-flex align-items-end">
                         <div class="text-muted small">
                             <i class="fas fa-info-circle me-1"></i>
-                            Todos os locais abaixo serão vinculados a esta empresa.
+                            Todos os locais abaixo serÃ£o vinculados a esta empresa.
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ── Card: Lista de Unidades + Formulário ── -->
+        <!-- â”€â”€ Card: Lista de Unidades + FormulÃ¡rio â”€â”€ -->
         <div class="card shadow-sm mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-semibold">
@@ -234,31 +234,31 @@
             </div>
 
             <div class="card-body">
-                <!-- ── Lista de unidades adicionadas ── -->
+                <!-- â”€â”€ Lista de unidades adicionadas â”€â”€ -->
                 <div id="lista-unidades">
                     <div id="empty-state" class="empty-state">
                         <i class="fas fa-building d-block"></i>
                         <p class="mb-1 fw-semibold">Nenhuma unidade adicionada</p>
-                        <p class="small">Clique em <strong>"Adicionar Unidade"</strong> para começar.</p>
+                        <p class="small">Clique em <strong>"Adicionar Unidade"</strong> para comeÃ§ar.</p>
                     </div>
                 </div>
 
-                <!-- ── Formulário colapsável para nova unidade ── -->
+                <!-- â”€â”€ FormulÃ¡rio colapsÃ¡vel para nova unidade â”€â”€ -->
                 <div id="form-nova-unidade" class="border rounded p-4 mt-3 collapsed" style="background: #fafffe; border-color: var(--ltcat-primary, #2e7d32) !important;">
 
                     <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
                         <i class="fas fa-plus-circle me-1"></i> Nova Unidade
                     </h6>
 
-                    <!-- Identificação -->
+                    <!-- IdentificaÃ§Ã£o -->
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Nome / Identificação *</label>
+                            <label class="form-label fw-semibold">Nome / IdentificaÃ§Ã£o *</label>
                             <input type="text" id="inp-nome-local" class="form-control"
-                                   placeholder="Ex: Prédio A - Sede Administrativa">
+                                   placeholder="Ex: PrÃ©dio A - Sede Administrativa">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Razão Social</label>
+                            <label class="form-label">RazÃ£o Social</label>
                             <input type="text" id="inp-razao-social" class="form-control"
                                    placeholder="Opcional">
                         </div>
@@ -270,21 +270,21 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Descrição</label>
+                        <label class="form-label">DescriÃ§Ã£o</label>
                         <textarea id="inp-descricao" class="form-control" rows="2"
-                                  placeholder="Descrição breve do local / prédio"></textarea>
+                                  placeholder="DescriÃ§Ã£o breve do local / prÃ©dio"></textarea>
                     </div>
 
-                    <!-- Endereço via Logradouro -->
+                    <!-- EndereÃ§o via Logradouro -->
                     <div class="border rounded p-3 mb-3" style="border-color: #4caf50 !important;">
                         <h6 class="fw-semibold mb-2" style="color: var(--ltcat-primary);">
-                            <i class="fas fa-search-location me-1"></i> Endereço (Logradouro Cadastrado)
+                            <i class="fas fa-search-location me-1"></i> EndereÃ§o (Logradouro Cadastrado)
                             <span class="badge bg-success ms-2">Recomendado</span>
                         </h6>
                         <p class="text-muted small mb-2">
-                            Digite para buscar. Mínimo 2 caracteres.
+                            Digite para buscar. MÃ­nimo 2 caracteres.
                         </p>
-                        <select id="inp-logradouro" placeholder="🔍 Buscar endereço..."></select>
+                        <select id="inp-logradouro" placeholder="ðŸ” Buscar endereÃ§o..."></select>
 
                         <div id="inline-logradouro-preview" class="logradouro-preview d-none mt-2">
                             <div class="d-flex align-items-start">
@@ -302,19 +302,19 @@
                         </div>
                     </div>
 
-                    <!-- Endereço Manual -->
+                    <!-- EndereÃ§o Manual -->
                     <div id="inline-endereco-manual" class="border rounded p-3 mb-3">
                         <h6 class="fw-semibold mb-2" style="color: var(--ltcat-primary);">
-                            <i class="fas fa-map me-1"></i> Endereço Manual
-                            <small class="text-muted fw-normal">(apenas se NÃO usar logradouro)</small>
+                            <i class="fas fa-map me-1"></i> EndereÃ§o Manual
+                            <small class="text-muted fw-normal">(apenas se NÃƒO usar logradouro)</small>
                         </h6>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">Endereço</label>
+                                <label class="form-label">EndereÃ§o</label>
                                 <input type="text" id="inp-endereco" class="form-control">
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label">Número</label>
+                                <label class="form-label">NÃºmero</label>
                                 <input type="text" id="inp-numero" class="form-control">
                             </div>
                             <div class="col-md-4">
@@ -347,14 +347,14 @@
                         </div>
                     </div>
 
-                    <!-- Botões do form inline -->
+                    <!-- BotÃµes do form inline -->
                     <div class="d-flex justify-content-end gap-2">
                         <button type="button" id="btn-cancelar-unidade" class="btn btn-outline-secondary btn-sm">
                             <i class="fas fa-times me-1"></i> Cancelar
                         </button>
                         {% if perms.ltcat.add_local or user.is_superuser %}
                         <button type="button" id="btn-adicionar-unidade" class="btn btn-success btn-sm">
-                            <i class="fas fa-plus me-1"></i> Adicionar à Lista
+                            <i class="fas fa-plus me-1"></i> Adicionar Ã  Lista
                         </button>
                         {% endif %}
                     </div>
@@ -362,7 +362,7 @@
             </div>
         </div>
 
-        <!-- ── Botões finais ── -->
+        <!-- â”€â”€ BotÃµes finais â”€â”€ -->
         <div class="d-flex justify-content-between">
             <a href="{% url 'ltcat:local_list' %}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i> Cancelar
@@ -388,7 +388,7 @@
 document.addEventListener('DOMContentLoaded', function () {
 
 
-    // MODO EDIÇÃO — lógica do logradouro 
+    // MODO EDIÃ‡ÃƒO â€” lÃ³gica do logradouro 
 
     {% if form.instance.pk %}
 
@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const tomSelect = new TomSelect(selectEl, {
             valueField: 'id', labelField: 'text', searchField: ['text'],
-            placeholder: '🔍 Digite para buscar endereço...', maxItems: 1,
+            placeholder: 'ðŸ” Digite para buscar endereÃ§o...', maxItems: 1,
             maxOptions: 20, openOnFocus: false, closeAfterSelect: true,
             highlight: true, create: false, preload: false,
             options: Object.values(initialOptions), items: initialItems,
@@ -451,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!value) { previewBox.classList.add('d-none'); previewBox.classList.remove('active'); return; }
             const opt = tomSelect.options[value];
             if (!opt) { previewBox.classList.add('d-none'); return; }
-            previewEndereco.textContent = `${opt.endereco || ''}, nº ${opt.numero || ''}`;
+            previewEndereco.textContent = `${opt.endereco || ''}, nÂº ${opt.numero || ''}`;
             previewBairroCidade.textContent = `${opt.bairro || ''} - ${opt.cidade || ''}/${opt.estado || ''}`;
             previewCep.textContent = `CEP: ${opt.cep || ''}`;
             previewBox.classList.remove('d-none');
@@ -476,14 +476,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     {% else %}
 
-    // MODO CRIAÇÃO — múltiplas unidades em lote
+    // MODO CRIAÃ‡ÃƒO â€” mÃºltiplas unidades em lote
 
     const AJAX_URL      = "{% url 'ltcat:ajax_buscar_logradouros' %}";
     const SAVE_URL      = "{% url 'ltcat:local_create_bulk' %}";
     const LIST_URL      = "{% url 'ltcat:local_list' %}";
     const CSRF          = "{{ csrf_token }}";
 
-    // ── Elementos ──
+    // â”€â”€ Elementos â”€â”€
     const empresaSelect     = document.getElementById('id_empresa');
     const btnToggle         = document.getElementById('btn-toggle-form');
     const btnToggleText     = document.getElementById('btn-toggle-text');
@@ -518,7 +518,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const inlinePreviewCep  = document.getElementById('inline-preview-cep');
     const btnLimparInline   = document.getElementById('btn-limpar-inline-logradouro');
 
-    // ── Estado ──
+    // â”€â”€ Estado â”€â”€
     let unidades = [];
     let tomSelectInline = null;
     let selectedLogradouro = null;
@@ -534,7 +534,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         tomSelectInline = new TomSelect(inpLogradouro, {
             valueField: 'id', labelField: 'text', searchField: ['text'],
-            placeholder: '🔍 Buscar endereço (rua, bairro, cidade, CEP)...',
+            placeholder: 'ðŸ” Buscar endereÃ§o (rua, bairro, cidade, CEP)...',
             maxItems: 1, maxOptions: 20, openOnFocus: false,
             closeAfterSelect: true, highlight: true, create: false, preload: false,
             wrapperClass: 'ts-wrapper logradouro-select',
@@ -583,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function () {
             inlinePreview.classList.remove('active');
             return;
         }
-        inlinePreviewEnd.textContent = `${data.endereco || ''}, nº ${data.numero || ''}`;
+        inlinePreviewEnd.textContent = `${data.endereco || ''}, nÂº ${data.numero || ''}`;
         inlinePreviewBC.textContent = `${data.bairro || ''} - ${data.cidade || ''}/${data.estado || ''}`;
         inlinePreviewCep.textContent = `CEP: ${data.cep || ''}`;
         inlinePreview.classList.remove('d-none');
@@ -605,7 +605,7 @@ document.addEventListener('DOMContentLoaded', function () {
         toggleInlineManual(false);
     });
 
-    // Toggle do formulário (accordion)
+    // Toggle do formulÃ¡rio (accordion)
 
     let formVisible = false;
 
@@ -615,7 +615,7 @@ document.addEventListener('DOMContentLoaded', function () {
             formContainer.classList.remove('collapsed');
             formContainer.classList.add('expanded');
             btnToggle.classList.add('active');
-            btnToggleText.textContent = 'Fechar Formulário';
+            btnToggleText.textContent = 'Fechar FormulÃ¡rio';
             // Inicializa TomSelect ao abrir
             if (!tomSelectInline) initTomSelect();
             setTimeout(() => inpNome.focus(), 300);
@@ -634,7 +634,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
-    // Limpar formulário inline
+    // Limpar formulÃ¡rio inline
 
     function limparFormInline() {
         inpNome.value = '';
@@ -656,10 +656,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
    
-    // Adicionar unidade à lista
+    // Adicionar unidade Ã  lista
   
     btnAdicionar.addEventListener('click', function () {
-        // Validação mínima
+        // ValidaÃ§Ã£o mÃ­nima
         const nome = inpNome.value.trim();
         if (!nome) {
             inpNome.classList.add('is-invalid');
@@ -692,19 +692,19 @@ document.addEventListener('DOMContentLoaded', function () {
             cep: inpCep.value.trim(),
         };
 
-        // Determina o texto do endereço para exibir
+        // Determina o texto do endereÃ§o para exibir
         if (unidade.logradouro_text) {
             unidade._endereco_display = unidade.logradouro_text;
         } else {
-            const partes = [unidade.endereco, unidade.numero ? `nº ${unidade.numero}` : '', unidade.bairro, unidade.cidade && unidade.estado ? `${unidade.cidade}/${unidade.estado}` : ''].filter(Boolean);
-            unidade._endereco_display = partes.join(', ') || 'Endereço não informado';
+            const partes = [unidade.endereco, unidade.numero ? `nÂº ${unidade.numero}` : '', unidade.bairro, unidade.cidade && unidade.estado ? `${unidade.cidade}/${unidade.estado}` : ''].filter(Boolean);
+            unidade._endereco_display = partes.join(', ') || 'EndereÃ§o nÃ£o informado';
         }
 
         unidades.push(unidade);
         renderLista();
         limparFormInline();
 
-        // Mantém o form aberto para adicionar mais
+        // MantÃ©m o form aberto para adicionar mais
         inpNome.focus();
     });
 
@@ -752,7 +752,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btnSalvarCounter.textContent = unidades.length;
         badgeTotal.className = `badge badge-counter ms-2 ${unidades.length > 0 ? 'bg-success' : 'bg-secondary'}`;
 
-        // Event listeners de remoção
+        // Event listeners de remoÃ§Ã£o
         listaContainer.querySelectorAll('.btn-remover-unidade').forEach(btn => {
             btn.addEventListener('click', function () {
                 const id = parseInt(this.dataset.id);
@@ -806,7 +806,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return resp.json();
         })
         .then(data => {
-            // Sucesso — redireciona para lista
+            // Sucesso â€” redireciona para lista
             window.location.href = LIST_URL + '?msg=bulk_created&total=' + data.total;
         })
         .catch(err => {
@@ -822,13 +822,13 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
-    // Bloquear troca de empresa se já tem unidades
+    // Bloquear troca de empresa se jÃ¡ tem unidades
 
     empresaSelect.addEventListener('change', function () {
         if (unidades.length > 0) {
             if (!confirm('Trocar a empresa vai limpar todas as unidades adicionadas. Continuar?')) {
-                // Reverter — precisamos do valor anterior
-                // Como não armazenamos, vamos apenas avisar
+                // Reverter â€” precisamos do valor anterior
+                // Como nÃ£o armazenamos, vamos apenas avisar
                 return;
             }
             unidades = [];
@@ -836,7 +836,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Helper — escape HTML
+    // Helper â€” escape HTML
 
     function escapeHtml(text) {
         if (!text) return '';
@@ -845,7 +845,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return div.innerHTML;
     }
 
-    // Máscara CNPJ simples
+    // MÃ¡scara CNPJ simples
 
     inpCnpj.addEventListener('input', function () {
         let v = this.value.replace(/\D/g, '');
@@ -857,7 +857,7 @@ document.addEventListener('DOMContentLoaded', function () {
         this.value = v;
     });
 
-    // Máscara CEP simples
+    // MÃ¡scara CEP simples
     inpCep.addEventListener('input', function () {
         let v = this.value.replace(/\D/g, '');
         if (v.length > 8) v = v.substring(0, 8);

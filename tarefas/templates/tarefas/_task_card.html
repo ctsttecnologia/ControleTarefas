@@ -1,4 +1,4 @@
-
+﻿
 <!-- templates/tarefas/_task_card.html -->
 <div class="kanban-card" data-task-id="{{ tarefa.id }}" data-bs-toggle="tooltip" title="Clique para detalhes">
     <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="text-decoration-none">
@@ -25,7 +25,7 @@
             {% endif %}
 
             {% if tarefa.responsavel %}
-                <span class="kanban-avatar" title="{% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}">
+                <span class="kanban-avatar" title="{% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}â€”{% endif %}">
             </span>
             {% endif %}
         </div>

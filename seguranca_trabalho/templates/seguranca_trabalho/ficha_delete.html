@@ -1,6 +1,6 @@
-{% extends "seguranca_trabalho/_base_sst.html" %}
+﻿{% extends "seguranca_trabalho/_base_sst.html" %}
 
-{% block title %}Confirmar Exclusão de Ficha de EPI{% endblock %}
+{% block title %}Confirmar ExclusÃ£o de Ficha de EPI{% endblock %}
 
 {% block extra_css %}
 {{ block.super }}
@@ -39,7 +39,7 @@
     <div class="sst-card">
         <div class="sst-card-header sst-card-header--danger">
             <i class="bi bi-exclamation-triangle-fill"></i>
-            <h6>Confirmar Exclusão</h6>
+            <h6>Confirmar ExclusÃ£o</h6>
         </div>
         <div class="sst-card-body" style="text-align:center;">
             <form method="post">
@@ -58,18 +58,18 @@
                 <div class="sst-alert sst-alert--danger mt-4" style="text-align:left;">
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <small>
-                        <strong>Atenção:</strong> Esta ação não pode ser desfeita. 
-                        Todos os registros de entrega e devolução associados serão permanentemente removidos.
+                        <strong>AtenÃ§Ã£o:</strong> Esta aÃ§Ã£o nÃ£o pode ser desfeita. 
+                        Todos os registros de entrega e devoluÃ§Ã£o associados serÃ£o permanentemente removidos.
                     </small>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4 pt-3" style="border-top: 1px solid var(--sst-border);">
-                    {% if permission.seguranca_trabalho.view_ficha or user.is_superuser %}
+                    {% if perms.seguranca_trabalho.view_ficha or user.is_superuser %}
                     <a href="{% url 'seguranca_trabalho:ficha_detail' object.pk %}" class="sst-btn-cancel">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </a>
                     {% endif %}
-                    {% if permission.seguranca_trabalho.delete_ficha or user.is_superuser %}
+                    {% if perms.seguranca_trabalho.delete_ficha or user.is_superuser %}
                     <button type="submit" class="sst-btn-danger">
                         <i class="bi bi-trash3"></i> Sim, Excluir Permanentemente
                     </button>

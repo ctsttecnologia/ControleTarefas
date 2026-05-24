@@ -1,10 +1,10 @@
+﻿
 
-
-<!-- Template para exibir detalhes de uma Inspeção de Risco -->
+<!-- Template para exibir detalhes de uma InspeÃ§Ã£o de Risco -->
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Detalhes da Inspeção{% endblock %}
+{% block title %}Detalhes da InspeÃ§Ã£o{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -15,7 +15,7 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <h4 class="mb-1">
-                        <i class="bi bi-clipboard2-pulse me-2"></i>Detalhes da Inspeção
+                        <i class="bi bi-clipboard2-pulse me-2"></i>Detalhes da InspeÃ§Ã£o
                     </h4>
                     <small class="opacity-75">
                         {% if inspecao.entrega_epi %}
@@ -49,12 +49,12 @@
         <!-- Coluna Principal -->
         <div class="col-lg-8">
             
-            <!-- Card: Informações do Item -->
+            <!-- Card: InformaÃ§Ãµes do Item -->
             {% if inspecao.entrega_epi %}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">
-                        <i class="bi bi-box-seam text-primary me-2"></i>Informações do Item Rastreável
+                        <i class="bi bi-box-seam text-primary me-2"></i>InformaÃ§Ãµes do Item RastreÃ¡vel
                     </h6>
                 </div>
                 <div class="card-body">
@@ -64,13 +64,13 @@
                             <p class="fw-semibold mb-0">{{ inspecao.entrega_epi.equipamento.nome }}</p>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted small">Nº de Série</label>
+                            <label class="form-label text-muted small">NÂº de SÃ©rie</label>
                             <p class="fw-semibold mb-0">
                                 <code>{{ inspecao.entrega_epi.numero_serie|default:"N/A" }}</code>
                             </p>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted small">Funcionário</label>
+                            <label class="form-label text-muted small">FuncionÃ¡rio</label>
                             <p class="fw-semibold mb-0">{{ inspecao.entrega_epi.ficha.funcionario.nome_completo }}</p>
                         </div>
                         <div class="col-md-6">
@@ -93,7 +93,7 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label text-muted small">Equipamento</label>
-                            <p class="fw-semibold mb-0">{{ inspecao.equipamento.nome|default:"—" }}</p>
+                            <p class="fw-semibold mb-0">{{ inspecao.equipamento.nome|default:"â€”" }}</p>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted small">Data Agendada</label>
@@ -103,27 +103,27 @@
                             </p>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted small">Responsável</label>
+                            <label class="form-label text-muted small">ResponsÃ¡vel</label>
                             <p class="fw-semibold mb-0">
                                 <i class="bi bi-person text-secondary me-1"></i>
-                                {{ inspecao.responsavel.get_full_name|default:"Aguardando atribuição" }}
+                                {{ inspecao.responsavel.get_full_name|default:"Aguardando atribuiÃ§Ã£o" }}
                             </p>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted small">Data de Realização</label>
+                            <label class="form-label text-muted small">Data de RealizaÃ§Ã£o</label>
                             <p class="fw-semibold mb-0">
                                 {% if inspecao.data_realizacao %}
                                     <i class="bi bi-check-circle text-success me-1"></i>
                                     {{ inspecao.data_realizacao|date:"d/m/Y" }}
                                 {% else %}
-                                    <span class="text-muted">—</span>
+                                    <span class="text-muted">â€”</span>
                                 {% endif %}
                             </p>
                         </div>
                         <div class="col-12">
-                            <label class="form-label text-muted small">Observações</label>
+                            <label class="form-label text-muted small">ObservaÃ§Ãµes</label>
                             <div class="bg-light rounded p-3">
-                                {{ inspecao.observacoes|default:"Nenhuma observação registrada."|linebreaksbr }}
+                                {{ inspecao.observacoes|default:"Nenhuma observaÃ§Ã£o registrada."|linebreaksbr }}
                             </div>
                         </div>
                     </div>
@@ -132,22 +132,22 @@
 
         </div>
 
-        <!-- Coluna Lateral: Ações -->
+        <!-- Coluna Lateral: AÃ§Ãµes -->
         <div class="col-lg-4">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">
-                        <i class="bi bi-lightning text-warning me-2"></i>Ações
+                        <i class="bi bi-lightning text-warning me-2"></i>AÃ§Ãµes
                     </h6>
                 </div>
                 <div class="card-body d-grid gap-2">
                     
-                    <!-- Voltar ao Calendário -->
+                    <!-- Voltar ao CalendÃ¡rio -->
                     <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-calendar3 me-2"></i> Voltar ao Calendário
+                        <i class="bi bi-calendar3 me-2"></i> Voltar ao CalendÃ¡rio
                     </a>
 
-                    <!-- Confirmar (se Pendente de Aprovação) -->
+                    <!-- Confirmar (se Pendente de AprovaÃ§Ã£o) -->
                     
                     {% if inspecao.status == 'PENDENTE_APROVACAO' and perms.gestao_riscos.change_inspecao %}
                     <form action="{% url 'gestao_riscos:inspecao_confirmar' inspecao.pk %}" method="POST">
@@ -161,15 +161,15 @@
                     <!-- Completar (se Pendente) -->
                     {% if inspecao.status == 'PENDENTE' and perms.gestao_riscos.change_inspecao %}
                     <a href="{% url 'gestao_riscos:inspecao_completar' inspecao.pk %}" class="btn btn-primary">
-                        <i class="bi bi-clipboard2-check me-2"></i> Completar Inspeção
+                        <i class="bi bi-clipboard2-check me-2"></i> Completar InspeÃ§Ã£o
                     </a>
                     {% endif %}
 
-                    <!-- Info se já concluída -->
+                    <!-- Info se jÃ¡ concluÃ­da -->
                     {% if inspecao.status == 'CONCLUIDA' %}
                     <div class="alert alert-success mb-0">
                         <i class="bi bi-check-circle-fill me-2"></i>
-                        <strong>Inspeção concluída</strong>
+                        <strong>InspeÃ§Ã£o concluÃ­da</strong>
                         <br>
                         <small>Realizada em {{ inspecao.data_realizacao|date:"d/m/Y" }}</small>
                     </div>
@@ -194,7 +194,7 @@
                             </div>
                             <div>
                                 <small class="text-muted">Criada</small>
-                                <p class="mb-0 small">Inspeção agendada</p>
+                                <p class="mb-0 small">InspeÃ§Ã£o agendada</p>
                             </div>
                         </div>
                         
@@ -208,7 +208,7 @@
                                 {% endif %}
                             </div>
                             <div>
-                                <small class="text-muted">Confirmação</small>
+                                <small class="text-muted">ConfirmaÃ§Ã£o</small>
                                 <p class="mb-0 small">
                                     {% if inspecao.status == 'PENDENTE_APROVACAO' %}
                                         Aguardando
@@ -229,7 +229,7 @@
                                 {% endif %}
                             </div>
                             <div>
-                                <small class="text-muted">Conclusão</small>
+                                <small class="text-muted">ConclusÃ£o</small>
                                 <p class="mb-0 small">
                                     {% if inspecao.status == 'CONCLUIDA' %}
                                         Finalizada

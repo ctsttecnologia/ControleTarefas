@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static widget_tweaks %}
 
 {% block title %}{{ titulo }}{% endblock %}
@@ -159,12 +159,12 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- ═══ HERO ═══ -->
+    <!-- â•â•â• HERO â•â•â• -->
     <div class="form-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
                 <h1><i class="bi bi-bookmarks-fill me-2"></i>{{ titulo }}</h1>
-                <p>Configure as informações e preferências do tipo de curso</p>
+                <p>Configure as informaÃ§Ãµes e preferÃªncias do tipo de curso</p>
             </div>
             <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-sm btn-outline-light">
                 <i class="bi bi-arrow-left me-1"></i> Voltar para Lista
@@ -172,7 +172,7 @@
         </div>
     </div>
 
-    <!-- ═══ FORM ═══ -->
+    <!-- â•â•â• FORM â•â•â• -->
     <div class="card form-card shadow-sm">
         <div class="card-body">
             <form method="post" novalidate>
@@ -186,7 +186,7 @@
                 </div>
                 {% endif %}
 
-                <!-- ═══ SEÇÃO 1: INFORMAÇÕES ═══ -->
+                <!-- â•â•â• SEÃ‡ÃƒO 1: INFORMAÃ‡Ã•ES â•â•â• -->
                 <div class="mb-5">
                     <div class="step-indicator">
                         <span class="step-number bg-primary bg-opacity-10 text-primary">1</span>
@@ -197,8 +197,8 @@
                             <i class="bi bi-mortarboard text-primary"></i>
                         </div>
                         <div>
-                            <h5>Informações do Curso</h5>
-                            <p>Nome, área, modalidade e validade</p>
+                            <h5>InformaÃ§Ãµes do Curso</h5>
+                            <p>Nome, Ã¡rea, modalidade e validade</p>
                         </div>
                     </div>
 
@@ -246,18 +246,18 @@
                     </div>
                 </div>
 
-                <!-- ═══ SEÇÃO 2: CONFIGURAÇÕES ═══ -->
+                <!-- â•â•â• SEÃ‡ÃƒO 2: CONFIGURAÃ‡Ã•ES â•â•â• -->
                 <div class="mb-4">
                     <div class="step-indicator">
                         <span class="step-number bg-success bg-opacity-10 text-success">2</span>
-                        Preferências
+                        PreferÃªncias
                     </div>
                     <div class="section-header">
                         <div class="section-icon bg-success bg-opacity-10">
                             <i class="bi bi-gear text-success"></i>
                         </div>
                         <div>
-                            <h5>Configurações</h5>
+                            <h5>ConfiguraÃ§Ãµes</h5>
                             <p>Certificado e status do tipo de curso</p>
                         </div>
                     </div>
@@ -271,7 +271,7 @@
                                         <span class="toggle-label">
                                             <i class="bi bi-award me-1"></i> {{ form.certificado.label }}
                                         </span>
-                                        <div class="toggle-desc">Habilita a emissão de certificados para este tipo</div>
+                                        <div class="toggle-desc">Habilita a emissÃ£o de certificados para este tipo</div>
                                     </label>
                                 </div>
                             </div>
@@ -284,7 +284,7 @@
                                         <span class="toggle-label">
                                             <i class="bi bi-toggle-on me-1"></i> {{ form.ativo.label }}
                                         </span>
-                                        <div class="toggle-desc">Tipos inativos não aparecem para seleção</div>
+                                        <div class="toggle-desc">Tipos inativos nÃ£o aparecem para seleÃ§Ã£o</div>
                                     </label>
                                 </div>
                             </div>
@@ -292,7 +292,7 @@
                     </div>
                 </div>
 
-                <!-- ═══ ACTIONS ═══ -->
+                <!-- â•â•â• ACTIONS â•â•â• -->
                 <div class="form-actions d-flex justify-content-between align-items-center">
                     <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-back">
                         <i class="bi bi-x-circle me-1"></i> Cancelar

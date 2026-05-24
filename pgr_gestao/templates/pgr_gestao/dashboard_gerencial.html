@@ -1,5 +1,5 @@
-
-<!-- Dashboard Gerencial - VERSÃO ANALÍTICA AVANÇADA -->
+﻿
+<!-- Dashboard Gerencial - VERSÃƒO ANALÃTICA AVANÃ‡ADA -->
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
@@ -81,7 +81,7 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
             <h1 class="mb-1"><i class="bi bi-chart-line"></i> Dashboard Gerencial</h1>
-            <p class="mb-0 text-muted"><i class="bi bi-info-circle"> </i> Visão geral e consolidada de todos os PGRs</p>
+            <p class="mb-0 text-muted"><i class="bi bi-info-circle"> </i> VisÃ£o geral e consolidada de todos os PGRs</p>
         </div>
 
         {% if perms.pgr_gestao.add_pgrdocumento %}
@@ -94,13 +94,13 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- 1. SAÚDE GERAL DO SISTEMA + ÍNDICE DE SEVERIDADE              -->
+<!-- 1. SAÃšDE GERAL DO SISTEMA + ÃNDICE DE SEVERIDADE              -->
 <!-- ============================================================ -->
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card border-{{ saude_cor }}">
             <div class="card-body text-center">
-                <h6 class="text-muted mb-3"><i class="bi bi-heart-pulse"></i> Saúde Geral do Sistema</h6>
+                <h6 class="text-muted mb-3"><i class="bi bi-heart-pulse"></i> SaÃºde Geral do Sistema</h6>
                 <div class="d-flex justify-content-center align-items-center gap-3">
                     <i class="bi {{ saude_icone }} text-{{ saude_cor }}" style="font-size: 4rem;"></i>
                     <div>
@@ -114,7 +114,7 @@
                          aria-valuenow="{{ saude_geral }}" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 <small class="text-muted mt-2 d-block">
-                    Composto por: 40% Conformidade Documental + 30% Controle de Riscos + 30% Conclusão de Planos
+                    Composto por: 40% Conformidade Documental + 30% Controle de Riscos + 30% ConclusÃ£o de Planos
                 </small>
             </div>
         </div>
@@ -122,7 +122,7 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-body">
-                <h6 class="text-muted mb-3"><i class="bi bi-thermometer-half"></i> Índice de Severidade dos Riscos</h6>
+                <h6 class="text-muted mb-3"><i class="bi bi-thermometer-half"></i> Ãndice de Severidade dos Riscos</h6>
                 <div class="text-center mb-3">
                     <h1 class="mb-0">{{ indice_severidade }}<small class="text-muted">/100</small></h1>
                 </div>
@@ -132,10 +132,10 @@
                 <div class="d-flex justify-content-between mt-2">
                     <small class="text-success"><i class="bi bi-shield-check"></i> Baixo</small>
                     <small class="text-warning"><i class="bi bi-exclamation-triangle"></i> Moderado</small>
-                    <small class="text-danger"><i class="bi bi-exclamation-octagon"></i> Crítico</small>
+                    <small class="text-danger"><i class="bi bi-exclamation-octagon"></i> CrÃ­tico</small>
                 </div>
                 <small class="text-muted mt-3 d-block text-center">
-                    Ponderação: Crítico×10 + Muito Grave×7 + Moderado×4 + Marginal×2 + Negligenciável×1
+                    PonderaÃ§Ã£o: CrÃ­ticoÃ—10 + Muito GraveÃ—7 + ModeradoÃ—4 + MarginalÃ—2 + NegligenciÃ¡velÃ—1
                 </small>
             </div>
         </div>
@@ -174,9 +174,9 @@
         <div class="card kpi-card warning h-100">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div>
-                    <h6 class="text-muted mb-1">Conclusão Planos</h6>
+                    <h6 class="text-muted mb-1">ConclusÃ£o Planos</h6>
                     <h2 class="mb-0">{{ taxa_conclusao_planos }}%</h2>
-                    <small class="text-muted">{{ planos_concluidos }}/{{ total_planos }} concluídos</small>
+                    <small class="text-muted">{{ planos_concluidos }}/{{ total_planos }} concluÃ­dos</small>
                 </div>
                 <i class="bi bi-check2-circle kpi-icon text-warning"></i>
             </div>
@@ -241,7 +241,7 @@
             <div class="card-body">
                 <i class="bi bi-arrow-repeat text-secondary" style="font-size: 2rem;"></i>
                 <h3 class="mb-0 mt-2">{{ total_revisoes }}</h3>
-                <small class="text-muted">Revisões</small>
+                <small class="text-muted">RevisÃµes</small>
             </div>
         </div>
     </div>
@@ -250,7 +250,7 @@
             <div class="card-body">
                 <i class="bi bi-stopwatch text-primary" style="font-size: 2rem;"></i>
                 <h3 class="mb-0 mt-2">{{ tempo_medio_dias }}</h3>
-                <small class="text-muted">Dias médios/plano</small>
+                <small class="text-muted">Dias mÃ©dios/plano</small>
             </div>
         </div>
     </div>
@@ -265,7 +265,7 @@
             <div class="d-flex justify-content-between">
                 <div>
                     <strong><i class="bi bi-alarm"></i> Vencendo em 30 dias</strong>
-                    <p class="mb-0 small text-muted">Ação urgente necessária</p>
+                    <p class="mb-0 small text-muted">AÃ§Ã£o urgente necessÃ¡ria</p>
                 </div>
                 <h2 class="mb-0 text-danger">{{ docs_vencendo_30 }}</h2>
             </div>
@@ -276,7 +276,7 @@
             <div class="d-flex justify-content-between">
                 <div>
                     <strong><i class="bi bi-clock"></i> Vencendo em 31-60 dias</strong>
-                    <p class="mb-0 small text-muted">Planejar revisão</p>
+                    <p class="mb-0 small text-muted">Planejar revisÃ£o</p>
                 </div>
                 <h2 class="mb-0 text-warning">{{ docs_vencendo_60 }}</h2>
             </div>
@@ -296,7 +296,7 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- 5. GRÁFICOS PRINCIPAIS                                        -->
+<!-- 5. GRÃFICOS PRINCIPAIS                                        -->
 <!-- ============================================================ -->
 <div class="row mb-4">
     <div class="col-md-4">
@@ -307,7 +307,7 @@
     </div>
     <div class="col-md-4">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-exclamation-diamond"></i> Riscos por Classificação</div>
+            <div class="card-header"><i class="bi bi-exclamation-diamond"></i> Riscos por ClassificaÃ§Ã£o</div>
             <div class="card-body"><canvas id="chartRiscosClassificacao"></canvas></div>
         </div>
     </div>
@@ -320,13 +320,13 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- 6. TENDÊNCIAS TEMPORAIS (12 MESES)                            -->
+<!-- 6. TENDÃŠNCIAS TEMPORAIS (12 MESES)                            -->
 <!-- ============================================================ -->
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header">
-                <i class="bi bi-graph-up"></i> Evolução de Riscos Identificados (12 meses)
+                <i class="bi bi-graph-up"></i> EvoluÃ§Ã£o de Riscos Identificados (12 meses)
             </div>
             <div class="card-body"><canvas id="chartRiscosEvolucao"></canvas></div>
         </div>
@@ -334,7 +334,7 @@
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header">
-                <i class="bi bi-graph-up"></i> Planos: Criados vs Concluídos (12 meses)
+                <i class="bi bi-graph-up"></i> Planos: Criados vs ConcluÃ­dos (12 meses)
             </div>
             <div class="card-body"><canvas id="chartPlanosEvolucao"></canvas></div>
         </div>
@@ -359,15 +359,15 @@
                                 <th>#</th>
                                 <th>Tipo de Risco</th>
                                 <th>Categoria</th>
-                                <th class="text-end">Ocorrências</th>
+                                <th class="text-end">OcorrÃªncias</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for tipo in top_tipos_risco %}
                             <tr>
                                 <td><span class="badge bg-secondary">{{ forloop.counter }}</span></td>
-                                <td>{{ tipo.tipo_risco__nome|default:"—" }}</td>
-                                <td><small class="text-muted">{{ tipo.tipo_risco__categoria|default:"—" }}</small></td>
+                                <td>{{ tipo.tipo_risco__nome|default:"â€”" }}</td>
+                                <td><small class="text-muted">{{ tipo.tipo_risco__categoria|default:"â€”" }}</small></td>
                                 <td class="text-end"><strong>{{ tipo.total }}</strong></td>
                             </tr>
                             {% endfor %}
@@ -383,7 +383,7 @@
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header bg-danger text-white">
-                <i class="bi bi-radioactive"></i> TOP 5 GES com Mais Riscos Críticos
+                <i class="bi bi-radioactive"></i> TOP 5 GES com Mais Riscos CrÃ­ticos
             </div>
             <div class="card-body">
                 {% if top_ges_criticos %}
@@ -401,8 +401,8 @@
                             {% for ges in top_ges_criticos %}
                             <tr>
                                 <td><span class="badge bg-danger">{{ forloop.counter }}</span></td>
-                                <td>{{ ges.ges__nome|default:"—" }}</td>
-                                <td><small class="text-muted">{{ ges.ges__pgr_documento__empresa__razao_social|default:"—"|truncatechars:30 }}</small></td>
+                                <td>{{ ges.ges__nome|default:"â€”" }}</td>
+                                <td><small class="text-muted">{{ ges.ges__pgr_documento__empresa__razao_social|default:"â€”"|truncatechars:30 }}</small></td>
                                 <td class="text-end"><strong class="text-danger">{{ ges.total }}</strong></td>
                             </tr>
                             {% endfor %}
@@ -410,7 +410,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center mb-0">Nenhum GES com riscos críticos.</p>
+                <p class="text-muted text-center mb-0">Nenhum GES com riscos crÃ­ticos.</p>
                 {% endif %}
             </div>
         </div>
@@ -424,7 +424,7 @@
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header bg-warning text-dark">
-                <i class="bi bi-clock-history"></i> Documentos a Vencer (próximos 60 dias)
+                <i class="bi bi-clock-history"></i> Documentos a Vencer (prÃ³ximos 60 dias)
             </div>
             <div class="card-body">
                 {% if documentos_a_vencer %}
@@ -442,7 +442,7 @@
                     {% endfor %}
                 </ul>
                 {% else %}
-                <p class="text-muted text-center mb-0">Nenhum documento com vencimento próximo. ✅</p>
+                <p class="text-muted text-center mb-0">Nenhum documento com vencimento prÃ³ximo. âœ…</p>
                 {% endif %}
             </div>
         </div>
@@ -450,14 +450,14 @@
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header bg-danger text-white">
-                <i class="bi bi-exclamation-octagon"></i> Riscos Críticos Pendentes
+                <i class="bi bi-exclamation-octagon"></i> Riscos CrÃ­ticos Pendentes
             </div>
             <div class="card-body">
                 {% if riscos_criticos_pendentes %}
                 <div class="table-responsive">
                     <table class="table table-sm table-hover mb-0">
                         <thead>
-                            <tr><th>Agente</th><th>Class.</th><th>PGR</th><th>Ações</th></tr>
+                            <tr><th>Agente</th><th>Class.</th><th>PGR</th><th>AÃ§Ãµes</th></tr>
                         </thead>
                         <tbody>
                         {% for risco in riscos_criticos_pendentes|slice:":5" %}
@@ -480,7 +480,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center mb-0">Nenhum risco crítico pendente. ✅</p>
+                <p class="text-muted text-center mb-0">Nenhum risco crÃ­tico pendente. âœ…</p>
                 {% endif %}
             </div>
         </div>
@@ -492,7 +492,7 @@
 {% block extra_js %}
 <script>
 // =================================================================
-// CONFIGURAÇÃO GLOBAL DO CHART.JS
+// CONFIGURAÃ‡ÃƒO GLOBAL DO CHART.JS
 // =================================================================
 Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
 Chart.defaults.font.size = 12;
@@ -504,7 +504,7 @@ Chart.defaults.plugins.legend.position = 'bottom';
 new Chart(document.getElementById('chartDocsStatus'), {
     type: 'doughnut',
     data: {
-        labels: ['Vigente', 'Vencido', 'Em Revisão'],
+        labels: ['Vigente', 'Vencido', 'Em RevisÃ£o'],
         datasets: [{
             data: [
                 {{ status_docs_data.vigente|default:0 }},
@@ -534,7 +534,7 @@ new Chart(document.getElementById('chartDocsStatus'), {
 });
 
 // =================================================================
-// CHART 2: Riscos por Classificação (Doughnut)
+// CHART 2: Riscos por ClassificaÃ§Ã£o (Doughnut)
 // =================================================================
 new Chart(document.getElementById('chartRiscosClassificacao'), {
     type: 'doughnut',
@@ -582,7 +582,7 @@ new Chart(document.getElementById('chartRiscosClassificacao'), {
 new Chart(document.getElementById('chartPlanosStatus'), {
     type: 'bar',
     data: {
-        labels: ['Pendentes', 'Em Andamento', 'Concluídos', 'Atrasados'],
+        labels: ['Pendentes', 'Em Andamento', 'ConcluÃ­dos', 'Atrasados'],
         datasets: [{
             label: 'Quantidade',
             data: [
@@ -605,7 +605,7 @@ new Chart(document.getElementById('chartPlanosStatus'), {
 });
 
 // =================================================================
-// CHART 4: Evolução de Riscos (Line - 12 meses)
+// CHART 4: EvoluÃ§Ã£o de Riscos (Line - 12 meses)
 // =================================================================
 new Chart(document.getElementById('chartRiscosEvolucao'), {
     type: 'line',
@@ -622,7 +622,7 @@ new Chart(document.getElementById('chartRiscosEvolucao'), {
                 borderWidth: 2
             },
             {
-                label: 'Riscos Críticos',
+                label: 'Riscos CrÃ­ticos',
                 data: {{ riscos_por_mes_criticos|safe }},
                 borderColor: '#dc3545',
                 backgroundColor: 'rgba(220, 53, 69, 0.1)',
@@ -642,7 +642,7 @@ new Chart(document.getElementById('chartRiscosEvolucao'), {
 });
 
 // =================================================================
-// CHART 5: Evolução de Planos (Line - 12 meses)
+// CHART 5: EvoluÃ§Ã£o de Planos (Line - 12 meses)
 // =================================================================
 new Chart(document.getElementById('chartPlanosEvolucao'), {
     type: 'line',
@@ -659,7 +659,7 @@ new Chart(document.getElementById('chartPlanosEvolucao'), {
                 borderWidth: 2
             },
             {
-                label: 'Concluídos',
+                label: 'ConcluÃ­dos',
                 data: {{ planos_evolucao_concluidos|safe }},
                 borderColor: '#198754',
                 backgroundColor: 'rgba(25, 135, 84, 0.1)',

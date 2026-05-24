@@ -1,12 +1,12 @@
-{# Plano de Ação — Formulário #}
+﻿{# Plano de AÃ§Ã£o â€” FormulÃ¡rio #}
 {% extends "pgr_gestao/pgr_base.html" %}
 {% load static %}
 {% load widget_tweaks %}
 
-{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Plano de Ação{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Plano de AÃ§Ã£o{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:plano_acao_list' %}">Planos de Ação</a></li>
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:plano_acao_list' %}">Planos de AÃ§Ã£o</a></li>
 <li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Novo{% endif %}</li>
 {% endblock %}
 
@@ -14,9 +14,9 @@
 <div class="page-header">
     <h1>
         <i class="bi bi-list-task"></i>
-        {% if form.instance.pk %}Editar Plano de Ação{% else %}Novo Plano de Ação{% endif %}
+        {% if form.instance.pk %}Editar Plano de AÃ§Ã£o{% else %}Novo Plano de AÃ§Ã£o{% endif %}
     </h1>
-    <p class="mb-0">Formulário para Controle e Mitigação de Riscos</p>
+    <p class="mb-0">FormulÃ¡rio para Controle e MitigaÃ§Ã£o de Riscos</p>
 </div>
 
 <div class="row">
@@ -28,7 +28,7 @@
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
             {% endif %}
 
-            <!-- SEÇÃO 1: Risco Relacionado -->
+            <!-- SEÃ‡ÃƒO 1: Risco Relacionado -->
             <div class="card mb-4">
                 <div class="card-header bg-danger text-white">
                     <i class="bi bi-exclamation-triangle"></i> 1. Risco Relacionado
@@ -48,38 +48,38 @@
                     </div>
 
                     <div id="info-risco" class="alert alert-info" style="display: none;">
-                        <h6 class="mb-2"><i class="bi bi-info-circle"></i> Informações do Risco Selecionado</h6>
+                        <h6 class="mb-2"><i class="bi bi-info-circle"></i> InformaÃ§Ãµes do Risco Selecionado</h6>
                         <p class="mb-1"><strong>Agente:</strong> <span id="risco-agente"></span></p>
-                        <p class="mb-1"><strong>Classificação:</strong> <span id="risco-classificacao"></span></p>
+                        <p class="mb-1"><strong>ClassificaÃ§Ã£o:</strong> <span id="risco-classificacao"></span></p>
                         <p class="mb-0"><strong>Fonte Geradora:</strong> <span id="risco-fonte"></span></p>
                     </div>
                 </div>
             </div>
 
-            <!-- SEÇÃO 2: Descrição da Ação -->
+            <!-- SEÃ‡ÃƒO 2: DescriÃ§Ã£o da AÃ§Ã£o -->
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
-                    <i class="bi bi-pencil-square"></i> 2. Descrição da Ação
+                    <i class="bi bi-pencil-square"></i> 2. DescriÃ§Ã£o da AÃ§Ã£o
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
                         <label for="{{ form.tipo_acao.id_for_label }}" class="form-label required-field">
-                            Tipo de Ação
+                            Tipo de AÃ§Ã£o
                         </label>
                         {% render_field form.tipo_acao class="form-select" %}
                         {% if form.tipo_acao.errors %}
                         <div class="text-danger small mt-1">{{ form.tipo_acao.errors }}</div>
                         {% endif %}
                         <small class="form-text text-muted">
-                            Hierarquia de Controle: Eliminação > Engenharia > Administrativa > EPI
+                            Hierarquia de Controle: EliminaÃ§Ã£o > Engenharia > Administrativa > EPI
                         </small>
                     </div>
 
                     <div class="mb-3">
                         <label for="{{ form.descricao_acao.id_for_label }}" class="form-label required-field">
-                            Descrição da Ação
+                            DescriÃ§Ã£o da AÃ§Ã£o
                         </label>
-                        {% render_field form.descricao_acao class="form-control" rows="4" placeholder="Descreva detalhadamente a ação que será implementada..." %}
+                        {% render_field form.descricao_acao class="form-control" rows="4" placeholder="Descreva detalhadamente a aÃ§Ã£o que serÃ¡ implementada..." %}
                         {% if form.descricao_acao.errors %}
                         <div class="text-danger small mt-1">{{ form.descricao_acao.errors }}</div>
                         {% endif %}
@@ -87,9 +87,9 @@
 
                     <div class="mb-3">
                         <label for="{{ form.recursos_necessarios.id_for_label }}" class="form-label">
-                            Recursos Necessários
+                            Recursos NecessÃ¡rios
                         </label>
-                        {% render_field form.recursos_necessarios class="form-control" rows="3" placeholder="Liste os recursos materiais, humanos e financeiros necessários..." %}
+                        {% render_field form.recursos_necessarios class="form-control" rows="3" placeholder="Liste os recursos materiais, humanos e financeiros necessÃ¡rios..." %}
                         {% if form.recursos_necessarios.errors %}
                         <div class="text-danger small mt-1">{{ form.recursos_necessarios.errors }}</div>
                         {% endif %}
@@ -97,10 +97,10 @@
                 </div>
             </div>
 
-            <!-- SEÇÃO 3: Priorização e Prazos -->
+            <!-- SEÃ‡ÃƒO 3: PriorizaÃ§Ã£o e Prazos -->
             <div class="card mb-4">
                 <div class="card-header bg-warning text-dark">
-                    <i class="bi bi-calendar-event"></i> 3. Priorização e Prazos
+                    <i class="bi bi-calendar-event"></i> 3. PriorizaÃ§Ã£o e Prazos
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -113,8 +113,8 @@
                             <div class="text-danger small mt-1">{{ form.prioridade.errors }}</div>
                             {% endif %}
                             <small class="form-text text-muted">
-                                <strong>Crítica:</strong> 15 dias | <strong>Alta:</strong> 30 |
-                                <strong>Média:</strong> 60 | <strong>Baixa:</strong> 90
+                                <strong>CrÃ­tica:</strong> 15 dias | <strong>Alta:</strong> 30 |
+                                <strong>MÃ©dia:</strong> 60 | <strong>Baixa:</strong> 90
                             </small>
                         </div>
                         <div class="col-md-6">
@@ -126,7 +126,7 @@
                         </div>
                         <div class="col-md-6">
                             <label for="{{ form.data_prevista.id_for_label }}" class="form-label required-field">
-                                Data Prevista para Conclusão
+                                Data Prevista para ConclusÃ£o
                             </label>
                             {% render_field form.data_prevista class="form-control" type="date" %}
                             {% if form.data_prevista.errors %}
@@ -135,19 +135,19 @@
                         </div>
                         <div class="col-md-6">
                             <label for="{{ form.data_conclusao.id_for_label }}" class="form-label">
-                                Data de Conclusão (Real)
+                                Data de ConclusÃ£o (Real)
                             </label>
                             {% render_field form.data_conclusao class="form-control" type="date" %}
                             {% if form.data_conclusao.errors %}
                             <div class="text-danger small mt-1">{{ form.data_conclusao.errors }}</div>
                             {% endif %}
-                            <small class="form-text text-muted">Preencher apenas quando concluído</small>
+                            <small class="form-text text-muted">Preencher apenas quando concluÃ­do</small>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- SEÇÃO 4: Responsabilidade e Custo -->
+            <!-- SEÃ‡ÃƒO 4: Responsabilidade e Custo -->
             <div class="card mb-4">
                 <div class="card-header bg-info text-white">
                     <i class="bi bi-person-badge"></i> 4. Responsabilidade e Custo
@@ -156,9 +156,9 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label for="{{ form.responsavel.id_for_label }}" class="form-label required-field">
-                                Responsável pela Execução
+                                ResponsÃ¡vel pela ExecuÃ§Ã£o
                             </label>
-                            {% render_field form.responsavel class="form-control" placeholder="Nome do responsável" %}
+                            {% render_field form.responsavel class="form-control" placeholder="Nome do responsÃ¡vel" %}
                             {% if form.responsavel.errors %}
                             <div class="text-danger small mt-1">{{ form.responsavel.errors }}</div>
                             {% endif %}
@@ -176,8 +176,8 @@
                             {% endif %}
                         </div>
                         <div class="col-12">
-                            <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observações</label>
-                            {% render_field form.observacoes class="form-control" rows="3" placeholder="Informações adicionais sobre o plano de ação..." %}
+                            <label for="{{ form.observacoes.id_for_label }}" class="form-label">ObservaÃ§Ãµes</label>
+                            {% render_field form.observacoes class="form-control" rows="3" placeholder="InformaÃ§Ãµes adicionais sobre o plano de aÃ§Ã£o..." %}
                             {% if form.observacoes.errors %}
                             <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
                             {% endif %}
@@ -186,7 +186,7 @@
                 </div>
             </div>
 
-            <!-- Botões de Ação -->
+            <!-- BotÃµes de AÃ§Ã£o -->
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between flex-wrap gap-2">
@@ -211,36 +211,36 @@
     <div class="col-lg-3">
         <div class="card sticky-top help-sidebar" style="top: 80px;">
             <div class="card-header bg-info text-white">
-                <i class="bi bi-info-circle"></i> Orientações
+                <i class="bi bi-info-circle"></i> OrientaÃ§Ãµes
             </div>
             <div class="card-body">
                 <h6>Hierarquia de Controle</h6>
                 <ol class="small">
-                    <li><strong>Eliminação:</strong> Remover o risco</li>
+                    <li><strong>EliminaÃ§Ã£o:</strong> Remover o risco</li>
                     <li><strong>Engenharia:</strong> Isolar o risco</li>
                     <li><strong>Administrativa:</strong> Procedimentos e treinamentos</li>
-                    <li><strong>EPI:</strong> Última opção</li>
+                    <li><strong>EPI:</strong> Ãšltima opÃ§Ã£o</li>
                 </ol>
 
                 <hr>
 
                 <h6>Prazos por Prioridade</h6>
                 <ul class="small list-unstyled">
-                    <li><strong class="text-danger">Crítica:</strong> até 15 dias</li>
-                    <li><strong class="text-warning">Alta:</strong> até 30 dias</li>
-                    <li><strong class="text-info">Média:</strong> até 60 dias</li>
-                    <li><strong>Baixa:</strong> até 90 dias</li>
+                    <li><strong class="text-danger">CrÃ­tica:</strong> atÃ© 15 dias</li>
+                    <li><strong class="text-warning">Alta:</strong> atÃ© 30 dias</li>
+                    <li><strong class="text-info">MÃ©dia:</strong> atÃ© 60 dias</li>
+                    <li><strong>Baixa:</strong> atÃ© 90 dias</li>
                 </ul>
 
                 <hr>
 
                 <h6>Dicas</h6>
                 <ul class="small">
-                    <li>Seja específico na descrição</li>
-                    <li>Defina responsáveis claros</li>
-                    <li>Estabeleça prazos realistas</li>
-                    <li>Documente os recursos necessários</li>
-                    <li>Faça acompanhamento periódico</li>
+                    <li>Seja especÃ­fico na descriÃ§Ã£o</li>
+                    <li>Defina responsÃ¡veis claros</li>
+                    <li>EstabeleÃ§a prazos realistas</li>
+                    <li>Documente os recursos necessÃ¡rios</li>
+                    <li>FaÃ§a acompanhamento periÃ³dico</li>
                 </ul>
             </div>
         </div>
@@ -251,7 +251,7 @@
 {% block extra_pgr_js %}
 <script>
 $(document).ready(function() {
-    // Carregar informações do risco selecionado
+    // Carregar informaÃ§Ãµes do risco selecionado
     $('#id_risco_identificado').on('change', function() {
         const riscoId = $(this).val();
         if (!riscoId) {
@@ -266,7 +266,7 @@ $(document).ready(function() {
                 $('#risco-fonte').text(data.fonte_geradora || 'N/A');
                 $('#info-risco').slideDown();
 
-                // Sugere prioridade baseada na classificação
+                // Sugere prioridade baseada na classificaÃ§Ã£o
                 let prioridade = 'baixa';
                 if (data.classificacao === 'critico' || data.classificacao === 'muito_grave') prioridade = 'critica';
                 else if (data.classificacao === 'moderado') prioridade = 'alta';
@@ -291,7 +291,7 @@ $(document).ready(function() {
         }
     });
 
-    // Trigger ao carregar (modo edição)
+    // Trigger ao carregar (modo ediÃ§Ã£o)
     if ($('#id_risco_identificado').val()) {
         $('#id_risco_identificado').trigger('change');
     }

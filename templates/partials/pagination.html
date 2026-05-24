@@ -1,24 +1,24 @@
-
+﻿
 <!-- templates/partials/pagination.html -->
 {% if is_paginated %}
 {% comment %}
-  Este template preserva TODOS os parâmetros GET (filtros, buscas, etc.)
-  ao navegar entre páginas.
+  Este template preserva TODOS os parÃ¢metros GET (filtros, buscas, etc.)
+  ao navegar entre pÃ¡ginas.
 {% endcomment %}
 
 {% with request.GET.urlencode as current_params %}
-<nav aria-label="Paginação" class="mt-4">
+<nav aria-label="PaginaÃ§Ã£o" class="mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
 
         <!-- Info -->
         <small class="text-muted">
-            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            PÃ¡gina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
             <span class="d-none d-sm-inline">
                 ({{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize:"s" }})
             </span>
         </small>
 
-        <!-- Paginação -->
+        <!-- PaginaÃ§Ã£o -->
         <ul class="pagination pagination-sm mb-0">
 
             <!-- Primeira -->
@@ -39,7 +39,7 @@
             </li>
             {% endif %}
 
-            <!-- Números de Página -->
+            <!-- NÃºmeros de PÃ¡gina -->
             {% for num in page_obj.paginator.page_range %}
                 {% if page_obj.number == num %}
                 <li class="page-item active" aria-current="page">
@@ -58,11 +58,11 @@
                     </a>
                 </li>
                 {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
-                <li class="page-item disabled"><span class="page-link">…</span></li>
+                <li class="page-item disabled"><span class="page-link">â€¦</span></li>
                 {% endif %}
             {% endfor %}
 
-            <!-- Próxima -->
+            <!-- PrÃ³xima -->
             {% if page_obj.has_next %}
             <li class="page-item">
                 <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_params %}&{{ current_params }}{% endif %}">
@@ -71,10 +71,10 @@
             </li>
             {% endif %}
 
-            <!-- Última -->
+            <!-- Ãšltima -->
             {% if page_obj.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_params %}&{{ current_params }}{% endif %}" title="Última">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_params %}&{{ current_params }}{% endif %}" title="Ãšltima">
                     <i class="bi bi-chevron-double-right"></i>
                 </a>
             </li>

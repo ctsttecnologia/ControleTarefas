@@ -1,13 +1,13 @@
-
+﻿
 {# templates/logradouro/detail_logradouro.html #}
 {% extends 'logradouro/base_logradouro.html' %}
 {% load i18n %}
 
-{% block logradouro_title %}{% trans "Detalhes do Endereço" %}{% endblock logradouro_title %}
+{% block logradouro_title %}{% trans "Detalhes do EndereÃ§o" %}{% endblock logradouro_title %}
 
 {% block logradouro_content %}
 
-    {# ═══════════════════════════ BREADCRUMB ═══════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• BREADCRUMB â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <nav class="log-breadcrumb" aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
@@ -19,7 +19,7 @@
         </ol>
     </nav>
 
-    {# ═══════════════════════════ HERO HEADER ═══════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HERO HEADER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <div class="log-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
@@ -27,7 +27,7 @@
                     <i class="bi bi-geo-alt me-2"></i>{{ logradouro.tipo_logradouro_display }} {{ logradouro.endereco }}, {{ logradouro.numero }}
                 </h1>
                 <p>
-                    {{ logradouro.bairro }} — {{ logradouro.cidade }}/{{ logradouro.estado }}
+                    {{ logradouro.bairro }} â€” {{ logradouro.cidade }}/{{ logradouro.estado }}
                 </p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
@@ -50,12 +50,12 @@
 
     <div class="row g-4">
 
-        {# ═══════════════════════════ ENDEREÇO ═══════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ENDEREÃ‡O â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         <div class="col-lg-8">
             <div class="log-card">
                 <div class="log-card-header">
                     <h5>
-                        <i class="bi bi-house-door me-2" style="color: var(--log-primary);"></i>{% trans "Dados do Endereço" %}
+                        <i class="bi bi-house-door me-2" style="color: var(--log-primary);"></i>{% trans "Dados do EndereÃ§o" %}
                     </h5>
                     <span class="log-badge log-badge-primary">
                         {{ logradouro.tipo_logradouro_display }}
@@ -63,10 +63,10 @@
                 </div>
                 <div class="log-card-body">
 
-                    {# Endereço Completo #}
+                    {# EndereÃ§o Completo #}
                     <div class="mb-4 p-3 rounded-3" style="background: var(--bs-tertiary-bg, #f8f9fc);">
                         <div class="log-section-title mb-2">
-                            <i class="bi bi-signpost-2 me-1"></i>{% trans "Endereço Completo" %}
+                            <i class="bi bi-signpost-2 me-1"></i>{% trans "EndereÃ§o Completo" %}
                         </div>
                         <p class="mb-0 fs-6 fw-semibold" style="color: var(--bs-body-color);">
                             {{ logradouro.get_endereco_completo }}
@@ -91,9 +91,9 @@
                             </p>
                         </div>
 
-                        {# Número #}
+                        {# NÃºmero #}
                         <div class="col-sm-6 col-md-4">
-                            <div class="log-section-title">{% trans "Número" %}</div>
+                            <div class="log-section-title">{% trans "NÃºmero" %}</div>
                             <p class="mb-0 fw-semibold" style="color: var(--bs-body-color);">
                                 {{ logradouro.numero }}
                             </p>
@@ -106,7 +106,7 @@
                                 {% if logradouro.complemento %}
                                     {{ logradouro.complemento }}
                                 {% else %}
-                                    <span class="text-muted fst-italic">{% trans "Não informado" %}</span>
+                                    <span class="text-muted fst-italic">{% trans "NÃ£o informado" %}</span>
                                 {% endif %}
                             </p>
                         </div>
@@ -147,23 +147,23 @@
                             </p>
                         </div>
 
-                        {# País #}
+                        {# PaÃ­s #}
                         <div class="col-sm-6 col-md-4">
-                            <div class="log-section-title">{% trans "País" %}</div>
+                            <div class="log-section-title">{% trans "PaÃ­s" %}</div>
                             <p class="mb-0 fw-semibold" style="color: var(--bs-body-color);">
                                 {{ logradouro.pais|default:"Brasil" }}
                             </p>
                         </div>
 
-                        {# Ponto de Referência #}
+                        {# Ponto de ReferÃªncia #}
                         <div class="col-12">
-                            <div class="log-section-title">{% trans "Ponto de Referência" %}</div>
+                            <div class="log-section-title">{% trans "Ponto de ReferÃªncia" %}</div>
                             <p class="mb-0" style="color: var(--bs-body-color);">
                                 {% if logradouro.ponto_referencia %}
                                     <i class="bi bi-pin-map me-1" style="color: var(--log-info);"></i>
                                     {{ logradouro.ponto_referencia }}
                                 {% else %}
-                                    <span class="text-muted fst-italic">{% trans "Não informado" %}</span>
+                                    <span class="text-muted fst-italic">{% trans "NÃ£o informado" %}</span>
                                 {% endif %}
                             </p>
                         </div>
@@ -172,10 +172,10 @@
             </div>
         </div>
 
-        {# ═══════════════════════════ SIDEBAR ═══════════════════════════ #}
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SIDEBAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         <div class="col-lg-4">
 
-            {# Card — Filial #}
+            {# Card â€” Filial #}
             <div class="log-card mb-4">
                 <div class="log-card-header">
                     <h5>
@@ -201,7 +201,7 @@
                 </div>
             </div>
 
-            {# Card — Coordenadas #}
+            {# Card â€” Coordenadas #}
             <div class="log-card mb-4">
                 <div class="log-card-header">
                     <h5>
@@ -229,7 +229,7 @@
                     {% else %}
                         <div class="text-center py-2">
                             <i class="bi bi-pin-map text-muted fs-3 d-block mb-2"></i>
-                            <span class="text-muted fst-italic small">{% trans "Coordenadas não informadas" %}</span>
+                            <span class="text-muted fst-italic small">{% trans "Coordenadas nÃ£o informadas" %}</span>
                         </div>
                         {% if perms.logradouro.change_logradouro or user.is_superuser %}
                             <a href="{% url 'logradouro:editar_logradouro' logradouro.pk %}"
@@ -242,7 +242,7 @@
                 </div>
             </div>
 
-            {# Card — Registro #}
+            {# Card â€” Registro #}
             <div class="log-card mb-4">
                 <div class="log-card-header">
                     <h5>
@@ -259,7 +259,7 @@
                         </p>
                     </div>
                     <div>
-                        <div class="log-section-title">{% trans "Última Atualização" %}</div>
+                        <div class="log-section-title">{% trans "Ãšltima AtualizaÃ§Ã£o" %}</div>
                         <p class="mb-0" style="color: var(--bs-body-color);">
                             <i class="bi bi-calendar-check me-1 text-muted"></i>
                             {{ logradouro.data_atualizacao|date:"d/m/Y" }}
@@ -269,11 +269,11 @@
                 </div>
             </div>
 
-            {# Card — Ações Rápidas #}
+            {# Card â€” AÃ§Ãµes RÃ¡pidas #}
             <div class="log-card">
                 <div class="log-card-header">
                     <h5>
-                        <i class="bi bi-lightning me-2" style="color: var(--log-primary);"></i>{% trans "Ações" %}
+                        <i class="bi bi-lightning me-2" style="color: var(--log-primary);"></i>{% trans "AÃ§Ãµes" %}
                     </h5>
                 </div>
                 <div class="log-card-body d-grid gap-2">
@@ -281,7 +281,7 @@
                         <a href="{% url 'logradouro:editar_logradouro' logradouro.pk %}"
                            class="btn btn-outline-primary"
                            style="border-radius: var(--log-radius-sm);">
-                            <i class="bi bi-pencil me-1"></i> {% trans "Editar Endereço" %}
+                            <i class="bi bi-pencil me-1"></i> {% trans "Editar EndereÃ§o" %}
                         </a>
                     {% endif %}
 
@@ -289,7 +289,7 @@
                         <a href="{% url 'logradouro:cadastrar_logradouro' %}"
                            class="btn btn-outline-success"
                            style="border-radius: var(--log-radius-sm);">
-                            <i class="bi bi-plus-circle me-1"></i> {% trans "Novo Endereço" %}
+                            <i class="bi bi-plus-circle me-1"></i> {% trans "Novo EndereÃ§o" %}
                         </a>
                     {% endif %}
 
@@ -297,7 +297,7 @@
                         <a href="{% url 'logradouro:confirmar_exclusao' logradouro.pk %}"
                            class="btn btn-outline-danger"
                            style="border-radius: var(--log-radius-sm);">
-                            <i class="bi bi-trash3 me-1"></i> {% trans "Excluir Endereço" %}
+                            <i class="bi bi-trash3 me-1"></i> {% trans "Excluir EndereÃ§o" %}
                         </a>
                     {% endif %}
 
@@ -306,7 +306,7 @@
                     <a href="{% url 'logradouro:listar_logradouros' %}"
                        class="btn btn-outline-secondary"
                        style="border-radius: var(--log-radius-sm);">
-                        <i class="bi bi-list-ul me-1"></i> {% trans "Voltar à Lista" %}
+                        <i class="bi bi-list-ul me-1"></i> {% trans "Voltar Ã  Lista" %}
                     </a>
                 </div>
             </div>

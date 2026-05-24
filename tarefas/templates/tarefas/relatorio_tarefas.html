@@ -1,14 +1,14 @@
-
+﻿
 <!-- templates/tarefas/relatorio_tarefas.html -->
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Relatório de Tarefas{% endblock %}
+{% block title %}RelatÃ³rio de Tarefas{% endblock %}
 
 {% block extra_css %}
 <style>
 /* =============================================================================
-   RELATÓRIO DE TAREFAS — Tema Claro / Escuro
+   RELATÃ“RIO DE TAREFAS â€” Tema Claro / Escuro
    ============================================================================= */
 
 :root,
@@ -200,7 +200,7 @@
         page-break-inside: avoid;
     }
 
-    /* Grid dos gráficos */
+    /* Grid dos grÃ¡ficos */
     .rel-charts-grid {
         display: grid !important;
         grid-template-columns: repeat(2, 1fr) !important;
@@ -210,7 +210,7 @@
         margin-top: 1rem;
     }
 
-    /* Container do gráfico */
+    /* Container do grÃ¡fico */
     .rel-chart-container {
         height: auto !important;
         min-height: 200px;
@@ -238,7 +238,7 @@
 
     .rel-card-header, .rel-card-title { color: #000 !important; }
 
-    /* Sem scroll na impressão — mostra tudo */
+    /* Sem scroll na impressÃ£o â€” mostra tudo */
     .rel-table-scroll {
         max-height: none !important;
         overflow: visible !important;
@@ -249,7 +249,7 @@
 }
 
 /* ============================================================ */
-/* ⬇️ FORA do @media print — este CSS roda na TELA NORMAL ⬇️    */
+/* â¬‡ï¸ FORA do @media print â€” este CSS roda na TELA NORMAL â¬‡ï¸    */
 /* ============================================================ */
 
 /* ===== Scroll vertical da tabela ===== */
@@ -276,7 +276,7 @@
     background: var(--rel-text-muted);
 }
 
-/* Cabeçalho fixo enquanto rola */
+/* CabeÃ§alho fixo enquanto rola */
 .rel-table-sticky thead th {
     position: sticky;
     top: 0;
@@ -304,15 +304,15 @@
     <div class="rel-header">
         <div>
             <h1 class="rel-title">
-                <i class="bi bi-file-earmark-bar-graph me-2"></i>Relatório de Tarefas
+                <i class="bi bi-file-earmark-bar-graph me-2"></i>RelatÃ³rio de Tarefas
             </h1>
-            <p class="rel-subtitle">Análise e exportação de dados</p>
+            <p class="rel-subtitle">AnÃ¡lise e exportaÃ§Ã£o de dados</p>
         </div>
         <div class="rel-actions">
-            <button class="btn btn-sm btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFilters" title="Filtros e Exportação">
+            <button class="btn btn-sm btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFilters" title="Filtros e ExportaÃ§Ã£o">
                 <i class="bi bi-funnel-fill me-1"></i><span class="d-none d-sm-inline">Filtros</span>
             </button>
-            <a href="{% url 'tarefas:gerar_relatorio' %}" class="btn btn-sm btn-outline-primary" title="Gerador Avançado">
+            <a href="{% url 'tarefas:gerar_relatorio' %}" class="btn btn-sm btn-outline-primary" title="Gerador AvanÃ§ado">
                 <i class="bi bi-file-earmark-plus me-1"></i><span class="d-none d-md-inline">Gerar Novo</span>
             </a>
             <a href="{% url 'tarefas:dashboard' %}" class="btn btn-sm btn-outline-secondary" title="Dashboard">
@@ -337,7 +337,7 @@
         {% if current_filters.responsavel %}
         <span class="rel-filter-tag">
             <i class="bi bi-person-fill"></i>
-            Responsável:
+            ResponsÃ¡vel:
             {% for user in responsaveis %}
                 {% if user.pk|stringformat:"d" == current_filters.responsavel %}
                     {{ user.get_full_name|default:user.username }}
@@ -360,23 +360,23 @@
             <table class="rel-table rel-table-sticky">
                 <thead>
                     <tr>
-                        <th>Título</th>
-                        <th>Responsável</th>
+                        <th>TÃ­tulo</th>
+                        <th>ResponsÃ¡vel</th>
                         <th>Status</th>
                         <th>Prioridade</th>
                         <th>Projeto</th>
-                        <th>Criação</th>
+                        <th>CriaÃ§Ã£o</th>
                         <th>Prazo</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for tarefa in tarefas %}
                     <tr>
-                        <td data-label="Título">
+                        <td data-label="TÃ­tulo">
                             <span class="rel-table-title">{{ tarefa.titulo }}</span>
                         </td>
-                        <td data-label="Responsável">
-                            {% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}
+                        <td data-label="ResponsÃ¡vel">
+                            {% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}â€”{% endif %}
                         </td>
                         <td data-label="Status">
                             <span class="rel-badge rel-badge-{{ tarefa.status }}">
@@ -384,9 +384,9 @@
                             </span>
                         </td>
                         <td data-label="Prioridade">{{ tarefa.get_prioridade_display }}</td>
-                        <td data-label="Projeto">{{ tarefa.projeto|default:"—" }}</td>
-                        <td data-label="Criação">{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
-                        <td data-label="Prazo">{{ tarefa.prazo|date:"d/m/Y"|default:"—" }}</td>
+                        <td data-label="Projeto">{{ tarefa.projeto|default:"â€”" }}</td>
+                        <td data-label="CriaÃ§Ã£o">{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
+                        <td data-label="Prazo">{{ tarefa.prazo|date:"d/m/Y"|default:"â€”" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -422,7 +422,7 @@
         {% endif %}
     </div>
 
-    <!-- Gráficos -->
+    <!-- GrÃ¡ficos -->
     <div class="rel-charts-grid">
         <div class="rel-card">
             <div class="rel-card-header">
@@ -447,11 +447,11 @@
     </div>
 </div>
 
-<!-- Offcanvas: Filtros e Exportação -->
+<!-- Offcanvas: Filtros e ExportaÃ§Ã£o -->
 <div class="offcanvas offcanvas-end rel-offcanvas" tabindex="-1" id="offcanvasFilters">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title">
-            <i class="bi bi-sliders me-2"></i>Filtros e Exportação
+            <i class="bi bi-sliders me-2"></i>Filtros e ExportaÃ§Ã£o
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
@@ -472,9 +472,9 @@
                 </select>
             </div>
 
-            <!-- ═══ RESPONSÁVEL (NOVO) ═══ -->
+            <!-- â•â•â• RESPONSÃVEL (NOVO) â•â•â• -->
             <div class="mb-3">
-                <label for="responsavel" class="form-label">Responsável</label>
+                <label for="responsavel" class="form-label">ResponsÃ¡vel</label>
                 <select name="responsavel" id="responsavel" class="form-select form-select-sm">
                     <option value="">Todos</option>
                     {% for user in responsaveis %}
@@ -484,7 +484,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <!-- ═══ FIM ═══ -->
+            <!-- â•â•â• FIM â•â•â• -->
 
             <div class="d-grid gap-2 mb-4">
                 <button type="submit" class="btn btn-sm btn-primary">
@@ -498,7 +498,7 @@
 
         <hr>
 
-        <!-- Exportação -->
+        <!-- ExportaÃ§Ã£o -->
         <div class="rel-section-label"><i class="bi bi-download me-1"></i> Exportar</div>
         <div class="d-grid gap-2">
             <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf&{{ request.GET.urlencode }}"
@@ -526,7 +526,7 @@
 
         <!-- Link para Gerador 
         <a href="{% url 'tarefas:gerar_relatorio' %}" class="btn btn-sm btn-outline-secondary w-100">
-            <i class="bi bi-file-earmark-plus me-1"></i> Gerador Avançado
+            <i class="bi bi-file-earmark-plus me-1"></i> Gerador AvanÃ§ado
         </a>
         -->
     </div>
@@ -556,7 +556,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     const prioColors = { 'alta': '#ef4444', 'media': '#f59e0b', 'baixa': '#22c55e' };
 
-    // ═══ Status Chart (Doughnut) ═══
+    // â•â•â• Status Chart (Doughnut) â•â•â•
     const statusCtx = document.getElementById('statusChart');
     if (statusCtx && statusData.length) {
         new Chart(statusCtx, {
@@ -592,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ═══ Priority Chart (Bar) ═══
+    // â•â•â• Priority Chart (Bar) â•â•â•
     const prioCtx = document.getElementById('priorityChart');
     if (prioCtx && priorityData.length) {
         new Chart(prioCtx, {
@@ -630,7 +630,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ═══ PRINT: Canvas → Imagem ═══
+    // â•â•â• PRINT: Canvas â†’ Imagem â•â•â•
     window.addEventListener('beforeprint', function() {
         document.querySelectorAll('.rel-chart-container canvas').forEach(function(canvas) {
             if (canvas.parentNode.querySelector('.print-chart-img')) return;
@@ -641,7 +641,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 img.style.cssText = 'width:100%; height:auto; display:none;';
                 canvas.parentNode.appendChild(img);
             } catch(e) {
-                console.error('Erro ao converter gráfico para imagem:', e);
+                console.error('Erro ao converter grÃ¡fico para imagem:', e);
             }
         });
     });

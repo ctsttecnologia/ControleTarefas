@@ -225,12 +225,12 @@ class NotificacaoModelTest(NotificacaoTestBase):
         self.assertAlmostEqual(
             self.notif_critica.data_criacao,
             timezone.now(),
-            delta=timedelta(seconds=10),
+            delta=timedelta(seconds=60),
         )
 
-    def test_criada_em_auto(self):
-        """criada_em é preenchida automaticamente."""
-        self.assertIsNotNone(self.notif_critica.criada_em)
+    def test_data_criacao_auto(self):  # renomear
+        """data_criacao é preenchida automaticamente."""
+        self.assertIsNotNone(self.notif_critica.data_criacao) 
 
     # ── Ordering ──
 

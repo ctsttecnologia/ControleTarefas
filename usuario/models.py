@@ -5,6 +5,21 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils.translation import gettext_lazy as _
 
+from core.constants import (
+    GRUPO_ADMINISTRADOR,
+    GRUPO_GERENTE,
+    GRUPO_COORDENADOR,
+    GRUPO_TECNICO,
+    GRUPO_ASSISTENTE,
+    GRUPO_USUARIO_COMUM,
+    GRUPO_DEPARTAMENTO_PESSOAL,
+    GRUPO_PLANEJAMENTO,
+    GRUPO_SUPRIMENTOS,
+    GRUPO_GESTAO_QUALIDADE,
+    GRUPO_SST_SEGURANCA,
+    GRUPO_DASHBOARD_FULL,
+)
+
 
 class Filial(models.Model):
     """
@@ -65,27 +80,67 @@ class Usuario(AbstractUser):
     def __str__(self):
         return self.get_full_name() or self.username
     
-    # Propriedade para verificar se o usuário pertence ao grupo 'Gerente'
+    # ---------- Perfis hierárquicos ----------
     @property
-    def is_gerente(self):
-        # NOTA: O nome do grupo DEVE ser idêntico ao que está no painel Admin
-        return self.groups.filter(name='Gerente').exists()
+    def is_administrador(self) -> bool:
+        return self.groups.filter(name=GRUPO_ADMINISTRADOR).exists()
+
+    @property
+    def is_gerente(self) -> bool:
+        return self.groups.filter(name=GRUPO_GERENTE).exists()
+
+    @property
+    def is_coordenador(self) -> bool:
+        return self.groups.filter(name=GRUPO_COORDENADOR).exists()
+
+    @property
+    def is_tecnico(self) -> bool:
+        return self.groups.filter(name=GRUPO_TECNICO).exists()
+
+    @property
+    def is_assistente(self) -> bool:
+        return self.groups.filter(name=GRUPO_ASSISTENTE).exists()
+
+    @property
+    def is_usuario_comum(self) -> bool:
+        return self.groups.filter(name=GRUPO_USUARIO_COMUM).exists()
+
+    # ---------- Setores ----------
+    @property
+    def is_do_dp(self) -> bool:
+        return self.groups.filter(name=GRUPO_DEPARTAMENTO_PESSOAL).exists()
+
+    @property
+    def is_do_planejamento(self) -> bool:
+        return self.groups.filter(name=GRUPO_PLANEJAMENTO).exists()
+
+    @property
+    def is_do_suprimentos(self) -> bool:
+        return self.groups.filter(name=GRUPO_SUPRIMENTOS).exists()
+
+    @property
+    def is_da_qualidade(self) -> bool:
+        return self.groups.filter(name=GRUPO_GESTAO_QUALIDADE).exists()
+
+    @property
+    def is_do_sst(self) -> bool:
+        return self.groups.filter(name=GRUPO_SST_SEGURANCA).exists()
+
+    # ---------- Feature flags ----------
+    @property
+    def tem_dashboard_full(self) -> bool:
+        return self.groups.filter(name=GRUPO_DASHBOARD_FULL).exists()
+
+    # ---------- Helper genérico ----------
+    def pertence_ao_grupo(self, nome_grupo: str) -> bool:
+        """Verifica pertencimento a qualquer grupo pelo nome."""
+        return self.groups.filter(name=nome_grupo).exists()
     
-    @property
-    def is_coordenador(self):
-        # NOTA: O nome do grupo DEVE ser idêntico ao que está no painel Admin
-        return self.groups.filter(name='Coordenador').exists()
-
-    @property
-    def is_tecnico(self):
-        # NOTA: O nome do grupo DEVE ser idêntico ao que está no painel Admin
-        return self.groups.filter(name='Técnico').exists()
-
     # Propriedade para verificar se o usuário é Administrador
     @property
     def is_administrador(self):
         # Verifica se é um Superusuário OU se pertence ao grupo 'Administrador'
-        return self.is_superuser or self.groups.filter(name='Administrador').exists()
+        return self.is_superuser or self.groups.filter(name=GRUPO_ADMINISTRADOR).exists()
 
     
 class GroupCardPermissions(models.Model):

@@ -33,8 +33,12 @@ urlpatterns = [
     path('pedidos/', views.PedidoListView.as_view(), name='pedido_lista'),
     path('pedidos/novo/', views.PedidoCreateView.as_view(), name='pedido_criar'),
     path('pedidos/<int:pk>/', views.PedidoDetailView.as_view(), name='pedido_detalhe'),
-    path('pedidos/<int:pk>/item/adicionar/', views.ItemPedidoCreateView.as_view(), name='item_adicionar'),
-    path('pedidos/<int:pk>/item/<int:item_pk>/remover/', views.ItemPedidoDeleteView.as_view(), name='item_remover'),
+    # Itens
+    path('pedidos/<int:pk>/item/adicionar/', 
+        views.ItemPedidoCreateView.as_view(), name='item_adicionar'),
+    path('pedidos/<int:pk>/item/<int:item_pk>/remover/', 
+        views.ItemPedidoDeleteView.as_view(), name='item_remover'),
+    # Workflow
     path('pedidos/<int:pk>/enviar/', views.PedidoEnviarView.as_view(), name='pedido_enviar'),
     path('pedidos/<int:pk>/aprovar/', views.PedidoAprovarView.as_view(), name='pedido_aprovar'),
     path('pedidos/<int:pk>/reprovar/', views.PedidoReprovarView.as_view(), name='pedido_reprovar'),
@@ -42,8 +46,13 @@ urlpatterns = [
     path('pedidos/<int:pk>/revisar/', views.PedidoRevisarView.as_view(), name='pedido_revisar'),
     path('pedidos/<int:pk>/entregar/', views.PedidoEntregarView.as_view(), name='pedido_entregar'),
     path('pedidos/<int:pk>/receber/', views.PedidoReceberView.as_view(), name='pedido_receber'),
-    path('pedidos/<int:pk>/anexo/', views.PedidoAnexoView.as_view(), name='pedido_anexo'),
-    path('pedidos/<int:pk>/anexo/<int:anexo_pk>/remover/', views.PedidoAnexoDeleteView.as_view(), name='pedido_anexo_remover'),
+
+    # Anexos do Pedido (renomeado!)
+    path('pedidos/<int:pk>/anexo/', 
+        views.PedidoAnexoView.as_view(), name='pedido_anexo'),
+    path('pedidos/<int:pk>/anexo/<int:anexo_pk>/remover/', 
+        views.PedidoAnexoDeleteView.as_view(),   # ← ajuste para a view correta
+        name='pedido_anexo_remover'),            # ← nome correto e único
 
     # ── Solicitações de Compra (pós-aprovação) ──
     path('solicitacoes/', views.SolicitacaoListView.as_view(), name='solicitacao_lista'),

@@ -1,6 +1,6 @@
-{% extends "departamento_pessoal/_base_dp.html" %}
+﻿{% extends "departamento_pessoal/_base_dp.html" %}
 
-{% block title %}Confirmar Exclusão - {{ object.nome_completo }}{% endblock %}
+{% block title %}Confirmar ExclusÃ£o - {{ object.nome_completo }}{% endblock %}
 
 {% block dp_content %}
 <div class="container py-5">
@@ -10,7 +10,7 @@
                 <div class="card-header bg-danger text-white">
                     <h5 class="mb-0">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        Confirmar Ação
+                        Confirmar AÃ§Ã£o
                     </h5>
                 </div>
                 <div class="card-body text-center p-4">
@@ -20,25 +20,25 @@
                     
                     <h4 class="mb-3">{{ object.nome_completo }}</h4>
                     <p class="text-muted mb-4">
-                        Matrícula: <code>{{ object.matricula }}</code><br>
+                        MatrÃ­cula: <code>{{ object.matricula }}</code><br>
                         Cargo: {{ object.cargo.nome|default:"-" }}
                     </p>
                     
                     <div class="alert alert-warning text-start">
                         <i class="bi bi-info-circle me-2"></i>
-                        <strong>Atenção:</strong> Você pode escolher entre inativar (recomendado) ou excluir permanentemente este funcionário.
+                        <strong>AtenÃ§Ã£o:</strong> VocÃª pode escolher entre inativar (recomendado) ou excluir permanentemente este funcionÃ¡rio.
                     </div>
                     
                     <form method="post" class="d-flex flex-column gap-2">
                         {% csrf_token %}
                         {% if perms.departamento_pessoal.change_funcionario or user.is_superuser %}
                         <button type="submit" name="action" value="inativar" class="btn btn-warning btn-lg">
-                            <i class="bi bi-pause-circle me-2"></i> Inativar Funcionário
+                            <i class="bi bi-pause-circle me-2"></i> Inativar FuncionÃ¡rio
                         </button>
                         {% endif %}
                         {% if perms.departamento_pessoal.delete_funcionario or user.is_superuser %}
                         <button type="submit" name="action" value="excluir" class="btn btn-outline-danger"
-                                onclick="return confirm('ATENÇÃO: Esta ação é IRREVERSÍVEL. Tem certeza que deseja EXCLUIR PERMANENTEMENTE este funcionário?');">
+                                onclick="return confirm('ATENÃ‡ÃƒO: Esta aÃ§Ã£o Ã© IRREVERSÃVEL. Tem certeza que deseja EXCLUIR PERMANENTEMENTE este funcionÃ¡rio?');">
                             <i class="bi bi-trash3 me-2"></i> Excluir Permanentemente
                         </button>
                         {% endif %}

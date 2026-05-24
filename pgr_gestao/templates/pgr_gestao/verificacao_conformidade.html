@@ -1,24 +1,24 @@
-<!-- Página de Verificação de Conformidade do PGR -->
+﻿<!-- PÃ¡gina de VerificaÃ§Ã£o de Conformidade do PGR -->
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
-{% block title %}Verificação de Conformidade - {{ documento.codigo_documento }}{% endblock %}
+{% block title %}VerificaÃ§Ã£o de Conformidade - {{ documento.codigo_documento }}{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{% url 'pgr_gestao:documento_list' %}">Documentos PGR</a></li>
 <li class="breadcrumb-item"><a href="{% url 'pgr_gestao:documento_detail' documento.pk %}">{{ documento.codigo_documento }}</a></li>
-<li class="breadcrumb-item active">Verificação de Conformidade</li>
+<li class="breadcrumb-item active">VerificaÃ§Ã£o de Conformidade</li>
 {% endblock %}
 
 {% block extra_css %}
 
 <style>
-    /* ═══════════════════════════════════════════════════════════════
-       Verificação de Conformidade — CSS ADAPTATIVO (claro/escuro)
-       Usa variáveis globais: --bs-primary, --surface-*, --bs-border-color
-    ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       VerificaÃ§Ã£o de Conformidade â€” CSS ADAPTATIVO (claro/escuro)
+       Usa variÃ¡veis globais: --bs-primary, --surface-*, --bs-border-color
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-    /* ═══ CHECKLIST ITEMS ═══ */
+    /* â•â•â• CHECKLIST ITEMS â•â•â• */
     .checklist-item {
         padding: 1.25rem;
         border-left: 4px solid var(--bs-border-color);
@@ -34,7 +34,7 @@
         transform: translateX(2px);
     }
 
-    /* Estados de conformidade — usa cores semânticas com transparência */
+    /* Estados de conformidade â€” usa cores semÃ¢nticas com transparÃªncia */
     .checklist-item.conforme {
         border-left-color: #28a745;
         background-color: rgba(40, 167, 69, 0.08);
@@ -57,14 +57,14 @@
         color: var(--text-strong);
     }
 
-    /* ═══ STATUS BADGE ═══ */
+    /* â•â•â• STATUS BADGE â•â•â• */
     .status-badge {
         font-size: 0.85rem;
         padding: 0.3rem 0.85rem;
         border-radius: 50rem;
     }
 
-    /* ═══ SECTION HEADER — usa cor primária do tema ═══ */
+    /* â•â•â• SECTION HEADER â€” usa cor primÃ¡ria do tema â•â•â• */
     .section-header {
         background: linear-gradient(135deg,
             var(--bs-primary) 0%,
@@ -86,7 +86,7 @@
         opacity: 0.85;
     }
 
-    /* ═══ SUMMARY CARD ═══ */
+    /* â•â•â• SUMMARY CARD â•â•â• */
     .conformidade-summary {
         background: linear-gradient(135deg,
             var(--bs-primary) 0%,
@@ -124,7 +124,7 @@
         border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
-    /* ═══ NR REFERENCE BOX ═══ */
+    /* â•â•â• NR REFERENCE BOX â•â•â• */
     .nr-reference {
         background-color: rgba(var(--bs-primary-rgb), 0.08);
         padding: 0.75rem 1rem;
@@ -140,7 +140,7 @@
         color: var(--text-strong);
     }
 
-    /* ═══ ACTION NEEDED BOX ═══ */
+    /* â•â•â• ACTION NEEDED BOX â•â•â• */
     .action-needed {
         background-color: rgba(255, 193, 7, 0.12);
         padding: 0.75rem 1rem;
@@ -158,14 +158,14 @@
         margin-top: 0.5rem;
     }
 
-    /* ═══ CHART WRAPPER ═══ */
+    /* â•â•â• CHART WRAPPER â•â•â• */
     .chart-wrapper {
         position: relative;
         height: 300px;
         width: 100%;
     }
 
-    /* ═══ ACTION LINKS ═══ */
+    /* â•â•â• ACTION LINKS â•â•â• */
     .action-link {
         display: inline-flex;
         align-items: center;
@@ -182,9 +182,9 @@
         text-decoration: underline;
     }
 
-    /* ═══════════════════════════════════════════════════════════════
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        AJUSTES TEMA ESCURO
-    ═══════════════════════════════════════════════════════════════ */
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     [data-bs-theme="dark"] .checklist-item {
         background-color: var(--surface-subtle);
         border-color: var(--bs-border-color);
@@ -239,7 +239,7 @@
         border-color: rgba(var(--bs-primary-rgb), 0.3);
     }
 
-    /* Alerts no escuro (caso global.css ainda não cubra) */
+    /* Alerts no escuro (caso global.css ainda nÃ£o cubra) */
     [data-bs-theme="dark"] .alert-warning {
         background-color: rgba(255, 193, 7, 0.12);
         border-color: rgba(255, 193, 7, 0.3);
@@ -257,9 +257,9 @@
         background-color: var(--bs-primary) !important;
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       IMPRESSÃO
-    ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       IMPRESSÃƒO
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     @media print {
         .no-print {
             display: none !important;
@@ -297,7 +297,7 @@
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-start">
         <div>
-            <h1><i class="bi bi-check-circle"></i> Verificação de Conformidade NR-01</h1>
+            <h1><i class="bi bi-check-circle"></i> VerificaÃ§Ã£o de Conformidade NR-01</h1>
             <p class="mb-0">{{ documento.codigo_documento }} - {{ documento.empresa.razao_social }}</p>
         </div>
         <div class="btn-group">
@@ -307,18 +307,18 @@
             <button onclick="window.print()" class="btn btn-info">
                 <i class="bi bi-print"></i> Imprimir
             </button>
-        </div><!-- ✅ FIX: era </div sem > -->
+        </div><!-- âœ… FIX: era </div sem > -->
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <!-- RESUMO DA CONFORMIDADE                      -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="conformidade-summary">
     <div class="row align-items-center">
         <div class="col-md-8">
             <h2><i class="bi bi-clipboard-check"></i> Resumo da Conformidade</h2>
-            <p class="mb-0">Avaliação baseada nos requisitos da NR-01 (Portaria SEPRT nº 6.730/2020)</p>
+            <p class="mb-0">AvaliaÃ§Ã£o baseada nos requisitos da NR-01 (Portaria SEPRT nÂº 6.730/2020)</p>
         </div>
         <div class="col-md-4 text-center">
             <h1 style="font-size: 4rem; margin: 0;">{{ percentual_conformidade|floatformat:0 }}%</h1>
@@ -348,30 +348,30 @@
         <div class="col-md-3 text-center">
             <div class="bg-white bg-opacity-25 rounded p-3">
                 <h3 class="mb-0">{{ itens_nao_conformes }}</h3>
-                <small><i class="bi bi-times-circle me-1"></i>Não Conformes</small>
+                <small><i class="bi bi-times-circle me-1"></i>NÃ£o Conformes</small>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- GRÁFICO                                     -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- GRÃFICO                                     -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="card mb-4 no-print">
     <div class="card-header">
-        <i class="bi bi-bar-chart"></i> Conformidade por Seção
+        <i class="bi bi-bar-chart"></i> Conformidade por SeÃ§Ã£o
     </div>
     <div class="card-body">
-        <!-- ✅ FIX: wrapper com position relative + height fixa -->
+        <!-- âœ… FIX: wrapper com position relative + height fixa -->
         <div class="chart-wrapper">
             <canvas id="chartConformidade"></canvas>
         </div>
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <!-- 1. GERENCIAMENTO DE RISCOS OCUPACIONAIS     -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="card mb-4">
     <div class="section-header">
         <h3><i class="bi bi-cogs"></i> 1. GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO)</h3>
@@ -391,7 +391,7 @@
                     1.1 Programa de Gerenciamento de Riscos (PGR) Implementado
                 </h5>
                 <div class="nr-reference">
-                    <strong>NR-01, item 1.5.3.1:</strong> "A organização deve implementar, por estabelecimento,
+                    <strong>NR-01, item 1.5.3.1:</strong> "A organizaÃ§Ã£o deve implementar, por estabelecimento,
                     o gerenciamento de riscos ocupacionais em suas atividades."
                 </div>
                 <p class="mt-2 mb-0">
@@ -404,9 +404,9 @@
                         <i class="bi bi-eye"></i> Ver documento PGR
                     </a>
                     {% else %}
-                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <span class="badge bg-danger status-badge">NÃƒO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
                         Implementar o Programa de Gerenciamento de Riscos conforme requisitos da NR-01.
                         <br>
                         <a href="{% url 'pgr_gestao:documento_create' %}" class="btn btn-sm btn-danger mt-2">
@@ -418,7 +418,7 @@
             </div>
         </div>
 
-        <!-- 1.2 Identificação de Perigos e Riscos -->
+        <!-- 1.2 IdentificaÃ§Ã£o de Perigos e Riscos -->
         <div class="checklist-item {% if checklist.riscos_identificados %}conforme{% elif checklist.riscos_parcial %}parcial{% else %}nao-conforme{% endif %}">
             <div class="flex-grow-1">
                 <h5>
@@ -429,11 +429,11 @@
                     {% else %}
                     <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
-                    1.2 Identificação de Perigos e Avaliação de Riscos
+                    1.2 IdentificaÃ§Ã£o de Perigos e AvaliaÃ§Ã£o de Riscos
                 </h5>
                 <div class="nr-reference">
-                    <strong>NR-01, item 1.5.4.3:</strong> "O inventário de riscos ocupacionais deve contemplar
-                    a identificação de perigos e avaliação dos riscos."
+                    <strong>NR-01, item 1.5.4.3:</strong> "O inventÃ¡rio de riscos ocupacionais deve contemplar
+                    a identificaÃ§Ã£o de perigos e avaliaÃ§Ã£o dos riscos."
                 </div>
                 <p class="mt-2 mb-0">
                     <strong>Status:</strong>
@@ -442,24 +442,24 @@
                     <br><small class="text-muted">{{ total_riscos }} riscos identificados e avaliados</small>
                     <br>
                     <a href="{% url 'pgr_gestao:risco_list' %}" class="action-link text-success">
-                        <i class="bi bi-list"></i> Ver inventário de riscos ({{ total_riscos }})
+                        <i class="bi bi-list"></i> Ver inventÃ¡rio de riscos ({{ total_riscos }})
                     </a>
                     {% elif checklist.riscos_parcial %}
                     <span class="badge bg-warning status-badge">PARCIALMENTE CONFORME</span>
-                    <br><small class="text-muted">{{ total_riscos }} riscos identificados, mas algumas avaliações pendentes</small>
+                    <br><small class="text-muted">{{ total_riscos }} riscos identificados, mas algumas avaliaÃ§Ãµes pendentes</small>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Completar avaliações quantitativas dos riscos críticos e muito graves.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Completar avaliaÃ§Ãµes quantitativas dos riscos crÃ­ticos e muito graves.
                         <br>
                         <a href="{% url 'pgr_gestao:risco_list' %}" class="btn btn-sm btn-warning mt-2">
                             <i class="bi bi-edit me-1"></i> Revisar Riscos Pendentes
                         </a>
                     </div>
                     {% else %}
-                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <span class="badge bg-danger status-badge">NÃƒO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Realizar levantamento e identificação de riscos ocupacionais.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Realizar levantamento e identificaÃ§Ã£o de riscos ocupacionais.
                         <br>
                         <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-sm btn-danger mt-2">
                             <i class="bi bi-plus-circle me-1"></i> Cadastrar Riscos
@@ -479,12 +479,12 @@
                     {% else %}
                     <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
-                    1.3 Grupos de Exposição Similar (GES) Definidos
+                    1.3 Grupos de ExposiÃ§Ã£o Similar (GES) Definidos
                 </h5>
                 <div class="nr-reference">
-                    <strong>NR-01, item 1.5.5.1:</strong> "A organização pode criar um grupo com trabalhadores
-                    que vivenciam exposição similar, de forma que os resultados da avaliação sejam representativos
-                    da exposição de todos os trabalhadores que o compõem."
+                    <strong>NR-01, item 1.5.5.1:</strong> "A organizaÃ§Ã£o pode criar um grupo com trabalhadores
+                    que vivenciam exposiÃ§Ã£o similar, de forma que os resultados da avaliaÃ§Ã£o sejam representativos
+                    da exposiÃ§Ã£o de todos os trabalhadores que o compÃµem."
                 </div>
                 <p class="mt-2 mb-0">
                     <strong>Status:</strong>
@@ -496,10 +496,10 @@
                         <i class="bi bi-users"></i> Ver GES cadastrados ({{ total_ges }})
                     </a>
                     {% else %}
-                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <span class="badge bg-danger status-badge">NÃƒO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Definir Grupos de Exposição Similar para os trabalhadores.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Definir Grupos de ExposiÃ§Ã£o Similar para os trabalhadores.
                         <br>
                         <a href="{% url 'pgr_gestao:ges_create' %}" class="btn btn-sm btn-danger mt-2">
                             <i class="bi bi-plus-circle me-1"></i> Cadastrar GES
@@ -510,7 +510,7 @@
             </div>
         </div>
 
-        <!-- 1.4 Plano de Ação -->
+        <!-- 1.4 Plano de AÃ§Ã£o -->
         <div class="checklist-item {% if checklist.plano_acao_existe %}conforme{% elif checklist.plano_acao_parcial %}parcial{% else %}nao-conforme{% endif %}">
             <div class="flex-grow-1">
                 <h5>
@@ -521,45 +521,45 @@
                     {% else %}
                     <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
-                    1.4 Plano de Ação para Riscos Identificados
+                    1.4 Plano de AÃ§Ã£o para Riscos Identificados
                 </h5>
                 <div class="nr-reference">
                     <strong>NR-01, item 1.5.4.1.1:</strong> "Quando identificado risco ocupacional deve ser
-                    implementado plano de ação com data para implementação das medidas de prevenção."
+                    implementado plano de aÃ§Ã£o com data para implementaÃ§Ã£o das medidas de prevenÃ§Ã£o."
                 </div>
                 <p class="mt-2 mb-0">
                     <strong>Status:</strong>
                     {% if checklist.plano_acao_existe %}
                     <span class="badge bg-success status-badge">CONFORME</span>
-                    <br><small class="text-muted">{{ total_planos_acao }} planos de ação criados</small>
+                    <br><small class="text-muted">{{ total_planos_acao }} planos de aÃ§Ã£o criados</small>
                     <br>
                     <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="action-link text-success">
-                        <i class="bi bi-tasks"></i> Ver planos de ação ({{ total_planos_acao }})
+                        <i class="bi bi-tasks"></i> Ver planos de aÃ§Ã£o ({{ total_planos_acao }})
                     </a>
                     {% elif checklist.plano_acao_parcial %}
                     <span class="badge bg-warning status-badge">PARCIALMENTE CONFORME</span>
-                    <br><small class="text-muted">Planos de ação existentes, mas {{ riscos_sem_plano }} riscos sem plano</small>
+                    <br><small class="text-muted">Planos de aÃ§Ã£o existentes, mas {{ riscos_sem_plano }} riscos sem plano</small>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Criar planos de ação para todos os riscos críticos e muito graves identificados.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Criar planos de aÃ§Ã£o para todos os riscos crÃ­ticos e muito graves identificados.
                         <br>
                         <div class="d-flex gap-2 flex-wrap">
                             <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="btn btn-sm btn-outline-warning mt-2">
                                 <i class="bi bi-list me-1"></i> Ver Planos Existentes
                             </a>
                             <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-warning mt-2">
-                                <i class="bi bi-plus-circle me-1"></i> Criar Plano de Ação
+                                <i class="bi bi-plus-circle me-1"></i> Criar Plano de AÃ§Ã£o
                             </a>
                         </div>
                     </div>
                     {% else %}
-                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <span class="badge bg-danger status-badge">NÃƒO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Elaborar planos de ação para controle dos riscos identificados.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Elaborar planos de aÃ§Ã£o para controle dos riscos identificados.
                         <br>
                         <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="bi bi-plus-circle me-1"></i> Criar Plano de Ação
+                            <i class="bi bi-plus-circle me-1"></i> Criar Plano de AÃ§Ã£o
                         </a>
                     </div>
                     {% endif %}
@@ -569,12 +569,12 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- 2. MEDIDAS DE PREVENÇÃO                     -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- 2. MEDIDAS DE PREVENÃ‡ÃƒO                     -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="card mb-4">
     <div class="section-header">
-        <h3><i class="bi bi-shield-alt"></i> 2. MEDIDAS DE PREVENÇÃO</h3>
+        <h3><i class="bi bi-shield-alt"></i> 2. MEDIDAS DE PREVENÃ‡ÃƒO</h3>
         <small>NR-01, item 1.4</small>
     </div>
     <div class="card-body">
@@ -590,16 +590,16 @@
                     {% else %}
                     <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
-                    2.1 Hierarquia de Medidas de Prevenção
+                    2.1 Hierarquia de Medidas de PrevenÃ§Ã£o
                 </h5>
                 <div class="nr-reference">
-                    <strong>NR-01, item 1.4.1:</strong> "A organização deve adotar medidas de prevenção,
+                    <strong>NR-01, item 1.4.1:</strong> "A organizaÃ§Ã£o deve adotar medidas de prevenÃ§Ã£o,
                     seguindo a seguinte ordem de prioridade:<br>
-                    a) eliminação dos fatores de risco;<br>
-                    b) minimização e controle dos fatores de risco;<br>
-                    c) adoção de medidas de proteção coletiva;<br>
-                    d) adoção de medidas administrativas ou de organização do trabalho;<br>
-                    e) adoção de equipamentos de proteção individual - EPI."
+                    a) eliminaÃ§Ã£o dos fatores de risco;<br>
+                    b) minimizaÃ§Ã£o e controle dos fatores de risco;<br>
+                    c) adoÃ§Ã£o de medidas de proteÃ§Ã£o coletiva;<br>
+                    d) adoÃ§Ã£o de medidas administrativas ou de organizaÃ§Ã£o do trabalho;<br>
+                    e) adoÃ§Ã£o de equipamentos de proteÃ§Ã£o individual - EPI."
                 </div>
                 <p class="mt-2 mb-0">
                     <strong>Status:</strong>
@@ -612,23 +612,23 @@
                     </a>
                     {% elif checklist.hierarquia_parcial %}
                     <span class="badge bg-warning status-badge">PARCIALMENTE CONFORME</span>
-                    <br><small class="text-muted">Alguns controles implementados, mas priorização pode melhorar</small>
+                    <br><small class="text-muted">Alguns controles implementados, mas priorizaÃ§Ã£o pode melhorar</small>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Revisar medidas de controle seguindo a hierarquia de prevenção.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Revisar medidas de controle seguindo a hierarquia de prevenÃ§Ã£o.
                         <br>
                         <a href="{% url 'pgr_gestao:risco_list' %}" class="btn btn-sm btn-warning mt-2">
                             <i class="bi bi-edit me-1"></i> Revisar Controles
                         </a>
                     </div>
                     {% else %}
-                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <span class="badge bg-danger status-badge">NÃƒO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Implementar medidas de controle seguindo a hierarquia de prevenção.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Implementar medidas de controle seguindo a hierarquia de prevenÃ§Ã£o.
                         <br>
                         <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="bi bi-plus-circle me-1"></i> Criar Plano de Ação
+                            <i class="bi bi-plus-circle me-1"></i> Criar Plano de AÃ§Ã£o
                         </a>
                     </div>
                     {% endif %}
@@ -645,35 +645,35 @@
                     {% else %}
                     <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
-                    2.2 Equipamentos de Proteção Individual (EPI)
+                    2.2 Equipamentos de ProteÃ§Ã£o Individual (EPI)
                 </h5>
                 <div class="nr-reference">
-                    <strong>NR-01, item 1.4.1, alínea 'e':</strong> "Quando esgotadas as possibilidades de
-                    adoção das medidas anteriores, deve ser adotado o uso de EPI."
+                    <strong>NR-01, item 1.4.1, alÃ­nea 'e':</strong> "Quando esgotadas as possibilidades de
+                    adoÃ§Ã£o das medidas anteriores, deve ser adotado o uso de EPI."
                 </div>
                 <p class="mt-2 mb-0">
                     <strong>Status:</strong>
                     {% if checklist.epi_definidos %}
                     <span class="badge bg-success status-badge">CONFORME</span>
-                    <br><small class="text-muted">EPIs especificados quando necessário</small>
+                    <br><small class="text-muted">EPIs especificados quando necessÃ¡rio</small>
                     <br>
                     <div class="d-flex gap-2 flex-wrap">
                         <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="action-link text-success">
-                            <i class="bi bi-hard-hat"></i> Catálogo de EPIs
+                            <i class="bi bi-hard-hat"></i> CatÃ¡logo de EPIs
                         </a>
                         <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="action-link text-success ms-3">
                             <i class="bi bi-th"></i> Matriz de EPIs
                         </a>
                     </div>
                     {% else %}
-                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <span class="badge bg-danger status-badge">NÃƒO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Especificar EPIs adequados para os riscos que não podem ser eliminados ou controlados.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Especificar EPIs adequados para os riscos que nÃ£o podem ser eliminados ou controlados.
                         <br>
                         <div class="d-flex gap-2 flex-wrap">
                             <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="btn btn-sm btn-outline-danger mt-2">
-                                <i class="bi bi-hard-hat me-1"></i> Catálogo de EPIs
+                                <i class="bi bi-hard-hat me-1"></i> CatÃ¡logo de EPIs
                             </a>
                             <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="btn btn-sm btn-danger mt-2">
                                 <i class="bi bi-th me-1"></i> Configurar Matriz de EPIs
@@ -687,12 +687,12 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- 3. CAPACITAÇÃO E TREINAMENTO                -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- 3. CAPACITAÃ‡ÃƒO E TREINAMENTO                -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="card mb-4">
     <div class="section-header">
-        <h3><i class="bi bi-graduation-cap"></i> 3. CAPACITAÇÃO E TREINAMENTO</h3>
+        <h3><i class="bi bi-graduation-cap"></i> 3. CAPACITAÃ‡ÃƒO E TREINAMENTO</h3>
         <small>NR-01, item 1.7</small>
     </div>
     <div class="card-body">
@@ -706,11 +706,11 @@
                     {% else %}
                     <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
-                    3.1 Cronograma de Capacitações
+                    3.1 Cronograma de CapacitaÃ§Ãµes
                 </h5>
                 <div class="nr-reference">
-                    <strong>NR-01, item 1.7.1:</strong> "A organização deve promover capacitação dos trabalhadores,
-                    em conformidade com as disposições previstas nas Normas Regulamentadoras."
+                    <strong>NR-01, item 1.7.1:</strong> "A organizaÃ§Ã£o deve promover capacitaÃ§Ã£o dos trabalhadores,
+                    em conformidade com as disposiÃ§Ãµes previstas nas Normas Regulamentadoras."
                 </div>
                 <p class="mt-2 mb-0">
                     <strong>Status:</strong>
@@ -727,10 +727,10 @@
                         </a>
                     </div>
                     {% else %}
-                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <span class="badge bg-danger status-badge">NÃƒO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Estabelecer cronograma de capacitações previstas na NR-01 e demais NRs aplicáveis.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Estabelecer cronograma de capacitaÃ§Ãµes previstas na NR-01 e demais NRs aplicÃ¡veis.
                         <br>
                         <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-sm btn-danger mt-2">
                             <i class="bi bi-plus-circle me-1"></i> Criar Treinamento
@@ -743,17 +743,17 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- 4. DOCUMENTAÇÃO E REGISTROS                 -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- 4. DOCUMENTAÃ‡ÃƒO E REGISTROS                 -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="card mb-4">
     <div class="section-header">
-        <h3><i class="bi bi-folder-open"></i> 4. DOCUMENTAÇÃO E REGISTROS</h3>
+        <h3><i class="bi bi-folder-open"></i> 4. DOCUMENTAÃ‡ÃƒO E REGISTROS</h3>
         <small>NR-01, item 1.6</small>
     </div>
     <div class="card-body">
 
-        <!-- 4.1 Inventário de Riscos -->
+        <!-- 4.1 InventÃ¡rio de Riscos -->
         <div class="checklist-item {% if checklist.inventario_riscos %}conforme{% else %}nao-conforme{% endif %}">
             <div class="flex-grow-1">
                 <h5>
@@ -762,22 +762,22 @@
                     {% else %}
                     <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
-                    4.1 Inventário de Riscos Ocupacionais
+                    4.1 InventÃ¡rio de Riscos Ocupacionais
                 </h5>
                 <div class="nr-reference">
-                    <strong>NR-01, item 1.5.4.3:</strong> "O inventário de riscos ocupacionais deve contemplar
-                    a identificação de perigos e avaliação dos riscos, incluindo a descrição dos perigos e possíveis
-                    lesões ou agravos à saúde dos trabalhadores."
+                    <strong>NR-01, item 1.5.4.3:</strong> "O inventÃ¡rio de riscos ocupacionais deve contemplar
+                    a identificaÃ§Ã£o de perigos e avaliaÃ§Ã£o dos riscos, incluindo a descriÃ§Ã£o dos perigos e possÃ­veis
+                    lesÃµes ou agravos Ã  saÃºde dos trabalhadores."
                 </div>
                 <p class="mt-2 mb-0">
                     <strong>Status:</strong>
                     {% if checklist.inventario_riscos %}
                     <span class="badge bg-success status-badge">CONFORME</span>
-                    <br><small class="text-muted">Inventário completo e atualizado</small>
+                    <br><small class="text-muted">InventÃ¡rio completo e atualizado</small>
                     <br>
                     <div class="d-flex gap-2 flex-wrap">
                         <a href="{% url 'pgr_gestao:risco_list' %}" class="action-link text-success">
-                            <i class="bi bi-list-alt"></i> Ver Inventário de Riscos
+                            <i class="bi bi-list-alt"></i> Ver InventÃ¡rio de Riscos
                         </a>
                         {% if pode_exportar_excel %}
                         <a href="{% url 'pgr_gestao:inventario_excel' documento.pk %}" class="action-link text-success ms-3">
@@ -786,13 +786,13 @@
                         {% endif %}
                     </div>
                     {% else %}
-                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <span class="badge bg-danger status-badge">NÃƒO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Elaborar inventário completo de riscos ocupacionais.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Elaborar inventÃ¡rio completo de riscos ocupacionais.
                         <br>
                         <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="bi bi-plus-circle me-1"></i> Iniciar Inventário
+                            <i class="bi bi-plus-circle me-1"></i> Iniciar InventÃ¡rio
                         </a>
                     </div>
                     {% endif %}
@@ -800,7 +800,7 @@
             </div>
         </div>
 
-        <!-- 4.2 Responsável Técnico -->
+        <!-- 4.2 ResponsÃ¡vel TÃ©cnico -->
         <div class="checklist-item {% if checklist.responsavel_tecnico %}conforme{% else %}nao-conforme{% endif %}">
             <div class="flex-grow-1">
                 <h5>
@@ -809,26 +809,26 @@
                     {% else %}
                     <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
-                    4.2 Responsável Técnico pela Elaboração
+                    4.2 ResponsÃ¡vel TÃ©cnico pela ElaboraÃ§Ã£o
                 </h5>
                 <div class="nr-reference">
-                    <strong>NR-01, item 1.5.7.1.7:</strong> "O PGR deve conter informações sobre: nome e assinatura
-                    dos responsáveis pela elaboração do PGR."
+                    <strong>NR-01, item 1.5.7.1.7:</strong> "O PGR deve conter informaÃ§Ãµes sobre: nome e assinatura
+                    dos responsÃ¡veis pela elaboraÃ§Ã£o do PGR."
                 </div>
                 <p class="mt-2 mb-0">
                     <strong>Status:</strong>
                     {% if checklist.responsavel_tecnico %}
                     <span class="badge bg-success status-badge">CONFORME</span>
-                    <br><small class="text-muted">Responsável(is) técnico(s) identificado(s) e qualificado(s)</small>
+                    <br><small class="text-muted">ResponsÃ¡vel(is) tÃ©cnico(s) identificado(s) e qualificado(s)</small>
                     <br>
                     <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="action-link text-success">
-                        <i class="bi bi-person-lines-fill"></i> Ver dados do responsável técnico
+                        <i class="bi bi-person-lines-fill"></i> Ver dados do responsÃ¡vel tÃ©cnico
                     </a>
                     {% else %}
-                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <span class="badge bg-danger status-badge">NÃƒO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Designar responsável técnico habilitado para elaboração do PGR.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Designar responsÃ¡vel tÃ©cnico habilitado para elaboraÃ§Ã£o do PGR.
                         <br>
                         <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-sm btn-danger mt-2">
                             <i class="bi bi-edit me-1"></i> Editar Documento PGR
@@ -839,7 +839,7 @@
             </div>
         </div>
 
-        <!-- 4.3 Data de Revisão -->
+        <!-- 4.3 Data de RevisÃ£o -->
         <div class="checklist-item {% if checklist.data_revisao %}conforme{% elif checklist.revisao_proxima %}parcial{% else %}nao-conforme{% endif %}">
             <div class="flex-grow-1">
                 <h5>
@@ -850,38 +850,38 @@
                     {% else %}
                     <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
-                    4.3 Data e Periodicidade de Revisão
+                    4.3 Data e Periodicidade de RevisÃ£o
                 </h5>
                 <div class="nr-reference">
                     <strong>NR-01, item 1.5.4.6:</strong> "O PGR deve ser revisto a cada 02 anos ou quando
-                    ocorrer alguma das seguintes situações: após implementação de medidas de prevenção,
-                    para avaliação de sua eficácia; após inovações ou modificações nas atividades."
+                    ocorrer alguma das seguintes situaÃ§Ãµes: apÃ³s implementaÃ§Ã£o de medidas de prevenÃ§Ã£o,
+                    para avaliaÃ§Ã£o de sua eficÃ¡cia; apÃ³s inovaÃ§Ãµes ou modificaÃ§Ãµes nas atividades."
                 </div>
                 <p class="mt-2 mb-0">
                     <strong>Status:</strong>
                     {% if checklist.data_revisao %}
                     <span class="badge bg-success status-badge">CONFORME</span>
-                    <br><small class="text-muted">Próxima revisão prevista para {{ documento.data_vencimento|date:"d/m/Y" }}</small>
+                    <br><small class="text-muted">PrÃ³xima revisÃ£o prevista para {{ documento.data_vencimento|date:"d/m/Y" }}</small>
                     <br>
                     <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="action-link text-success">
                         <i class="bi bi-calendar-check"></i> Ver cronograma do documento
                     </a>
                     {% elif checklist.revisao_proxima %}
-                    <span class="badge bg-warning status-badge">ATENÇÃO</span>
-                    <br><small class="text-warning">Revisão próxima ao vencimento ({{ documento.dias_para_vencimento }} dias)</small>
+                    <span class="badge bg-warning status-badge">ATENÃ‡ÃƒO</span>
+                    <br><small class="text-warning">RevisÃ£o prÃ³xima ao vencimento ({{ documento.dias_para_vencimento }} dias)</small>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Planejar e executar revisão do PGR antes do vencimento.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Planejar e executar revisÃ£o do PGR antes do vencimento.
                         <br>
                         <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-sm btn-warning mt-2">
-                            <i class="bi bi-sync-alt me-1"></i> Iniciar Revisão do PGR
+                            <i class="bi bi-sync-alt me-1"></i> Iniciar RevisÃ£o do PGR
                         </a>
                     </div>
                     {% else %}
-                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <span class="badge bg-danger status-badge">NÃƒO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        PGR vencido. Realizar revisão imediatamente.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        PGR vencido. Realizar revisÃ£o imediatamente.
                         <br>
                         <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-sm btn-danger mt-2">
                             <i class="bi bi-sync-alt me-1"></i> Revisar PGR Agora
@@ -894,12 +894,12 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- 5. CRONOGRAMA DE AÇÕES                      -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- 5. CRONOGRAMA DE AÃ‡Ã•ES                      -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="card mb-4">
     <div class="section-header">
-        <h3><i class="fas fa-calendar-alt"></i> 5. CRONOGRAMA DE AÇÕES</h3>
+        <h3><i class="fas fa-calendar-alt"></i> 5. CRONOGRAMA DE AÃ‡Ã•ES</h3>
         <small>NR-01, item 1.5.7.1.6</small>
     </div>
     <div class="card-body">
@@ -911,34 +911,34 @@
                     {% else %}
                     <i class="bi bi-times-circle text-danger"></i>
                     {% endif %}
-                    5.1 Cronograma das Ações Preventivas
+                    5.1 Cronograma das AÃ§Ãµes Preventivas
                 </h5>
                 <div class="nr-reference">
                     <strong>NR-01, item 1.5.7.1.6:</strong> "O PGR deve conter cronograma indicando o planejamento
-                    anual das ações preventivas."
+                    anual das aÃ§Ãµes preventivas."
                 </div>
                 <p class="mt-2 mb-0">
                     <strong>Status:</strong>
                     {% if checklist.cronograma_acoes %}
                     <span class="badge bg-success status-badge">CONFORME</span>
-                    <br><small class="text-muted">{{ total_cronograma_acoes }} ações programadas no cronograma</small>
+                    <br><small class="text-muted">{{ total_cronograma_acoes }} aÃ§Ãµes programadas no cronograma</small>
                     <br>
                     <div class="d-flex gap-2 flex-wrap">
                         <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="action-link text-success">
-                            <i class="bi bi-tasks"></i> Ver Planos de Ação ({{ total_cronograma_acoes }})
+                            <i class="bi bi-tasks"></i> Ver Planos de AÃ§Ã£o ({{ total_cronograma_acoes }})
                         </a>
                         <a href="{% url 'pgr_gestao:relatorio_planos_acao' %}" class="action-link text-success ms-3">
-                            <i class="bi bi-chart-bar"></i> Relatório de Planos
+                            <i class="bi bi-chart-bar"></i> RelatÃ³rio de Planos
                         </a>
                     </div>
                     {% else %}
-                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <span class="badge bg-danger status-badge">NÃƒO CONFORME</span>
                     <div class="action-needed">
-                        <strong><i class="bi bi-exclamation-triangle"></i> Ação Necessária:</strong>
-                        Elaborar cronograma anual de ações preventivas.
+                        <strong><i class="bi bi-exclamation-triangle"></i> AÃ§Ã£o NecessÃ¡ria:</strong>
+                        Elaborar cronograma anual de aÃ§Ãµes preventivas.
                         <br>
                         <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-danger mt-2">
-                            <i class="bi bi-plus-circle me-1"></i> Criar Plano de Ação
+                            <i class="bi bi-plus-circle me-1"></i> Criar Plano de AÃ§Ã£o
                         </a>
                     </div>
                     {% endif %}
@@ -948,28 +948,28 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- RECOMENDAÇÕES FINAIS                        -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- RECOMENDAÃ‡Ã•ES FINAIS                        -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="card mb-4">
     <div class="card-header bg-info text-white">
-        <h3 class="mb-0"><i class="bi bi-lightbulb"></i> Recomendações e Próximos Passos</h3>
+        <h3 class="mb-0"><i class="bi bi-lightbulb"></i> RecomendaÃ§Ãµes e PrÃ³ximos Passos</h3>
     </div>
     <div class="card-body">
         {% if itens_nao_conformes > 0 or itens_parciais > 0 %}
         <div class="alert alert-warning">
-            <h5><i class="bi bi-exclamation-triangle"></i> Atenção!</h5>
-            <p>Foram identificadas <strong>{{ itens_nao_conformes }} não conformidades</strong>
+            <h5><i class="bi bi-exclamation-triangle"></i> AtenÃ§Ã£o!</h5>
+            <p>Foram identificadas <strong>{{ itens_nao_conformes }} nÃ£o conformidades</strong>
             {% if itens_parciais > 0 %}e <strong>{{ itens_parciais }} conformidades parciais</strong>{% endif %}
-            que requerem ação imediata.</p>
+            que requerem aÃ§Ã£o imediata.</p>
         </div>
 
-        <h5 class="fw-bold mb-3">Prioridades de Ação:</h5>
+        <h5 class="fw-bold mb-3">Prioridades de AÃ§Ã£o:</h5>
         <div class="list-group">
             {% if not checklist.pgr_implementado %}
             <div class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
                 <div>
-                    <span class="badge bg-danger me-2">CRÍTICO</span>
+                    <span class="badge bg-danger me-2">CRÃTICO</span>
                     Implementar o Programa de Gerenciamento de Riscos
                 </div>
                 <a href="{% url 'pgr_gestao:documento_create' %}" class="btn btn-sm btn-danger">
@@ -982,7 +982,7 @@
             <div class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
                 <div>
                     <span class="badge bg-danger me-2">ALTA</span>
-                    Realizar levantamento e avaliação de riscos ocupacionais
+                    Realizar levantamento e avaliaÃ§Ã£o de riscos ocupacionais
                 </div>
                 <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-sm btn-outline-danger">
                     <i class="bi bi-plus-circle me-1"></i> Cadastrar Riscos
@@ -994,7 +994,7 @@
             <div class="list-group-item list-group-item-warning d-flex justify-content-between align-items-center">
                 <div>
                     <span class="badge bg-warning text-dark me-2">ALTA</span>
-                    Elaborar planos de ação para riscos identificados
+                    Elaborar planos de aÃ§Ã£o para riscos identificados
                 </div>
                 <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-outline-warning">
                     <i class="bi bi-plus-circle me-1"></i> Criar Plano
@@ -1005,8 +1005,8 @@
             {% if not checklist.responsavel_tecnico %}
             <div class="list-group-item list-group-item-info d-flex justify-content-between align-items-center">
                 <div>
-                    <span class="badge bg-info me-2">MÉDIA</span>
-                    Designar responsável técnico habilitado
+                    <span class="badge bg-info me-2">MÃ‰DIA</span>
+                    Designar responsÃ¡vel tÃ©cnico habilitado
                 </div>
                 <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-sm btn-outline-info">
                     <i class="bi bi-edit me-1"></i> Editar PGR
@@ -1017,8 +1017,8 @@
             {% if not checklist.cronograma_acoes %}
             <div class="list-group-item list-group-item-info d-flex justify-content-between align-items-center">
                 <div>
-                    <span class="badge bg-info me-2">MÉDIA</span>
-                    Elaborar cronograma anual de ações preventivas
+                    <span class="badge bg-info me-2">MÃ‰DIA</span>
+                    Elaborar cronograma anual de aÃ§Ãµes preventivas
                 </div>
                 <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-outline-info">
                     <i class="bi bi-plus-circle me-1"></i> Criar Plano
@@ -1029,8 +1029,8 @@
             {% if not checklist.cronograma_treinamentos %}
             <div class="list-group-item list-group-item-info d-flex justify-content-between align-items-center">
                 <div>
-                    <span class="badge bg-info me-2">MÉDIA</span>
-                    Estabelecer cronograma de capacitações
+                    <span class="badge bg-info me-2">MÃ‰DIA</span>
+                    Estabelecer cronograma de capacitaÃ§Ãµes
                 </div>
                 <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-sm btn-outline-info">
                     <i class="bi bi-plus-circle me-1"></i> Criar Treinamento
@@ -1053,16 +1053,16 @@
 
         {% else %}
         <div class="alert alert-success">
-            <h5><i class="bi bi-check-circle"></i> Parabéns!</h5>
-            <p>O PGR está <strong>100% conforme</strong> aos requisitos da NR-01.</p>
-            <p class="mb-0">Continue mantendo a documentação atualizada e revisando periodicamente conforme estabelecido.</p>
+            <h5><i class="bi bi-check-circle"></i> ParabÃ©ns!</h5>
+            <p>O PGR estÃ¡ <strong>100% conforme</strong> aos requisitos da NR-01.</p>
+            <p class="mb-0">Continue mantendo a documentaÃ§Ã£o atualizada e revisando periodicamente conforme estabelecido.</p>
         </div>
         <div class="d-flex gap-2 flex-wrap mt-3">
             <a href="{% url 'pgr_gestao:dashboard' %}" class="btn btn-outline-success">
                 <i class="bi bi-tachometer-alt me-1"></i> Dashboard PGR
             </a>
             <a href="{% url 'pgr_gestao:relatorio_planos_acao' %}" class="btn btn-outline-primary">
-                <i class="bi bi-chart-bar me-1"></i> Relatórios
+                <i class="bi bi-chart-bar me-1"></i> RelatÃ³rios
             </a>
             <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="btn btn-outline-info">
                 <i class="bi bi-file-alt me-1"></i> Ver Documento
@@ -1072,11 +1072,11 @@
     </div>
 </div>
 
-<!-- Rodapé -->
+<!-- RodapÃ© -->
 <div class="card no-print">
     <div class="card-body text-center">
         <p class="text-muted mb-0">
-            <small>Sistema PGR - Gestão de Riscos Ocupacionais CETEST</small>
+            <small>Sistema PGR - GestÃ£o de Riscos Ocupacionais CETEST</small>
         </p>
     </div>
 </div>
@@ -1089,7 +1089,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('chartConformidade');
     if (!ctx) return;
 
-    // 🆕 Detecta tema atual e cores do CSS
+    // ðŸ†• Detecta tema atual e cores do CSS
     const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
     const rootStyles = getComputedStyle(document.documentElement);
     const textColor = rootStyles.getPropertyValue('--bs-body-color').trim();
@@ -1107,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', function() {
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['GRO', 'Medidas Prevenção', 'Capacitação', 'Documentação', 'Cronograma'],
+            labels: ['GRO', 'Medidas PrevenÃ§Ã£o', 'CapacitaÃ§Ã£o', 'DocumentaÃ§Ã£o', 'Cronograma'],
             datasets: [{
                 label: 'Conformidade (%)',
                 data: dados,

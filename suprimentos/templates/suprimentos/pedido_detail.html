@@ -1,145 +1,269 @@
-
-{% extends "suprimentos/suprimentos_base.html" %}
+﻿{% extends "suprimentos/suprimentos_base.html" %}
 {% load static %}
 
-{% block title %}Pedido {{ pedido.numero }} — Suprimentos{% endblock %}
+{% block title %}Pedido {{ pedido.numero }} â€” Suprimentos{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
 
-    <!-- Header -->
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
             <a href="{% url 'suprimentos:pedido_lista' %}" class="text-decoration-none text-muted">
-                <i class="fas fa-arrow-left me-1"></i>Pedidos
+                <i class="bi bi-arrow-left me-1"></i>Pedidos
             </a>
             <h2 class="mt-2 mb-0">
                 {{ pedido.numero }}
-                <span class="badge bg-{% if pedido.status == 'APROVADO' %}success{% elif pedido.status == 'PENDENTE' %}warning{% elif pedido.status == 'REPROVADO' or pedido.status == 'CANCELADO' %}danger{% elif pedido.status == 'REVISAO' %}info{% else %}secondary{% endif %} ms-2">
+                <span class="badge ms-2
+                    {% if pedido.status == 'APROVADO' %}bg-success
+                    {% elif pedido.status == 'PENDENTE' %}bg-warning text-dark
+                    {% elif pedido.status == 'REPROVADO' or pedido.status == 'CANCELADO' %}bg-danger
+                    {% elif pedido.status == 'REVISAO' %}bg-info
+                    {% else %}bg-secondary{% endif %}">
                     {{ pedido.get_status_display }}
                 </span>
             </h2>
             <small class="text-muted">
-                {{ pedido.contrato.cliente }} — {{ pedido.get_tipo_obra_display }}
+                {{ pedido.contrato.cliente }} â€” {{ pedido.get_tipo_obra_display }}
                 {% if solicitacao %}
-                    | <a href="{{ solicitacao.get_absolute_url }}" class="text-success fw-bold">
-                        <i class="fas fa-link me-1"></i>{{ solicitacao.numero }}
+                    | <a href="{% url 'suprimentos:solicitacao_detalhe' solicitacao.pk %}" class="text-success fw-bold">
+                        <i class="bi bi-link-45deg me-1"></i>{{ solicitacao.numero }}
                     </a>
                 {% endif %}
             </small>
         </div>
         <div class="text-end">
-            <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-primary btn-sm">
+            <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left me-1"></i> Voltar
             </a>
             {% if pode_enviar %}
             <form method="post" action="{% url 'suprimentos:pedido_enviar' pedido.pk %}" class="d-inline">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-primary btn-sm"
-                        onclick="return confirm('Enviar para aprovação do Gerente?')">
-                    <i class="fas fa-paper-plane me-1"></i>Enviar para Aprovação
+                        onclick="return confirm('Enviar para aprovaÃ§Ã£o do Gerente?')">
+                    <i class="bi bi-send me-1"></i>Enviar para AprovaÃ§Ã£o
                 </button>
             </form>
             {% endif %}
             {% if pode_cancelar %}
             <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalCancelar">
-                <i class="fas fa-ban me-1"></i>Cancelar
+                <i class="bi bi-x-circle me-1"></i>Cancelar
             </button>
             {% endif %}
         </div>
     </div>
 
-    <!-- Alerta de revisão -->
-    {% if pedido.status == 'REVISAO' and pedido.motivo_revisao %}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ALERTA DE REVISÃƒO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+    {# {% if pedido.status == 'REVISAO' and pedido.motivo_revisao %}
     <div class="alert alert-warning border-start border-warning border-4">
         <div class="d-flex">
             <div class="me-3">
-                <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                <i class="bi bi-exclamation-triangle-fill fs-2 text-warning"></i>
             </div>
             <div>
-                <h5 class="alert-heading mb-1">Pedido Devolvido para Revisão</h5>
+                <h5 class="alert-heading mb-1">Pedido Devolvido para RevisÃ£o</h5>
                 <p class="mb-0">{{ pedido.motivo_revisao }}</p>
-                <small class="text-muted">Corrija os itens indicados e reenvie para aprovação.</small>
+                <small class="text-muted">Corrija os itens indicados e reenvie para aprovaÃ§Ã£o.</small>
             </div>
         </div>
+    </div>
+    {% endif %} #}
+
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DICA INICIAL QUANDO SEM ITENS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+    {% if pode_editar and not itens %}
+    <div class="alert alert-info border-start border-info border-4">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <strong>CabeÃ§alho salvo!</strong> Agora adicione os itens do pedido no formulÃ¡rio abaixo.
     </div>
     {% endif %}
 
     <div class="row">
-        <!-- Coluna Principal -->
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• COLUNA PRINCIPAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         <div class="col-lg-8">
 
-            <!-- Dados do Material -->
+            {# â”€â”€â”€ Dados do Pedido â”€â”€â”€ #}
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="fas fa-box me-2"></i>Material Solicitado</h5>
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-clipboard-list me-2"></i>Dados do Pedido</h5>
+                    {% if pode_editar %}
+                    <a href="{% url 'suprimentos:pedido_detalhe' pedido.pk %}" class="btn btn-light btn-sm">
+                        <i class="bi bi-pencil me-1"></i> Editar
+                    </a>
+                    {% endif %}
                 </div>
                 <div class="card-body">
-                    {% if pedido.descricao_material %}
-                    <div class="mb-3">
-                        <label class="fw-bold text-muted small">DESCRIÇÃO</label>
-                        <p class="mb-0" style="white-space: pre-wrap;">{{ pedido.descricao_material }}</p>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="fw-bold text-muted small d-block">TIPO DE OBRA</label>
+                            <span>{{ pedido.get_tipo_obra_display }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="fw-bold text-muted small d-block">CONTRATO</label>
+                            <span>{{ pedido.contrato.cm }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="fw-bold text-muted small d-block">DATA NECESSÃRIA</label>
+                            <span>{{ pedido.data_necessaria|date:"d/m/Y"|default:"â€”" }}</span>
+                        </div>
+                        {% if pedido.observacao %}
+                        <div class="col-12">
+                            <hr class="my-2">
+                            <label class="fw-bold text-muted small d-block">OBSERVAÃ‡Ã•ES</label>
+                            <p class="mb-0" style="white-space: pre-wrap;">{{ pedido.observacao }}</p>
+                        </div>
+                        {% endif %}
                     </div>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label class="fw-bold text-muted small">QUANTIDADE</label>
-                            <p class="mb-0">{{ pedido.quantidade }} {{ pedido.get_unidade_medida_display }}</p>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="fw-bold text-muted small">TIPO INSUMO</label>
-                            <p class="mb-0">{{ pedido.get_tipo_insumo_display|default:"—" }}</p>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="fw-bold text-muted small">DATA NECESSÁRIA</label>
-                            <p class="mb-0">{{ pedido.data_necessaria|date:"d/m/Y"|default:"—" }}</p>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="fw-bold text-muted small">TIPO OBRA</label>
-                            <p class="mb-0">{{ pedido.get_tipo_obra_display }}</p>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% if pedido.observacao %}
-                    <hr>
-                    <label class="fw-bold text-muted small">OBSERVAÇÕES</label>
-                    <p class="mb-0" style="white-space: pre-wrap;">{{ pedido.observacao }}</p>
-                    {% endif %}
                 </div>
             </div>
 
-            <!-- Itens do Pedido -->
+            {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• COMPARATIVO PEDIDO Ã— VERBA DO CONTRATO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+            {% if comparativo_verba %}
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Itens do Pedido</h5>
-                    <span class="badge bg-primary">R$ {{ pedido.valor_total|floatformat:2 }}</span>
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>
+                        Comparativo: Pedido Ã— Verba do Contrato
+                    </h5>
+                    <span class="badge fs-6
+                        {% if comparativo_verba.status_geral == 'EXCEDE' %}bg-danger
+                        {% elif comparativo_verba.status_geral == 'ATENCAO' %}bg-warning text-dark
+                        {% elif comparativo_verba.status_geral == 'MODERADO' %}bg-info text-dark
+                        {% else %}bg-success{% endif %}">
+                        {{ comparativo_verba.status_geral }}
+                    </span>
                 </div>
+
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        <i class="bi bi-calendar3 me-1"></i>
+                        Verba referente a <strong>{{ comparativo_verba.mes_ref|date:"F/Y" }}</strong>
+                        do contrato <strong>{{ pedido.contrato }}</strong>
+                        â€” {{ comparativo_verba.qtd_pedidos_mes }} pedido{{ comparativo_verba.qtd_pedidos_mes|pluralize }} no mÃªs (excluindo este)
+                    </p>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ClassificaÃ§Ã£o</th>
+                                    <th class="text-end">Verba</th>
+                                    <th class="text-end">Consumido</th>
+                                    <th class="text-end">Saldo Atual</th>
+                                    <th class="text-end">Este Pedido</th>
+                                    <th class="text-end">Saldo ApÃ³s</th>
+                                    <th class="text-center">% Uso</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for l in comparativo_verba.linhas %}
+                                <tr class="table-{{ l.cor }}">
+                                    <td><strong>{{ l.classificacao }}</strong></td>
+                                    <td class="text-end">R$ {{ l.valor_verba|floatformat:2 }}</td>
+                                    <td class="text-end">R$ {{ l.consumido|floatformat:2 }}</td>
+                                    <td class="text-end">R$ {{ l.saldo_atual|floatformat:2 }}</td>
+                                    <td class="text-end fw-bold">R$ {{ l.valor_pedido|floatformat:2 }}</td>
+                                    <td class="text-end fw-bold">R$ {{ l.saldo_apos|floatformat:2 }}</td>
+                                    <td class="text-center">{{ l.pct_consumo_total|floatformat:1 }}%</td>
+                                    <td class="text-center">
+                                        {{ l.icone }} <small>{{ l.texto }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <th>TOTAL</th>
+                                    <th class="text-end">R$ {{ comparativo_verba.total_verba|floatformat:2 }}</th>
+                                    <th class="text-end">R$ {{ comparativo_verba.total_consumido|floatformat:2 }}</th>
+                                    <th class="text-end">â€”</th>
+                                    <th class="text-end">R$ {{ comparativo_verba.total_pedido|floatformat:2 }}</th>
+                                    <th class="text-end">R$ {{ comparativo_verba.total_saldo|floatformat:2 }}</th>
+                                    <th colspan="2"></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    {% if comparativo_verba.status_geral == 'EXCEDE' %}
+                    <div class="alert alert-danger mt-3 mb-0">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>AtenÃ§Ã£o:</strong> Este pedido ultrapassa a verba mensal em pelo menos uma classificaÃ§Ã£o.
+                        Revise com o solicitante ou solicite verba adicional antes de aprovar.
+                    </div>
+                    {% elif comparativo_verba.status_geral == 'ATENCAO' %}
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Cuidado:</strong> ApÃ³s este pedido, alguma classificaÃ§Ã£o ficarÃ¡ acima de 90% da verba.
+                    </div>
+                    {% elif comparativo_verba.status_geral == 'MODERADO' %}
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Consumo moderado: alguma classificaÃ§Ã£o ficarÃ¡ acima de 70% da verba apÃ³s este pedido.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ITENS DO PEDIDO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+            <div class="card shadow-sm mb-4" id="card-itens">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul me-2"></i>Itens do Pedido
+                        <span class="badge bg-light text-dark ms-2">{{ itens|length }}</span>
+                    </h5>
+                    <span class="badge bg-light text-dark fs-6">
+                        Total: <strong>R$ {{ pedido.valor_total|floatformat:2 }}</strong>
+                    </span>
+                </div>
+
+                {# â”€â”€â”€ LISTAGEM â”€â”€â”€ #}
                 <div class="card-body p-0">
                     {% if itens %}
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
+                                    <th style="width: 40px;">#</th>
                                     <th>Material</th>
-                                    <th class="text-center">Qtd</th>
-                                    <th class="text-end">Vlr Unit.</th>
-                                    <th class="text-end">Total</th>
-                                    {% if pode_editar %}<th></th>{% endif %}
+                                    <th class="text-center" style="width: 90px;">Qtd</th>
+                                    <th class="text-center" style="width: 80px;">Un.</th>
+                                    <th class="text-end" style="width: 120px;">Vlr Unit.</th>
+                                    <th class="text-end" style="width: 130px;">Total</th>
+                                    {% if pode_editar %}<th style="width: 60px;"></th>{% endif %}
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for item in itens %}
                                 <tr>
+                                    <td class="text-muted">{{ forloop.counter }}</td>
                                     <td>
                                         <strong>{{ item.material.descricao }}</strong>
-                                        <br><small class="text-muted">{{ item.material.get_classificacao_display }} — {{ item.material.get_tipo_display }}</small>
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ item.material.get_classificacao_display }}
+                                            â€” {{ item.material.get_tipo_display }}
+                                        </small>
+                                        {% if item.observacao %}
+                                            <br><small class="fst-italic text-muted">
+                                                <i class="bi bi-chat-left-text me-1"></i>{{ item.observacao }}
+                                            </small>
+                                        {% endif %}
                                     </td>
-                                    <td class="text-center">{{ item.quantidade }}</td>
+                                    <td class="text-center">{{ item.quantidade|floatformat:2 }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark">
+                                            {{ item.material.get_unidade_medida_display|default:"â€”" }}
+                                        </span>
+                                    </td>
                                     <td class="text-end">R$ {{ item.valor_unitario|floatformat:2 }}</td>
                                     <td class="text-end fw-bold">R$ {{ item.valor_total|floatformat:2 }}</td>
                                     {% if pode_editar %}
                                     <td class="text-center">
-                                        <form method="post" action="{% url 'suprimentos:item_remover' pedido.pk item.pk %}" class="d-inline">
+                                        <form method="post"
+                                              action="{% url 'suprimentos:item_remover' pedido.pk item.pk %}"
+                                              class="d-inline">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-sm btn-outline-danger"
                                                     onclick="return confirm('Remover este item?')">
@@ -151,37 +275,88 @@
                                 </tr>
                                 {% endfor %}
                             </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="5" class="text-end fw-bold">
+                                        TOTAL GERAL:
+                                    </td>
+                                    <td class="text-end fw-bold fs-5">
+                                        R$ {{ pedido.valor_total|floatformat:2 }}
+                                    </td>
+                                    {% if pode_editar %}<td></td>{% endif %}
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                     {% else %}
-                    <div class="text-center py-4 text-muted">
-                        <i class="fas fa-inbox fa-2x mb-2"></i>
-                        <p>Nenhum item adicionado.</p>
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem; color: #adb5bd;"></i>
+                        <h6 class="mt-2 text-muted">Nenhum item adicionado.</h6>
+                        {% if pode_editar %}
+                        <small class="text-muted">Use o formulÃ¡rio abaixo para adicionar o primeiro item </small>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
 
+                {# â”€â”€â”€ FORM ADICIONAR ITEM â”€â”€â”€ #}
                 {% if pode_editar %}
-                <!-- Form Adicionar Item -->
-                <div class="card-footer bg-light">
-                    <form method="post" action="{% url 'suprimentos:item_adicionar' pedido.pk %}">
+                <div class="card-footer bg-light" id="form-novo-item">
+                    <h6 class="mb-3">
+                        <i class="bi bi-plus-circle me-2 text-primary"></i>
+                        <strong>Adicionar Novo Item</strong>
+                    </h6>
+
+                    {% if item_form.errors %}
+                    <div class="alert alert-danger py-2 small">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Corrija os erros: {{ item_form.errors }}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'suprimentos:item_adicionar' pedido.pk %}" id="formNovoItem">
                         {% csrf_token %}
                         <div class="row g-2 align-items-end">
-                            <div class="col-md-5">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold mb-1">
+                                    Material <span class="text-danger">*</span>
+                                </label>
                                 {{ item_form.material }}
                             </div>
                             <div class="col-md-2">
-                                <input type="number" name="quantidade" class="form-control"
-                                       placeholder="Qtd" min="1" value="1" required>
+                                <label class="form-label small fw-bold mb-1">
+                                    Unidade <span class="text-danger">*</span>
+                                </label>
+                                {{ item_form.unidade_medida }}
                             </div>
-                            <div class="col-md-3">
-                                <input type="number" name="valor_unitario" class="form-control"
-                                       placeholder="Valor unit." step="0.01" min="0" required>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold mb-1">
+                                    Qtd <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" name="quantidade" id="novoItemQtd" class="form-control"
+                                       min="0.01" step="0.01" value="1" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold mb-1">
+                                    Vlr Unit. <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" name="valor_unitario" id="novoItemValor" class="form-control"
+                                       step="0.01" min="0" placeholder="0,00" required>
                             </div>
                             <div class="col-md-2">
                                 <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fas fa-plus me-1"></i>Adicionar
+                                    <i class="bi bi-plus-lg me-1"></i>Adicionar
                                 </button>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-10">
+                                <input type="text" name="observacao" class="form-control form-control-sm"
+                                       placeholder="ObservaÃ§Ã£o do item (opcional)">
+                            </div>
+                            <div class="col-md-2">
+                                <input type="text" id="novoItemTotal" class="form-control form-control-sm bg-white"
+                                       readonly placeholder="Total: 0,00">
                             </div>
                         </div>
                     </form>
@@ -189,60 +364,11 @@
                 {% endif %}
             </div>
 
-            <!-- Form Revisão (quando devolvido) -->
-            {% if pode_revisar and revisao_form %}
-            <div class="card shadow-sm mb-4 border-warning">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Corrigir e Reenviar</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post" action="{% url 'suprimentos:pedido_revisar' pedido.pk %}" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Descrição do Material</label>
-                            {{ revisao_form.descricao_material }}
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Quantidade</label>
-                                {{ revisao_form.quantidade }}
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Unidade</label>
-                                {{ revisao_form.unidade_medida }}
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Tipo Insumo</label>
-                                {{ revisao_form.tipo_insumo }}
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Data Necessária</label>
-                                {{ revisao_form.data_necessaria }}
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Observação</label>
-                            {{ revisao_form.observacao }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Novos Anexos (opcional)</label>
-                            <input type="file" name="anexos" class="form-control" multiple
-                                   accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx">
-                        </div>
-                        <button type="submit" class="btn btn-warning"
-                                onclick="return confirm('Reenviar para aprovação?')">
-                            <i class="fas fa-paper-plane me-1"></i>Corrigir e Reenviar
-                        </button>
-                    </form>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Anexos -->
+            {# â”€â”€â”€ ANEXOS â”€â”€â”€ #}
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-paperclip me-2"></i>Anexos</h5>
-                    <span class="badge bg-secondary">{{ anexos.count }}</span>
+                <div class="card-header bg-secondary text-white d-flex justify-content-between">
+                    <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Anexos</h5>
+                    <span class="badge bg-light text-dark">{{ anexos.count }}</span>
                 </div>
                 <div class="card-body">
                     {% if anexos %}
@@ -252,28 +378,30 @@
                             <div class="border rounded p-3 h-100">
                                 {% if anexo.is_imagem %}
                                 <img src="{{ anexo.arquivo.url }}" class="img-fluid rounded mb-2"
-                                     alt="{{ anexo.descricao }}" style="max-height: 150px; object-fit: cover;">
+                                     style="max-height: 150px; width: 100%; object-fit: cover;">
                                 {% elif anexo.is_pdf %}
                                 <div class="text-center mb-2">
-                                    <i class="fas fa-file-pdf fa-3x text-danger"></i>
+                                    <i class="bi bi-file-earmark-pdf-fill text-danger" style="font-size: 3rem;"></i>
                                 </div>
                                 {% else %}
                                 <div class="text-center mb-2">
-                                    <i class="fas fa-file fa-3x text-secondary"></i>
+                                    <i class="bi bi-file-earmark-fill text-muted" style="font-size: 3rem;"></i>
                                 </div>
                                 {% endif %}
                                 <p class="small mb-1 fw-bold text-truncate">{{ anexo.nome_arquivo }}</p>
-                                <p class="small text-muted mb-2">{{ anexo.descricao|default:"Sem descrição" }}</p>
+                                <p class="small text-muted mb-2">{{ anexo.descricao|default:"Sem descriÃ§Ã£o" }}</p>
                                 <div class="d-flex justify-content-between">
                                     <a href="{{ anexo.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-download"></i>
+                                        <i class="bi bi-download"></i>
                                     </a>
                                     {% if pode_editar %}
-                                    <form method="post" action="{% url 'suprimentos:pedido_anexo_remover' pedido.pk anexo.pk %}" class="d-inline">
+                                    <form method="post"
+                                          action="{% url 'suprimentos:pedido_anexo_remover' pedido.pk anexo.pk %}"
+                                          class="d-inline">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                onclick="return confirm('Remover este anexo?')">
-                                            <i class="fas fa-trash"></i>
+                                                onclick="return confirm('Remover?')">
+                                            <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
                                     {% endif %}
@@ -288,18 +416,15 @@
 
                     {% if pode_editar %}
                     <hr>
-                    <form method="post" action="{% url 'suprimentos:pedido_anexo' pedido.pk %}" enctype="multipart/form-data">
+                    <form method="post" action="{% url 'suprimentos:pedido_anexo' pedido.pk %}"
+                          enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="row g-2">
-                            <div class="col-md-8">
-                                {{ anexo_form.arquivo }}
-                            </div>
+                            <div class="col-md-8">{{ anexo_form.arquivo }}</div>
                             <div class="col-md-4">
-                                {% if perms.suprimentos.add_anexo or user.is.superuser %}
                                 <button type="submit" class="btn btn-outline-primary w-100">
-                                    <i class="fas fa-upload me-1"></i>Enviar
+                                    <i class="bi bi-cloud-upload me-1"></i>Enviar
                                 </button>
-                                {% endif %}
                             </div>
                         </div>
                     </form>
@@ -307,32 +432,29 @@
                 </div>
             </div>
 
-            <!-- Histórico -->
+            {# â”€â”€â”€ HISTÃ“RICO â”€â”€â”€ #}
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Histórico</h5>
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>HistÃ³rico</h5>
                 </div>
                 <div class="card-body p-0">
-                    {% if historico %}
+                    {% if historicopedido %}
                     <div class="table-responsive">
-                        <table class="table table-sm mb-0">
+                        <table class="table table-sm table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Versão</th>
-                                    <th>Data</th>
-                                    <th>Alteração</th>
-                                    <th>Responsável</th>
+                                    <th>VersÃ£o</th><th>Data</th><th>AlteraÃ§Ã£o</th><th>ResponsÃ¡vel</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for h in historico %}
+                                {% for h in historicopedido %}
                                 <tr>
                                     <td><span class="badge bg-secondary">v{{ h.versao }}</span></td>
                                     <td class="text-nowrap">{{ h.criado_em|date:"d/m/Y H:i" }}</td>
                                     <td>
                                         {{ h.descricao }}
                                         {% if h.status_anterior and h.status_novo %}
-                                        <br><small class="text-muted">{{ h.status_anterior }} → {{ h.status_novo }}</small>
+                                        <br><small class="text-muted">{{ h.status_anterior }} â†’ {{ h.status_novo }}</small>
                                         {% endif %}
                                     </td>
                                     <td>{{ h.responsavel.get_full_name|default:h.responsavel.username }}</td>
@@ -342,18 +464,20 @@
                         </table>
                     </div>
                     {% else %}
-                    <p class="text-muted text-center py-3 mb-0">Nenhuma alteração registrada.</p>
+                    <p class="text-muted text-center py-3 mb-0">Nenhuma alteraÃ§Ã£o registrada.</p>
                     {% endif %}
                 </div>
             </div>
+
         </div>
 
-        <!-- Sidebar -->
+        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SIDEBAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
         <div class="col-lg-4">
-            <!-- Info -->
+
+            {# â”€â”€â”€ InformaÃ§Ãµes â”€â”€â”€ #}
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informações</h6>
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>InformaÃ§Ãµes</h6>
                 </div>
                 <div class="card-body">
                     <dl class="mb-0">
@@ -361,10 +485,13 @@
                         <dd>{{ pedido.solicitante.get_full_name|default:pedido.solicitante.username }}</dd>
 
                         <dt class="text-muted small">Contrato</dt>
-                        <dd>{{ pedido.contrato.cm }} — {{ pedido.contrato.cliente }}</dd>
+                        <dd>{{ pedido.contrato.cm }} â€” {{ pedido.contrato.cliente }}</dd>
 
                         <dt class="text-muted small">Data do Pedido</dt>
-                        <dd>{{ pedido.data_pedido|date:"d/m/Y H:i" }}</dd>
+                        <dd>{{ pedido.data_pedido|date:"d/m/Y H:i"|default:"â€”" }}</dd>
+
+                        <dt class="text-muted small">Qtd. de Itens</dt>
+                        <dd><span class="badge bg-primary">{{ itens|length }}</span></dd>
 
                         {% if pedido.aprovador %}
                         <dt class="text-muted small">Aprovador</dt>
@@ -372,129 +499,97 @@
                         {% endif %}
 
                         {% if pedido.data_aprovacao %}
-                        <dt class="text-muted small">Data Aprovação</dt>
+                        <dt class="text-muted small">Data AprovaÃ§Ã£o</dt>
                         <dd>{{ pedido.data_aprovacao|date:"d/m/Y H:i" }}</dd>
                         {% endif %}
 
                         {% if pedido.motivo_reprovacao %}
-                        <dt class="text-muted small text-danger">Motivo Reprovação</dt>
+                        <dt class="text-muted small">Motivo da ReprovaÃ§Ã£o</dt>
                         <dd class="text-danger">{{ pedido.motivo_reprovacao }}</dd>
                         {% endif %}
                     </dl>
                 </div>
             </div>
 
-            <!-- Verba -->
-            {% if verba %}
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Verba do Mês</h6>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between small">
-                            <span>EPI</span>
-                            <span>R$ {{ verba.saldo_epi|floatformat:2 }} / {{ verba.verba_epi|floatformat:2 }}</span>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            {% widthratio verba.saldo_epi verba.verba_epi 100 as pct_epi %}
-                            <div class="progress-bar bg-success" style="width: {{ pct_epi|default:0 }}%"></div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between small">
-                            <span>Consumo</span>
-                            <span>R$ {{ verba.saldo_consumo|floatformat:2 }} / {{ verba.verba_consumo|floatformat:2 }}</span>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            {% widthratio verba.saldo_consumo verba.verba_consumo 100 as pct_consumo %}
-                            <div class="progress-bar bg-warning" style="width: {{ pct_consumo|default:0 }}%"></div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between small">
-                            <span>Ferramenta</span>
-                            <span>R$ {{ verba.saldo_ferramenta|floatformat:2 }} / {{ verba.verba_ferramenta|floatformat:2 }}</span>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            {% widthratio verba.saldo_ferramenta verba.verba_ferramenta 100 as pct_ferramenta %}
-                            <div class="progress-bar bg-info" style="width: {{ pct_ferramenta|default:0 }}%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Ações do Gerente -->
+            {# â”€â”€â”€ AÃ§Ãµes do Aprovador â”€â”€â”€ #}
             {% if pode_aprovar %}
             <div class="card shadow-sm mb-4 border-success">
                 <div class="card-header bg-success text-white">
-                    <h6 class="mb-0"><i class="fas fa-gavel me-2"></i>Ações do Aprovador</h6>
+                    <h6 class="mb-0"><i class="bi bi-shield-check me-2"></i>AÃ§Ãµes do Aprovador</h6>
                 </div>
                 <div class="card-body">
                     <form method="post" action="{% url 'suprimentos:pedido_aprovar' pedido.pk %}" class="mb-2">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-success w-100"
-                                onclick="return confirm('Aprovar? Isso gerará automaticamente uma Solicitação de Compra.')">
-                            <i class="fas fa-check me-1"></i>Aprovar → Gerar Solicitação
+                                onclick="return confirm('Aprovar? Isso gerarÃ¡ automaticamente uma SolicitaÃ§Ã£o de Compra.')">
+                            <i class="bi bi-check-lg me-1"></i>Aprovar
                         </button>
                     </form>
 
-                    {% if pode_devolver %}
+                    {% if pode_devolver and devolver_form %}
                     <hr>
                     <form method="post" action="{% url 'suprimentos:pedido_devolver' pedido.pk %}">
                         {% csrf_token %}
                         {{ devolver_form.motivo }}
                         <button type="submit" class="btn btn-warning w-100 mt-2">
-                            <i class="fas fa-undo me-1"></i>Devolver para Revisão
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Devolver para RevisÃ£o
                         </button>
                     </form>
                     {% endif %}
 
+                    {% if reprovar_form %}
                     <hr>
                     <form method="post" action="{% url 'suprimentos:pedido_reprovar' pedido.pk %}">
                         {% csrf_token %}
                         {{ reprovar_form.motivo }}
                         <button type="submit" class="btn btn-outline-danger w-100 mt-2"
-                                onclick="return confirm('Tem certeza que deseja REPROVAR?')">
-                            <i class="fas fa-times me-1"></i>Reprovar
+                                onclick="return confirm('Reprovar definitivamente?')">
+                            <i class="bi bi-x-lg me-1"></i>Reprovar
                         </button>
                     </form>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}
 
-            <!-- Solicitação Gerada -->
-            {% if solicitacao %}
-            <div class="card shadow-sm mb-4 border-info">
-                <div class="card-header bg-info text-white">
-                    <h6 class="mb-0"><i class="fas fa-link me-2"></i>Solicitação de Compra</h6>
+            {# â”€â”€â”€ SolicitaÃ§Ã£o Gerada â”€â”€â”€ #}
+            <div class="card shadow-sm mb-4 {% if solicitacao %}border-info{% else %}border-secondary{% endif %}">
+                <div class="card-header {% if solicitacao %}bg-info{% else %}bg-secondary{% endif %} text-white">
+                    <h6 class="mb-0"><i class="bi bi-link-45deg me-2"></i>SolicitaÃ§Ã£o Gerada</h6>
                 </div>
                 <div class="card-body text-center">
-                    <h4 class="mb-2">{{ solicitacao.numero }}</h4>
-                    <span class="badge bg-{{ solicitacao.status_badge_class }} mb-3">
-                        {{ solicitacao.get_status_display }}
-                    </span>
-                    <br>
-                    <a href="{{ solicitacao.get_absolute_url }}" class="btn btn-info">
-                        <i class="fas fa-external-link-alt me-1"></i>Ver Solicitação
-                    </a>
+                    {% if solicitacao %}
+                        <h4 class="mb-2">{{ solicitacao.numero }}</h4>
+                        <span class="badge bg-info mb-3">{{ solicitacao.get_status_display }}</span>
+                        <br>
+                        <a href="{% url 'suprimentos:solicitacao_detalhe' solicitacao.pk %}"
+                           class="btn btn-sm btn-primary mt-2">
+                            <i class="bi bi-eye me-1"></i> Ver SolicitaÃ§Ã£o
+                        </a>
+                    {% else %}
+                        <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mb-0 mt-2">
+                            Nenhuma solicitaÃ§Ã£o gerada para este pedido.
+                        </p>
+                    {% endif %}
                 </div>
             </div>
-            {% endif %}
+
         </div>
+
     </div>
+
 </div>
 
-<!-- Modal Cancelar -->
+{# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MODAL CANCELAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
 {% if pode_cancelar %}
 <div class="modal fade" id="modalCancelar" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="post" action="#">
+            <form method="post" action="{% url 'suprimentos:pedido_detalhe' pedido.pk %}">
                 {% csrf_token %}
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title"><i class="fas fa-ban me-2"></i>Cancelar Pedido</h5>
+                    <h5 class="modal-title"><i class="bi bi-x-circle me-2"></i>Cancelar Pedido</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -510,6 +605,28 @@
     </div>
 </div>
 {% endif %}
+
 {% endblock %}
 
 
+{% block extra_js %}
+<script>
+(function() {
+    const form = document.getElementById('formNovoItem');
+    if (!form) return;
+    const inpQtd = document.getElementById('novoItemQtd');
+    const inpVal = document.getElementById('novoItemValor');
+    const inpTotal = document.getElementById('novoItemTotal');
+
+    function calcTotal() {
+        const q = parseFloat((inpQtd.value || '0').replace(',', '.')) || 0;
+        const v = parseFloat((inpVal.value || '0').replace(',', '.')) || 0;
+        inpTotal.value = 'R$ ' + (q * v).toLocaleString('pt-BR', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2
+        });
+    }
+    inpQtd.addEventListener('input', calcTotal);
+    inpVal.addEventListener('input', calcTotal);
+})();
+</script>
+{% endblock %}

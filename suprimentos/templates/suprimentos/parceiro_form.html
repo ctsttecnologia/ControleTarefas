@@ -1,4 +1,4 @@
-
+﻿
 <!-- suprimentos/templates/suprimentos/parceiro_form.html -->
 {% extends "suprimentos/suprimentos_base.html" %}
 {% load crispy_forms_tags %}
@@ -12,8 +12,8 @@
             {% include "partials/_page_header.html" with title=titulo_pagina %}
         </div>
         <div>
-            <a href="{% url 'suprimentos:parceiro_upload_massa' %}" class="btn btn-outline-secondary mt-3" title="Planilha para Importação de Endereços">
-                <i class="bi bi-plus-circle"></i> Planilha para Importação
+            <a href="{% url 'suprimentos:parceiro_upload_massa' %}" class="btn btn-outline-secondary mt-3" title="Planilha para ImportaÃ§Ã£o de EndereÃ§os">
+                <i class="bi bi-plus-circle"></i> Planilha para ImportaÃ§Ã£o
             </a>
         </div>
     </div>
@@ -41,14 +41,14 @@
                     
                     <div class="col-1 d-flex align-items-center justify-content-between ">
                         {% if perms.suprimentos.add_logradouro or user.is.superuser %}
-                        <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-outline-secondary mt-3" title="Incluir Novo Endereço">
+                        <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-outline-secondary mt-3" title="Incluir Novo EndereÃ§o">
                            <i class="bi bi-plus-circle"></i> 
                         </a>
                         {% endif %}
                     </div>
                 </div>
                 <hr>
-                <h5>Informações de Contato</h5>
+                <h5>InformaÃ§Ãµes de Contato</h5>
                 <div class="row">
                     <div class="col-md-6 mb-3">{{ form.contato|as_crispy_field }}</div>
                     <div class="col-md-6 mb-3">{{ form.email|as_crispy_field }}</div>
@@ -59,7 +59,7 @@
                 </div>
                 <div class="mb-3">{{ form.site|as_crispy_field }}</div>
                 <hr>
-                <h5>Configurações</h5>
+                <h5>ConfiguraÃ§Ãµes</h5>
                 <div class="mb-3">{{ form.observacoes|as_crispy_field }}</div>
                 <div class="form-check form-switch mb-2">{{ form.eh_fabricante|as_crispy_field }}</div>
                 <div class="form-check form-switch mb-2">{{ form.eh_fornecedor|as_crispy_field }}</div>

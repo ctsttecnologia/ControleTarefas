@@ -1,11 +1,11 @@
-{# Detalhes da Avaliação Quantitativa - Visualização Completa #}
+﻿{# Detalhes da AvaliaÃ§Ã£o Quantitativa - VisualizaÃ§Ã£o Completa #}
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
-{% block title %}Avaliação - {{ avaliacaoquantitativa.risco_identificado.agente|truncatechars:30 }}{% endblock %}
+{% block title %}AvaliaÃ§Ã£o - {{ avaliacaoquantitativa.risco_identificado.agente|truncatechars:30 }}{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">Avaliações</a></li>
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">AvaliaÃ§Ãµes</a></li>
 <li class="breadcrumb-item active">Detalhes</li>
 {% endblock %}
 
@@ -56,14 +56,14 @@
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div>
             <h1>
-                <i class="bi bi-graph-up-arrow"></i> Detalhes da Avaliação
+                <i class="bi bi-graph-up-arrow"></i> Detalhes da AvaliaÃ§Ã£o
                 {% if avaliacaoquantitativa.conforme %}
                 <span class="badge bg-success ms-2">
                     <i class="bi bi-check-circle-fill"></i> Conforme
                 </span>
                 {% else %}
                 <span class="badge bg-danger ms-2">
-                    <i class="bi bi-exclamation-triangle-fill"></i> Não Conforme
+                    <i class="bi bi-exclamation-triangle-fill"></i> NÃ£o Conforme
                 </span>
                 {% endif %}
             </h1>
@@ -95,11 +95,11 @@
     <div class="col-lg-8">
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-info-circle"></i> Informações da Avaliação
+                <i class="bi bi-info-circle"></i> InformaÃ§Ãµes da AvaliaÃ§Ã£o
             </div>
             <div class="card-body">
                 <div class="row info-section">
-                    <!-- Identificação -->
+                    <!-- IdentificaÃ§Ã£o -->
                     <div class="col-md-6 mb-3">
                         <h6 class="text-muted text-uppercase fw-bold small mb-3">
                             <i class="bi bi-shield-exclamation"></i> Risco Avaliado
@@ -112,7 +112,7 @@
                         </p>
                         {% if avaliacaoquantitativa.risco_identificado.codigo_risco %}
                         <p class="mb-2">
-                            <strong>Código:</strong>
+                            <strong>CÃ³digo:</strong>
                             <span class="badge bg-secondary">{{ avaliacaoquantitativa.risco_identificado.codigo_risco }}</span>
                         </p>
                         {% endif %}
@@ -124,11 +124,11 @@
                             </a>
                         </p>
                         <p class="mb-2">
-                            <strong>Tipo de Avaliação:</strong><br>
+                            <strong>Tipo de AvaliaÃ§Ã£o:</strong><br>
                             <span class="badge bg-info">{{ avaliacaoquantitativa.get_tipo_avaliacao_display }}</span>
                         </p>
                         <p class="mb-0">
-                            <strong>Data da Avaliação:</strong><br>
+                            <strong>Data da AvaliaÃ§Ã£o:</strong><br>
                             <i class="bi bi-calendar3"></i>
                             {{ avaliacaoquantitativa.data_avaliacao|date:"d/m/Y" }}
                         </p>
@@ -144,17 +144,17 @@
                             {% if avaliacaoquantitativa.metodologia_utilizada %}
                                 {{ avaliacaoquantitativa.metodologia_utilizada|linebreaks }}
                             {% else %}
-                                <span class="text-muted fst-italic">Não informada</span>
+                                <span class="text-muted fst-italic">NÃ£o informada</span>
                             {% endif %}
                         </p>
                         <p class="mb-2">
                             <strong>Equipamento:</strong><br>
-                            {{ avaliacaoquantitativa.equipamento_utilizado|default:"Não informado" }}
+                            {{ avaliacaoquantitativa.equipamento_utilizado|default:"NÃ£o informado" }}
                         </p>
                         <p class="mb-0">
-                            <strong>Responsável pela Avaliação:</strong><br>
+                            <strong>ResponsÃ¡vel pela AvaliaÃ§Ã£o:</strong><br>
                             <i class="bi bi-person-badge"></i>
-                            {{ avaliacaoquantitativa.responsavel_avaliacao|default:"Não informado" }}
+                            {{ avaliacaoquantitativa.responsavel_avaliacao|default:"NÃ£o informado" }}
                         </p>
                     </div>
                 </div>
@@ -174,17 +174,17 @@
                     <div class="col-md-6 text-md-end">
                         <small class="text-muted">
                             <i class="bi bi-calendar-plus"></i>
-                            <strong>Data de Criação:</strong>
+                            <strong>Data de CriaÃ§Ã£o:</strong>
                             {{ avaliacaoquantitativa.criado_em|date:"d/m/Y H:i" }}
                         </small>
                     </div>
                 </div>
 
-                {# Observações #}
+                {# ObservaÃ§Ãµes #}
                 {% if avaliacaoquantitativa.observacoes %}
                 <hr>
                 <h6 class="text-muted text-uppercase fw-bold small mb-2">
-                    <i class="bi bi-chat-left-text"></i> Observações
+                    <i class="bi bi-chat-left-text"></i> ObservaÃ§Ãµes
                 </h6>
                 <div class="bg-body-tertiary p-3 rounded">
                     {{ avaliacaoquantitativa.observacoes|linebreaks }}
@@ -194,12 +194,12 @@
         </div>
     </div>
 
-    <!-- Sidebar: Card de Resultado + Ações Rápidas -->
+    <!-- Sidebar: Card de Resultado + AÃ§Ãµes RÃ¡pidas -->
     <div class="col-lg-4">
         <!-- Card de Resultado -->
         <div class="card resultado-card mb-3 {% if avaliacaoquantitativa.conforme %}conforme{% else %}nao-conforme{% endif %}">
             <div class="card-header {% if avaliacaoquantitativa.conforme %}conforme{% else %}nao-conforme{% endif %}">
-                <i class="bi bi-clipboard-data"></i> Resultado da Medição
+                <i class="bi bi-clipboard-data"></i> Resultado da MediÃ§Ã£o
             </div>
             <div class="card-body text-center">
                 <h6 class="text-muted text-uppercase small fw-semibold mb-2">Resultado Medido</h6>
@@ -210,7 +210,7 @@
 
                 <hr>
 
-                <h6 class="text-muted text-uppercase small fw-semibold mb-2">Limite de Tolerância (NR)</h6>
+                <h6 class="text-muted text-uppercase small fw-semibold mb-2">Limite de TolerÃ¢ncia (NR)</h6>
                 <p class="fs-5 fw-bold mb-0">
                     {{ avaliacaoquantitativa.limite_tolerancia_nr|default:"N/A" }}
                 </p>
@@ -225,17 +225,17 @@
                 <small class="text-muted">Resultado dentro dos limites</small>
                 {% else %}
                 <h3 class="text-danger mb-1">
-                    <i class="bi bi-exclamation-triangle-fill"></i> NÃO CONFORME
+                    <i class="bi bi-exclamation-triangle-fill"></i> NÃƒO CONFORME
                 </h3>
                 <small class="text-muted">Resultado acima dos limites</small>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Ações Rápidas -->
+        <!-- AÃ§Ãµes RÃ¡pidas -->
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-lightning-fill"></i> Ações Rápidas
+                <i class="bi bi-lightning-fill"></i> AÃ§Ãµes RÃ¡pidas
             </div>
             <div class="list-group list-group-flush">
                 <a href="{% url 'pgr_gestao:risco_detail' avaliacaoquantitativa.risco_identificado.pk %}"
@@ -252,13 +252,13 @@
                 <a href="{% url 'pgr_gestao:avaliacao_create' %}?risco={{ avaliacaoquantitativa.risco_identificado.pk }}"
                    class="list-group-item list-group-item-action">
                     <i class="bi bi-plus-circle text-success"></i>
-                    Nova Avaliação para este Risco
+                    Nova AvaliaÃ§Ã£o para este Risco
                 </a>
                 {% endif %}
                 <a href="{% url 'pgr_gestao:avaliacao_list' %}?risco={{ avaliacaoquantitativa.risco_identificado.pk }}"
                    class="list-group-item list-group-item-action">
                     <i class="bi bi-list-ul text-info"></i>
-                    Histórico de Avaliações deste Risco
+                    HistÃ³rico de AvaliaÃ§Ãµes deste Risco
                 </a>
             </div>
         </div>

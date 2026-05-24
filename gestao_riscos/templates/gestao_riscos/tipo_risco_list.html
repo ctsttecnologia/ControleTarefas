@@ -1,4 +1,4 @@
-
+﻿
 <!-- gestao_riscos/templates/gestao_riscos/tipo_risco/tipo_risco_list.html -->
 {% extends 'base.html' %}
 {% load static %}
@@ -13,9 +13,9 @@
 {% csrf_token %}
 <div class="container-fluid py-4">
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          HEADER
-    ═══════════════════════════════════════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="card bg-primary text-white shadow-sm mb-4">
         <div class="card-body py-3">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -31,7 +31,7 @@
                     </a>
                     {% if perms.gestao_riscos.btn_popular_padrao or user.is_superuser %}
                     <button type="button" id="btnPopularPadrao" class="btn btn-info">
-                        <i class="bi bi-magic me-1"></i> Popular Padrão
+                        <i class="bi bi-magic me-1"></i> Popular PadrÃ£o
                     </button>
                     {% endif %}
                     {% if perms.gestao_riscos.add_tiporisco or user.is_superuser %}
@@ -44,9 +44,9 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          CARDS KPI - Por Categoria
-    ═══════════════════════════════════════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="row g-3 mb-4">
         <!-- Total -->
         <div class="col-6 col-md-2">
@@ -91,9 +91,9 @@
         {% endfor %}
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          FILTROS
-    ═══════════════════════════════════════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-white py-2">
             <i class="bi bi-funnel me-1"></i> <strong>Filtros</strong>
@@ -159,9 +159,9 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          TABELA
-    ═══════════════════════════════════════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="card shadow-sm">
         <div class="card-header bg-white">
             <i class="bi bi-table me-1"></i> Lista de Tipos de Riscos
@@ -176,7 +176,7 @@
                             <th>Nome / Agente</th>
                             <th style="width: 10%;">NR</th>
                             <th style="width: 10%;" class="text-center">Status</th>
-                            <th style="width: 12%;" class="text-center">Ações</th>
+                            <th style="width: 12%;" class="text-center">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -202,7 +202,7 @@
                             <td>
                                 {% if tipo.nr_referencia %}
                                 <span class="badge bg-secondary">{{ tipo.nr_referencia }}</span>
-                                {% else %}—{% endif %}
+                                {% else %}â€”{% endif %}
                             </td>
                             <td class="text-center">
                                 <button type="button"
@@ -240,7 +240,7 @@
                                 <div class="mt-3">
                                     {% if perms.gestao_riscos.btn_popular_padrao or user.is_superuser %}
                                     <button type="button" id="btnPopularVazio" class="btn btn-info me-2">
-                                        <i class="bi bi-magic me-1"></i> Popular Padrão
+                                        <i class="bi bi-magic me-1"></i> Popular PadrÃ£o
                                     </button>
                                     {% endif %}
                                     {% if perms.gestao_riscos.add_tiporisco or user.is_superuser %}
@@ -257,12 +257,12 @@
             </div>
         </div>
 
-        <!-- Paginação -->
+        <!-- PaginaÃ§Ã£o -->
         {% if is_paginated %}
         <div class="card-footer bg-white">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <small class="text-muted">
-                    {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }}
+                    {{ page_obj.start_index }}â€“{{ page_obj.end_index }} de {{ page_obj.paginator.count }}
                 </small>
                 <nav>
                     <ul class="pagination pagination-sm mb-0">
@@ -345,9 +345,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Popular Padrão
+    // Popular PadrÃ£o
     function popularPadrao() {
-        if (!confirm('Carregar Tipos de Riscos padrão?\n\nRiscos existentes NÃO serão duplicados.')) return;
+        if (!confirm('Carregar Tipos de Riscos padrÃ£o?\n\nRiscos existentes NÃƒO serÃ£o duplicados.')) return;
         
         fetch('{% url "gestao_riscos:tipo_risco_popular" %}', {
             method: 'POST',

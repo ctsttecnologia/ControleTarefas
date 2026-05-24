@@ -1,4 +1,4 @@
-
+﻿
 {% extends "controle_de_telefone/_base_telefone.html" %}
 
 {% block title %}Telefones Corporativos{% endblock %}
@@ -6,16 +6,16 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- CABEÇALHO                                                          -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- CABEÃ‡ALHO                                                          -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
         <div class="mb-3 mb-md-0">
             <h2 class="h4 fw-bold mb-1">
                 <i class="bi bi-link-45deg text-info me-2"></i>Telefones Corporativos
             </h2>
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <small class="text-muted">Vínculos entre colaboradores e dispositivos</small>
+                <small class="text-muted">VÃ­nculos entre colaboradores e dispositivos</small>
 
                 {# Badge da filial ativa #}
                 {% if filial_ativa %}
@@ -24,10 +24,10 @@
                 </span>
                 {% endif %}
 
-                {# Badge da visão #}
+                {# Badge da visÃ£o #}
                 {% if user.is_superuser %}
                 <span class="badge bg-dark bg-opacity-10 text-dark border">
-                    <i class="bi bi-shield-lock me-1"></i>Visão Global
+                    <i class="bi bi-shield-lock me-1"></i>VisÃ£o Global
                 </span>
                 {% elif perms.controle_de_telefone.view_all_vinculo %}
                 <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
@@ -35,7 +35,7 @@
                 </span>
                 {% else %}
                 <span class="badge bg-secondary bg-opacity-10 text-secondary border">
-                    <i class="bi bi-person me-1"></i>Meus vínculos
+                    <i class="bi bi-person me-1"></i>Meus vÃ­nculos
                 </span>
                 {% endif %}
             </div>
@@ -46,7 +46,7 @@
             </a>
             {% if perms.controle_de_telefone.add_vinculo %}
             <a href="{% url 'controle_de_telefone:vinculo_create' %}" class="btn btn-primary">
-                <i class="bi bi-plus-circle me-1"></i>Novo Vínculo
+                <i class="bi bi-plus-circle me-1"></i>Novo VÃ­nculo
             </a>
             {% endif %}
             {% if perms.controle_de_telefone.view_vinculo %}
@@ -57,19 +57,19 @@
         </div>
     </header>
 
-    {# Alerta de filial não selecionada #}
+    {# Alerta de filial nÃ£o selecionada #}
     {% if not filial_ativa and not user.is_superuser %}
     <div class="alert alert-warning d-flex align-items-center" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
         <div>
-            <strong>Nenhuma filial selecionada.</strong> Selecione uma filial no menu superior para ver os vínculos.
+            <strong>Nenhuma filial selecionada.</strong> Selecione uma filial no menu superior para ver os vÃ­nculos.
         </div>
     </div>
     {% endif %}
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <!-- CARD PRINCIPAL                                                     -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="card border-0 shadow-sm rounded-3">
 
         <!-- Pesquisa -->
@@ -80,7 +80,7 @@
                         <i class="bi bi-search text-muted"></i>
                     </span>
                     <input type="search" name="q" class="form-control border-start-0 ps-0"
-                           placeholder="Buscar por colaborador ou matrícula..."
+                           placeholder="Buscar por colaborador ou matrÃ­cula..."
                            value="{{ search_query }}">
                     {% if search_query %}
                     <a href="{% url 'controle_de_telefone:vinculo_list' %}" class="btn btn-outline-secondary" title="Limpar busca">
@@ -102,9 +102,9 @@
                         <th class="fw-semibold py-3 px-3 border-bottom">IMEI</th>
                         <th class="fw-semibold py-3 px-3 border-bottom">Linha</th>
                         <th class="fw-semibold py-3 px-3 border-bottom text-center">Entrega</th>
-                        <th class="fw-semibold py-3 px-3 border-bottom text-center">Devolução</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom text-center">DevoluÃ§Ã£o</th>
                         <th class="fw-semibold py-3 px-3 border-bottom text-center">Assinatura</th>
-                        <th class="fw-semibold py-3 px-3 border-bottom text-end">Ações</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom text-end">AÃ§Ãµes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -123,18 +123,18 @@
                             </small>
                         </td>
                         <td class="px-3">
-                            <span class="text-dark" style="font-size: 0.85rem;">{{ vinculo.aparelho.modelo|default:"—" }}</span>
+                            <span class="text-dark" style="font-size: 0.85rem;">{{ vinculo.aparelho.modelo|default:"â€”" }}</span>
                         </td>
                         <td class="px-3">
                             <span class="font-monospace text-muted" style="font-size: 0.78rem;">
-                                {{ vinculo.aparelho.imei|default:"—" }}
+                                {{ vinculo.aparelho.imei|default:"â€”" }}
                             </span>
                         </td>
                         <td class="px-3">
-                            <span class="text-muted" style="font-size: 0.85rem;">{{ vinculo.linha|default:"—" }}</span>
+                            <span class="text-muted" style="font-size: 0.85rem;">{{ vinculo.linha|default:"â€”" }}</span>
                         </td>
                         <td class="px-3 text-center">
-                            <small class="text-dark">{{ vinculo.data_entrega|date:"d/m/Y"|default:"—" }}</small>
+                            <small class="text-dark">{{ vinculo.data_entrega|date:"d/m/Y"|default:"â€”" }}</small>
                         </td>
                         <td class="px-3 text-center">
                             {% if vinculo.data_devolucao %}
@@ -174,7 +174,7 @@
                                 {% endif %}
                             </div>
 
-                            {# Ações de assinatura #}
+                            {# AÃ§Ãµes de assinatura #}
                             {% if not vinculo.foi_assinado %}
                             <div class="btn-group btn-group-sm ms-1" role="group">
                                 {% if user.id == vinculo.funcionario.usuario_id %}
@@ -186,7 +186,7 @@
                                 {% if perms.controle_de_telefone.change_vinculo and vinculo.funcionario.usuario %}
                                 <form action="{% url 'controle_de_telefone:notificar_assinatura' vinculo.pk %}" method="POST" class="d-inline">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-outline-secondary" title="Notificar funcionário">
+                                    <button type="submit" class="btn btn-outline-secondary" title="Notificar funcionÃ¡rio">
                                         <i class="bi bi-bell"></i>
                                     </button>
                                 </form>
@@ -200,7 +200,7 @@
                         <td colspan="8" class="text-center py-5">
                             <div class="py-4">
                                 <i class="bi bi-link-45deg text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
-                                <h6 class="mt-3 text-muted fw-semibold">Nenhum vínculo encontrado</h6>
+                                <h6 class="mt-3 text-muted fw-semibold">Nenhum vÃ­nculo encontrado</h6>
                                 {% if search_query %}
                                 <p class="text-muted mb-3" style="font-size: 0.85rem;">
                                     Nenhum resultado para "<strong>{{ search_query }}</strong>"
@@ -209,10 +209,10 @@
                                     <i class="bi bi-x-lg me-1"></i>Limpar busca
                                 </a>
                                 {% else %}
-                                <p class="text-muted mb-3" style="font-size: 0.85rem;">Comece criando o primeiro vínculo</p>
+                                <p class="text-muted mb-3" style="font-size: 0.85rem;">Comece criando o primeiro vÃ­nculo</p>
                                 {% if perms.controle_de_telefone.add_vinculo %}
                                 <a href="{% url 'controle_de_telefone:vinculo_create' %}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-plus-circle me-1"></i>Novo Vínculo
+                                    <i class="bi bi-plus-circle me-1"></i>Novo VÃ­nculo
                                 </a>
                                 {% endif %}
                                 {% endif %}
@@ -224,15 +224,15 @@
             </table>
         </div>
 
-        <!-- Paginação -->
+        <!-- PaginaÃ§Ã£o -->
         {% if is_paginated %}
         <div class="card-footer bg-white border-top py-3">
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
                 <small class="text-muted">
-                    Página {{ page_obj.number }} de {{ paginator.num_pages }} ·
-                    {{ paginator.count }} vínculo{{ paginator.count|pluralize:"s" }}
+                    PÃ¡gina {{ page_obj.number }} de {{ paginator.num_pages }} Â·
+                    {{ paginator.count }} vÃ­nculo{{ paginator.count|pluralize:"s" }}
                 </small>
-                <nav aria-label="Paginação">
+                <nav aria-label="PaginaÃ§Ã£o">
                     <ul class="pagination pagination-sm mb-0">
                         {% if page_obj.has_previous %}
                         <li class="page-item">

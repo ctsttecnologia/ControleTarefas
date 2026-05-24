@@ -1,4 +1,4 @@
-{# ferramentas/termo_responsabilidade_form.html #}
+﻿{# ferramentas/termo_responsabilidade_form.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load static widget_tweaks %}
 
@@ -10,7 +10,7 @@
 
 {% block ferramentas_actions %}
     <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Voltar à Lista
+        <i class="bi bi-arrow-left me-1"></i>Voltar Ã  Lista
     </a>
 {% endblock %}
 
@@ -58,13 +58,13 @@
     {% endif %}
 
     {# ================================================================
-       SEÇÃO 1: INFORMAÇÕES GERAIS
+       SEÃ‡ÃƒO 1: INFORMAÃ‡Ã•ES GERAIS
        ================================================================ #}
     <div class="card shadow-sm mb-4">
         <div class="card-header py-3">
             <h6 class="mb-0 fw-bold">
                 <span class="step-badge bg-primary text-white me-2">1</span>
-                Informações Gerais
+                InformaÃ§Ãµes Gerais
             </h6>
         </div>
         <div class="card-body">
@@ -80,7 +80,7 @@
                 </div>
                 <div class="col-md-6">
                     <label for="{{ form.data_emissao.id_for_label }}" class="form-label">
-                        Data de Emissão <span class="text-danger">*</span>
+                        Data de EmissÃ£o <span class="text-danger">*</span>
                     </label>
                     {% render_field form.data_emissao class="form-control" %}
                     {% for e in form.data_emissao.errors %}
@@ -89,7 +89,7 @@
                 </div>
                 <div class="col-md-6">
                     <label for="{{ form.responsavel.id_for_label }}" class="form-label">
-                        Responsável (Funcionário) <span class="text-danger">*</span>
+                        ResponsÃ¡vel (FuncionÃ¡rio) <span class="text-danger">*</span>
                     </label>
                     {% render_field form.responsavel class="form-select" %}
                     {% for e in form.responsavel.errors %}
@@ -110,13 +110,13 @@
     </div>
 
     {# ================================================================
-       SEÇÃO 2: SELEÇÃO DE ITENS
+       SEÃ‡ÃƒO 2: SELEÃ‡ÃƒO DE ITENS
        ================================================================ #}
     <div class="card shadow-sm mb-4">
         <div class="card-header py-3">
             <h6 class="mb-0 fw-bold">
                 <span class="step-badge bg-primary text-white me-2">2</span>
-                Seleção de Itens
+                SeleÃ§Ã£o de Itens
             </h6>
         </div>
         <div class="card-body">
@@ -130,7 +130,7 @@
                     <div class="invalid-feedback d-block">{{ e }}</div>
                 {% endfor %}
                 <small class="form-text text-muted">
-                    Selecione o tipo para exibir os itens disponíveis.
+                    Selecione o tipo para exibir os itens disponÃ­veis.
                 </small>
             </div>
 
@@ -141,7 +141,7 @@
                 </label>
                 {% render_field form.ferramentas_selecionadas class="form-select" data-placeholder="Digite para buscar uma ferramenta..." %}
                 <small class="form-text text-muted">
-                    Selecione uma ou mais ferramentas disponíveis.
+                    Selecione uma ou mais ferramentas disponÃ­veis.
                 </small>
             </div>
 
@@ -152,26 +152,26 @@
                 </label>
                 {% render_field form.malas_selecionadas class="form-select" data-placeholder="Digite para buscar uma mala ou kit..." %}
                 <small class="form-text text-muted">
-                    Selecione uma ou mais malas/kits disponíveis.
+                    Selecione uma ou mais malas/kits disponÃ­veis.
                 </small>
             </div>
         </div>
     </div>
 
     {# ================================================================
-       SEÇÃO 3: ASSINATURA
+       SEÃ‡ÃƒO 3: ASSINATURA
        ================================================================ #}
     <div class="card shadow-sm mb-4">
         <div class="card-header py-3">
             <h6 class="mb-0 fw-bold">
                 <span class="step-badge bg-primary text-white me-2">3</span>
-                Assinatura do Responsável
+                Assinatura do ResponsÃ¡vel
             </h6>
         </div>
         <div class="card-body">
             <p class="text-muted small mb-3">
                 <i class="bi bi-info-circle me-1"></i>
-                O responsável deve assinar abaixo para confirmar o recebimento dos itens.
+                O responsÃ¡vel deve assinar abaixo para confirmar o recebimento dos itens.
             </p>
             <div class="signature-pad-wrapper" id="sig-wrapper">
                 <canvas id="signature-pad"></canvas>
@@ -188,13 +188,13 @@
     </div>
 
     {# ================================================================
-       BOTÃO DE SUBMISSÃO
+       BOTÃƒO DE SUBMISSÃƒO
        ================================================================ #}
     <div class="card shadow-sm mb-4">
         <div class="card-body py-4">
             <div class="d-flex justify-content-between align-items-center">
                 <small class="text-muted">
-                    <span class="text-danger">*</span> Campos obrigatórios
+                    <span class="text-danger">*</span> Campos obrigatÃ³rios
                 </small>
                 <div class="d-flex gap-2">
                     <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-outline-secondary px-4">
@@ -246,7 +246,7 @@ jQuery(function($) {
     }
 
     // ===================================================================
-    // SELECT2 — Inicialização
+    // SELECT2 â€” InicializaÃ§Ã£o
     // ===================================================================
     function initSelect2(selector) {
         $(selector).select2({
@@ -260,11 +260,11 @@ jQuery(function($) {
         });
     }
 
-    // Select2 nos campos de funcionário (busca simples)
+    // Select2 nos campos de funcionÃ¡rio (busca simples)
     $('#id_responsavel, #id_separado_por').select2({
         theme: "bootstrap-5",
         width: '100%',
-        language: { noResults: function() { return "Nenhum funcionário encontrado."; } }
+        language: { noResults: function() { return "Nenhum funcionÃ¡rio encontrado."; } }
     });
 
     // ===================================================================
@@ -297,13 +297,13 @@ jQuery(function($) {
     toggleContainers(); // Estado inicial
 
     // ===================================================================
-    // SUBMIT — Validação e montagem do JSON
+    // SUBMIT â€” ValidaÃ§Ã£o e montagem do JSON
     // ===================================================================
     $('#termoForm').on('submit', function(event) {
 
         // 1. Validar assinatura
         if (signaturePad && signaturePad.isEmpty()) {
-            alert("A assinatura do responsável é obrigatória.");
+            alert("A assinatura do responsÃ¡vel Ã© obrigatÃ³ria.");
             event.preventDefault();
             return false;
         }
@@ -334,7 +334,7 @@ jQuery(function($) {
                 pk: opt.id,
                 item: opt.text.trim(),
                 quantidade: 1,
-                unidade: 'pç'
+                unidade: 'pÃ§'
             };
         });
 

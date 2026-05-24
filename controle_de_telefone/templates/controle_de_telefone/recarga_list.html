@@ -1,17 +1,17 @@
-{% extends "controle_de_telefone/_base_telefone.html" %}
+﻿{% extends "controle_de_telefone/_base_telefone.html" %}
 
-{% block title %}Recargas de Crédito{% endblock %}
+{% block title %}Recargas de CrÃ©dito{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- CABEÇALHO                                                          -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- CABEÃ‡ALHO                                                          -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
         <div class="mb-3 mb-md-0">
             <h2 class="h4 fw-bold mb-1">
-                <i class="bi bi-cash-coin text-success me-2"></i>Recargas de Crédito
+                <i class="bi bi-cash-coin text-success me-2"></i>Recargas de CrÃ©dito
             </h2>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <small class="text-muted">
@@ -23,7 +23,7 @@
                 </span>
                 {% elif user.is_superuser %}
                 <span class="badge bg-dark bg-opacity-10 text-dark border">
-                    <i class="bi bi-shield-lock me-1"></i>Visão Global
+                    <i class="bi bi-shield-lock me-1"></i>VisÃ£o Global
                 </span>
                 {% endif %}
             </div>
@@ -47,9 +47,9 @@
     </div>
     {% endif %}
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <!-- KPIs                                                               -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="card border-0 shadow-sm rounded-3 h-100" style="border-left: 4px solid #f6c23e !important;">
@@ -82,7 +82,7 @@
                                 R$ {{ total_mes|floatformat:2 }}
                             </div>
                             <div class="text-muted fw-semibold" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">
-                                Total do Mês
+                                Total do MÃªs
                             </div>
                         </div>
                     </div>
@@ -109,9 +109,9 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <!-- CARD PRINCIPAL                                                     -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="card border-0 shadow-sm rounded-3">
 
         <!-- Filtros -->
@@ -124,7 +124,7 @@
                                 <i class="bi bi-search text-muted"></i>
                             </span>
                             <input type="search" name="q" class="form-control border-start-0 ps-0"
-                                   placeholder="Buscar por linha, usuário, código..."
+                                   placeholder="Buscar por linha, usuÃ¡rio, cÃ³digo..."
                                    value="{{ search_query }}">
                         </div>
                     </div>
@@ -191,11 +191,11 @@
                     <tr class="text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
                         <th class="fw-semibold py-3 px-3 border-bottom">Linha</th>
                         <th class="fw-semibold py-3 px-3 border-bottom">Tipo</th>
-                        <th class="fw-semibold py-3 px-3 border-bottom">Usuário</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom">UsuÃ¡rio</th>
                         <th class="fw-semibold py-3 px-3 border-bottom text-end">Valor</th>
-                        <th class="fw-semibold py-3 px-3 border-bottom text-center">Vigência</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom text-center">VigÃªncia</th>
                         <th class="fw-semibold py-3 px-3 border-bottom text-center">Status</th>
-                        <th class="fw-semibold py-3 px-3 border-bottom text-end">Ações</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom text-end">AÃ§Ãµes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -232,7 +232,7 @@
                         </td>
                         <td class="px-3 text-center">
                             <small class="text-muted d-block">
-                                {{ recarga.data_inicio|date:"d/m" }} — {{ recarga.data_termino|date:"d/m/Y" }}
+                                {{ recarga.data_inicio|date:"d/m" }} â€” {{ recarga.data_termino|date:"d/m/Y" }}
                             </small>
                             {% if recarga.status == 'realizada' or recarga.status == 'aprovada' %}
                                 {% if recarga.is_vigente %}
@@ -280,7 +280,7 @@
                                     <i class="bi bi-eye"></i>
                                 </a>
 
-                                {# ✅ CORRIGIDO: usa OR — mostra quando está pendente OU aprovada #}
+                                {# âœ… CORRIGIDO: usa OR â€” mostra quando estÃ¡ pendente OU aprovada #}
                                 {% if recarga.status == 'pendente' or recarga.status == 'aprovada' %}
                                     {% if perms.controle_de_telefone.change_recargacredito %}
                                     <a href="{% url 'controle_de_telefone:recarga_realizar' recarga.pk %}"
@@ -322,7 +322,7 @@
                                 {% else %}
                                 <h6 class="mt-3 text-muted fw-semibold">Nenhuma recarga cadastrada</h6>
                                 <p class="text-muted mb-3" style="font-size: 0.85rem;">
-                                    Cadastre a primeira recarga de crédito
+                                    Cadastre a primeira recarga de crÃ©dito
                                 </p>
                                 {% if perms.controle_de_telefone.add_recargacredito or user.is_superuser %}
                                 <a href="{% url 'controle_de_telefone:recarga_create' %}" class="btn btn-sm btn-success">
@@ -338,17 +338,17 @@
             </table>
         </div>
 
-        <!-- Paginação -->
+        <!-- PaginaÃ§Ã£o -->
         {% if is_paginated %}
         <div class="card-footer bg-white border-top py-3">
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
                 <small class="text-muted">
-                    Página {{ page_obj.number }} de {{ paginator.num_pages }} · {{ paginator.count }} registro{{ paginator.count|pluralize:"s" }}
+                    PÃ¡gina {{ page_obj.number }} de {{ paginator.num_pages }} Â· {{ paginator.count }} registro{{ paginator.count|pluralize:"s" }}
                 </small>
-                <nav aria-label="Paginação">
+                <nav aria-label="PaginaÃ§Ã£o">
                     <ul class="pagination pagination-sm mb-0">
 
-                        {# ─── PRIMEIRA ─── #}
+                        {# â”€â”€â”€ PRIMEIRA â”€â”€â”€ #}
                         {% if page_obj.number > 3 %}
                         <li class="page-item">
                             <a class="page-link"
@@ -359,7 +359,7 @@
                         </li>
                         {% endif %}
 
-                        {# ─── ANTERIOR ─── #}
+                        {# â”€â”€â”€ ANTERIOR â”€â”€â”€ #}
                         {% if page_obj.has_previous %}
                         <li class="page-item">
                             <a class="page-link"
@@ -370,7 +370,7 @@
                         </li>
                         {% endif %}
 
-                        {# ─── PÁGINAS ─── #}
+                        {# â”€â”€â”€ PÃGINAS â”€â”€â”€ #}
                         {% for i in paginator.page_range %}
                             {% if page_obj.number == i %}
                             <li class="page-item active"><span class="page-link">{{ i }}</span></li>
@@ -384,23 +384,23 @@
                             {% endif %}
                         {% endfor %}
 
-                        {# ─── PRÓXIMA ─── #}
+                        {# â”€â”€â”€ PRÃ“XIMA â”€â”€â”€ #}
                         {% if page_obj.has_next %}
                         <li class="page-item">
                             <a class="page-link"
                                href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if request.GET.linha %}&linha={{ request.GET.linha }}{% endif %}"
-                               title="Próxima">
+                               title="PrÃ³xima">
                                 <i class="bi bi-chevron-right"></i>
                             </a>
                         </li>
                         {% endif %}
 
-                        {# ─── ÚLTIMA ─── #}
+                        {# â”€â”€â”€ ÃšLTIMA â”€â”€â”€ #}
                         {% if page_obj.number|add:"2" < paginator.num_pages %}
                         <li class="page-item">
                             <a class="page-link"
                                href="?page={{ paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if request.GET.linha %}&linha={{ request.GET.linha }}{% endif %}"
-                               title="Última">
+                               title="Ãšltima">
                                 <i class="bi bi-chevron-double-right"></i>
                             </a>
                         </li>
@@ -415,9 +415,9 @@
     </div>
 </div>
 
-{# ═══════════════════════════════════════════════════════════════════════ #}
+{# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
 {# AUTO-SUBMIT dos filtros de select ao mudar                               #}
-{# ═══════════════════════════════════════════════════════════════════════ #}
+{# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
 <script>
 (function() {
     'use strict';

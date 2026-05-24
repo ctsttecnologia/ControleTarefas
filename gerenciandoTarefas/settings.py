@@ -1,3 +1,4 @@
+#-- Active: 1779136437007@@127.0.0.1@3306@dbcetest3
 """
 Django settings for gerenciandoTarefas 1.02 por Emerson Goncalves.
 """
@@ -95,7 +96,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     
     # Extensões
-    'django_components',
+    #'django_components',
     'django_extensions',
     'django_bootstrap5',
     'django_htmx',
@@ -199,10 +200,18 @@ TEMPLATES = [
                 'notifications.context_processors.notification_processor',
                 'gestao_riscos.context_processors.dias_sem_acidentes',
                 'suprimentos.context_processors.suprimentos_menu_context',
+                'suprimentos.context_processors.suprimentos_notificacoes',
+            ],
+            'builtins': [
+                # 'django_components.templatetags.component_tags',
             ],
         },
     },
 ]
+
+DEFAULT_CHARSET = 'utf-8'
+FILE_CHARSET = 'utf-8'  # Django < 4.0
+DEFAULT_CONTENT_TYPE = 'text/html'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
@@ -237,7 +246,7 @@ DATABASES = {
 if 'test' in sys.argv:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
+            'ENGINE': 'django.db.backends.mysql',
             'NAME': ':memory:',
         }
     }
@@ -263,7 +272,7 @@ LOGOUT_REDIRECT_URL = 'usuario:login'
 LANGUAGE_CODE = 'pt-br'
 USE_I18N = True
 USE_L10N = True
-USE_TZ = True
+USE_TZ = False
 TIME_ZONE = 'America/Sao_Paulo'
 
 # =============================================================================

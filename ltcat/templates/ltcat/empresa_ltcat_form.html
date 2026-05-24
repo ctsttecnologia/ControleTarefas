@@ -1,4 +1,4 @@
-
+﻿
 {% extends "ltcat/base_ltcat.html" %}
 
 {% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Empresa Contratada{% endblock %}
@@ -30,15 +30,15 @@
                     </div>
                     {% endif %}
 
-                    <!-- ════ Seleção do Cliente ════ -->
+                    <!-- â•â•â•â• SeleÃ§Ã£o do Cliente â•â•â•â• -->
                     <div class="alert alert-info mb-4">
                         <i class="fas fa-info-circle me-2"></i>
-                        Selecione o <b>Cliente</b> correspondente à empresa contratada (ex: CETEST).
-                        Os campos de endereço serão preenchidos automaticamente e você pode complementar as informações específicas do LTCAT.
+                        Selecione o <b>Cliente</b> correspondente Ã  empresa contratada (ex: CETEST).
+                        Os campos de endereÃ§o serÃ£o preenchidos automaticamente e vocÃª pode complementar as informaÃ§Ãµes especÃ­ficas do LTCAT.
                     </div>
 
                     <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
-                        <i class="fas fa-building me-1"></i> Identificação
+                        <i class="fas fa-building me-1"></i> IdentificaÃ§Ã£o
                     </h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-8">
@@ -56,7 +56,7 @@
                         </div>
                     </div>
 
-                    <!-- ════ Dados Complementares LTCAT ════ -->
+                    <!-- â•â•â•â• Dados Complementares LTCAT â•â•â•â• -->
                     <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
                         <i class="fas fa-clipboard-list me-1"></i> Dados Complementares do LTCAT
                     </h6>
@@ -96,19 +96,19 @@
                             {{ form.numero_empregados }}
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label">Nº Empregados (Texto)</label>
+                            <label class="form-label">NÂº Empregados (Texto)</label>
                             {{ form.numero_empregados_texto }}
                             <small class="text-muted">{{ form.numero_empregados_texto.help_text }}</small>
                         </div>
                     </div>
 
-                    <!-- ════ Endereço ════ -->
+                    <!-- â•â•â•â• EndereÃ§o â•â•â•â• -->
                     <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
-                        <i class="fas fa-map-marker-alt me-1"></i> Endereço
+                        <i class="fas fa-map-marker-alt me-1"></i> EndereÃ§o
                     </h6>
                     <div id="endereco-auto-info" class="alert alert-secondary mb-3 d-none">
                         <i class="fas fa-magic me-2"></i>
-                        Endereço preenchido a partir do cliente. Ajuste conforme necessário.
+                        EndereÃ§o preenchido a partir do cliente. Ajuste conforme necessÃ¡rio.
                     </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
@@ -143,7 +143,7 @@
                         </div>
                     </div>
 
-                    <!-- ════ Contato ════ -->
+                    <!-- â•â•â•â• Contato â•â•â•â• -->
                     <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
                         <i class="fas fa-phone me-1"></i> Contato
                     </h6>
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var ajaxUrl = "{% url 'ltcat:ajax_dados_cliente' %}";
     var enderecoInfo = document.getElementById('endereco-auto-info');
 
-    // Campos que serão auto-preenchidos
+    // Campos que serÃ£o auto-preenchidos
     var camposMap = {
         'cnpj': 'id_cnpj',
         'telefone': 'id_telefone',
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
         for (var chave in camposMap) {
             var el = document.getElementById(camposMap[chave]);
             if (el && dados[chave] !== undefined) {
-                // Só preenche se o campo estiver vazio
+                // SÃ³ preenche se o campo estiver vazio
                 if (!el.value || el.value === '') {
                     el.value = dados[chave];
                 }
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(function(resp) { return resp.json(); })
                 .then(function(dados) {
                     if (!dados.error) {
-                        // Limpa tudo primeiro para forçar preenchimento
+                        // Limpa tudo primeiro para forÃ§ar preenchimento
                         limparCampos();
                         preencherCampos(dados);
                     }

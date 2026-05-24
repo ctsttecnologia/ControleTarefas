@@ -1,13 +1,13 @@
-
-<!-- Base Template para Automóvel -->
+﻿
+<!-- Base Template para AutomÃ³vel -->
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Automóvel{% endblock %}
+{% block title %}AutomÃ³vel{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* Navegação do Módulo */
+    /* NavegaÃ§Ã£o do MÃ³dulo */
     .module-nav {
         background: #fff;
         border: 1px solid #e9ecef;
@@ -138,8 +138,8 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    {# ═══ HEADER: BANNER DO VEÍCULO ═══ #}
-    {# Funciona com context_object_name='carro' OU com o padrão 'object' do Django #}
+    {# â•â•â• HEADER: BANNER DO VEÃCULO â•â•â• #}
+    {# Funciona com context_object_name='carro' OU com o padrÃ£o 'object' do Django #}
 
     {% if carro.placa %}
     <div class="card text-white mb-4 no-print"
@@ -172,7 +172,7 @@
                     <div class="mb-2 d-flex align-items-center gap-2">
                         {% if carro.disponivel %}
                             <span class="badge bg-light text-primary bg-opacity-25 rounded-pill px-3 py-2">
-                                <i class="bi bi-check-circle"></i> Disponível
+                                <i class="bi bi-check-circle"></i> DisponÃ­vel
                             </span>
                         {% else %}
                             <span class="badge bg-light text-warning bg-opacity-25 rounded-pill px-3 py-2">
@@ -198,7 +198,7 @@
                 </div>
             </div>
 
-            <!-- BOTÕES -->
+            <!-- BOTÃ•ES -->
             <div class="d-flex gap-2 no-print">
                 <a href="{% url 'automovel:carro_list' %}"
                    class="btn btn-outline-light btn-sm px-3 py-2 rounded-pill">
@@ -214,7 +214,7 @@
     </div>
     {% endif %}
 
-    {# ═══ NAVEGAÇÃO ═══ #}
+    {# â•â•â• NAVEGAÃ‡ÃƒO â•â•â• #}
     <nav class="module-nav no-print">
         <ul class="nav nav-pills">
             <li class="nav-item">
@@ -227,7 +227,7 @@
             <li class="nav-item">
                 <a href="{% url 'automovel:carro_list' %}"
                    class="nav-link {% if 'carro_' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-car-front-fill"></i> Veículos
+                    <i class="bi bi-car-front-fill"></i> VeÃ­culos
                 </a>
             </li>
             <li class="nav-item">

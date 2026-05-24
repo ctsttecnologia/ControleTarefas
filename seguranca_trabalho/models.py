@@ -1,3 +1,4 @@
+# Modelos para Segurança do Trabalho - Controle de EPIs, Fichas de EPI, Entregas e Movimentações de Estoque
 from datetime import date, timedelta
 
 from django.conf import settings
@@ -10,6 +11,7 @@ from django.utils.translation import gettext_lazy as _
 
 from core.managers import FilialManager
 from departamento_pessoal.models import Cargo
+from suprimentos.models import PedidoCompra
 from usuario.models import Filial
 
 
@@ -364,6 +366,9 @@ class MovimentacaoEstoque(models.Model):
         validators=[MinValueValidator(1)],
         verbose_name=_("Quantidade"),
     )
+
+    pedido_compra_origem = models.ForeignKey(PedidoCompra, on_delete=models.SET_NULL, null=True, blank=True)
+    
     fornecedor = models.ForeignKey(
         'suprimentos.Parceiro',
         on_delete=models.PROTECT,

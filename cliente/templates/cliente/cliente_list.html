@@ -1,4 +1,4 @@
-
+﻿
 {% extends 'base.html' %}
 
 {% block title %}Clientes{% endblock %}
@@ -6,9 +6,9 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    {# ══════════════════════════════════════════════ #}
-    {# CABEÇALHO                                      #}
-    {# ══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+    {# CABEÃ‡ALHO                                      #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
         <div class="mb-3 mb-md-0">
             <h2 class="h4 fw-bold mb-1">
@@ -28,13 +28,13 @@
 
                 {% if can_view_all %}
                 <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25"
-                      title="Você está visualizando todos os clientes da filial">
-                    <i class="bi bi-eye-fill me-1"></i>Visão completa
+                      title="VocÃª estÃ¡ visualizando todos os clientes da filial">
+                    <i class="bi bi-eye-fill me-1"></i>VisÃ£o completa
                 </span>
                 {% elif not user.is_superuser %}
                 <span class="badge bg-secondary bg-opacity-10 text-secondary border"
-                      title="Você está visualizando apenas os clientes aos quais tem acesso">
-                    <i class="bi bi-shield-lock me-1"></i>Visão restrita
+                      title="VocÃª estÃ¡ visualizando apenas os clientes aos quais tem acesso">
+                    <i class="bi bi-shield-lock me-1"></i>VisÃ£o restrita
                 </span>
                 {% endif %}
             </div>
@@ -55,12 +55,12 @@
         </div>
     </header>
 
-    {# ══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     {# CARD PRINCIPAL                                 #}
-    {# ══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <div class="card border-0 shadow-sm rounded-3">
 
-        {# ── Pesquisa ── #}
+        {# â”€â”€ Pesquisa â”€â”€ #}
         <div class="card-header bg-white border-bottom py-3">
             <form method="get" role="search">
                 <div class="input-group">
@@ -91,24 +91,24 @@
             </form>
         </div>
 
-        {# ── Tabela ── #}
+        {# â”€â”€ Tabela â”€â”€ #}
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr class="text-muted"
                         style="font-size: .78rem; text-transform: uppercase; letter-spacing: .5px;">
-                        <th class="fw-semibold py-3 px-3 border-bottom">Nome / Razão Social</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom">Nome / RazÃ£o Social</th>
                         <th class="fw-semibold py-3 px-3 border-bottom">CNPJ</th>
                         <th class="fw-semibold py-3 px-3 border-bottom">Contrato</th>
                         <th class="fw-semibold py-3 px-3 border-bottom">Telefone</th>
                         <th class="fw-semibold py-3 px-3 border-bottom text-center">Status</th>
-                        <th class="fw-semibold py-3 px-3 border-bottom text-end">Ações</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom text-end">AÃ§Ãµes</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for cliente in clientes %}
                     <tr>
-                        {# Nome / Razão Social #}
+                        {# Nome / RazÃ£o Social #}
                         <td class="px-3">
                             <a href="{{ cliente.get_absolute_url }}"
                                class="text-decoration-none">
@@ -132,7 +132,7 @@
                         </td>
 
                         {# Telefone #}
-                        <td class="px-3 text-muted">{{ cliente.telefone|default:"—" }}</td>
+                        <td class="px-3 text-muted">{{ cliente.telefone|default:"â€”" }}</td>
 
                         {# Status #}
                         <td class="px-3 text-center">
@@ -147,9 +147,9 @@
                             {% endif %}
                         </td>
 
-                        {# Ações #}
+                        {# AÃ§Ãµes #}
                         <td class="text-end px-3">
-                            <div class="btn-group btn-group-sm" role="group" aria-label="Ações do cliente">
+                            <div class="btn-group btn-group-sm" role="group" aria-label="AÃ§Ãµes do cliente">
                                 {% if perms.cliente.view_cliente or user.is_superuser %}
                                 <a href="{{ cliente.get_absolute_url }}"
                                    class="btn btn-outline-secondary"
@@ -214,7 +214,7 @@
                                         {% endif %}
                                     {% else %}
                                     <p class="text-muted mb-3" style="font-size: .85rem;">
-                                        Você não tem acesso a nenhum cliente no momento.<br>
+                                        VocÃª nÃ£o tem acesso a nenhum cliente no momento.<br>
                                         Entre em contato com o administrador.
                                     </p>
                                     {% endif %}
@@ -227,15 +227,15 @@
             </table>
         </div>
 
-        {# ── Paginação ── #}
+        {# â”€â”€ PaginaÃ§Ã£o â”€â”€ #}
         {% include 'cliente/_includes/_pagination.html' %}
 
     </div>
 </div>
 
-{# ══════════════════════════════════════════════ #}
-{# MODAL DE EXCLUSÃO                              #}
-{# ══════════════════════════════════════════════ #}
+{# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+{# MODAL DE EXCLUSÃƒO                              #}
+{# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
 {% if perms.cliente.delete_cliente or user.is_superuser %}
 <div class="modal fade" id="modal-delete" tabindex="-1" aria-labelledby="modal-delete-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -248,7 +248,7 @@
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold mb-0" id="modal-delete-title">Excluir Cliente</h5>
-                        <small class="text-muted">Esta ação não pode ser desfeita</small>
+                        <small class="text-muted">Esta aÃ§Ã£o nÃ£o pode ser desfeita</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>

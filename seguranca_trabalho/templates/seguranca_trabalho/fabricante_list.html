@@ -1,4 +1,4 @@
-
+﻿
 {% extends "seguranca_trabalho/_base_sst.html" %}
 
 {% block title %}Fabricantes{% endblock %}
@@ -14,7 +14,7 @@
             </h4>
             <span class="sst-page-subtitle">Gerencie os fabricantes de EPIs e materiais</span>
         </div>
-        {% if permission.seguranca_trabalho.add_fabricante or user.is_superuser %}
+        {% if perms.seguranca_trabalho.add_fabricante or user.is_superuser %}
         <a href="{% url 'seguranca_trabalho:fabricante_create' %}" class="sst-btn-header--primary">
             <i class="bi bi-plus-circle"></i> Novo Fabricante
         </a>
@@ -37,7 +37,7 @@
                     <th>Telefone</th>
                     <th>E-mail</th>
                     <th class="text-center">Status</th>
-                    <th class="text-center" style="width: 100px;">Ações</th>
+                    <th class="text-center" style="width: 100px;">AÃ§Ãµes</th>
                 </tr>
             </thead>
             <tbody>
@@ -48,16 +48,16 @@
                             <i class="bi bi-building me-1" style="opacity:.5;"></i>{{ fabricante.nome }}
                         </a>
                     </td>
-                    <td>{{ fabricante.cnpj|default:"—" }}</td>
+                    <td>{{ fabricante.cnpj|default:"â€”" }}</td>
                     <td>
                         {% if fabricante.telefone %}
                         <i class="bi bi-telephone me-1" style="opacity:.5;"></i>{{ fabricante.telefone }}
-                        {% else %}—{% endif %}
+                        {% else %}â€”{% endif %}
                     </td>
                     <td>
                         {% if fabricante.email %}
                         <a href="mailto:{{ fabricante.email }}" style="color:var(--sst-accent);">{{ fabricante.email }}</a>
-                        {% else %}—{% endif %}
+                        {% else %}â€”{% endif %}
                     </td>
                     <td class="text-center">
                         {% if fabricante.ativo %}
@@ -68,12 +68,12 @@
                     </td>
                     <td class="text-center">
                         <div class="sst-action-group">
-                            {% if permission.seguranca_trabalho.view_fabricante or user.is_superuser %}
+                            {% if perms.seguranca_trabalho.view_fabricante or user.is_superuser %}
                             <a href="{% url 'seguranca_trabalho:fabricante_detail' fabricante.pk %}" class="sst-action-btn sst-action-btn--view" title="Ver">
                                 <i class="bi bi-eye"></i>
                             </a>
                             {% endif %}
-                            {% if permission.seguranca_trabalho.change_fabricante or user.is_superuser %}
+                            {% if perms.seguranca_trabalho.change_fabricante or user.is_superuser %}
                             <a href="{% url 'seguranca_trabalho:fabricante_update' fabricante.pk %}" class="sst-action-btn sst-action-btn--edit" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>
@@ -87,7 +87,7 @@
                         <div class="sst-empty">
                             <div class="sst-empty-icon"><i class="bi bi-inbox"></i></div>
                             <h6>Nenhum fabricante cadastrado</h6>
-                            {% if permission.seguranca_trabalho.add_fabricante or user.is_superuser %}
+                            {% if perms.seguranca_trabalho.add_fabricante or user.is_superuser %}
                             <a href="{% url 'seguranca_trabalho:fabricante_create' %}" class="sst-btn-primary mt-2" style="font-size:0.82rem; padding:0.4rem 1rem;">
                                 <i class="bi bi-plus-circle"></i> Cadastrar primeiro
                             </a>

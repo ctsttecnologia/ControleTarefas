@@ -1,8 +1,8 @@
-<!-- Página de Rastreamento do Agendamento -->
+﻿<!-- PÃ¡gina de Rastreamento do Agendamento -->
 {% extends "automovel/_base_automovel.html" %}
 {% load static %}
 
-{% block title %}Rastreamento — {{ object.carro.placa }}{% endblock %}
+{% block title %}Rastreamento â€” {{ object.carro.placa }}{% endblock %}
 
 {% block module_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -49,8 +49,8 @@
     <div class="map-hero">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-                <h1><i class="bi bi-geo-alt-fill me-2"></i>Rastreamento — {{ object.carro.placa }}</h1>
-                <p>{{ object.funcionario }} — Agendamento #{{ object.id }}</p>
+                <h1><i class="bi bi-geo-alt-fill me-2"></i>Rastreamento â€” {{ object.carro.placa }}</h1>
+                <p>{{ object.funcionario }} â€” Agendamento #{{ object.id }}</p>
             </div>
             <a href="{% url 'automovel:agendamento_detail' object.pk %}" class="btn btn-sm btn-outline-light">
                 <i class="bi bi-arrow-left me-1"></i> Voltar
@@ -61,8 +61,8 @@
     <div class="map-container">
         <div id="map"></div>
         <div class="map-info-panel no-print">
-            <h6><i class="bi bi-info-circle me-1"></i>Informações</h6>
-            <p><strong>Veículo:</strong> {{ object.carro.placa }}</p>
+            <h6><i class="bi bi-info-circle me-1"></i>InformaÃ§Ãµes</h6>
+            <p><strong>VeÃ­culo:</strong> {{ object.carro.placa }}</p>
             <p><strong>Motorista:</strong> {{ object.funcionario }}</p>
             <p><strong>Pontos:</strong> {{ pontos_rastreamento|length }}</p>
             <button id="exportRoute" class="btn btn-sm btn-outline-primary w-100 mt-2" style="border-radius: 0.625rem;">
@@ -81,7 +81,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const map = L.map('map').setView([-23.5505, -46.6333], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
+        attribution: 'Â© OpenStreetMap'
     }).addTo(map);
 
     const pontos = {{ pontos_rastreamento|safe }};
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
         L.marker(ll).addTo(map).bindPopup(
             `<strong>Data/Hora:</strong> ${p.data_hora}<br>` +
             `<strong>Velocidade:</strong> ${p.velocidade || 'N/A'} km/h<br>` +
-            `<strong>Local:</strong> ${p.endereco || '—'}`
+            `<strong>Local:</strong> ${p.endereco || 'â€”'}`
         );
     });
 
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Export
     document.getElementById('exportRoute').addEventListener('click', function() {
         const wb = XLSX.utils.book_new();
-        const data = [['Latitude', 'Longitude', 'Data/Hora', 'Velocidade (km/h)', 'Endereço']];
+        const data = [['Latitude', 'Longitude', 'Data/Hora', 'Velocidade (km/h)', 'EndereÃ§o']];
         pontos.forEach(p => data.push([p.lat, p.lng, p.data_hora, p.velocidade || 'N/A', p.endereco || '']));
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Rota');
         XLSX.writeFile(wb, 'rota_agendamento_{{ object.id }}.xlsx');

@@ -1,18 +1,18 @@
-
+﻿
 <!-- templates/tributacao/grupo_list.html -->
 {% extends "tributacao/base_tributacao.html" %}
 
-{% block title %}Grupos Tributários{% endblock %}
+{% block title %}Grupos TributÃ¡rios{% endblock %}
 
 {% block tributacao_content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         
-        <h3><i class="bi bi-collection"></i> Grupos Tributários</h3>
+        <h3><i class="bi bi-collection"></i> Grupos TributÃ¡rios</h3>
         {% if pode_ver_todas_filiais %}
-        <span class="badge bg-info">🌐 Visão global: todas as filiais</span>
+        <span class="badge bg-info">ðŸŒ VisÃ£o global: todas as filiais</span>
         {% else %}
-        <span class="badge bg-secondary">🏢 Filial: {{ request.user.filial_ativa }}</span>
+        <span class="badge bg-secondary">ðŸ¢ Filial: {{ request.user.filial_ativa }}</span>
         {% endif %}
         {% if perms.tributacao.add_grupotributario %}
         <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-primary">
@@ -46,7 +46,7 @@
                     <th>NCM</th>
                     <th>Filial</th>
                     <th class="text-center">Ativo</th>
-                    <th class="text-center">Ações</th>
+                    <th class="text-center">AÃ§Ãµes</th>
                 </tr>
             </thead>
             <tbody>
@@ -65,7 +65,7 @@
                         {% if grupo.natureza == "E" %}
                         <span class="badge bg-info">Entrada</span>
                         {% else %}
-                        <span class="badge bg-warning">Saída</span>
+                        <span class="badge bg-warning">SaÃ­da</span>
                         {% endif %}
                     </td>
                     <td><code>{{ grupo.cfop.codigo }}</code></td>
@@ -73,7 +73,7 @@
                         {% if grupo.ncm %}
                         <code>{{ grupo.ncm.codigo }}</code>
                         {% else %}
-                        <span class="text-muted">—</span>
+                        <span class="text-muted">â€”</span>
                         {% endif %}
                     </td>
                     <td>{{ grupo.filial }}</td>
@@ -81,7 +81,7 @@
                         {% if grupo.ativo %}
                         <span class="badge bg-success">Sim</span>
                         {% else %}
-                        <span class="badge bg-secondary">Não</span>
+                        <span class="badge bg-secondary">NÃ£o</span>
                         {% endif %}
                     </td>
                     <td class="text-center">
@@ -108,7 +108,7 @@
                 {% empty %}
                 <tr>
                     <td colspan="7" class="text-center text-muted py-4">
-                        Nenhum Grupo Tributário cadastrado.
+                        Nenhum Grupo TributÃ¡rio cadastrado.
                     </td>
                 </tr>
                 {% endfor %}

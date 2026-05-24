@@ -1,4 +1,4 @@
-<!-- Página de Lista de Agendamentos -->
+﻿<!-- PÃ¡gina de Lista de Agendamentos -->
 {% extends "automovel/_base_automovel.html" %}
 {% load static %}
 
@@ -125,12 +125,12 @@
 
 {% block automovel_content %}
 
-    <!-- ═══ HERO ═══ -->
+    <!-- â•â•â• HERO â•â•â• -->
     <div class="page-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
                 <h1><i class="bi bi-calendar-check me-2"></i>Agendamentos</h1>
-                <p>Gerencie todos os agendamentos de veículos</p>
+                <p>Gerencie todos os agendamentos de veÃ­culos</p>
             </div>
             {% if perms.automovel.add_agendamento or user.is_superuser %}
             <a href="{% url 'automovel:agendamento_create' %}" class="btn btn-sm btn-light fw-semibold no-print">
@@ -140,7 +140,7 @@
         </div>
     </div>
 
-    <!-- ═══ TABLE CARD ═══ -->
+    <!-- â•â•â• TABLE CARD â•â•â• -->
     <div class="card search-card shadow-sm">
         <!-- Filtros -->
         <div class="filter-bar no-print">
@@ -165,7 +165,7 @@
                     <label class="form-label small fw-bold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.7rem; color: #858796;">Pesquisar</label>
                     <form method="get">
                         <div class="input-group input-group-sm">
-                            <input type="text" name="search" class="form-control" placeholder="Funcionário, veículo, placa..."
+                            <input type="text" name="search" class="form-control" placeholder="FuncionÃ¡rio, veÃ­culo, placa..."
                                    value="{{ request.GET.search }}">
                             <button class="btn btn-primary" type="submit" style="border-radius: 0 0.625rem 0.625rem 0;">
                                 <i class="bi bi-search"></i>
@@ -198,12 +198,12 @@
                 <table class="table data-table mb-0">
                     <thead>
                         <tr>
-                            <th>Funcionário</th>
-                            <th>Veículo</th>
-                            <th>Saída</th>
-                            <th>Devolução</th>
+                            <th>FuncionÃ¡rio</th>
+                            <th>VeÃ­culo</th>
+                            <th>SaÃ­da</th>
+                            <th>DevoluÃ§Ã£o</th>
                             <th class="text-center">Status</th>
-                            <th class="text-end pe-4" style="width: 100px;">Ações</th>
+                            <th class="text-end pe-4" style="width: 100px;">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody>

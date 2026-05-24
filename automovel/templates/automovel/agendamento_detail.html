@@ -1,4 +1,4 @@
-<!-- Detalhes do Agendamento -->
+﻿<!-- Detalhes do Agendamento -->
 {% extends "automovel/_base_automovel.html" %}
 {% load static %}
 
@@ -7,7 +7,7 @@
 {% block module_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-    /* ═══ HERO ═══ */
+    /* â•â•â• HERO â•â•â• */
     .detail-hero {
         border-radius: 1rem;
         color: #fff;
@@ -54,7 +54,7 @@
         font-weight: 600;
     }
 
-    /* ═══ INFO CARD ═══ */
+    /* â•â•â• INFO CARD â•â•â• */
     .info-card { border: none; border-radius: 0.875rem; }
     .info-card .card-header {
         background: transparent;
@@ -70,7 +70,7 @@
         gap: 0.5rem;
     }
 
-    /* ═══ INFO GRID ═══ */
+    /* â•â•â• INFO GRID â•â•â• */
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
     .info-item {
         padding: 0.875rem 1.5rem;
@@ -80,7 +80,7 @@
     .info-item-label { font-size: 0.73rem; font-weight: 700; color: #858796; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.2rem; }
     .info-item-value { font-weight: 600; color: #2d3748; font-size: 0.9rem; }
 
-    /* ═══ CHECKLIST GRID ═══ */
+    /* â•â•â• CHECKLIST GRID â•â•â• */
     .checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
     .checklist-col {
         padding: 1.5rem;
@@ -104,11 +104,11 @@
     .checklist-badge-pending { background: rgba(246,194,62,0.12); color: #b7791f; }
     .checklist-badge-pending::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #f6c23e; }
 
-    /* ═══ MAP ═══ */
+    /* â•â•â• MAP â•â•â• */
     .map-container { height: 400px; border-radius: 0.875rem; overflow: hidden; border: 2px solid #e9ecef; }
     .gps-status { font-size: 0.82rem; color: #a0aec0; }
 
-    /* ═══ TIMELINE ═══ */
+    /* â•â•â• TIMELINE â•â•â• */
     .timeline { list-style: none; padding: 0; margin: 0; }
     .timeline-item { position: relative; padding-left: 1.75rem; padding-bottom: 1.25rem; }
     .timeline-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #e9ecef; }
@@ -118,11 +118,11 @@
     .timeline-text { font-size: 0.82rem; color: #4a5568; }
     .timeline-status { font-size: 0.75rem; color: #a0aec0; }
 
-    /* ═══ MODAL ═══ */
+    /* â•â•â• MODAL â•â•â• */
     .modal-finish .modal-header { background: linear-gradient(135deg, #1cc88a, #13855c); color: #fff; border: none; }
     .modal-finish .modal-footer { border-top: 2px solid #f0f2f5; }
 
-    /* ═══ DARK MODE ═══ */
+    /* â•â•â• DARK MODE â•â•â• */
     [data-bs-theme="dark"] .info-card .card-header { border-bottom-color: rgba(255,255,255,0.06); }
     [data-bs-theme="dark"] .info-item { border-bottom-color: rgba(255,255,255,0.04); }
     [data-bs-theme="dark"] .info-item:hover { background: rgba(255,255,255,0.02); }
@@ -148,7 +148,7 @@
 
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- ═══ HERO ═══ -->
+    <!-- â•â•â• HERO â•â•â• -->
     <div class="detail-hero status-{{ object.status }}">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
@@ -162,7 +162,7 @@
                 <div class="hero-meta">
                     <span class="hero-meta-item">
                         <i class="bi bi-car-front-fill"></i>
-                        {{ object.carro.marca }} {{ object.carro.modelo }} — {{ object.carro.placa }}
+                        {{ object.carro.marca }} {{ object.carro.modelo }} â€” {{ object.carro.placa }}
                     </span>
                     <span class="hero-meta-item">
                         <i class="bi bi-person-fill"></i> {{ object.funcionario }}
@@ -193,32 +193,32 @@
     </div>
 
     <div class="row g-4">
-        <!-- ═══ COLUNA PRINCIPAL ═══ -->
+        <!-- â•â•â• COLUNA PRINCIPAL â•â•â• -->
         <div class="col-lg-8">
-            <!-- Informações -->
+            <!-- InformaÃ§Ãµes -->
             <div class="card info-card shadow-sm mb-4">
                 <div class="card-header">
-                    <h5><i class="bi bi-info-circle text-primary"></i> Informações do Agendamento</h5>
+                    <h5><i class="bi bi-info-circle text-primary"></i> InformaÃ§Ãµes do Agendamento</h5>
                 </div>
                 <div class="info-grid">
                     <div class="info-item">
-                        <div class="info-item-label">Veículo</div>
-                        <div class="info-item-value">{{ object.carro.marca }} {{ object.carro.modelo }} — {{ object.carro.placa }}</div>
+                        <div class="info-item-label">VeÃ­culo</div>
+                        <div class="info-item-value">{{ object.carro.marca }} {{ object.carro.modelo }} â€” {{ object.carro.placa }}</div>
                     </div>
                     <div class="info-item">
-                        <div class="info-item-label">Funcionário</div>
+                        <div class="info-item-label">FuncionÃ¡rio</div>
                         <div class="info-item-value">{{ object.funcionario }}</div>
                     </div>
                     <div class="info-item">
-                        <div class="info-item-label">Responsável</div>
+                        <div class="info-item-label">ResponsÃ¡vel</div>
                         <div class="info-item-value">{{ object.responsavel }}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-item-label">CM / Contrato</div>
-                        <div class="info-item-value">{{ object.cm|default:"—" }}</div>
+                        <div class="info-item-value">{{ object.cm|default:"â€”" }}</div>
                     </div>
                     <div class="info-item">
-                        <div class="info-item-label">Data / Hora Saída</div>
+                        <div class="info-item-label">Data / Hora SaÃ­da</div>
                         <div class="info-item-value">{{ object.data_hora_agenda|date:"d/m/Y H:i" }}</div>
                     </div>
                     <div class="info-item">
@@ -227,16 +227,16 @@
                     </div>
                     <div class="info-item">
                         <div class="info-item-label">KM Inicial</div>
-                        <div class="info-item-value">{{ object.km_inicial|default:"—" }}</div>
+                        <div class="info-item-value">{{ object.km_inicial|default:"â€”" }}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-item-label">KM Final</div>
-                        <div class="info-item-value">{{ object.km_final|default:"—" }}</div>
+                        <div class="info-item-value">{{ object.km_final|default:"â€”" }}</div>
                     </div>
                 </div>
                 {% if object.descricao %}
                 <div class="px-4 py-3" style="border-top: 1px solid #f0f2f5;">
-                    <div class="info-item-label mb-1">Observações</div>
+                    <div class="info-item-label mb-1">ObservaÃ§Ãµes</div>
                     <p class="mb-0" style="font-size: 0.9rem; color: #4a5568;">{{ object.descricao }}</p>
                 </div>
                 {% endif %}
@@ -256,12 +256,12 @@
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
                         {% if perms.automovel.view_automovel or user.is_superuser %}
                         <button id="iniciarRastreamento" class="btn btn-success" style="border-radius: 0.625rem;">
-                            <i class="bi bi-broadcast me-1"></i> Iniciar Transmissão GPS
+                            <i class="bi bi-broadcast me-1"></i> Iniciar TransmissÃ£o GPS
                         </button>
                         {% endif %}
                         {% if perms.automovel.view_automovel or user.is_superuser %}
                         <a href="{% url 'automovel:rastreamento_map' object.pk %}" class="btn btn-outline-primary" style="border-radius: 0.625rem;">
-                            <i class="bi bi-map me-1"></i> Histórico no Mapa
+                            <i class="bi bi-map me-1"></i> HistÃ³rico no Mapa
                         </a>
                         {% endif %}
                     </div>
@@ -276,7 +276,7 @@
                 </div>
                 <div class="checklist-grid">
                     <div class="checklist-col">
-                        <h6>Checklist de Saída</h6>
+                        <h6>Checklist de SaÃ­da</h6>
                         {% if checklist_saida %}
                         <span class="checklist-badge checklist-badge-ok">Completo</span>
                         <br>
@@ -323,12 +323,12 @@
             </div>
         </div>
 
-        <!-- ═══ SIDEBAR ═══ -->
+        <!-- â•â•â• SIDEBAR â•â•â• -->
         <div class="col-lg-4">
-            <!-- Histórico -->
+            <!-- HistÃ³rico -->
             <div class="card info-card shadow-sm mb-4">
                 <div class="card-header">
-                    <h5><i class="bi bi-clock-history text-warning"></i> Histórico Recente</h5>
+                    <h5><i class="bi bi-clock-history text-warning"></i> HistÃ³rico Recente</h5>
                 </div>
                 <div class="card-body">
                     {% if historico_agendamentos %}
@@ -349,34 +349,34 @@
                     {% else %}
                     <div class="text-center py-3">
                         <i class="bi bi-inbox text-muted" style="font-size: 1.5rem;"></i>
-                        <p class="text-muted small mt-2 mb-0">Nenhum histórico anterior</p>
+                        <p class="text-muted small mt-2 mb-0">Nenhum histÃ³rico anterior</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- Relatórios -->
+            <!-- RelatÃ³rios -->
             <div class="card info-card shadow-sm">
                 <div class="card-header">
-                    <h5><i class="bi bi-file-earmark-text text-info"></i> Relatórios</h5>
+                    <h5><i class="bi bi-file-earmark-text text-info"></i> RelatÃ³rios</h5>
                 </div>
                 <div class="card-body d-grid gap-2">
                     {% if checklist_saida %}
                     {% if perms.automovel.view_automovel or user.is_superuser %}
                     <a href="{% url 'automovel:gerar_relatorio_word' 'checklist' checklist_saida.pk %}" class="btn btn-outline-secondary btn-sm" style="border-radius: 0.625rem;">
-                        <i class="bi bi-file-earmark-word me-2"></i> Relatório Word (Saída)
+                        <i class="bi bi-file-earmark-word me-2"></i> RelatÃ³rio Word (SaÃ­da)
                     </a>
                     {% endif %}
                     {% endif %}
                     {% if checklist_retorno %}
                     {% if perms.automovel.view_automovel or user.is_superuser %}
                     <a href="{% url 'automovel:gerar_relatorio_word' 'checklist' checklist_retorno.pk %}" class="btn btn-outline-secondary btn-sm" style="border-radius: 0.625rem;">
-                        <i class="bi bi-file-earmark-word me-2"></i> Relatório Word (Retorno)
+                        <i class="bi bi-file-earmark-word me-2"></i> RelatÃ³rio Word (Retorno)
                     </a>
                     {% endif %}
                     {% endif %}
                     {% if not checklist_saida and not checklist_retorno %}
-                    <p class="text-muted small text-center mb-0">Nenhum relatório disponível.</p>
+                    <p class="text-muted small text-center mb-0">Nenhum relatÃ³rio disponÃ­vel.</p>
                     {% endif %}
                 </div>
             </div>
@@ -384,7 +384,7 @@
     </div>
 </div>
 
-<!-- ═══ MODAL FINALIZAR ═══ -->
+<!-- â•â•â• MODAL FINALIZAR â•â•â• -->
 {% if object.status == 'em_andamento' %}
 <div class="modal fade" id="finalizarModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -399,7 +399,7 @@
                 {% csrf_token %}
                 <div class="modal-body p-4">
                     <p class="mb-3">
-                        Confirmar devolução do veículo
+                        Confirmar devoluÃ§Ã£o do veÃ­culo
                         <strong>{{ object.carro.placa }}</strong>?
                     </p>
                     <div class="mb-3">
@@ -410,7 +410,7 @@
                         <div class="form-text">KM Inicial: {{ object.km_inicial }}</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold" style="font-size: 0.85rem;">Observações</label>
+                        <label class="form-label fw-bold" style="font-size: 0.85rem;">ObservaÃ§Ãµes</label>
                         <textarea class="form-control" name="observacoes_devolucao" rows="2"
                                   style="border: 2px solid #e2e8f0; border-radius: 0.625rem;"></textarea>
                     </div>
@@ -437,7 +437,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const map = L.map('map').setView([-23.5505, -46.6333], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
+        attribution: 'Â© OpenStreetMap'
     }).addTo(map);
 
     let currentMarker = null;
@@ -447,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnIniciar) {
         btnIniciar.addEventListener('click', function() {
             if (!navigator.geolocation) {
-                alert('Seu navegador não suporta geolocalização.');
+                alert('Seu navegador nÃ£o suporta geolocalizaÃ§Ã£o.');
                 return;
             }
 
@@ -462,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const lng = position.coords.longitude;
                     const speed = position.coords.speed ? (position.coords.speed * 3.6) : 0;
 
-                    statusDiv.innerHTML = `<i class="bi bi-broadcast text-success me-1"></i> Sinal OK — ${new Date().toLocaleTimeString()}`;
+                    statusDiv.innerHTML = `<i class="bi bi-broadcast text-success me-1"></i> Sinal OK â€” ${new Date().toLocaleTimeString()}`;
 
                     if (currentMarker) map.removeLayer(currentMarker);
                     currentMarker = L.marker([lat, lng]).addTo(map)

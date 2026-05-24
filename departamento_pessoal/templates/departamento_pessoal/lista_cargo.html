@@ -1,9 +1,9 @@
-{% extends "departamento_pessoal/_base_dp.html" %}
+﻿{% extends "departamento_pessoal/_base_dp.html" %}
 
 {% block title %}Cargos - Departamento Pessoal{% endblock %}
 
 {% block dp_content %}
-<!-- Header do Módulo -->
+<!-- Header do MÃ³dulo -->
 <div class="module-header d-flex justify-content-between align-items-center flex-wrap">
     <div>
         <h1><i class="bi bi-briefcase-fill me-2"></i>Cargos</h1>
@@ -18,7 +18,7 @@
     </div>
 </div>
 
-<!-- Conteúdo -->
+<!-- ConteÃºdo -->
 <div class="content-card">
     {% if cargos %}
     <div class="table-responsive">
@@ -27,9 +27,9 @@
                 <tr>
                     <th>Cargo</th>
                     <th>CBO</th>
-                    <th class="d-none d-md-table-cell">Descrição</th>
+                    <th class="d-none d-md-table-cell">DescriÃ§Ã£o</th>
                     <th>Status</th>
-                    <th class="text-end">Ações</th>
+                    <th class="text-end">AÃ§Ãµes</th>
                 </tr>
             </thead>
             <tbody>
@@ -68,10 +68,10 @@
         </table>
     </div>
 
-    <!-- Paginação -->
+    <!-- PaginaÃ§Ã£o -->
     {% if is_paginated %}
     <div class="content-card-body border-top">
-        <nav aria-label="Paginação de cargos">
+        <nav aria-label="PaginaÃ§Ã£o de cargos">
             <ul class="pagination justify-content-center mb-0">
                 {% if page_obj.has_previous %}
                 <li class="page-item">
@@ -112,7 +112,7 @@
                     </a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" title="Última">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" title="Ãšltima">
                         <i class="bi bi-chevron-double-right"></i>
                     </a>
                 </li>
@@ -126,8 +126,8 @@
                 {% endif %}
             </ul>
             <p class="text-center text-muted mt-2 mb-0" style="font-size: 0.8rem;">
-                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-                — {{ page_obj.paginator.count }} cargo{{ page_obj.paginator.count|pluralize:"s" }} no total
+                PÃ¡gina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                â€” {{ page_obj.paginator.count }} cargo{{ page_obj.paginator.count|pluralize:"s" }} no total
             </p>
         </nav>
     </div>

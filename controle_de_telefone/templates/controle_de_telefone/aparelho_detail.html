@@ -1,12 +1,12 @@
-
+﻿
 {% extends "controle_de_telefone/_base_telefone.html" %}
 
-{% block title %}Aparelho — {{ aparelho.modelo }}{% endblock %}
+{% block title %}Aparelho â€” {{ aparelho.modelo }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- CABEÇALHO -->
+    <!-- CABEÃ‡ALHO -->
     <header class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-4 pb-3 border-bottom">
         <div class="mb-3 mb-lg-0">
             <nav aria-label="breadcrumb" class="mb-1">
@@ -30,7 +30,7 @@
                 </span>
                 {% if aparelho.status == 'disponivel' %}
                 <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                    <i class="bi bi-check-circle me-1"></i>Disponível
+                    <i class="bi bi-check-circle me-1"></i>DisponÃ­vel
                 </span>
                 {% elif aparelho.status == 'em_uso' %}
                 <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
@@ -38,7 +38,7 @@
                 </span>
                 {% elif aparelho.status == 'manutencao' %}
                 <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
-                    <i class="bi bi-tools me-1"></i>Manutenção
+                    <i class="bi bi-tools me-1"></i>ManutenÃ§Ã£o
                 </span>
                 {% elif aparelho.status == 'descartado' %}
                 <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
@@ -74,11 +74,11 @@
         <!-- COLUNA PRINCIPAL -->
         <div class="col-lg-8">
 
-            <!-- Card: Identificação -->
+            <!-- Card: IdentificaÃ§Ã£o -->
             <div class="card border-0 shadow-sm rounded-3 mb-4">
                 <div class="card-header bg-white border-bottom py-3">
                     <h6 class="fw-bold mb-0">
-                        <i class="bi bi-card-list text-primary me-2"></i>Identificação
+                        <i class="bi bi-card-list text-primary me-2"></i>IdentificaÃ§Ã£o
                     </h6>
                 </div>
                 <div class="card-body">
@@ -93,29 +93,29 @@
                         </div>
                         <div class="col-md-6">
                             <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.5px;">IMEI</small>
-                            <div class="font-monospace text-dark">{{ aparelho.imei|default:"—" }}</div>
+                            <div class="font-monospace text-dark">{{ aparelho.imei|default:"â€”" }}</div>
                         </div>
                         <div class="col-md-6">
-                            <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Nº de Série</small>
-                            <div class="font-monospace text-dark">{{ aparelho.numero_serie|default:"—" }}</div>
+                            <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.5px;">NÂº de SÃ©rie</small>
+                            <div class="font-monospace text-dark">{{ aparelho.numero_serie|default:"â€”" }}</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Card: Aquisição -->
+            <!-- Card: AquisiÃ§Ã£o -->
             {% if aparelho.data_aquisicao or aparelho.valor_aquisicao %}
             <div class="card border-0 shadow-sm rounded-3 mb-4">
                 <div class="card-header bg-white border-bottom py-3">
                     <h6 class="fw-bold mb-0">
-                        <i class="bi bi-bag-check text-success me-2"></i>Aquisição
+                        <i class="bi bi-bag-check text-success me-2"></i>AquisiÃ§Ã£o
                     </h6>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         {% if aparelho.data_aquisicao %}
                         <div class="col-md-6">
-                            <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Data de Aquisição</small>
+                            <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Data de AquisiÃ§Ã£o</small>
                             <div class="fw-semibold text-dark">{{ aparelho.data_aquisicao|date:"d/m/Y" }}</div>
                         </div>
                         {% endif %}
@@ -130,24 +130,24 @@
             </div>
             {% endif %}
 
-            <!-- Card: Acessórios e Observações -->
+            <!-- Card: AcessÃ³rios e ObservaÃ§Ãµes -->
             {% if aparelho.acessorios or aparelho.observacoes %}
             <div class="card border-0 shadow-sm rounded-3 mb-4">
                 <div class="card-header bg-white border-bottom py-3">
                     <h6 class="fw-bold mb-0">
-                        <i class="bi bi-box2 text-secondary me-2"></i>Acessórios & Observações
+                        <i class="bi bi-box2 text-secondary me-2"></i>AcessÃ³rios & ObservaÃ§Ãµes
                     </h6>
                 </div>
                 <div class="card-body">
                     {% if aparelho.acessorios %}
                     <div class="mb-3">
-                        <small class="text-muted d-block text-uppercase fw-semibold mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Acessórios Inclusos</small>
+                        <small class="text-muted d-block text-uppercase fw-semibold mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">AcessÃ³rios Inclusos</small>
                         <div class="text-dark">{{ aparelho.acessorios|linebreaksbr }}</div>
                     </div>
                     {% endif %}
                     {% if aparelho.observacoes %}
                     <div>
-                        <small class="text-muted d-block text-uppercase fw-semibold mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Observações</small>
+                        <small class="text-muted d-block text-uppercase fw-semibold mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">ObservaÃ§Ãµes</small>
                         <div class="text-dark">{{ aparelho.observacoes|linebreaksbr }}</div>
                     </div>
                     {% endif %}
@@ -155,11 +155,11 @@
             </div>
             {% endif %}
 
-            <!-- Card: Histórico de Vínculos -->
+            <!-- Card: HistÃ³rico de VÃ­nculos -->
             <div class="card border-0 shadow-sm rounded-3 mb-4">
                 <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold mb-0">
-                        <i class="bi bi-clock-history text-info me-2"></i>Histórico de Vínculos
+                        <i class="bi bi-clock-history text-info me-2"></i>HistÃ³rico de VÃ­nculos
                     </h6>
                     <span class="badge bg-light text-muted border">
                         {{ aparelho.vinculos.count }} registro{{ aparelho.vinculos.count|pluralize:"s" }}
@@ -174,7 +174,7 @@
                                 <tr class="text-muted" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">
                                     <th class="fw-semibold py-2 px-3">Colaborador</th>
                                     <th class="fw-semibold py-2 px-3 text-center">Entrega</th>
-                                    <th class="fw-semibold py-2 px-3 text-center">Devolução</th>
+                                    <th class="fw-semibold py-2 px-3 text-center">DevoluÃ§Ã£o</th>
                                     <th class="fw-semibold py-2 px-3 text-center">Status</th>
                                     <th class="fw-semibold py-2 px-3 text-end"></th>
                                 </tr>
@@ -186,7 +186,7 @@
                                         <small class="fw-semibold text-dark">{{ v.funcionario.nome_completo|default:v.funcionario }}</small>
                                     </td>
                                     <td class="px-3 text-center">
-                                        <small class="text-dark">{{ v.data_entrega|date:"d/m/Y"|default:"—" }}</small>
+                                        <small class="text-dark">{{ v.data_entrega|date:"d/m/Y"|default:"â€”" }}</small>
                                     </td>
                                     <td class="px-3 text-center">
                                         {% if v.data_devolucao %}
@@ -215,7 +215,7 @@
                     {% else %}
                     <div class="text-center py-4">
                         <i class="bi bi-inbox text-muted" style="font-size: 2rem; opacity: 0.3;"></i>
-                        <div class="text-muted mt-2" style="font-size: 0.85rem;">Nenhum vínculo registrado</div>
+                        <div class="text-muted mt-2" style="font-size: 0.85rem;">Nenhum vÃ­nculo registrado</div>
                     </div>
                     {% endif %}
                     {% endwith %}
@@ -227,12 +227,12 @@
         <!-- COLUNA LATERAL -->
         <div class="col-lg-4">
 
-            <!-- Card: Vínculo Atual -->
+            <!-- Card: VÃ­nculo Atual -->
             {% with vinculo_ativo=aparelho.vinculos.all|dictsort:"status"|first %}
             <div class="card border-0 shadow-sm rounded-3 mb-4">
                 <div class="card-header bg-white border-bottom py-3">
                     <h6 class="fw-bold mb-0">
-                        <i class="bi bi-person-check text-success me-2"></i>Situação Atual
+                        <i class="bi bi-person-check text-success me-2"></i>SituaÃ§Ã£o Atual
                     </h6>
                 </div>
                 <div class="card-body">
@@ -250,7 +250,7 @@
                                 </div>
                             </div>
                             <a href="{% url 'controle_de_telefone:vinculo_detail' v.pk %}" class="btn btn-outline-primary btn-sm w-100">
-                                <i class="bi bi-arrow-up-right me-1"></i>Ver Vínculo
+                                <i class="bi bi-arrow-up-right me-1"></i>Ver VÃ­nculo
                             </a>
                             {% endif %}
                         {% endfor %}
@@ -260,12 +260,12 @@
                              style="width: 56px; height: 56px; background: rgba(28,200,138,0.1);">
                             <i class="bi bi-check-circle text-success" style="font-size: 1.8rem;"></i>
                         </div>
-                        <div class="fw-bold text-dark">Aparelho disponível</div>
+                        <div class="fw-bold text-dark">Aparelho disponÃ­vel</div>
                         <small class="text-muted">Pronto para ser vinculado</small>
                     </div>
                     {% if perms.controle_de_telefone.add_vinculo %}
                     <a href="{% url 'controle_de_telefone:vinculo_create' %}" class="btn btn-primary btn-sm w-100 mt-2">
-                        <i class="bi bi-plus-circle me-1"></i>Criar Vínculo
+                        <i class="bi bi-plus-circle me-1"></i>Criar VÃ­nculo
                     </a>
                     {% endif %}
                     {% endif %}

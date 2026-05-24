@@ -1,4 +1,4 @@
-
+﻿
 {% extends "ltcat/base_ltcat.html" %}
 {% load ltcat_tags %}
 
@@ -11,7 +11,7 @@
 
 {% block ltcat_content %}
 
-<!-- Cabeçalho -->
+<!-- CabeÃ§alho -->
 <div class="page-header mb-4">
     <div class="d-flex justify-content-between align-items-start">
         <div>
@@ -20,7 +20,7 @@
             </h4>
             <p class="mb-0 opacity-75">
                 {{ ltcat.empresa.razao_social }} &bull;
-                Código: {{ ltcat.codigo_documento }} &bull;
+                CÃ³digo: {{ ltcat.codigo_documento }} &bull;
                 Rev. {{ ltcat.versao_atual|stringformat:"02d" }}
             </p>
         </div>
@@ -61,7 +61,7 @@
     <div class="col-md-3">
         <div class="card stats-card info shadow-sm">
             <div class="card-body">
-                <small class="text-muted text-uppercase fw-semibold">Elaboração</small>
+                <small class="text-muted text-uppercase fw-semibold">ElaboraÃ§Ã£o</small>
                 <div class="fs-5 fw-bold mt-1">{{ ltcat.data_elaboracao|date:"d/m/Y" }}</div>
             </div>
         </div>
@@ -83,14 +83,14 @@
     <div class="col-md-3">
         <div class="card stats-card success shadow-sm">
             <div class="card-body">
-                <small class="text-muted text-uppercase fw-semibold">Funções</small>
+                <small class="text-muted text-uppercase fw-semibold">FunÃ§Ãµes</small>
                 <div class="fs-5 fw-bold mt-1">{{ ltcat.funcoes|length }}</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ═══ EMPRESAS: CONTRATADA E CONTRATANTE ═══ -->
+<!-- â•â•â• EMPRESAS: CONTRATADA E CONTRATANTE â•â•â• -->
 <div class="row g-3 mb-4">
 
     <!-- EMPRESA CONTRATADA  -->
@@ -128,17 +128,17 @@
                         <table class="table table-sm table-borderless mt-3 mb-0" style="font-size: 0.88rem;">
                             <tbody>
                                 <tr>
-                                    <td class="text-muted fw-semibold" style="width: 140px;">Razão Social</td>
+                                    <td class="text-muted fw-semibold" style="width: 140px;">RazÃ£o Social</td>
                                     <td class="fw-bold">{{ emp.razao_social }}</td>
                                 </tr>
                                 <tr>
                                     <td class="text-muted fw-semibold">CNPJ</td>
-                                    <td>{{ emp.cnpj|default:"—" }}</td>
+                                    <td>{{ emp.cnpj|default:"â€”" }}</td>
                                 </tr>
                                 <tr>
                                     <td class="text-muted fw-semibold">CNAE</td>
                                     <td>
-                                        {{ emp.cnae|default:"—" }}
+                                        {{ emp.cnae|default:"â€”" }}
                                         {% if emp.descricao_cnae %}
                                             <small class="text-muted d-block">{{ emp.descricao_cnae }}</small>
                                         {% endif %}
@@ -146,22 +146,22 @@
                                 </tr>
                                 <tr>
                                     <td class="text-muted fw-semibold">Grau de Risco</td>
-                                    <td>{{ emp.grau_risco_texto|default:emp.grau_risco|default:"—" }}</td>
+                                    <td>{{ emp.grau_risco_texto|default:emp.grau_risco|default:"â€”" }}</td>
                                 </tr>
                                 <tr>
                                     <td class="text-muted fw-semibold">Atividade</td>
-                                    <td>{{ emp.atividade_principal|default:"—" }}</td>
+                                    <td>{{ emp.atividade_principal|default:"â€”" }}</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted fw-semibold">Nº Empregados</td>
-                                    <td>{{ emp.numero_empregados_texto|default:emp.numero_empregados|default:"—" }}</td>
+                                    <td class="text-muted fw-semibold">NÂº Empregados</td>
+                                    <td>{{ emp.numero_empregados_texto|default:emp.numero_empregados|default:"â€”" }}</td>
                                 </tr>
                                 <tr>
                                     <td class="text-muted fw-semibold">Jornada</td>
-                                    <td>{{ emp.jornada_trabalho|default:"—" }}</td>
+                                    <td>{{ emp.jornada_trabalho|default:"â€”" }}</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted fw-semibold">Endereço</td>
+                                    <td class="text-muted fw-semibold">EndereÃ§o</td>
                                     <td>{{ emp.endereco_completo }}</td>
                                 </tr>
                                 {% if emp.telefone %}
@@ -218,25 +218,25 @@
                         <table class="table table-sm table-borderless mt-3 mb-0" style="font-size: 0.88rem;">
                             <tbody>
                                 <tr>
-                                    <td class="text-muted fw-semibold" style="width: 140px;">Razão Social</td>
+                                    <td class="text-muted fw-semibold" style="width: 140px;">RazÃ£o Social</td>
                                     <td class="fw-bold">{{ cli.razao_social }}</td>
                                 </tr>
                                 <tr>
                                     <td class="text-muted fw-semibold">CNPJ</td>
-                                    <td>{{ cli.cnpj|default:"—" }}</td>
+                                    <td>{{ cli.cnpj|default:"â€”" }}</td>
                                 </tr>
                                 {% if cli.logradouro %}
                                 <tr>
-                                    <td class="text-muted fw-semibold">Endereço</td>
+                                    <td class="text-muted fw-semibold">EndereÃ§o</td>
                                     <td>
                                         {{ cli.logradouro.endereco|default:"" }}
-                                        {% if cli.logradouro.numero %}, nº {{ cli.logradouro.numero }}{% endif %}
+                                        {% if cli.logradouro.numero %}, nÂº {{ cli.logradouro.numero }}{% endif %}
                                         {% if cli.logradouro.complemento %} - {{ cli.logradouro.complemento }}{% endif %}
                                     </td>
                                 </tr>
                                 <tr>
                                     <td class="text-muted fw-semibold">Bairro</td>
-                                    <td>{{ cli.logradouro.bairro|default:"—" }}</td>
+                                    <td>{{ cli.logradouro.bairro|default:"â€”" }}</td>
                                 </tr>
                                 <tr>
                                     <td class="text-muted fw-semibold">Cidade/UF</td>
@@ -244,7 +244,7 @@
                                 </tr>
                                 <tr>
                                     <td class="text-muted fw-semibold">CEP</td>
-                                    <td>{{ cli.logradouro.cep|default:"—" }}</td>
+                                    <td>{{ cli.logradouro.cep|default:"â€”" }}</td>
                                 </tr>
                                 {% endif %}
                                 {% if cli.telefone %}
@@ -265,7 +265,7 @@
                     {% else %}
                         <div class="text-center text-muted py-4 mt-3">
                             <i class="fas fa-hospital fa-2x d-block mb-2 opacity-50"></i>
-                            Empresa contratante não definida.
+                            Empresa contratante nÃ£o definida.
                         </div>
                     {% endif %}
                 </div>
@@ -275,7 +275,7 @@
 
 </div>
 
-<!-- ═══ LOCAIS DE PRESTAÇÃO ═══ -->
+<!-- â•â•â• LOCAIS DE PRESTAÃ‡ÃƒO â•â•â• -->
 {% with doc_locais=ltcat.documento_locais.all %}
 <div class="card shadow-sm mb-4">
     <div class="card-body">
@@ -283,14 +283,14 @@
              data-bs-toggle="collapse" data-bs-target="#secaoLocais">
             <h6 class="fw-bold mb-0">
                 <i class="fas fa-map-marker-alt me-2 text-primary"></i>
-                Locais de Prestação de Serviço
+                Locais de PrestaÃ§Ã£o de ServiÃ§o
                 <span class="badge bg-primary ms-2" id="badgeLocaisCount">{{ doc_locais|length }}</span>
             </h6>
             <i class="fas fa-chevron-down text-muted"></i>
         </div>
 
         <div class="collapse show" id="secaoLocais">
-            <!-- Botão para gerenciar locais -->
+            <!-- BotÃ£o para gerenciar locais -->
             <div class="d-flex justify-content-end mt-3 mb-2">
                 {% if perms.ltcat.add_local or user.is_superuser %}
                 <button type="button" class="btn btn-sm btn-outline-primary"
@@ -308,9 +308,9 @@
                         <tr>
                             <th>Local</th>
                             <th>CNPJ</th>
-                            <th>Endereço</th>
+                            <th>EndereÃ§o</th>
                             <th class="text-center">Principal</th>
-                            <th class="text-center" style="width: 80px;">Ações</th>
+                            <th class="text-center" style="width: 80px;">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody id="tbodyLocais">
@@ -359,7 +359,7 @@
 </div>
 {% endwith %}
 
-<!-- ═══ MODAL: Vincular Locais ao Documento ═══ -->
+<!-- â•â•â• MODAL: Vincular Locais ao Documento â•â•â• -->
 <div class="modal fade" id="modalVincularLocais" tabindex="-1"
      aria-labelledby="modalVincularLocaisLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -367,7 +367,7 @@
             <div class="modal-header" style="background: var(--ltcat-primary, #0d9488); color: white;">
                 <h5 class="modal-title" id="modalVincularLocaisLabel">
                     <i class="fas fa-map-marker-alt me-2"></i>
-                    Vincular Locais de Prestação
+                    Vincular Locais de PrestaÃ§Ã£o
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -385,7 +385,7 @@
                            placeholder="Buscar por nome do local...">
                 </div>
 
-                <!-- Lista de locais disponíveis -->
+                <!-- Lista de locais disponÃ­veis -->
                 <div id="listaLocaisDisponiveis" class="border rounded p-2"
                      style="max-height: 400px; overflow-y: auto;">
                     <div class="text-center py-3">
@@ -397,7 +397,7 @@
                 <div class="mt-2 text-muted small">
                     <i class="fas fa-info-circle me-1"></i>
                     Selecione os locais que deseja vincular a este documento.
-                    Locais já vinculados aparecem desabilitados.
+                    Locais jÃ¡ vinculados aparecem desabilitados.
                 </div>
             </div>
             <div class="modal-footer">
@@ -413,14 +413,14 @@
     </div>
 </div>
 
-<!-- ═══ FUNÇÕES ANALISADAS ═══ -->
+<!-- â•â•â• FUNÃ‡Ã•ES ANALISADAS â•â•â• -->
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <div class="section-header d-flex justify-content-between align-items-center"
              data-bs-toggle="collapse" data-bs-target="#secaoFuncoes">
             <h6 class="fw-bold mb-0">
                 <i class="fas fa-users me-2 text-primary"></i>
-                Funções Analisadas
+                FunÃ§Ãµes Analisadas
                 <span class="badge bg-primary ms-2">{{ funcoes|length }}</span>
             </h6>
             <div class="d-flex align-items-center gap-2">    
@@ -431,7 +431,7 @@
             <div class="d-flex align-items-right justify-content-end gap-2">
                 {% if perms.ltcat.add_funcao or user.is_superuser %}  
                 <a href="{% url 'ltcat:funcao_create' ltcat.pk %}" class="btn btn-sm btn-outline-primary no-print">
-                    <i class="fas fa-plus me-1"></i> Nova Função
+                    <i class="fas fa-plus me-1"></i> Nova FunÃ§Ã£o
                 </a>
                 {% endif %}
             </div> 
@@ -440,11 +440,11 @@
                 <table class="table table-sm table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Função</th>
+                            <th>FunÃ§Ã£o</th>
                             <th>CBO</th>
                             <th>GHE</th>
                             <th>Riscos</th>
-                            <th class="text-end">Ações</th>
+                            <th class="text-end">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -494,8 +494,8 @@
                                                 <th>Agente</th>
                                                 <th>Fonte</th>
                                                 <th>Resultado</th>
-                                                <th>Exposição</th>
-                                                <th class="text-end">Ações</th>
+                                                <th>ExposiÃ§Ã£o</th>
+                                                <th class="text-end">AÃ§Ãµes</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -537,21 +537,21 @@
             {% else %}
             <div class="text-center text-muted py-4 mt-3">
                 <i class="fas fa-users fa-2x d-block mb-2"></i>
-                Nenhuma função cadastrada.
+                Nenhuma funÃ§Ã£o cadastrada.
             </div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<!-- ═══ PERICULOSIDADE ═══ -->
+<!-- â•â•â• PERICULOSIDADE â•â•â• -->
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <div class="section-header d-flex justify-content-between align-items-center"
              data-bs-toggle="collapse" data-bs-target="#secaoPericulosidade">
             <h6 class="fw-bold mb-0">
                 <i class="fas fa-bolt me-2 text-warning"></i>
-                Avaliação de Periculosidade
+                AvaliaÃ§Ã£o de Periculosidade
                 <span class="badge bg-warning text-dark ms-2">{{ periculosidades|length }}</span>
             </h6>
             <div class="d-flex align-items-center gap-2">
@@ -561,7 +561,7 @@
         <div class="collapse show" id="secaoPericulosidade">
             <div class="d-flex align-items-right justify-content-end gap-2">
                 <a href="{% url 'ltcat:periculosidade_create' ltcat.pk %}" class="btn btn-sm btn-outline-warning no-print">
-                    <i class="fas fa-plus me-1"></i> Nova Avaliação
+                    <i class="fas fa-plus me-1"></i> Nova AvaliaÃ§Ã£o
                 </a>
             </div>
             {% if periculosidades %}
@@ -570,9 +570,9 @@
                     <thead class="table-light">
                         <tr>
                             <th>Tipo</th>
-                            <th>Aplicável?</th>
-                            <th>Descrição</th>
-                            <th class="text-end">Ações</th>
+                            <th>AplicÃ¡vel?</th>
+                            <th>DescriÃ§Ã£o</th>
+                            <th class="text-end">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -583,7 +583,7 @@
                                 {% if p.aplicavel %}
                                     <span class="badge bg-danger">Sim</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">Não</span>
+                                    <span class="badge bg-secondary">NÃ£o</span>
                                 {% endif %}
                             </td>
                             <td>{{ p.descricao|truncatechars:80|default:"-" }}</td>
@@ -602,21 +602,21 @@
             </div>
             {% else %}
             <div class="text-center text-muted py-3 mt-3">
-                Nenhuma avaliação de periculosidade cadastrada.
+                Nenhuma avaliaÃ§Ã£o de periculosidade cadastrada.
             </div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<!-- ═══ CONCLUSÕES ═══ -->
+<!-- â•â•â• CONCLUSÃ•ES â•â•â• -->
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <div class="section-header d-flex justify-content-between align-items-center"
              data-bs-toggle="collapse" data-bs-target="#secaoConclusoes">
             <h6 class="fw-bold mb-0">
                 <i class="fas fa-gavel me-2 text-success"></i>
-                Conclusões por Função
+                ConclusÃµes por FunÃ§Ã£o
                 <span class="badge bg-success ms-2">{{ conclusoes|length }}</span>
             </h6>
             <div class="d-flex align-items-center gap-2">
@@ -627,7 +627,7 @@
             <div class="d-flex align-items-right justify-content-end gap-2">
                 {% if perms.ltcat.add_conclusao or user.is_superuser %}
                 <a href="{% url 'ltcat:conclusao_create' ltcat.pk %}" class="btn btn-sm btn-outline-success no-print">
-                    <i class="fas fa-plus me-1"></i> Nova Conclusão
+                    <i class="fas fa-plus me-1"></i> Nova ConclusÃ£o
                 </a>
                 {% endif %}
             </div>
@@ -636,13 +636,13 @@
                 <table class="table table-sm table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Função</th>
-                            <th>Conclusão</th>
+                            <th>FunÃ§Ã£o</th>
+                            <th>ConclusÃ£o</th>
                             <th>GFIP</th>
                             <th class="text-center">Insalub.</th>
                             <th class="text-center">Pericul.</th>
                             <th class="text-center">Apos. Esp.</th>
-                            <th class="text-end">Ações</th>
+                            <th class="text-end">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -677,20 +677,20 @@
                 </table>
             </div>
             {% else %}
-            <div class="text-center text-muted py-3 mt-3">Nenhuma conclusão cadastrada.</div>
+            <div class="text-center text-muted py-3 mt-3">Nenhuma conclusÃ£o cadastrada.</div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<!-- ═══ RECOMENDAÇÕES ═══ -->
+<!-- â•â•â• RECOMENDAÃ‡Ã•ES â•â•â• -->
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <div class="section-header d-flex justify-content-between align-items-center"
              data-bs-toggle="collapse" data-bs-target="#secaoRecomendacoes">
             <h6 class="fw-bold mb-0">
                 <i class="fas fa-lightbulb me-2 text-info"></i>
-                Recomendações Técnicas
+                RecomendaÃ§Ãµes TÃ©cnicas
                 <span class="badge bg-info ms-2">{{ recomendacoes|length }}</span>
             </h6>
             <div class="d-flex align-items-center gap-2">
@@ -701,7 +701,7 @@
             <div class="d-flex align-items-rigth justify-content-end gap-2">
                 {% if perms.ltcat.add_recomendacao or user.is_superuser %}
                 <a href="{% url 'ltcat:recomendacao_create' ltcat.pk %}" class="btn btn-sm btn-outline-info no-print">
-                    <i class="fas fa-plus me-1"></i> Nova Recomendação
+                    <i class="fas fa-plus me-1"></i> Nova RecomendaÃ§Ã£o
                 </a>
                 {% endif %}
             </div>
@@ -711,10 +711,10 @@
                     <thead class="table-light">
                         <tr>
                             <th>#</th>
-                            <th>Descrição</th>
+                            <th>DescriÃ§Ã£o</th>
                             <th>Prioridade</th>
                             <th>Implementada</th>
-                            <th class="text-end">Ações</th>
+                            <th class="text-end">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -749,20 +749,20 @@
                 </table>
             </div>
             {% else %}
-            <div class="text-center text-muted py-3 mt-3">Nenhuma recomendação cadastrada.</div>
+            <div class="text-center text-muted py-3 mt-3">Nenhuma recomendaÃ§Ã£o cadastrada.</div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<!-- ═══ REVISÕES ═══ -->
+<!-- â•â•â• REVISÃ•ES â•â•â• -->
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <div class="section-header d-flex justify-content-between align-items-center"
              data-bs-toggle="collapse" data-bs-target="#secaoRevisoes">
             <h6 class="fw-bold mb-0">
                 <i class="fas fa-history me-2 text-secondary"></i>
-                Revisões
+                RevisÃµes
                 <span class="badge bg-secondary ms-2">{{ revisoes|length }}</span>
             </h6>
             <div class="d-flex align-items-center gap-2">
@@ -773,7 +773,7 @@
             <div class="d-flex align-items-right justify-content-end gap-2">
                 {% if perms.ltcat.add_revisao or user.is_superuser %}
                 <a href="{% url 'ltcat:revisao_create' ltcat.pk %}" class="btn btn-sm btn-outline-secondary no-print">
-                    <i class="fas fa-plus me-1"></i> Nova Revisão
+                    <i class="fas fa-plus me-1"></i> Nova RevisÃ£o
                 </a>
                 {% endif %}
             </div>
@@ -782,11 +782,11 @@
                 <table class="table table-sm table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Revisão</th>
-                            <th>Descrição</th>
+                            <th>RevisÃ£o</th>
+                            <th>DescriÃ§Ã£o</th>
                             <th>Data</th>
-                            <th>Responsável</th>
-                            <th class="text-end">Ações</th>
+                            <th>ResponsÃ¡vel</th>
+                            <th class="text-end">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -818,13 +818,13 @@
                 </table>
             </div>
             {% else %}
-            <div class="text-center text-muted py-3 mt-3">Nenhuma revisão cadastrada.</div>
+            <div class="text-center text-muted py-3 mt-3">Nenhuma revisÃ£o cadastrada.</div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<!-- ═══ ANEXOS ═══ -->
+<!-- â•â•â• ANEXOS â•â•â• -->
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <div class="section-header d-flex justify-content-between align-items-center"
@@ -854,7 +854,7 @@
                             <th>Anexo</th>
                             <th>Tipo</th>
                             <th>Tamanho</th>
-                            <th class="text-end">Ações</th>
+                            <th class="text-end">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -888,16 +888,16 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- RESPONSÁVEIS PELA ELABORAÇÃO                                   -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- RESPONSÃVEIS PELA ELABORAÃ‡ÃƒO                                   -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <div class="section-header d-flex justify-content-between align-items-center"
              data-bs-toggle="collapse" data-bs-target="#secaoResponsaveis">
             <h6 class="fw-bold mb-0">
                 <i class="fas fa-user-tie me-2 text-info"></i>
-                Responsáveis pela Elaboração
+                ResponsÃ¡veis pela ElaboraÃ§Ã£o
                 <span class="badge bg-info ms-2" id="badgeResponsaveisCount">
                     {{ responsaveis_doc|length }}
                 </span>
@@ -907,17 +907,17 @@
 
         <div class="collapse show" id="secaoResponsaveis">
 
-            <!-- Botão vincular -->
+            <!-- BotÃ£o vincular -->
             <div class="d-flex justify-content-end mt-3 mb-2 no-print">
                 {% if perms.ltcat.add_responsavel or user.is_superuser %}
                 <button type="button" class="btn btn-sm btn-outline-info"
                         data-bs-toggle="modal" data-bs-target="#modalVincularResponsavel">
-                    <i class="fas fa-user-plus me-1"></i> Vincular Responsável
+                    <i class="fas fa-user-plus me-1"></i> Vincular ResponsÃ¡vel
                 </button>
                 {% endif %}
             </div>
 
-            <!-- Cards dos responsáveis -->
+            <!-- Cards dos responsÃ¡veis -->
             <div id="responsaveisContainer">
                 {% if responsaveis_doc %}
                     {% for resp in responsaveis_doc %}
@@ -939,7 +939,7 @@
                                         <i class="fas fa-id-badge me-1"></i>
                                         {{ resp.profissional.registro_classe }}
                                         {% if resp.profissional.orgao_classe %}
-                                            — {{ resp.profissional.orgao_classe }}
+                                            â€” {{ resp.profissional.orgao_classe }}
                                         {% endif %}
                                     </p>
                                     <span class="badge bg-info bg-opacity-10 text-info small">
@@ -986,14 +986,14 @@
                                     </div>
                                 </div>
 
-                                <!-- Ações -->
+                                <!-- AÃ§Ãµes -->
                                 <div class="col-md-3 text-end no-print">
                                     {% if perms.ltcat.change_responsavel or user.is_superuser %}
                                     <button type="button"
                                             class="btn btn-sm btn-outline-danger btn-desvincular-resp"
                                             data-vinculo-id="{{ resp.pk }}"
                                             data-nome="{{ resp.profissional.nome_completo }}"
-                                            title="Desvincular responsável">
+                                            title="Desvincular responsÃ¡vel">
                                         <i class="fas fa-unlink me-1"></i> Desvincular
                                     </button>
                                     {% endif %}
@@ -1005,9 +1005,9 @@
                 {% else %}
                     <div class="text-center py-4" id="responsaveisVazio">
                         <i class="fas fa-user-tie fa-2x text-muted mb-2 d-block"></i>
-                        <p class="text-muted mb-0">Nenhum responsável vinculado a este documento.</p>
+                        <p class="text-muted mb-0">Nenhum responsÃ¡vel vinculado a este documento.</p>
                         <small class="text-muted">
-                            Clique em "Vincular Responsável" para adicionar.
+                            Clique em "Vincular ResponsÃ¡vel" para adicionar.
                         </small>
                     </div>
                 {% endif %}
@@ -1016,33 +1016,33 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- MODAL: Vincular Responsável (Select de Funcionário)            -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- MODAL: Vincular ResponsÃ¡vel (Select de FuncionÃ¡rio)            -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="modal fade" id="modalVincularResponsavel" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header" style="background: var(--ltcat-primary, #0d9488); color: white;">
                 <h5 class="modal-title">
-                    <i class="fas fa-user-plus me-2"></i> Vincular Responsável
+                    <i class="fas fa-user-plus me-2"></i> Vincular ResponsÃ¡vel
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
 
-                <!-- Busca de funcionário -->
+                <!-- Busca de funcionÃ¡rio -->
                 <div class="mb-3">
                     <label for="buscaFuncionarioResp" class="form-label fw-semibold">
-                        <i class="fas fa-search me-1"></i> Buscar Funcionário
+                        <i class="fas fa-search me-1"></i> Buscar FuncionÃ¡rio
                     </label>
                     <input type="text" id="buscaFuncionarioResp" class="form-control"
-                           placeholder="Digite o nome do funcionário..." autocomplete="off">
+                           placeholder="Digite o nome do funcionÃ¡rio..." autocomplete="off">
                 </div>
 
                 <!-- Select -->
                 <div class="mb-3">
                     <label for="selectFuncionarioResp" class="form-label fw-semibold">
-                        Funcionário
+                        FuncionÃ¡rio
                     </label>
                     <select id="selectFuncionarioResp" class="form-select" size="6"
                             style="overflow-y: auto;">
@@ -1051,32 +1051,32 @@
                                 data-nome="{{ func.nome_completo }}"
                                 data-cargo="{{ func.cargo|default:'' }}">
                             {{ func.nome_completo }}
-                            {% if func.cargo %} — {{ func.cargo }}{% endif %}
+                            {% if func.cargo %} â€” {{ func.cargo }}{% endif %}
                         </option>
                         {% endfor %}
                     </select>
                     <small class="text-muted">
-                        {{ funcionarios_disponiveis|length }} funcionário(s) ativo(s)
+                        {{ funcionarios_disponiveis|length }} funcionÃ¡rio(s) ativo(s)
                     </small>
                 </div>
 
                 <hr>
 
-                <!-- Dados profissionais (preenchimento obrigatório) -->
+                <!-- Dados profissionais (preenchimento obrigatÃ³rio) -->
                 <div id="dadosProfissionaisResp" class="border rounded p-3 bg-light">
                     <h6 class="fw-semibold mb-3">
                         <i class="fas fa-id-card me-1 text-info"></i>
                         Dados Profissionais
-                        <small class="text-muted">(obrigatório para o LTCAT)</small>
+                        <small class="text-muted">(obrigatÃ³rio para o LTCAT)</small>
                     </h6>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="funcaoProfResp" class="form-label fw-semibold">
-                                Função/Especialidade *
+                                FunÃ§Ã£o/Especialidade *
                             </label>
                             <input type="text" id="funcaoProfResp" class="form-control"
-                                   placeholder="Ex: Engenheiro de Segurança do Trabalho">
+                                   placeholder="Ex: Engenheiro de SeguranÃ§a do Trabalho">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="registroClasseResp" class="form-label fw-semibold">
@@ -1089,7 +1089,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="orgaoClasseResp" class="form-label fw-semibold">
-                                Órgão de Classe
+                                Ã“rgÃ£o de Classe
                             </label>
                             <input type="text" id="orgaoClasseResp" class="form-control"
                                    placeholder="Ex: CREA-MG, CRM-SP">
@@ -1106,11 +1106,11 @@
                         </div>
                     </div>
 
-                    <!-- Indicador se já tem dados cadastrados -->
+                    <!-- Indicador se jÃ¡ tem dados cadastrados -->
                     <div id="profJaCadastrado" class="alert alert-success py-2 d-none">
                         <i class="fas fa-check-circle me-1"></i>
-                        Este funcionário já possui dados profissionais cadastrados.
-                        Os campos foram preenchidos automaticamente. Altere se necessário.
+                        Este funcionÃ¡rio jÃ¡ possui dados profissionais cadastrados.
+                        Os campos foram preenchidos automaticamente. Altere se necessÃ¡rio.
                     </div>
                 </div>
             </div>
@@ -1121,7 +1121,7 @@
                 </button>
                 {% if perms.ltcat.add_responsavel or user.is_superuser %}
                 <button type="button" class="btn btn-info text-white" id="btnConfirmarVincularResp" disabled>
-                    <i class="fas fa-link me-1"></i> Vincular Responsável
+                    <i class="fas fa-link me-1"></i> Vincular ResponsÃ¡vel
                 </button>
                 {% endif %}
 
@@ -1130,23 +1130,23 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <!-- MODAL: Assinatura Digital (Canvas)                             -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="modal fade" id="modalAssinatura" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header" style="background: var(--ltcat-primary, #0d9488); color: white;">
                 <h5 class="modal-title">
                     <i class="fas fa-pen-nib me-2"></i>
-                    Assinatura Digital — <span id="nomeAssinante"></span>
+                    Assinatura Digital â€” <span id="nomeAssinante"></span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
                 <p class="text-muted small mb-2">
                     Assine abaixo usando o mouse ou o dedo (tela touch).
-                    A assinatura será salva como imagem do profissional.
+                    A assinatura serÃ¡ salva como imagem do profissional.
                 </p>
 
                 <!-- Canvas -->
@@ -1167,11 +1167,11 @@
                         <i class="fas fa-eraser me-1"></i> Limpar
                     </button>
                     <button type="button" class="btn btn-outline-dark btn-sm active" id="btnPenFina"
-                            title="Traço fino">
+                            title="TraÃ§o fino">
                         <i class="fas fa-pen me-1"></i> Fina
                     </button>
                     <button type="button" class="btn btn-outline-dark btn-sm" id="btnPenGrossa"
-                            title="Traço grosso">
+                            title="TraÃ§o grosso">
                         <i class="fas fa-marker me-1"></i> Grossa
                     </button>
                 </div>
@@ -1191,7 +1191,7 @@
 </div>
 
 
-<!-- ═══ CONTEÚDO DO LAUDO ═══ -->
+<!-- â•â•â• CONTEÃšDO DO LAUDO â•â•â• -->
 {% if ltcat.objetivo or ltcat.condicoes_preliminares or ltcat.avaliacao_periculosidade_texto or ltcat.referencias_bibliograficas %}
 <div class="card shadow-sm mb-4">
     <div class="card-body">
@@ -1199,7 +1199,7 @@
              data-bs-toggle="collapse" data-bs-target="#secaoConteudo">
             <h6 class="fw-bold mb-0">
                 <i class="fas fa-file-alt me-2 text-primary"></i>
-                Conteúdo do Laudo
+                ConteÃºdo do Laudo
             </h6>
             <i class="fas fa-chevron-down text-muted"></i>
         </div>
@@ -1212,19 +1212,19 @@
             {% endif %}
             {% if ltcat.condicoes_preliminares %}
             <div class="mt-3">
-                <strong>Condições Preliminares:</strong>
+                <strong>CondiÃ§Ãµes Preliminares:</strong>
                 <p class="mt-1">{{ ltcat.condicoes_preliminares|linebreaksbr }}</p>
             </div>
             {% endif %}
             {% if ltcat.avaliacao_periculosidade_texto %}
             <div class="mt-3">
-                <strong>Avaliação de Periculosidade:</strong>
+                <strong>AvaliaÃ§Ã£o de Periculosidade:</strong>
                 <p class="mt-1">{{ ltcat.avaliacao_periculosidade_texto|linebreaksbr }}</p>
             </div>
             {% endif %}
             {% if ltcat.referencias_bibliograficas %}
             <div class="mt-3">
-                <strong>Referências Bibliográficas:</strong>
+                <strong>ReferÃªncias BibliogrÃ¡ficas:</strong>
                 <p class="mt-1">{{ ltcat.referencias_bibliograficas|linebreaksbr }}</p>
             </div>
             {% endif %}
@@ -1237,18 +1237,18 @@
 {% block ltcat_extra_js %}
 <script>
 (function() {
-    // ═══════════════════════════════════════════════════════════════
-    // FIX CRÍTICO: Impedir que o collapse do Bootstrap engula
-    // cliques nos botões/links dentro dos section-headers
-    // ═══════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // FIX CRÃTICO: Impedir que o collapse do Bootstrap engula
+    // cliques nos botÃµes/links dentro dos section-headers
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     document.querySelectorAll('.section-header a, .section-header button').forEach(function(el) {
         el.addEventListener('click', function(e) {
             e.stopPropagation();
-        }, true); // ← "true" = fase de CAPTURA (roda ANTES do Bootstrap)
+        }, true); // â† "true" = fase de CAPTURA (roda ANTES do Bootstrap)
     });
 
-    // Para os botões que usam onclick com window.location.href,
-    // garantir que também funcione via mousedown como fallback
+    // Para os botÃµes que usam onclick com window.location.href,
+    // garantir que tambÃ©m funcione via mousedown como fallback
     document.querySelectorAll('.section-header [onclick]').forEach(function(el) {
         el.addEventListener('mousedown', function(e) {
             e.stopPropagation();
@@ -1259,7 +1259,7 @@
     const EMPRESA_ID = {{ ltcat.empresa_id }};
     const CSRF = '{{ csrf_token }}';
 
-    // ——— Carregar locais disponíveis no modal ————————————
+    // â€”â€”â€” Carregar locais disponÃ­veis no modal â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
     const modal = document.getElementById('modalVincularLocais');
     if (modal) {
         modal.addEventListener('show.bs.modal', carregarLocaisDisponiveis);
@@ -1307,7 +1307,7 @@
                             <label class="form-check-label w-100 ${jaVinculado ? 'text-muted' : ''}"
                                    for="local_${loc.id}">
                                 <strong>${loc.nome}</strong>
-                                ${jaVinculado ? '<span class="badge bg-secondary ms-2">Já vinculado</span>' : ''}
+                                ${jaVinculado ? '<span class="badge bg-secondary ms-2">JÃ¡ vinculado</span>' : ''}
                             </label>
                         </div>`;
                 });
@@ -1325,7 +1325,7 @@
             });
     }
 
-    // ——— Busca/filtro no modal ————————————————————————————————
+    // â€”â€”â€” Busca/filtro no modal â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
     document.getElementById('buscaLocalVincular')?.addEventListener('input', function() {
         const termo = this.value.toLowerCase();
         document.querySelectorAll('.local-item').forEach(item => {
@@ -1334,7 +1334,7 @@
         });
     });
 
-    // ——— Contador de selecionados ——————————————————————————————
+    // â€”â€”â€” Contador de selecionados â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
     document.getElementById('listaLocaisDisponiveis')?.addEventListener('change', function(e) {
         if (e.target.classList.contains('chk-local')) {
             atualizarContadorSelecionados();
@@ -1350,7 +1350,7 @@
         if (btn) btn.disabled = count === 0;
     }
 
-    // ——— Confirmar vinculação ——————————————————————————————————
+    // â€”â€”â€” Confirmar vinculaÃ§Ã£o â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
     document.getElementById('btnConfirmarVincular')?.addEventListener('click', function() {
         const checks = document.querySelectorAll('.chk-local:checked:not(:disabled)');
         const localIds = Array.from(checks).map(c => parseInt(c.value));
@@ -1380,13 +1380,13 @@
         })
         .catch(err => {
             console.error(err);
-            alert('Erro de conexão.');
+            alert('Erro de conexÃ£o.');
             this.disabled = false;
             this.innerHTML = '<i class="fas fa-link me-1"></i> Vincular Selecionados (<span id="countSelecionados">0</span>)';
         });
     });
 
-    // ——— Desvincular local —————————————————————————————————————
+    // â€”â€”â€” Desvincular local â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
     document.querySelectorAll('.btn-desvincular-local').forEach(btn => {
         btn.addEventListener('click', function() {
             const vinculoId = this.dataset.vinculoId;
@@ -1417,12 +1417,12 @@
             })
             .catch(err => {
                 console.error(err);
-                alert('Erro de conexão.');
+                alert('Erro de conexÃ£o.');
             });
         });
     });
 
-    // ——— Toggle Principal ——————————————————————————————————————
+    // â€”â€”â€” Toggle Principal â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
     document.querySelectorAll('.btn-toggle-principal').forEach(btn => {
         btn.addEventListener('click', function() {
             const vinculoId = this.dataset.vinculoId;
@@ -1441,14 +1441,14 @@
             })
             .catch(err => {
                 console.error(err);
-                alert('Erro de conexão.');
+                alert('Erro de conexÃ£o.');
             });
         });
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // RESPONSÁVEIS — Vincular
-    // ═══════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // RESPONSÃVEIS â€” Vincular
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     document.getElementById('btnConfirmarVincularResp')?.addEventListener('click', function() {
         const profId = document.getElementById('selectProfissional').value;
         const tipo = document.getElementById('selectTipoResp').value;
@@ -1478,15 +1478,15 @@
         })
         .catch(err => {
             console.error(err);
-            alert('Erro de conexão.');
+            alert('Erro de conexÃ£o.');
             this.disabled = false;
             this.innerHTML = '<i class="fas fa-link me-1"></i> Vincular';
         });
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // RESPONSÁVEIS — Desvincular
-    // ═══════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // RESPONSÃVEIS â€” Desvincular
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     document.querySelectorAll('.btn-desvincular-resp').forEach(btn => {
         btn.addEventListener('click', function() {
             const vinculoId = this.dataset.vinculoId;
@@ -1508,13 +1508,13 @@
                     alert(data.error || 'Erro ao desvincular.');
                 }
             })
-            .catch(err => { console.error(err); alert('Erro de conexão.'); });
+            .catch(err => { console.error(err); alert('Erro de conexÃ£o.'); });
         });
     });
 
-        // ═══════════════════════════════════════════════════════════════
-    // RESPONSÁVEIS — Busca/Filtro no select de funcionários
-    // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // RESPONSÃVEIS â€” Busca/Filtro no select de funcionÃ¡rios
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     const buscaFunc = document.getElementById('buscaFuncionarioResp');
     const selectFunc = document.getElementById('selectFuncionarioResp');
 
@@ -1528,7 +1528,7 @@
             });
         });
 
-        // Ao selecionar funcionário → buscar dados profissionais existentes
+        // Ao selecionar funcionÃ¡rio â†’ buscar dados profissionais existentes
         selectFunc.addEventListener('change', function() {
             const funcId = this.value;
             const btnVincular = document.getElementById('btnConfirmarVincularResp');
@@ -1540,7 +1540,7 @@
             }
             if (btnVincular) btnVincular.disabled = false;
 
-            // Busca se já tem ProfissionalResponsavelLTCAT
+            // Busca se jÃ¡ tem ProfissionalResponsavelLTCAT
             fetch(`/ltcat/api/profissional-por-funcionario/?funcionario_id=${funcId}`)
             .then(r => r.json())
             .then(data => {
@@ -1563,9 +1563,9 @@
         });
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // RESPONSÁVEIS — Vincular
-    // ═══════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // RESPONSÃVEIS â€” Vincular
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     document.getElementById('btnConfirmarVincularResp')?.addEventListener('click', function() {
         const funcId = document.getElementById('selectFuncionarioResp')?.value;
         const tipo = document.getElementById('tipoRespSelect')?.value || 'elaborador';
@@ -1573,8 +1573,8 @@
         const registro = document.getElementById('registroClasseResp')?.value.trim();
         const orgao = document.getElementById('orgaoClasseResp')?.value.trim();
 
-        if (!funcId) { alert('Selecione um funcionário.'); return; }
-        if (!funcaoProf) { alert('Informe a função profissional.'); return; }
+        if (!funcId) { alert('Selecione um funcionÃ¡rio.'); return; }
+        if (!funcaoProf) { alert('Informe a funÃ§Ã£o profissional.'); return; }
         if (!registro) { alert('Informe o registro de classe.'); return; }
 
         this.disabled = true;
@@ -1608,15 +1608,15 @@
         })
         .catch(err => {
             console.error(err);
-            alert('Erro de conexão.');
+            alert('Erro de conexÃ£o.');
             this.disabled = false;
             this.innerHTML = btnOriginal;
         });
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // RESPONSÁVEIS — Desvincular
-    // ═══════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // RESPONSÃVEIS â€” Desvincular
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     document.querySelectorAll('.btn-desvincular-resp').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -1641,13 +1641,13 @@
                     alert(data.error || 'Erro ao desvincular.');
                 }
             })
-            .catch(err => { console.error(err); alert('Erro de conexão.'); });
+            .catch(err => { console.error(err); alert('Erro de conexÃ£o.'); });
         });
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // ASSINATURA DIGITAL — Canvas
-    // ═══════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ASSINATURA DIGITAL â€” Canvas
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     const canvas = document.getElementById('canvasAssinatura');
     const ctx2d = canvas ? canvas.getContext('2d') : null;
     let isDrawing = false;
@@ -1726,7 +1726,7 @@
         document.getElementById('btnPenFina')?.classList.remove('active');
     });
 
-    // ═══ Abrir modal de assinatura ═══
+    // â•â•â• Abrir modal de assinatura â•â•â•
     document.querySelectorAll('.btn-abrir-assinatura').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -1739,7 +1739,7 @@
         });
     });
 
-    // ═══ Salvar assinatura ═══
+    // â•â•â• Salvar assinatura â•â•â•
     document.getElementById('btnSalvarAssinatura')?.addEventListener('click', function() {
         const profId = document.getElementById('assinaturaProfissionalId').value;
         if (!profId) return;
@@ -1749,7 +1749,7 @@
         blank.width = canvas.width;
         blank.height = canvas.height;
         if (canvas.toDataURL() === blank.toDataURL()) {
-            alert('Por favor, faça a assinatura antes de salvar.');
+            alert('Por favor, faÃ§a a assinatura antes de salvar.');
             return;
         }
 
@@ -1777,13 +1777,13 @@
         })
         .catch(err => {
             console.error(err);
-            alert('Erro de conexão.');
+            alert('Erro de conexÃ£o.');
             this.disabled = false;
             this.innerHTML = btnOrig;
         });
     });
 
-    // ═══ Limpar assinatura existente ═══
+    // â•â•â• Limpar assinatura existente â•â•â•
     document.querySelectorAll('.btn-limpar-assinatura').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -1799,7 +1799,7 @@
                 if (data.success) location.reload();
                 else alert(data.error || 'Erro ao remover.');
             })
-            .catch(err => { console.error(err); alert('Erro de conexão.'); });
+            .catch(err => { console.error(err); alert('Erro de conexÃ£o.'); });
         });
     });
 

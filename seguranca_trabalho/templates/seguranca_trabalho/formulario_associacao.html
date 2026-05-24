@@ -1,15 +1,15 @@
-{% extends "seguranca_trabalho/_base_sst.html" %}
+﻿{% extends "seguranca_trabalho/_base_sst.html" %}
 {% load widget_tweaks %}
 
-{% block title %}Nova Associação Cargo × Função{% endblock %}
+{% block title %}Nova AssociaÃ§Ã£o Cargo Ã— FunÃ§Ã£o{% endblock %}
 
 {% block sst_content %}
 
 <div class="sst-page-header">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h4><i class="bi bi-link-45deg me-2"></i>Nova Associação</h4>
-            <span class="sst-page-subtitle">Vincule um cargo a uma função</span>
+            <h4><i class="bi bi-link-45deg me-2"></i>Nova AssociaÃ§Ã£o</h4>
+            <span class="sst-page-subtitle">Vincule um cargo a uma funÃ§Ã£o</span>
         </div>
         <a href="{% url 'seguranca_trabalho:lista_associacoes' %}" class="sst-btn-header">
             <i class="bi bi-arrow-left"></i> Voltar
@@ -22,7 +22,7 @@
         <div class="sst-card">
             <div class="sst-card-header">
                 <i class="bi bi-diagram-3"></i>
-                <h6>Dados da Associação</h6>
+                <h6>Dados da AssociaÃ§Ã£o</h6>
             </div>
             <form method="post" novalidate id="assocForm">
                 {% csrf_token %}
@@ -47,7 +47,7 @@
 
                     <div class="mb-4">
                         <label for="{{ form.funcao.id_for_label }}" class="sst-form-label">
-                            Função <span class="required">*</span>
+                            FunÃ§Ã£o <span class="required">*</span>
                         </label>
                         {% render_field form.funcao class+="form-select" %}
                         {% for error in form.funcao.errors %}
@@ -58,8 +58,8 @@
                     <div class="sst-alert sst-alert--info">
                         <i class="bi bi-info-circle-fill"></i>
                         <small>
-                            Ao associar um cargo a uma função, os EPIs definidos na Matriz
-                            para essa função serão aplicados aos funcionários com esse cargo.
+                            Ao associar um cargo a uma funÃ§Ã£o, os EPIs definidos na Matriz
+                            para essa funÃ§Ã£o serÃ£o aplicados aos funcionÃ¡rios com esse cargo.
                         </small>
                     </div>
                 </div>
@@ -70,7 +70,7 @@
                     </a>
                     {% if perms.seguranca_trabalho.add_associacoes or user.is_superuser %}
                     <button type="submit" class="sst-btn-primary">
-                        <i class="bi bi-check-lg"></i> Criar Associação
+                        <i class="bi bi-check-lg"></i> Criar AssociaÃ§Ã£o
                     </button>
                     {% endif %}
                 </div>

@@ -1,4 +1,4 @@
-
+﻿
 <!-- templates/tarefas/emails/email_tarefa_participante.html -->
 {% extends 'tarefas/emails/_email_base.html' %}
 
@@ -10,7 +10,7 @@
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 12px auto;">
     <tr>
         <td style="width:48px; height:48px; background:rgba(255,255,255,0.2); border-radius:50%; text-align:center; line-height:48px;">
-            <span style="font-size:22px;">👥</span>
+            <span style="font-size:22px;">ðŸ‘¥</span>
         </td>
     </tr>
 </table>
@@ -20,21 +20,21 @@
 
 {% block header_subtitle %}
 <p style="margin:8px 0 0; font-size:13px; color:rgba(255,255,255,0.85);">
-    Você foi incluído em uma tarefa existente
+    VocÃª foi incluÃ­do em uma tarefa existente
 </p>
 {% endblock %}
 
 {% block email_body %}
 <!-- Greeting -->
 <p style="margin:0 0 20px; font-size:15px; color:#1a1a2e; line-height:1.5;">
-    Olá,
+    OlÃ¡,
 </p>
 
 <p style="margin:0 0 24px; font-size:14px; color:#3a3f55; line-height:1.6;">
     {% if adicionado_por %}
-    <strong>{{ adicionado_por.get_full_name|default:adicionado_por.username }}</strong> adicionou você como participante na tarefa abaixo.
+    <strong>{{ adicionado_por.get_full_name|default:adicionado_por.username }}</strong> adicionou vocÃª como participante na tarefa abaixo.
     {% else %}
-    Você foi adicionado como participante na tarefa abaixo.
+    VocÃª foi adicionado como participante na tarefa abaixo.
     {% endif %}
 </p>
 
@@ -43,7 +43,7 @@
     <tr>
         <td style="background:#f0f9ff; border:1px solid #bae6fd; border-left:4px solid #0ea5e9; border-radius:8px; padding:16px 20px;">
             <p style="margin:0; font-size:13px; color:#0c4a6e; line-height:1.5;">
-                👥 Como participante, você receberá notificações sobre atualizações de status, comentários e alterações nesta tarefa.
+                ðŸ‘¥ Como participante, vocÃª receberÃ¡ notificaÃ§Ãµes sobre atualizaÃ§Ãµes de status, comentÃ¡rios e alteraÃ§Ãµes nesta tarefa.
             </p>
         </td>
     </tr>
@@ -79,10 +79,10 @@
 
     <tr>
         <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
-            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Responsável</p>
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">ResponsÃ¡vel</p>
             <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
                 {% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}
-                {% else %}Não atribuído{% endif %}
+                {% else %}NÃ£o atribuÃ­do{% endif %}
             </p>
         </td>
         <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
@@ -98,7 +98,7 @@
         <td colspan="2" style="padding:12px 20px; border-bottom:1px solid #edf0f5;">
             <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Prazo</p>
             <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
-                📅 {{ tarefa.prazo|date:"d/m/Y H:i" }}
+                ðŸ“… {{ tarefa.prazo|date:"d/m/Y H:i" }}
             </p>
         </td>
     </tr>
@@ -109,7 +109,7 @@
         <td colspan="2" style="padding:12px 20px; border-bottom:1px solid #edf0f5;">
             <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Projeto</p>
             <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
-                📁 {{ tarefa.projeto }}
+                ðŸ“ {{ tarefa.projeto }}
             </p>
         </td>
     </tr>
@@ -118,7 +118,7 @@
     {% if tarefa.descricao %}
     <tr>
         <td colspan="2" style="padding:12px 20px;">
-            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Descrição</p>
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">DescriÃ§Ã£o</p>
             <p style="margin:0; font-size:13px; color:#3a3f55; line-height:1.5;">
                 {{ tarefa.descricao|truncatewords:50 }}
             </p>
@@ -134,7 +134,7 @@
         <td style="background-color:#0ea5e9; border-radius:8px;">
             <a href="{{ tarefa_url }}"
                style="display:inline-block; padding:14px 32px; font-size:14px; font-weight:700; color:#ffffff; text-decoration:none; letter-spacing:0.02em;">
-                Ver Tarefa →
+                Ver Tarefa â†’
             </a>
         </td>
     </tr>

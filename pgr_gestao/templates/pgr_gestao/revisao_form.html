@@ -1,14 +1,14 @@
-{# Nova Revisão / Editar Revisão #}
+﻿{# Nova RevisÃ£o / Editar RevisÃ£o #}
 {% extends "pgr_gestao/pgr_base.html" %}
 {% load crispy_forms_tags %}
 
-{% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Revisão - PGR{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} RevisÃ£o - PGR{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item">
     <a href="{% url 'pgr_gestao:documento_detail' pgr_documento.pk %}">{{ pgr_documento.codigo_documento|default:"Documento" }}</a>
 </li>
-<li class="breadcrumb-item active">{% if form.instance.pk %}Editar Revisão{% else %}Nova Revisão{% endif %}</li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar RevisÃ£o{% else %}Nova RevisÃ£o{% endif %}</li>
 {% endblock %}
 
 {% block pgr_content %}
@@ -17,7 +17,7 @@
         <div>
             <h1>
                 <i class="bi bi-clock-history"></i>
-                {% if form.instance.pk %}Editar Revisão{% else %}Nova Revisão{% endif %}
+                {% if form.instance.pk %}Editar RevisÃ£o{% else %}Nova RevisÃ£o{% endif %}
             </h1>
             <p class="mb-0">Documento: <strong>{{ pgr_documento }}</strong></p>
         </div>
@@ -30,7 +30,7 @@
 <div class="card shadow-sm">
     <div class="card-header bg-primary text-white">
         <i class="bi bi-pencil-square"></i>
-        Dados da Revisão
+        Dados da RevisÃ£o
     </div>
     <div class="card-body">
         <form method="post" novalidate>
@@ -45,10 +45,10 @@
             {% endif %}
 
             <div class="row g-3">
-                <!-- Número da Revisão -->
+                <!-- NÃºmero da RevisÃ£o -->
                 <div class="col-md-4">
                     <label for="{{ form.numero_revisao.id_for_label }}" class="form-label fw-semibold required-field">
-                        Número da Revisão
+                        NÃºmero da RevisÃ£o
                     </label>
                     {{ form.numero_revisao }}
                     {% if form.numero_revisao.errors %}
@@ -56,10 +56,10 @@
                     {% endif %}
                 </div>
 
-                <!-- Data de Realização -->
+                <!-- Data de RealizaÃ§Ã£o -->
                 <div class="col-md-4">
                     <label for="{{ form.data_realizacao.id_for_label }}" class="form-label fw-semibold required-field">
-                        Data de Realização
+                        Data de RealizaÃ§Ã£o
                     </label>
                     {{ form.data_realizacao }}
                     {% if form.data_realizacao.errors %}
@@ -81,7 +81,7 @@
                 <!-- Motivo -->
                 <div class="col-12">
                     <label for="{{ form.motivo.id_for_label }}" class="form-label fw-semibold required-field">
-                        Motivo da Revisão
+                        Motivo da RevisÃ£o
                     </label>
                     {{ form.motivo }}
                     {% if form.motivo.errors %}
@@ -89,10 +89,10 @@
                     {% endif %}
                 </div>
 
-                <!-- Descrição -->
+                <!-- DescriÃ§Ã£o -->
                 <div class="col-12">
                     <label for="{{ form.descricao_revisao.id_for_label }}" class="form-label fw-semibold">
-                        Descrição da Revisão
+                        DescriÃ§Ã£o da RevisÃ£o
                     </label>
                     {{ form.descricao_revisao }}
                     {% if form.descricao_revisao.errors %}
@@ -100,11 +100,11 @@
                     {% endif %}
                 </div>
 
-                <!-- Observações -->
+                <!-- ObservaÃ§Ãµes -->
                 {% if form.observacoes %}
                 <div class="col-12">
                     <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">
-                        Observações
+                        ObservaÃ§Ãµes
                     </label>
                     {{ form.observacoes }}
                     {% if form.observacoes.errors %}
@@ -117,7 +117,7 @@
             <!-- Documento oculto -->
             {{ form.pgr_documento.as_hidden }}
 
-            <!-- Botões -->
+            <!-- BotÃµes -->
             <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
                 <a href="{% url 'pgr_gestao:documento_detail' pgr_documento.pk %}"
                    class="btn btn-outline-secondary">
@@ -125,7 +125,7 @@
                 </a>
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-save me-1"></i>
-                    {% if form.instance.pk %}Salvar Alterações{% else %}Criar Revisão{% endif %}
+                    {% if form.instance.pk %}Salvar AlteraÃ§Ãµes{% else %}Criar RevisÃ£o{% endif %}
                 </button>
             </div>
         </form>

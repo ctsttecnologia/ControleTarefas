@@ -1,10 +1,10 @@
-
+﻿
 
 <!-- templates/tarefas/gerar_relatorio.html -->
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Gerar Relatório{% endblock %}
+{% block title %}Gerar RelatÃ³rio{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -173,9 +173,9 @@
         <div class="gen-card-body">
 
             <h1 class="gen-title">
-                <i class="bi bi-file-earmark-bar-graph me-2"></i>Gerar Relatório
+                <i class="bi bi-file-earmark-bar-graph me-2"></i>Gerar RelatÃ³rio
             </h1>
-            <p class="gen-subtitle">Selecione os filtros e o formato de exportação</p>
+            <p class="gen-subtitle">Selecione os filtros e o formato de exportaÃ§Ã£o</p>
 
             <form method="post" action="{% url 'tarefas:relatorio_display' %}">
                 {% csrf_token %}
@@ -198,7 +198,7 @@
 
                 <hr class="gen-divider">
 
-                <!-- Exportação -->
+                <!-- ExportaÃ§Ã£o -->
                 <div class="gen-section">
                     <span class="gen-section-icon"><i class="bi bi-download"></i></span>
                     <h6 class="gen-section-title">Exportar</h6>

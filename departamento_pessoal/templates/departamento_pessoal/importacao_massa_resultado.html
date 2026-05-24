@@ -1,37 +1,37 @@
-
+﻿
 {% extends "departamento_pessoal/_base_dp.html" %}
 
-{% block title %}Resultado da Importação — Funcionários{% endblock %}
+{% block title %}Resultado da ImportaÃ§Ã£o â€” FuncionÃ¡rios{% endblock %}
 
 {% block dp_content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    {# ══════════════════════════════════════════════ #}
-    {# CABEÇALHO                                      #}
-    {# ══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+    {# CABEÃ‡ALHO                                      #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
         <div>
             <h2 class="h4 fw-bold mb-1">
                 <i class="bi bi-clipboard-check text-success me-2"></i>
-                Resultado da Importação
+                Resultado da ImportaÃ§Ã£o
             </h2>
-            <small class="text-muted">Relatório do processamento da planilha de funcionários.</small>
+            <small class="text-muted">RelatÃ³rio do processamento da planilha de funcionÃ¡rios.</small>
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'departamento_pessoal:importacao_massa_funcionarios' %}"
                class="btn btn-outline-primary btn-sm">
-                <i class="bi bi-arrow-repeat me-1"></i>Nova Importação
+                <i class="bi bi-arrow-repeat me-1"></i>Nova ImportaÃ§Ã£o
             </a>
             <a href="{% url 'departamento_pessoal:lista_funcionarios' %}"
                class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-list-ul me-1"></i>Lista de Funcionários
+                <i class="bi bi-list-ul me-1"></i>Lista de FuncionÃ¡rios
             </a>
         </div>
     </header>
 
-    {# ══════════════════════════════════════════════ #}
-    {# RESUMO NUMÉRICO                                #}
-    {# ══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+    {# RESUMO NUMÃ‰RICO                                #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="card border-0 shadow-sm text-center py-3">
@@ -59,9 +59,9 @@
         </div>
     </div>
 
-    {# ══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     {# BARRA DE PROGRESSO                             #}
-    {# ══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     {% if resultado.total > 0 %}
     {% widthratio resultado.sucessos resultado.total 100 as pct_sucesso %}
     {% widthratio resultado.erros resultado.total 100 as pct_erro %}
@@ -79,15 +79,15 @@
     </div>
     {% endif %}
 
-    {# ══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     {# SUCESSOS                                        #}
-    {# ══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     {% if resultado.detalhes_sucesso %}
     <div class="card border-0 shadow-sm rounded-3 mb-4">
         <div class="card-header bg-success bg-opacity-10 border-0 py-3">
             <h6 class="fw-bold text-success mb-0">
                 <i class="bi bi-check-circle-fill me-2"></i>
-                Funcionários Importados ({{ resultado.sucessos }})
+                FuncionÃ¡rios Importados ({{ resultado.sucessos }})
             </h6>
         </div>
         <div class="card-body p-0">
@@ -109,9 +109,9 @@
     </div>
     {% endif %}
 
-    {# ══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     {# ERROS                                           #}
-    {# ══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     {% if resultado.detalhes_erro %}
     <div class="card border-0 shadow-sm rounded-3 mb-4">
         <div class="card-header bg-danger bg-opacity-10 border-0 py-3">
@@ -155,9 +155,9 @@
     </div>
     {% endif %}
 
-    {# ══════════════════════════════════════════════ #}
-    {# NOVA IMPORTAÇÃO                                 #}
-    {# ══════════════════════════════════════════════ #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+    {# NOVA IMPORTAÃ‡ÃƒO                                 #}
+    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
     {% if resultado.erros > 0 %}
     <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-4">
@@ -167,8 +167,8 @@
             </h6>
             <p class="text-muted small mb-3">
                 Corrija os erros na planilha e envie novamente.
-                Funcionários já importados com sucesso <strong>não serão duplicados</strong>
-                (a matrícula será rejeitada por já existir).
+                FuncionÃ¡rios jÃ¡ importados com sucesso <strong>nÃ£o serÃ£o duplicados</strong>
+                (a matrÃ­cula serÃ¡ rejeitada por jÃ¡ existir).
             </p>
             <form method="post" 
                 action="{% url 'departamento_pessoal:importacao_massa_funcionarios' %}" 

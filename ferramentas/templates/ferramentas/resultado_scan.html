@@ -1,4 +1,4 @@
-
+﻿
 {% extends 'base.html' %}
 {% load static %}
 
@@ -31,13 +31,13 @@
                 </div>
 
                 <div class="p-3 bg-light rounded-3 text-center">
-                    <h6 class="text-muted mb-1">Localização Padrão</h6>
+                    <h6 class="text-muted mb-1">LocalizaÃ§Ã£o PadrÃ£o</h6>
                     <p class="h5 mb-0">{{ ferramenta.localizacao_padrao }}</p>
                 </div>
 
                 {% if ferramenta.status == 'em_uso' and movimentacao_ativa %}
                 <div class="p-3 bg-warning-subtle rounded-3 text-center border border-warning-subtle">
-                    <h6 class="text-warning-emphasis mb-1">Responsável Atual</h6>
+                    <h6 class="text-warning-emphasis mb-1">ResponsÃ¡vel Atual</h6>
                     <p class="h5 mb-0 text-warning-emphasis">
                         <i class="bi bi-person-fill"></i>
                         {{ movimentacao_ativa.retirado_por.get_full_name|default:movimentacao_ativa.retirado_por.username }}

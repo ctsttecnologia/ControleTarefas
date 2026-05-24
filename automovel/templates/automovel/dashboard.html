@@ -1,7 +1,7 @@
-<!-- Painel de Controle do Sistema de Gestão de Veículos -->
+﻿<!-- Painel de Controle do Sistema de GestÃ£o de VeÃ­culos -->
 {% extends "automovel/_base_automovel.html" %}
 
-{% block title %}Dashboard — Veículos{% endblock %}
+{% block title %}Dashboard â€” VeÃ­culos{% endblock %}
 
 {% block module_css %}
 <style>
@@ -74,12 +74,12 @@
     <div class="page-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
-                <h1><i class="bi bi-speedometer2 me-2"></i>Painel de Veículos</h1>
-                <p>Visão geral da frota e agendamentos</p>
+                <h1><i class="bi bi-speedometer2 me-2"></i>Painel de VeÃ­culos</h1>
+                <p>VisÃ£o geral da frota e agendamentos</p>
             </div>
             <div class="d-flex gap-2 no-print">
                 <a href="{% url 'automovel:calendario' %}" class="btn btn-sm btn-outline-light">
-                    <i class="bi bi-calendar3 me-1"></i> Calendário
+                    <i class="bi bi-calendar3 me-1"></i> CalendÃ¡rio
                 </a>
                 <a href="{% url 'automovel:agendamento_list' %}" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-list-ul me-1"></i> Agendamentos
@@ -99,7 +99,7 @@
                     </div>
                     <div>
                         <div class="kpi-value text-primary">{{ total_carros }}</div>
-                        <div class="kpi-label">Total de Veículos</div>
+                        <div class="kpi-label">Total de VeÃ­culos</div>
                     </div>
                 </div>
             </div>
@@ -113,7 +113,7 @@
                     </div>
                     <div>
                         <div class="kpi-value text-success">{{ carros_disponiveis }}</div>
-                        <div class="kpi-label">Disponíveis</div>
+                        <div class="kpi-label">DisponÃ­veis</div>
                     </div>
                 </div>
             </div>
@@ -141,17 +141,17 @@
                     </div>
                     <div>
                         <div class="kpi-value text-warning">{{ manutencao_proxima }}</div>
-                        <div class="kpi-label">Manutenções Próximas</div>
+                        <div class="kpi-label">ManutenÃ§Ãµes PrÃ³ximas</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Últimos Agendamentos -->
+    <!-- Ãšltimos Agendamentos -->
     <div class="card info-card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5><i class="bi bi-clock-history text-primary me-2"></i>Últimos Agendamentos</h5>
+            <h5><i class="bi bi-clock-history text-primary me-2"></i>Ãšltimos Agendamentos</h5>
             <a href="{% url 'automovel:agendamento_list' %}" class="btn btn-sm btn-outline-primary no-print" style="border-radius: 50rem;">
                 Ver Todos
             </a>
@@ -161,11 +161,11 @@
                 <table class="table data-table mb-0">
                     <thead>
                         <tr>
-                            <th>Veículo</th>
-                            <th>Funcionário</th>
+                            <th>VeÃ­culo</th>
+                            <th>FuncionÃ¡rio</th>
                             <th>Data</th>
                             <th class="text-center">Status</th>
-                            <th class="text-end pe-4" style="width: 100px;">Ações</th>
+                            <th class="text-end pe-4" style="width: 100px;">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody>

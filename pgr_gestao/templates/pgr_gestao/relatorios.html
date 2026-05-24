@@ -1,17 +1,17 @@
-{# Página de Relatórios PGR #}
+﻿{# PÃ¡gina de RelatÃ³rios PGR #}
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
-{% block title %}Relatórios PGR{% endblock %}
+{% block title %}RelatÃ³rios PGR{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item active">Relatórios</li>
+<li class="breadcrumb-item active">RelatÃ³rios</li>
 {% endblock %}
 
 {% block pgr_content %}
 <div class="page-header">
-    <h1><i class="bi bi-bar-chart-fill"></i> Relatórios e Análises</h1>
-    <p class="mb-0">Dashboards e Relatórios do Programa de Gerenciamento de Riscos</p>
+    <h1><i class="bi bi-bar-chart-fill"></i> RelatÃ³rios e AnÃ¡lises</h1>
+    <p class="mb-0">Dashboards e RelatÃ³rios do Programa de Gerenciamento de Riscos</p>
 </div>
 
 <!-- Banner Filial -->
@@ -20,15 +20,15 @@
     <i class="bi bi-building fs-4 me-3"></i>
     <div>
         <strong>Filial ativa:</strong> {{ filial_info }}
-        <br><small class="text-muted">Os dados exibidos são referentes apenas à filial selecionada.</small>
+        <br><small class="text-muted">Os dados exibidos sÃ£o referentes apenas Ã  filial selecionada.</small>
     </div>
 </div>
 {% elif acesso_global %}
 <div class="alert alert-success d-flex align-items-center mb-4">
     <i class="bi bi-globe2 fs-4 me-3"></i>
     <div>
-        <strong>Acesso global (Superusuário)</strong>
-        <br><small class="text-muted">Você está visualizando dados de todas as filiais.</small>
+        <strong>Acesso global (SuperusuÃ¡rio)</strong>
+        <br><small class="text-muted">VocÃª estÃ¡ visualizando dados de todas as filiais.</small>
     </div>
 </div>
 {% else %}
@@ -44,7 +44,7 @@
 <!-- Filtros -->
 <div class="card mb-4">
     <div class="card-header bg-primary text-white">
-        <i class="bi bi-funnel"></i> Filtros de Período
+        <i class="bi bi-funnel"></i> Filtros de PerÃ­odo
     </div>
     <div class="card-body">
         <form method="get" class="row g-3">
@@ -60,7 +60,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Data Início</label>
+                <label class="form-label">Data InÃ­cio</label>
                 <input type="date" name="data_inicio" class="form-control" value="{{ request.GET.data_inicio }}">
             </div>
             <div class="col-md-2">
@@ -81,7 +81,7 @@
     </div>
 </div>
 
-<!-- Cards Estatísticas -->
+<!-- Cards EstatÃ­sticas -->
 <div class="row mb-4 g-3">
     <div class="col-md-3 col-6">
         <div class="card stats-card text-center h-100">
@@ -95,7 +95,7 @@
         <div class="card stats-card danger text-center h-100">
             <div class="card-body">
                 <h3 class="text-danger">{{ riscos_criticos }}</h3>
-                <small class="text-muted">Riscos Críticos</small>
+                <small class="text-muted">Riscos CrÃ­ticos</small>
             </div>
         </div>
     </div>
@@ -117,12 +117,12 @@
     </div>
 </div>
 
-<!-- Gráficos Linha 1 -->
+<!-- GrÃ¡ficos Linha 1 -->
 <div class="row mb-4 g-3">
     <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-header">
-                <i class="bi bi-pie-chart-fill"></i> Riscos por Classificação
+                <i class="bi bi-pie-chart-fill"></i> Riscos por ClassificaÃ§Ã£o
             </div>
             <div class="card-body">
                 <div class="chart-wrapper">
@@ -145,7 +145,7 @@
     </div>
 </div>
 
-<!-- Gráficos Linha 2 -->
+<!-- GrÃ¡ficos Linha 2 -->
 <div class="row mb-4 g-3">
     <div class="col-lg-6">
         <div class="card h-100">
@@ -162,7 +162,7 @@
     <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-header">
-                <i class="bi bi-list-task"></i> Planos de Ação por Status
+                <i class="bi bi-list-task"></i> Planos de AÃ§Ã£o por Status
             </div>
             <div class="card-body">
                 <div class="chart-wrapper">
@@ -186,7 +186,7 @@
                         <th style="width: 50px;">#</th>
                         <th>Agente</th>
                         <th>Tipo</th>
-                        <th>Classificação</th>
+                        <th>ClassificaÃ§Ã£o</th>
                         <th>GES</th>
                         <th>Status</th>
                         <th class="text-center">G</th>
@@ -235,10 +235,10 @@
     </div>
 </div>
 
-<!-- Exportação -->
+<!-- ExportaÃ§Ã£o -->
 <div class="card mb-4">
     <div class="card-header">
-        <i class="bi bi-download"></i> Exportar Relatórios
+        <i class="bi bi-download"></i> Exportar RelatÃ³rios
     </div>
     <div class="card-body">
         <div class="row g-3">
@@ -247,7 +247,7 @@
                 <div class="card h-100">
                     <div class="card-body text-center">
                         <i class="bi bi-file-earmark-pdf-fill display-4 text-danger mb-3 d-block"></i>
-                        <h5>Relatório Completo PGR</h5>
+                        <h5>RelatÃ³rio Completo PGR</h5>
                         <p class="text-muted small">PDF formatado conforme NR-01</p>
                         <select class="form-select mb-2" id="selectPGRPDF">
                             <option value="">Selecione um PGR</option>
@@ -268,7 +268,7 @@
                 <div class="card h-100">
                     <div class="card-body text-center">
                         <i class="bi bi-file-earmark-excel-fill display-4 text-success mb-3 d-block"></i>
-                        <h5>Inventário de Riscos</h5>
+                        <h5>InventÃ¡rio de Riscos</h5>
                         <p class="text-muted small">Planilha Excel detalhada</p>
                         <select class="form-select mb-2" id="selectInventarioExcel">
                             <option value="">Selecione um PGR</option>
@@ -289,10 +289,10 @@
                 <div class="card h-100">
                     <div class="card-body text-center">
                         <i class="bi bi-graph-up-arrow display-4 text-info mb-3 d-block"></i>
-                        <h5>Relatório Estatístico</h5>
-                        <p class="text-muted small">Gráficos e análises</p>
+                        <h5>RelatÃ³rio EstatÃ­stico</h5>
+                        <p class="text-muted small">GrÃ¡ficos e anÃ¡lises</p>
                         <button class="btn btn-info w-100 mt-4" id="btnEstatistico">
-                            <i class="bi bi-graph-up"></i> Gerar Relatório
+                            <i class="bi bi-graph-up"></i> Gerar RelatÃ³rio
                         </button>
                     </div>
                 </div>
@@ -303,7 +303,7 @@
             <div class="col-12 text-center py-4">
                 <i class="bi bi-lock-fill display-4 text-muted mb-3 d-block"></i>
                 <p class="text-muted">
-                    Você não tem permissão para exportar relatórios.<br>
+                    VocÃª nÃ£o tem permissÃ£o para exportar relatÃ³rios.<br>
                     Solicite acesso ao administrador do sistema.
                 </p>
             </div>
@@ -317,7 +317,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 🆕 Detecta tema para cores adaptativas
+    // ðŸ†• Detecta tema para cores adaptativas
     const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
     const rootStyles = getComputedStyle(document.documentElement);
     const textColor = rootStyles.getPropertyValue('--bs-body-color').trim();
@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const wrapper = el.parentElement;
             wrapper.innerHTML =
                 '<div class="d-flex align-items-center justify-content-center h-100">' +
-                '<p class="text-muted mb-0"><i class="bi bi-info-circle me-2"></i>Nenhum dado disponível</p></div>';
+                '<p class="text-muted mb-0"><i class="bi bi-info-circle me-2"></i>Nenhum dado disponÃ­vel</p></div>';
         }
     }
 
@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function() {
         y: { ticks: { color: mutedColor, stepSize: 1 }, grid: { color: borderColor }, beginAtZero: true }
     };
 
-    // Classificação (Donut)
+    // ClassificaÃ§Ã£o (Donut)
     if (temDados(dadosClassificacao)) {
         new Chart(document.getElementById('chartClassificacao'), {
             type: 'doughnut',
@@ -429,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
             data: {
                 labels: dadosPlanosStatus.labels,
                 datasets: [{
-                    label: 'Planos de Ação',
+                    label: 'Planos de AÃ§Ã£o',
                     data: dadosPlanosStatus.valores,
                     backgroundColor: ['#ffc107', '#0dcaf0', '#28a745', '#6c757d'],
                     borderRadius: 6,
@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     } else { semDados('chartPlanosStatus'); }
 
-    // ═══ EXPORTAÇÕES ═══
+    // â•â•â• EXPORTAÃ‡Ã•ES â•â•â•
     const currentUrl = window.location.href;
     const pgrGestaoBase = currentUrl.substring(0, currentUrl.indexOf('/relatorios'));
 

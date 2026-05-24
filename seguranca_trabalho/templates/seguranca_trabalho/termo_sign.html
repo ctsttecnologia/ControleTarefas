@@ -1,12 +1,12 @@
-{% extends "seguranca_trabalho/_base_sst.html" %}
+﻿{% extends "seguranca_trabalho/_base_sst.html" %}
 {% load static %}
 
-{% block title %}Assinar Termo — {{ ficha.funcionario.nome_completo }}{% endblock %}
+{% block title %}Assinar Termo â€” {{ ficha.funcionario.nome_completo }}{% endblock %}
 
 {% block extra_css %}
 {{ block.super }}
 <style>
-    /* ── Assinar Termo — Específico ── */
+    /* â”€â”€ Assinar Termo â€” EspecÃ­fico â”€â”€ */
     .at-wrapper { max-width: 680px; margin: 0 auto; }
 
     .at-canvas-wrapper {
@@ -68,10 +68,10 @@
 <div class="sst-page-header">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            {% if permission.seguranca_trabalho.view_ficha or user.is_superuser %}
+            {% if perms.seguranca_trabalho.view_ficha or user.is_superuser %}
             <h4><i class="bi bi-pen-fill me-2"></i>Assinar Termo de Responsabilidade</h4>
             <span class="sst-page-subtitle">
-                {{ ficha.funcionario.nome_completo }} • Mat. {{ ficha.funcionario.matricula }}
+                {{ ficha.funcionario.nome_completo }} â€¢ Mat. {{ ficha.funcionario.matricula }}
             </span>
             {% endif %}
         </div>
@@ -93,13 +93,13 @@
             <div class="sst-alert sst-alert--warning" style="flex-direction:column; align-items:flex-start; gap:0.75rem;">
                 <div style="font-size:.87rem; line-height:1.65;">
                     <p style="margin:0 0 0.5rem;">
-                        Declaro que recebi de <strong>CETEST ENGENHARIA E SERVIÇOS LTDA</strong>
-                        os Equipamentos de Proteção Individual – EPI's, comprometendo-me a usá-los em trabalho,
-                        zelando pela sua guarda e conservação.
+                        Declaro que recebi de <strong>CETEST ENGENHARIA E SERVIÃ‡OS LTDA</strong>
+                        os Equipamentos de ProteÃ§Ã£o Individual â€“ EPI's, comprometendo-me a usÃ¡-los em trabalho,
+                        zelando pela sua guarda e conservaÃ§Ã£o.
                     </p>
                     <p style="margin:0; color:var(--sst-danger); font-weight:600; font-size:.82rem;">
                         <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                        O não uso dos EPI's constitui ato faltoso conforme artigo 158 da CLT.
+                        O nÃ£o uso dos EPI's constitui ato faltoso conforme artigo 158 da CLT.
                     </p>
                 </div>
             </div>
@@ -110,7 +110,7 @@
     <div class="sst-card">
         <div class="sst-card-header sst-card-header--success">
             <i class="bi bi-pen"></i>
-            <h6>Assinatura do Funcionário</h6>
+            <h6>Assinatura do FuncionÃ¡rio</h6>
         </div>
         <div class="sst-card-body">
             <form method="post" id="form-assinatura">
@@ -135,7 +135,7 @@
             <button type="button" id="btn-limpar" class="sst-btn-cancel">
                 <i class="bi bi-eraser"></i> Limpar
             </button>
-            {% if permission.seguranca_trabalho.add_ficha or user.is_superuser %}
+            {% if perms.seguranca_trabalho.add_ficha or user.is_superuser %}
             <button type="submit" form="form-assinatura" id="btn-salvar" class="sst-btn-success">
                 <i class="bi bi-check-lg"></i> Confirmar Assinatura
             </button>

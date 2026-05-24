@@ -1,5 +1,5 @@
-
-<!-- Template para completar uma inspeção agendada, marcando-a como realizada -->
+﻿
+<!-- Template para completar uma inspeÃ§Ã£o agendada, marcando-a como realizada -->
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 
@@ -17,7 +17,7 @@
                         <i class="bi bi-clipboard2-check me-2"></i>{{ titulo_pagina }}
                     </h4>
                     <small class="opacity-75">
-                        Registre os detalhes da inspeção realizada
+                        Registre os detalhes da inspeÃ§Ã£o realizada
                     </small>
                 </div>
             </div>
@@ -31,7 +31,7 @@
             <div class="alert alert-info d-flex align-items-start mb-4">
                 <i class="bi bi-info-circle-fill fs-4 me-3"></i>
                 <div>
-                    <strong>Você está concluindo a inspeção de:</strong>
+                    <strong>VocÃª estÃ¡ concluindo a inspeÃ§Ã£o de:</strong>
                     <br>
                     <span class="fw-semibold">{{ inspecao.equipamento.nome }}</span>
                     <br>
@@ -41,18 +41,18 @@
                 </div>
             </div>
 
-            <!-- Formulário -->
+            <!-- FormulÃ¡rio -->
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">
-                        <i class="bi bi-pencil-square text-primary me-2"></i>Dados da Conclusão
+                        <i class="bi bi-pencil-square text-primary me-2"></i>Dados da ConclusÃ£o
                     </h6>
                 </div>
                 <div class="card-body p-4">
                     <form method="post">
                         {% csrf_token %}
                         
-                        <!-- Data de Realização -->
+                        <!-- Data de RealizaÃ§Ã£o -->
                         {% if form.data_realizacao %}
                         <div class="mb-4">
                             <label for="{{ form.data_realizacao.id_for_label }}" class="form-label fw-semibold">
@@ -65,8 +65,8 @@
                                    value="{{ form.data_realizacao.value|default_if_none:''|date:'Y-m-d' }}"
                                    class="form-control {% if form.data_realizacao.errors %}is-invalid{% endif %}">
                             <div class="form-text">
-                                Data em que a inspeção foi efetivamente realizada. 
-                                Se não informada, será usada a data de hoje.
+                                Data em que a inspeÃ§Ã£o foi efetivamente realizada. 
+                                Se nÃ£o informada, serÃ¡ usada a data de hoje.
                             </div>
                             {% if form.data_realizacao.errors %}
                             <div class="invalid-feedback">{{ form.data_realizacao.errors.0 }}</div>
@@ -74,7 +74,7 @@
                         </div>
                         {% endif %}
 
-                        <!-- Observações -->
+                        <!-- ObservaÃ§Ãµes -->
                         {% if form.observacoes %}
                         <div class="mb-4">
                             <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">
@@ -85,9 +85,9 @@
                                       id="{{ form.observacoes.id_for_label }}"
                                       class="form-control {% if form.observacoes.errors %}is-invalid{% endif %}" 
                                       rows="5"
-                                      placeholder="Descreva os resultados da inspeção, não-conformidades encontradas, ações tomadas...">{{ form.observacoes.value|default_if_none:'' }}</textarea>
+                                      placeholder="Descreva os resultados da inspeÃ§Ã£o, nÃ£o-conformidades encontradas, aÃ§Ãµes tomadas...">{{ form.observacoes.value|default_if_none:'' }}</textarea>
                             <div class="form-text">
-                                Adicione notas, resultados ou não-conformidades encontradas.
+                                Adicione notas, resultados ou nÃ£o-conformidades encontradas.
                             </div>
                             {% if form.observacoes.errors %}
                             <div class="invalid-feedback">{{ form.observacoes.errors.0 }}</div>
@@ -102,14 +102,14 @@
                             {% endif %}
                         {% endfor %}
 
-                        <!-- Botões -->
+                        <!-- BotÃµes -->
                         <div class="border-top pt-4 mt-4 d-flex justify-content-between">
                             <a href="{{ inspecao.get_absolute_url }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-1"></i> Cancelar
                             </a>
                             {% if perms.gestao_riscos.change_inspecao %}
                             <button type="submit" class="btn btn-success btn-lg">
-                                <i class="bi bi-check-circle me-2"></i> Marcar como Concluída
+                                <i class="bi bi-check-circle me-2"></i> Marcar como ConcluÃ­da
                             </button>
                             {% endif %}
                         </div>

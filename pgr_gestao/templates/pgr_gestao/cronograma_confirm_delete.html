@@ -1,7 +1,7 @@
-# Cronograma de Ações - Confirmação de Exclusão
+﻿# Cronograma de AÃ§Ãµes - ConfirmaÃ§Ã£o de ExclusÃ£o
 {% extends 'base.html' %}
 
-{% block title %}Excluir Ação #{{ acao.numero_item|stringformat:"02d" }}{% endblock %}
+{% block title %}Excluir AÃ§Ã£o #{{ acao.numero_item|stringformat:"02d" }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -9,13 +9,13 @@
         <div class="card shadow-sm border-danger">
             <div class="card-header bg-danger text-white">
                 <h5 class="mb-0">
-                    <i class="fas fa-exclamation-triangle"></i> Confirmar Exclusão
+                    <i class="fas fa-exclamation-triangle"></i> Confirmar ExclusÃ£o
                 </h5>
             </div>
             <div class="card-body text-center">
                 <i class="fas fa-trash fa-3x text-danger mb-3"></i>
                 <h4>Tem certeza que deseja excluir?</h4>
-                <p class="text-muted mb-1">Ação do Cronograma:</p>
+                <p class="text-muted mb-1">AÃ§Ã£o do Cronograma:</p>
                 <p class="fw-bold fs-5">
                     {{ acao.numero_item|stringformat:"02d" }} - {{ acao.acao_necessaria|truncatewords:15 }}
                 </p>
@@ -25,7 +25,7 @@
                 
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-circle"></i>
-                    Esta ação é <strong>irreversível</strong>.
+                    Esta aÃ§Ã£o Ã© <strong>irreversÃ­vel</strong>.
                 </div>
 
                 <form method="post">

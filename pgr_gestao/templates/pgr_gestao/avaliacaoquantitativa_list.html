@@ -1,35 +1,35 @@
-{# Avaliações Quantitativas - Lista e Filtros #}
+﻿{# AvaliaÃ§Ãµes Quantitativas - Lista e Filtros #}
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
-{% block title %}Avaliações Quantitativas{% endblock %}
+{% block title %}AvaliaÃ§Ãµes Quantitativas{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item active">Avaliações Quantitativas</li>
+<li class="breadcrumb-item active">AvaliaÃ§Ãµes Quantitativas</li>
 {% endblock %}
 
 {% block pgr_content %}
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h1><i class="bi bi-graph-up-arrow"></i> Avaliações Quantitativas</h1>
-            <p class="mb-0">Histórico de medições e avaliações de riscos</p>
+            <h1><i class="bi bi-graph-up-arrow"></i> AvaliaÃ§Ãµes Quantitativas</h1>
+            <p class="mb-0">HistÃ³rico de mediÃ§Ãµes e avaliaÃ§Ãµes de riscos</p>
         </div>
         {% if perms.pgr_gestao.add_avaliacaoquantitativa %}
         <a href="{% url 'pgr_gestao:avaliacao_create' %}" class="btn btn-light btn-lg">
-            <i class="bi bi-plus-lg"></i> Nova Avaliação
+            <i class="bi bi-plus-lg"></i> Nova AvaliaÃ§Ã£o
         </a>
         {% endif %}
     </div>
 </div>
 
-<!-- Estatísticas -->
+<!-- EstatÃ­sticas -->
 <div class="row mb-4 g-3">
     <div class="col-md-3 col-6">
         <div class="card stats-card text-center h-100">
             <div class="card-body">
                 <h3>{{ paginator.count|default:0 }}</h3>
-                <small class="text-muted">Total de avaliações</small>
+                <small class="text-muted">Total de avaliaÃ§Ãµes</small>
             </div>
         </div>
     </div>
@@ -45,7 +45,7 @@
         <div class="card stats-card danger text-center h-100">
             <div class="card-body">
                 <h3 class="text-danger">{{ total_nao_conformes|default:0 }}</h3>
-                <small class="text-muted">Não Conformes</small>
+                <small class="text-muted">NÃ£o Conformes</small>
             </div>
         </div>
     </div>
@@ -78,7 +78,7 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Tipo de Avaliação</label>
+                <label class="form-label">Tipo de AvaliaÃ§Ã£o</label>
                 <select name="tipo_avaliacao" class="form-select">
                     <option value="">Todos</option>
                     {% for value, label in tipo_avaliacao_choices %}
@@ -93,15 +93,15 @@
                 <select name="conforme" class="form-select">
                     <option value="">Todos</option>
                     <option value="true" {% if request.GET.conforme == 'true' %}selected{% endif %}>Conforme</option>
-                    <option value="false" {% if request.GET.conforme == 'false' %}selected{% endif %}>Não Conforme</option>
+                    <option value="false" {% if request.GET.conforme == 'false' %}selected{% endif %}>NÃ£o Conforme</option>
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Período</label>
+                <label class="form-label">PerÃ­odo</label>
                 <div class="input-group">
                     <input type="date" name="data_inicio" class="form-control"
                            value="{{ request.GET.data_inicio }}" title="Data inicial">
-                    <span class="input-group-text">até</span>
+                    <span class="input-group-text">atÃ©</span>
                     <input type="date" name="data_fim" class="form-control"
                            value="{{ request.GET.data_fim }}" title="Data final">
                 </div>
@@ -118,7 +118,7 @@
 <!-- Tabela -->
 <div class="card">
     <div class="card-header">
-        <i class="bi bi-list-ul"></i> Lista de Avaliações
+        <i class="bi bi-list-ul"></i> Lista de AvaliaÃ§Ãµes
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -132,7 +132,7 @@
                         <th>Limite (NR)</th>
                         <th class="text-center">Conformidade</th>
                         <th>Equipamento</th>
-                        <th class="text-center">Ações</th>
+                        <th class="text-center">AÃ§Ãµes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -150,7 +150,7 @@
                             <strong>{{ avaliacao.resultado_medido }}</strong>
                             <small class="text-muted">{{ avaliacao.unidade_medida }}</small>
                         </td>
-                        <td><small>{{ avaliacao.limite_tolerancia_nr|default:"—" }}</small></td>
+                        <td><small>{{ avaliacao.limite_tolerancia_nr|default:"â€”" }}</small></td>
                         <td class="text-center">
                             {% if avaliacao.conforme %}
                             <span class="badge bg-success">
@@ -158,11 +158,11 @@
                             </span>
                             {% else %}
                             <span class="badge bg-danger">
-                                <i class="bi bi-exclamation-triangle-fill"></i> Não Conforme
+                                <i class="bi bi-exclamation-triangle-fill"></i> NÃ£o Conforme
                             </span>
                             {% endif %}
                         </td>
-                        <td><small>{{ avaliacao.equipamento_utilizado|truncatewords:5|default:"—" }}</small></td>
+                        <td><small>{{ avaliacao.equipamento_utilizado|truncatewords:5|default:"â€”" }}</small></td>
                         <td class="text-center" onclick="event.stopPropagation();">
                             <div class="btn-group btn-group-sm">
                                 <a href="{% url 'pgr_gestao:avaliacao_detail' avaliacao.pk %}"
@@ -188,10 +188,10 @@
                     <tr>
                         <td colspan="8" class="text-center table-empty-state">
                             <i class="bi bi-graph-up d-block"></i>
-                            <p>Nenhuma avaliação quantitativa encontrada.</p>
+                            <p>Nenhuma avaliaÃ§Ã£o quantitativa encontrada.</p>
                             {% if perms.pgr_gestao.add_avaliacaoquantitativa %}
                             <a href="{% url 'pgr_gestao:avaliacao_create' %}" class="btn btn-primary">
-                                <i class="bi bi-plus-lg"></i> Criar Primeira Avaliação
+                                <i class="bi bi-plus-lg"></i> Criar Primeira AvaliaÃ§Ã£o
                             </a>
                             {% endif %}
                         </td>
@@ -201,7 +201,7 @@
             </table>
         </div>
 
-        <!-- Paginação -->
+        <!-- PaginaÃ§Ã£o -->
         {% if is_paginated %}
         <nav class="mt-4">
             <ul class="pagination justify-content-center mb-0">

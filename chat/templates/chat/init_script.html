@@ -1,29 +1,29 @@
-<!-- chat/templates/chat/init_script.html -->
+﻿<!-- chat/templates/chat/init_script.html -->
 {% load static %}
 
 <script>
 (function() {
-    // ⚡ GUARDA CONTRA DUPLICAÇÃO
+    // âš¡ GUARDA CONTRA DUPLICAÃ‡ÃƒO
     if (window._chatInitialized) {
-        console.warn('⚠️ Chat já foi inicializado. Ignorando duplicação.');
+        console.warn('âš ï¸ Chat jÃ¡ foi inicializado. Ignorando duplicaÃ§Ã£o.');
         return;
     }
     window._chatInitialized = true;
 
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🎬 Iniciando sistema de chat v4.0...');
+        console.log('ðŸŽ¬ Iniciando sistema de chat v4.0...');
 
         const currentUserId = "{{ request.user.id }}";
 
-        // Validação de autenticação
+        // ValidaÃ§Ã£o de autenticaÃ§Ã£o
         if (!currentUserId || currentUserId === 'None' || currentUserId === 'AnonymousUser') {
-            console.warn('⚠️ Usuário não autenticado, chat não será carregado');
+            console.warn('âš ï¸ UsuÃ¡rio nÃ£o autenticado, chat nÃ£o serÃ¡ carregado');
             return;
         }
 
-        // Verifica se já foi inicializado
+        // Verifica se jÃ¡ foi inicializado
         if (window.chatManager) {
-            console.warn('⚠️ ChatManager já existe. Ignorando.');
+            console.warn('âš ï¸ ChatManager jÃ¡ existe. Ignorando.');
             return;
         }
 
@@ -32,13 +32,13 @@
         try {
             const contextUrls = {{ chat_urls|safe }};
             if (contextUrls && Object.keys(contextUrls).length > 0 && contextUrls.active_room_list) {
-                console.log('✅ Usando URLs do context processor');
+                console.log('âœ… Usando URLs do context processor');
                 chatUrls = contextUrls;
             } else {
                 throw new Error('Context processor vazio');
             }
         } catch (error) {
-            console.warn('⚠️ Context processor falhou, usando URLs diretas:', error);
+            console.warn('âš ï¸ Context processor falhou, usando URLs diretas:', error);
             chatUrls = {
                 active_room_list:   "{% url 'chat:get_active_room_list' %}",
                 user_list:          "{% url 'chat:get_user_list' %}",
@@ -50,12 +50,12 @@
             };
         }
 
-        console.log('📋 URLs finais do chat:', chatUrls);
+        console.log('ðŸ“‹ URLs finais do chat:', chatUrls);
 
-        // Validação final das URLs
+        // ValidaÃ§Ã£o final das URLs
         if (!chatUrls || !chatUrls.active_room_list) {
-            console.error('❌ URLs do chat inválidas');
-            showChatErrorMessage('Configuração de URLs inválida');
+            console.error('âŒ URLs do chat invÃ¡lidas');
+            showChatErrorMessage('ConfiguraÃ§Ã£o de URLs invÃ¡lida');
             return;
         }
 
@@ -66,11 +66,11 @@
         loadChatSystem();
 
         function loadChatSystem() {
-            console.log('📦 Iniciando carregamento do chat...');
+            console.log('ðŸ“¦ Iniciando carregamento do chat...');
 
-            // Verifica se o script já foi carregado
+            // Verifica se o script jÃ¡ foi carregado
             if (typeof window.ChatManager !== 'undefined') {
-                console.log('✅ ChatManager já disponível, inicializando...');
+                console.log('âœ… ChatManager jÃ¡ disponÃ­vel, inicializando...');
                 initializeChatManager();
                 return;
             }
@@ -81,17 +81,17 @@
 
             script.onload = () => {
                 if (typeof window.ChatManager !== 'undefined') {
-                    console.log('✅ chat.js carregado com sucesso');
+                    console.log('âœ… chat.js carregado com sucesso');
                     initializeChatManager();
                 } else {
-                    console.error('❌ ChatManager não encontrado após carregar chat.js');
+                    console.error('âŒ ChatManager nÃ£o encontrado apÃ³s carregar chat.js');
                     showChatErrorMessage('Sistema de chat corrompido');
                 }
             };
 
             script.onerror = () => {
-                console.error('❌ Falha ao carregar chat.js');
-                showChatErrorMessage('Não foi possível carregar o sistema de chat');
+                console.error('âŒ Falha ao carregar chat.js');
+                showChatErrorMessage('NÃ£o foi possÃ­vel carregar o sistema de chat');
             };
 
             document.head.appendChild(script);
@@ -101,13 +101,13 @@
             try {
                 window.chatManager = new window.ChatManager(chatUrls, currentUserId);
                 const loadTime = (performance.now() - chatLoadStart).toFixed(2);
-                console.log(`🎉 Chat inicializado! Tempo: ${loadTime}ms`);
+                console.log(`ðŸŽ‰ Chat inicializado! Tempo: ${loadTime}ms`);
 
                 document.dispatchEvent(new CustomEvent('chatSystemReady', {
                     detail: { chatManager: window.chatManager, loadTime }
                 }));
             } catch (error) {
-                console.error('❌ Erro ao instanciar ChatManager:', error);
+                console.error('âŒ Erro ao instanciar ChatManager:', error);
                 showChatErrorMessage('Falha ao iniciar o chat: ' + error.message);
             }
         }
@@ -121,15 +121,15 @@
             errorDiv.innerHTML = `
                 <div style="position: fixed; bottom: 20px; right: 20px; background: #dc3545; color: white; padding: 15px; border-radius: 8px; z-index: 999999; font-family: system-ui; max-width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
                     <div style="display: flex; align-items: start; gap: 10px;">
-                        <div style="font-size: 20px;">❌</div>
+                        <div style="font-size: 20px;">âŒ</div>
                         <div style="flex: 1;">
-                            <strong style="display: block; margin-bottom: 5px;">Chat Indisponível</strong>
+                            <strong style="display: block; margin-bottom: 5px;">Chat IndisponÃ­vel</strong>
                             <p style="margin: 0 0 10px 0; font-size: 13px; line-height: 1.4;">
                                 ${details || 'Sistema de chat com problemas.'}
                             </p>
                             <div style="display: flex; gap: 8px;">
                                 <button onclick="location.reload()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                                    🔄 Recarregar
+                                    ðŸ”„ Recarregar
                                 </button>
                                 <button onclick="this.closest('#chat-error-notification').remove()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
                                     Fechar
@@ -143,10 +143,10 @@
             setTimeout(() => errorDiv.remove(), 15000);
         }
 
-        // Timeout global de segurança
+        // Timeout global de seguranÃ§a
         setTimeout(() => {
             if (!window.chatManager) {
-                console.warn('⏰ Timeout: Chat não carregou em 20 segundos');
+                console.warn('â° Timeout: Chat nÃ£o carregou em 20 segundos');
                 showChatErrorMessage('Timeout no carregamento');
             }
         }, 20000);

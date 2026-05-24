@@ -1,4 +1,4 @@
-
+﻿
 {% extends 'base.html' %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
@@ -8,7 +8,7 @@
     <div class="row justify-content-center">
         <div class="col-lg-9 col-xl-8">
 
-            {# ── Breadcrumb ── #}
+            {# â”€â”€ Breadcrumb â”€â”€ #}
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb small">
                     {% if perms.documentos.view_documento or user.is_superuser %}
@@ -21,7 +21,7 @@
             </nav>
 
             <div class="card shadow-sm border-0">
-                {# ── Header ── #}
+                {# â”€â”€ Header â”€â”€ #}
                 <div class="card-header bg-primary text-white py-3">
                     <h4 class="mb-0">
                         {% if form.instance.pk %}
@@ -33,11 +33,11 @@
                 </div>
 
                 <div class="card-body p-4">
-                    {# ── Alertas de Erro ── #}
+                    {# â”€â”€ Alertas de Erro â”€â”€ #}
                     {% if form.errors %}
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <strong>Atenção!</strong> Corrija os erros abaixo.
+                            <strong>AtenÃ§Ã£o!</strong> Corrija os erros abaixo.
                             {% if form.non_field_errors %}
                                 <ul class="mb-0 mt-2">
                                     {% for error in form.non_field_errors %}
@@ -52,9 +52,9 @@
                     <form method="post" enctype="multipart/form-data" novalidate>
                         {% csrf_token %}
 
-                        {# ══════════════════════════════════════ #}
-                        {# ── Seção 1: Dados Gerais ── #}
-                        {# ══════════════════════════════════════ #}
+                        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                        {# â”€â”€ SeÃ§Ã£o 1: Dados Gerais â”€â”€ #}
+                        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
                         <h5 class="text-primary mb-3 border-bottom pb-2">
                             <i class="bi bi-info-circle me-2"></i>Dados Gerais
                         </h5>
@@ -87,7 +87,7 @@
                                     Avisar vencimento com (dias)
                                 </label>
                                 {{ form.dias_aviso }}
-                                <div class="form-text">Dias de antecedência para notificação.</div>
+                                <div class="form-text">Dias de antecedÃªncia para notificaÃ§Ã£o.</div>
                             </div>
 
                             <div class="col-md-12">
@@ -99,22 +99,22 @@
 
                             <div class="col-md-12">
                                 <label for="{{ form.responsavel.id_for_label }}" class="form-label">
-                                    Responsável
+                                    ResponsÃ¡vel
                                 </label>
                                 {{ form.responsavel }}
                             </div>
 
                             <div class="col-12">
                                 <label for="{{ form.descricao.id_for_label }}" class="form-label">
-                                    Descrição / Observações
+                                    DescriÃ§Ã£o / ObservaÃ§Ãµes
                                 </label>
                                 {{ form.descricao }}
                             </div>
                         </div>
 
-                        {# ══════════════════════════════════════ #}
-                        {# ── Seção 2: Arquivo e Prazos ── #}
-                        {# ══════════════════════════════════════ #}
+                        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                        {# â”€â”€ SeÃ§Ã£o 2: Arquivo e Prazos â”€â”€ #}
+                        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
                         <h5 class="text-primary mb-3 border-bottom pb-2">
                             <i class="bi bi-file-earmark-arrow-up me-2"></i>Arquivo e Prazos
                         </h5>
@@ -149,7 +149,7 @@
 
                                 <div class="col-md-6">
                                     <label for="{{ form.data_emissao.id_for_label }}" class="form-label">
-                                        Data de Emissão
+                                        Data de EmissÃ£o
                                     </label>
                                     {{ form.data_emissao }}
                                 </div>
@@ -163,7 +163,7 @@
                             </div>
                         </div>
 
-                        {# ── Botões ── #}
+                        {# â”€â”€ BotÃµes â”€â”€ #}
                         <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
                             <a href="{% url 'documentos:lista' %}" class="btn btn-outline-secondary px-4">
                                 <i class="bi bi-arrow-left me-1"></i> Cancelar
@@ -171,7 +171,7 @@
                             {% if perms.documentos.add_documento or user.is_superuser %}
                             <button type="submit" class="btn btn-success px-4">
                                 <i class="bi bi-check-lg me-1"></i>
-                                {% if form.instance.pk %}Salvar Alterações{% else %}Cadastrar Documento{% endif %}
+                                {% if form.instance.pk %}Salvar AlteraÃ§Ãµes{% else %}Cadastrar Documento{% endif %}
                             </button>
                             {% endif %} 
                         </div>

@@ -1,4 +1,4 @@
-
+﻿
 {# templates/logradouro/upload_logradouros.html #}
 {% extends 'base_logradouro/base.html' %}
 {% load widget_tweaks %}
@@ -6,7 +6,7 @@
 {% load i18n %}
 {% load django_bootstrap5 %}
 
-{% block title %}{% trans "Importar Endereços" %}{% endblock %}
+{% block title %}{% trans "Importar EndereÃ§os" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -17,7 +17,7 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <h4 class="mb-1">
-                        <i class="bi bi-upload me-2"></i>{% trans "Importar Endereços" %}
+                        <i class="bi bi-upload me-2"></i>{% trans "Importar EndereÃ§os" %}
                     </h4>
                     <small class="opacity-75">{% trans "Upload em massa via planilha Excel" %}</small>
                 </div>
@@ -48,7 +48,7 @@
             {% endfor %}
             {% endif %}
 
-            <!-- Relatório de Erros -->
+            <!-- RelatÃ³rio de Erros -->
             {% if relatorio_disponivel %}
             <div class="alert alert-danger border-2 shadow-sm mb-4">
                 <div class="d-flex align-items-start">
@@ -56,16 +56,16 @@
                         <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
                     </div>
                     <div class="flex-grow-1">
-                        <h5 class="alert-heading mb-2">{% trans "Problemas na Importação" %}</h5>
+                        <h5 class="alert-heading mb-2">{% trans "Problemas na ImportaÃ§Ã£o" %}</h5>
                         <p class="mb-2">
-                            {% blocktrans %}Encontramos <strong>{{ total_erros }}</strong> linha(s) com erro(s) na sua planilha. A importação foi cancelada para evitar inconsistências.{% endblocktrans %}
+                            {% blocktrans %}Encontramos <strong>{{ total_erros }}</strong> linha(s) com erro(s) na sua planilha. A importaÃ§Ã£o foi cancelada para evitar inconsistÃªncias.{% endblocktrans %}
                         </p>
                         <hr>
                         <p class="mb-3 small">
-                            {% trans "Baixe o relatório, corrija os dados destacados e tente novamente." %}
+                            {% trans "Baixe o relatÃ³rio, corrija os dados destacados e tente novamente." %}
                         </p>
                         <a href="{% url 'logradouro:download_erros_logradouro' %}" class="btn btn-danger">
-                            <i class="bi bi-file-earmark-excel me-1"></i> {% trans "Baixar Relatório de Erros" %}
+                            <i class="bi bi-file-earmark-excel me-1"></i> {% trans "Baixar RelatÃ³rio de Erros" %}
                         </a>
                     </div>
                 </div>
@@ -82,19 +82,19 @@
                 </div>
                 <div class="card-body p-4">
                     
-                    <!-- Instruções -->
+                    <!-- InstruÃ§Ãµes -->
                     <div class="alert alert-info mb-4">
                         <h6 class="alert-heading">
-                            <i class="bi bi-info-circle me-1"></i> {% trans "Instruções" %}
+                            <i class="bi bi-info-circle me-1"></i> {% trans "InstruÃ§Ãµes" %}
                         </h6>
                         <ul class="mb-0 small">
                             <li>{% trans "Selecione um arquivo .xlsx ou .csv" %}</li>
-                            <li>{% trans "A planilha deve seguir o modelo padrão com os cabeçalhos obrigatórios" %}</li>
+                            <li>{% trans "A planilha deve seguir o modelo padrÃ£o com os cabeÃ§alhos obrigatÃ³rios" %}</li>
                             <li>{% trans "Baixe o modelo abaixo para garantir o formato correto" %}</li>
                         </ul>
                     </div>
 
-                    <!-- Botão Download Modelo -->
+                    <!-- BotÃ£o Download Modelo -->
                     <div class="d-grid mb-4">
                         <a href="{% url 'logradouro:download_logradouro_template' %}" class="btn btn-outline-primary btn-lg">
                             <i class="bi bi-download me-2"></i> {% trans "Baixar Modelo da Planilha" %}
@@ -103,7 +103,7 @@
 
                     <hr>
 
-                    <!-- Formulário de Upload -->
+                    <!-- FormulÃ¡rio de Upload -->
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
@@ -118,7 +118,7 @@
                                    accept=".xlsx,.csv"
                                    required>
                             <div class="form-text">
-                                {% trans "Formatos aceitos: .xlsx, .csv (máx. 5MB)" %}
+                                {% trans "Formatos aceitos: .xlsx, .csv (mÃ¡x. 5MB)" %}
                             </div>
                         </div>
 
@@ -143,13 +143,13 @@
                         <div class="col-md-6">
                             <div class="d-flex">
                                 <i class="bi bi-check-circle text-success me-2 mt-1"></i>
-                                <small>{% trans "Use sempre o modelo fornecido para evitar erros de formatação" %}</small>
+                                <small>{% trans "Use sempre o modelo fornecido para evitar erros de formataÃ§Ã£o" %}</small>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="d-flex">
                                 <i class="bi bi-check-circle text-success me-2 mt-1"></i>
-                                <small>{% trans "O CEP deve conter apenas 8 dígitos, sem traços" %}</small>
+                                <small>{% trans "O CEP deve conter apenas 8 dÃ­gitos, sem traÃ§os" %}</small>
                             </div>
                         </div>
                         <div class="col-md-6">

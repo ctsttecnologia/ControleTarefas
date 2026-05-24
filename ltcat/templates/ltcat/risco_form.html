@@ -1,4 +1,4 @@
-
+﻿
 {% extends "ltcat/base_ltcat.html" %}
 
 {% block ltcat_title %}
@@ -31,22 +31,22 @@
                             {% if form.instance.pk %}Editar Risco{% else %}Novo Reconhecimento de Risco{% endif %}
                         </h5>
                         <small class="text-white-50 text-truncate d-block">
-                            Seção 7 — Reconhecimento de Riscos | {{ ltcat.codigo_documento }}
-                            {% if funcao %} — {{ funcao.nome_funcao }}{% endif %}
+                            SeÃ§Ã£o 7 â€” Reconhecimento de Riscos | {{ ltcat.codigo_documento }}
+                            {% if funcao %} â€” {{ funcao.nome_funcao }}{% endif %}
                         </small>
                     </div>
                 </div>
             </div>
 
             <div class="card-body p-lg-4 p-3">
-                {# ── Contexto da Função (se veio de uma específica) ── #}
+                {# â”€â”€ Contexto da FunÃ§Ã£o (se veio de uma especÃ­fica) â”€â”€ #}
                 {% if funcao %}
                 <div class="alert border-0 py-2 mb-4"
                      style="background: var(--bs-warning-bg-subtle, #fff3cd);
                             color: var(--bs-warning-text-emphasis, #664d03);">
                     <i class="fas fa-users me-2"></i>
                     <small>
-                        <strong>Função/GHE:</strong> {{ funcao.nome_funcao }}
+                        <strong>FunÃ§Ã£o/GHE:</strong> {{ funcao.nome_funcao }}
                         {% if funcao.cbo %}(CBO: {{ funcao.cbo }}){% endif %}
                         {% if funcao.departamento %}
                             | <strong>Departamento:</strong> {{ funcao.departamento }}
@@ -68,10 +68,10 @@
                     </div>
                     {% endif %}
 
-                    {# ═══════════ FUNÇÃO / GHE ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• FUNÃ‡ÃƒO / GHE â•â•â•â•â•â•â•â•â•â•â• #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-users me-2"></i>Função / GHE
+                            <i class="fas fa-users me-2"></i>FunÃ§Ã£o / GHE
                         </legend>
                         <div class="row g-3">
                             <div class="col-md-12">
@@ -80,7 +80,7 @@
                                 </label>
                                 {{ form.funcao }}
                                 <div class="form-text">
-                                    Selecione a função analisada à qual este risco se aplica
+                                    Selecione a funÃ§Ã£o analisada Ã  qual este risco se aplica
                                 </div>
                                 {% for error in form.funcao.errors %}
                                 <div class="invalid-feedback d-block">
@@ -91,10 +91,10 @@
                         </div>
                     </fieldset>
 
-                    {# ═══════════ CLASSIFICAÇÃO DO AGENTE ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• CLASSIFICAÃ‡ÃƒO DO AGENTE â•â•â•â•â•â•â•â•â•â•â• #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-tag me-2"></i>Classificação do Agente
+                            <i class="fas fa-tag me-2"></i>ClassificaÃ§Ã£o do Agente
                         </legend>
                         <div class="row g-3">
                             <div class="col-md-4">
@@ -102,7 +102,7 @@
                                     {{ form.tipo_risco.label }} <span class="text-danger">*</span>
                                 </label>
                                 {{ form.tipo_risco }}
-                                <div class="form-text">Físico, Químico, Biológico, Ergonômico ou Acidente</div>
+                                <div class="form-text">FÃ­sico, QuÃ­mico, BiolÃ³gico, ErgonÃ´mico ou Acidente</div>
                                 {% for error in form.tipo_risco.errors %}
                                 <div class="invalid-feedback d-block">
                                     <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
@@ -115,7 +115,7 @@
                                 </label>
                                 {{ form.agente }}
                                 <div class="form-text">
-                                    Ex: <em>Ruído</em>, <em>Bactérias e Vírus</em>,
+                                    Ex: <em>RuÃ­do</em>, <em>BactÃ©rias e VÃ­rus</em>,
                                     <em>Postura Inadequada</em>, <em>Eletricidade</em>
                                 </div>
                                 {% for error in form.agente.errors %}
@@ -127,10 +127,10 @@
                         </div>
                     </fieldset>
 
-                    {# ═══════════ FONTE E EXPOSIÇÃO ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• FONTE E EXPOSIÃ‡ÃƒO â•â•â•â•â•â•â•â•â•â•â• #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-broadcast-tower me-2"></i>Fonte Geradora e Exposição
+                            <i class="fas fa-broadcast-tower me-2"></i>Fonte Geradora e ExposiÃ§Ã£o
                         </legend>
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -139,7 +139,7 @@
                                 </label>
                                 {{ form.fonte_geradora }}
                                 <div class="form-text">
-                                    Ex: <em>Máquinas, Equipamentos, ferramentas elétricas</em>
+                                    Ex: <em>MÃ¡quinas, Equipamentos, ferramentas elÃ©tricas</em>
                                 </div>
                                 {% for error in form.fonte_geradora.errors %}
                                 <div class="invalid-feedback d-block">
@@ -172,10 +172,10 @@
                         </div>
                     </fieldset>
 
-                    {# ═══════════ RESULTADO DA AVALIAÇÃO ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• RESULTADO DA AVALIAÃ‡ÃƒO â•â•â•â•â•â•â•â•â•â•â• #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-chart-bar me-2"></i>Resultado da Avaliação
+                            <i class="fas fa-chart-bar me-2"></i>Resultado da AvaliaÃ§Ã£o
                         </legend>
                         <div class="row g-3">
                             <div class="col-md-4">
@@ -216,7 +216,7 @@
                         </div>
                     </fieldset>
 
-                    {# ═══════════ BOTÕES ═══════════ #}
+                    {# â•â•â•â•â•â•â•â•â•â•â• BOTÃ•ES â•â•â•â•â•â•â•â•â•â•â• #}
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
                         <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}" class="btn btn-outline-secondary order-2 order-sm-1">
                             <i class="fas fa-arrow-left me-1"></i> Voltar ao Documento

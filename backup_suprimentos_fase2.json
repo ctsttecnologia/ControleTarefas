@@ -1,0 +1,43 @@
+﻿[
+{
+  "model": "suprimentos.parceiro",
+  "pk": 1,
+  "fields": {
+    "razao_social": "Casa do Epi Ltda",
+    "nome_fantasia": "Casa do EPI",
+    "cnpj": "03.244.478/0003-17",
+    "inscricao_estadual": "",
+    "contato": "Joao",
+    "telefone": "31994778547",
+    "celular": "",
+    "email": "comercial@casadoepi.com.br",
+    "site": "http://www.casadoepibh.com.br",
+    "endereco": 45,
+    "observacoes": "",
+    "eh_fabricante": true,
+    "eh_fornecedor": true,
+    "ativo": true,
+    "filial": 2
+  }
+},
+{
+  "model": "suprimentos.parceiro",
+  "pk": 2,
+  "fields": {
+    "razao_social": "Elastobor Borrachas e PlÃ¡sticos LTDA",
+    "nome_fantasia": "Elastobor",
+    "cnpj": "53.840.542/0002-10",
+    "inscricao_estadual": "",
+    "contato": "",
+    "telefone": "11 5525-9744",
+    "celular": "",
+    "email": "atendimento3@elastobor.com.br",
+    "site": "https://www.elastobor.com.br/",
+    "endereco": 47,
+    "observacoes": "",
+    "eh_fabricante": true,
+    "eh_fornecedor": true,
+    "ativo": true,
+    "filial": 1
+  }
+}

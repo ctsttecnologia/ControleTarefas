@@ -4,18 +4,20 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from django.utils import timezone
 from datetime import date
+
 from tributacao.models import NCM, GrupoTributario
 from .models import (
     Parceiro, Material, Contrato, VerbaContrato,
-    Pedido, ItemPedido, EstoqueConsumo,
-    CategoriaMaterial, TipoMaterial,
+    Pedido, ItemPedido,
+    CategoriaMaterial,
+    AnexoPedido,
+    SolicitacaoCompra, AnexoSolicitacao,
 )
 
 
 # ═══════════════════════════════════════════════════
-# PARCEIRO (preservado)
+# PARCEIRO
 # ═══════════════════════════════════════════════════
 class ParceiroForm(forms.ModelForm):
     class Meta:
@@ -76,77 +78,56 @@ class MaterialForm(forms.ModelForm):
         queryset=Parceiro.objects.filter(eh_fabricante=True, ativo=True),
         required=False,
         label="Fabricante",
-        widget=forms.Select(attrs={
-            'class': 'form-select',
-            'id': 'id_epi_fabricante',
-        }),
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_epi_fabricante'}),
     )
     epi_modelo = forms.CharField(
-        max_length=100,
-        required=False,
-        label="Modelo",
+        max_length=100, required=False, label="Modelo",
         widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ex: Steel Pro Lente',
+            'class': 'form-control', 'placeholder': 'Ex: Steel Pro Lente',
             'id': 'id_epi_modelo',
         }),
     )
     epi_ca = forms.CharField(
-        max_length=50,
-        required=False,
-        label="Certificado de Aprovação (CA)",
+        max_length=50, required=False, label="Certificado de Aprovação (CA)",
         widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ex: 20716',
+            'class': 'form-control', 'placeholder': 'Ex: 20716',
             'id': 'id_epi_ca',
         }),
     )
     epi_vida_util_dias = forms.IntegerField(
-        required=False,
-        label="Vida Útil (dias)",
+        required=False, label="Vida Útil (dias)",
         widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'min': '1',
-            'placeholder': 'Ex: 365',
-            'id': 'id_epi_vida_util_dias',
+            'class': 'form-control', 'min': '1',
+            'placeholder': 'Ex: 365', 'id': 'id_epi_vida_util_dias',
         }),
     )
 
-    # ── Campos extras: Criar Ferramenta (ferramentas) ──
+    # ── Campos extras: Criar Ferramenta ──
     criar_ferramenta = forms.BooleanField(
         required=False,
         label="Criar Ferramenta no módulo de Ferramentas automaticamente",
         help_text="Marque para criar o registro de Ferramenta com controle de movimentação e QR Code.",
         widget=forms.CheckboxInput(attrs={
-            'class': 'form-check-input',
-            'id': 'id_criar_ferramenta',
+            'class': 'form-check-input', 'id': 'id_criar_ferramenta',
         }),
     )
     ferr_codigo = forms.CharField(
-        max_length=50,
-        required=False,
-        label="Código de Identificação",
+        max_length=50, required=False, label="Código de Identificação",
         help_text="Código único da ferramenta (Série/Patrimônio). Gerado automaticamente se vazio.",
         widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ex: CHAVE-GRIFO-001',
+            'class': 'form-control', 'placeholder': 'Ex: CHAVE-GRIFO-001',
             'id': 'id_ferr_codigo',
         }),
     )
     ferr_patrimonio = forms.CharField(
-        max_length=50,
-        required=False,
-        label="Nº de Patrimônio",
+        max_length=50, required=False, label="Nº de Patrimônio",
         widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ex: PAT-00452',
+            'class': 'form-control', 'placeholder': 'Ex: PAT-00452',
             'id': 'id_ferr_patrimonio',
         }),
     )
     ferr_localizacao = forms.CharField(
-        max_length=100,
-        required=False,
-        label="Localização Padrão",
+        max_length=100, required=False, label="Localização Padrão",
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ex: Almoxarifado, Armário A, Gaveta 3',
@@ -154,73 +135,43 @@ class MaterialForm(forms.ModelForm):
         }),
     )
     ferr_data_aquisicao = forms.DateField(
-        required=False,
-        label="Data de Aquisição",
+        required=False, label="Data de Aquisição",
         widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date',
+            'class': 'form-control', 'type': 'date',
             'id': 'id_ferr_data_aquisicao',
         }),
     )
     ferr_fornecedor = forms.ModelChoiceField(
         queryset=Parceiro.objects.filter(eh_fornecedor=True, ativo=True),
-        required=False,
-        label="Fornecedor",
-        widget=forms.Select(attrs={
-            'class': 'form-select',
-            'id': 'id_ferr_fornecedor',
-        }),
+        required=False, label="Fornecedor",
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_ferr_fornecedor'}),
     )
     ferr_quantidade = forms.IntegerField(
-        required=False,
-        label="Quantidade Inicial",
+        required=False, label="Quantidade Inicial",
         widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'min': '0',
-            'value': '0',
+            'class': 'form-control', 'min': '0', 'value': '0',
             'id': 'id_ferr_quantidade',
         }),
     )
 
-    # ═══ NOVO: Campos de Tributação ═══
-    ncm = forms.ModelChoiceField(
-        queryset=NCM.objects.filter(ativo=True),
-        required=False,
-        empty_label="— Selecione o NCM —",
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        help_text="Classificação fiscal do material",
-    )
-    grupo_tributario = forms.ModelChoiceField(
-        queryset=GrupoTributario.objects.filter(ativo=True),
-        required=False,
-        empty_label="— Selecione o Grupo Tributário —",
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        help_text="Perfil fiscal para cálculo de impostos na compra",
-    )
-
     class Meta:
         model = Material
+        # ⚠️ APENAS campos do MODEL. Os "extras" (criar_*, epi_*, ferr_*)
+        # são incluídos automaticamente por serem atributos de classe.
         fields = [
             'descricao', 'classificacao', 'tipo', 'marca',
             'unidade', 'valor_unitario',
-            'equipamento_epi', 'ferramenta_ref', 'ncm', 'grupo_tributario',
-            'ativo', 'ncm', 'grupo_tributario', 'criar_equipamento_epi',
-            'epi_fabricante', 'epi_modelo', 'epi_ca', 'epi_vida_util_dias',
-            'criar_ferramenta', 'ferr_codigo', 'ferr_patrimonio',
-            'ferr_localizacao', 'ferr_data_aquisicao', 'ferr_fornecedor',
+            'equipamento_epi', 'ferramenta_ref',
+            'ncm', 'grupo_tributario',
+            'ativo',
         ]
         widgets = {
             'descricao': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ex: Fita Isolante 3M Scotch 33+',
             }),
-            'ncm': forms.Select(attrs={'class': 'form-select'
-            }),
-            'grupo_tributario': forms.Select(attrs={'class': 'form-select'
-            }),
             'classificacao': forms.Select(attrs={
-                'class': 'form-select',
-                'id': 'id_classificacao',
+                'class': 'form-select', 'id': 'id_classificacao',
             }),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'marca': forms.TextInput(attrs={
@@ -232,53 +183,51 @@ class MaterialForm(forms.ModelForm):
                 'class': 'form-control', 'step': '0.01', 'min': '0',
             }),
             'equipamento_epi': forms.Select(attrs={
-                'class': 'form-select',
-                'id': 'id_equipamento_epi',
+                'class': 'form-select', 'id': 'id_equipamento_epi',
             }),
             'ferramenta_ref': forms.Select(attrs={
-                'class': 'form-select',
-                'id': 'id_ferramenta_ref',
+                'class': 'form-select', 'id': 'id_ferramenta_ref',
             }),
+            'ncm': forms.Select(attrs={'class': 'form-select'}),
+            'grupo_tributario': forms.Select(attrs={'class': 'form-select'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Filtrar NCM e Grupo Tributário ativos
-        from tributacao.models import NCM, GrupoTributario
+        # NCM e Grupo Tributário — apenas ativos, opcionais
         self.fields['ncm'].queryset = NCM.objects.filter(ativo=True)
         self.fields['ncm'].empty_label = '— Selecione o NCM (opcional) —'
         self.fields['ncm'].required = False
+        self.fields['ncm'].help_text = "Classificação fiscal do material"
 
         self.fields['grupo_tributario'].queryset = GrupoTributario.objects.filter(ativo=True)
         self.fields['grupo_tributario'].empty_label = '— Selecione o Grupo Tributário (opcional) —'
         self.fields['grupo_tributario'].required = False
+        self.fields['grupo_tributario'].help_text = "Perfil fiscal para cálculo de impostos na compra"
 
         # Labels mais claros
         self.fields['equipamento_epi'].label = "🛡️ Vincular ao Equipamento (SST)"
         self.fields['equipamento_epi'].help_text = (
             "Apenas para EPI. Ao receber pedido, dá entrada automática no estoque de SST."
         )
+        self.fields['equipamento_epi'].required = False
+
         self.fields['ferramenta_ref'].label = "🔧 Vincular à Ferramenta"
         self.fields['ferramenta_ref'].help_text = (
             "Apenas para Ferramenta. Ao receber pedido, incrementa a quantidade."
         )
-
-        # Campos não obrigatórios
-        self.fields['equipamento_epi'].required = False
         self.fields['ferramenta_ref'].required = False
 
-        # Se já tem equipamento vinculado, desabilitar checkbox de criar EPI
-        if self.instance and self.instance.pk and self.instance.equipamento_epi:
-            self.fields['criar_equipamento_epi'].widget.attrs['disabled'] = True
-            self.fields['criar_equipamento_epi'].help_text = "Já vinculado a um equipamento."
-
-        # Se já tem ferramenta vinculada, desabilitar checkbox de criar Ferramenta
-        if self.instance and self.instance.pk and self.instance.ferramenta_ref:
-            self.fields['criar_ferramenta'].widget.attrs['disabled'] = True
-            self.fields['criar_ferramenta'].help_text = "Já vinculado a uma ferramenta."
+        # Já vinculado? Desabilita checkbox de criação automática
+        if self.instance and self.instance.pk:
+            if self.instance.equipamento_epi:
+                self.fields['criar_equipamento_epi'].widget.attrs['disabled'] = True
+                self.fields['criar_equipamento_epi'].help_text = "Já vinculado a um equipamento."
+            if self.instance.ferramenta_ref:
+                self.fields['criar_ferramenta'].widget.attrs['disabled'] = True
+                self.fields['criar_ferramenta'].help_text = "Já vinculado a uma ferramenta."
 
     def clean(self):
         cleaned_data = super().clean()
@@ -290,41 +239,29 @@ class MaterialForm(forms.ModelForm):
 
         # ── Validação cruzada: classificação × vínculo ──
         if classificacao == CategoriaMaterial.EPI and ferramenta_ref:
-            self.add_error(
-                'ferramenta_ref',
-                'Material EPI não deve ser vinculado a uma Ferramenta.'
-            )
+            self.add_error('ferramenta_ref',
+                'Material EPI não deve ser vinculado a uma Ferramenta.')
 
         if classificacao == CategoriaMaterial.FERRAMENTA and equipamento_epi:
-            self.add_error(
-                'equipamento_epi',
-                'Material Ferramenta não deve ser vinculado a um Equipamento EPI.'
-            )
+            self.add_error('equipamento_epi',
+                'Material Ferramenta não deve ser vinculado a um Equipamento EPI.')
 
         if classificacao == CategoriaMaterial.CONSUMO:
             if equipamento_epi:
-                self.add_error(
-                    'equipamento_epi',
-                    'Material de Consumo usa estoque próprio. Não vincule a Equipamento.'
-                )
+                self.add_error('equipamento_epi',
+                    'Material de Consumo usa estoque próprio. Não vincule a Equipamento.')
             if ferramenta_ref:
-                self.add_error(
-                    'ferramenta_ref',
-                    'Material de Consumo usa estoque próprio. Não vincule a Ferramenta.'
-                )
+                self.add_error('ferramenta_ref',
+                    'Material de Consumo usa estoque próprio. Não vincule a Ferramenta.')
 
         # ── Validação: Criar Equipamento EPI ──
         if criar_epi:
             if classificacao != CategoriaMaterial.EPI:
-                self.add_error(
-                    'criar_equipamento_epi',
-                    'Criação automática de equipamento só funciona para materiais EPI.'
-                )
+                self.add_error('criar_equipamento_epi',
+                    'Criação automática de equipamento só funciona para materiais EPI.')
             if equipamento_epi:
-                self.add_error(
-                    'criar_equipamento_epi',
-                    'Não marque esta opção se já selecionou um equipamento existente.'
-                )
+                self.add_error('criar_equipamento_epi',
+                    'Não marque esta opção se já selecionou um equipamento existente.')
             if not cleaned_data.get('epi_fabricante'):
                 self.add_error('epi_fabricante', 'Informe o fabricante para criar o equipamento.')
             if not cleaned_data.get('epi_ca'):
@@ -335,15 +272,11 @@ class MaterialForm(forms.ModelForm):
         # ── Validação: Criar Ferramenta ──
         if criar_ferr:
             if classificacao != CategoriaMaterial.FERRAMENTA:
-                self.add_error(
-                    'criar_ferramenta',
-                    'Criação automática de ferramenta só funciona para materiais FERRAMENTA.'
-                )
+                self.add_error('criar_ferramenta',
+                    'Criação automática de ferramenta só funciona para materiais FERRAMENTA.')
             if ferramenta_ref:
-                self.add_error(
-                    'criar_ferramenta',
-                    'Não marque esta opção se já selecionou uma ferramenta existente.'
-                )
+                self.add_error('criar_ferramenta',
+                    'Não marque esta opção se já selecionou uma ferramenta existente.')
             if not cleaned_data.get('ferr_localizacao'):
                 self.add_error('ferr_localizacao', 'Informe a localização padrão da ferramenta.')
             if not cleaned_data.get('ferr_data_aquisicao'):
@@ -360,12 +293,8 @@ class ContratoForm(forms.ModelForm):
         model = Contrato
         fields = ['cm', 'cliente', 'filial', 'ativo']
         widgets = {
-            'cm': forms.TextInput(attrs={
-                'class': 'form-control', 'placeholder': 'Ex: 776',
-            }),
-            'cliente': forms.TextInput(attrs={
-                'class': 'form-control', 'placeholder': 'Ex: SERASA QUINIMURAS',
-            }),
+            'cm': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 776'}),
+            'cliente': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: SERASA QUINIMURAS'}),
             'filial': forms.Select(attrs={'class': 'form-select'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
@@ -382,44 +311,113 @@ class VerbaContratoForm(forms.ModelForm):
         model = VerbaContrato
         fields = ['ano', 'mes', 'verba_epi', 'verba_consumo', 'verba_ferramenta']
         widgets = {
-            'ano': forms.NumberInput(attrs={
-                'class': 'form-control', 'min': '2024', 'max': '2030',
-            }),
+            'ano': forms.NumberInput(attrs={'class': 'form-control', 'min': '2024', 'max': '2030'}),
             'mes': forms.Select(attrs={'class': 'form-select'}, choices=MES_CHOICES),
-            'verba_epi': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.01', 'min': '0',
-            }),
-            'verba_consumo': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.01', 'min': '0',
-            }),
-            'verba_ferramenta': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.01', 'min': '0',
-            }),
+            'verba_epi': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'verba_consumo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'verba_ferramenta': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
         }
 
 
+# ═══════════════════════════════════════════════════
+# PEDIDO — CABEÇALHO + ITENS
+# ═══════════════════════════════════════════════════
+class PedidoForm(forms.ModelForm):
+    """Form do CABEÇALHO do pedido (sem material/quantidade/unidade)."""
+    class Meta:
+        model = Pedido
+        fields = [
+            'tipo_obra',
+            'contrato',
+            'data_necessaria',
+            'observacao',
+        ]
+        widgets = {
+            'tipo_obra': forms.Select(attrs={'class': 'form-select'}),
+            'contrato': forms.Select(attrs={'class': 'form-select'}),
+            'data_necessaria': forms.DateInput(
+                attrs={'class': 'form-control', 'type': 'date'}
+            ),
+            'observacao': forms.Textarea(
+                attrs={'class': 'form-control', 'rows': 3,
+                       'placeholder': 'Observações gerais do pedido'}
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        qs = Contrato.objects.filter(ativo=True)
+        if self.user and not self.user.is_superuser:
+            filial_ativa = getattr(self.user, 'filial_ativa', None)
+            if filial_ativa:
+                qs = qs.filter(filial=filial_ativa)
+        self.fields['contrato'].queryset = qs
+
+    def clean_data_necessaria(self):
+        data = self.cleaned_data.get('data_necessaria')
+        if data and data < date.today():
+            raise ValidationError("A data necessária não pode ser no passado.")
+        return data
+
+
 class ItemPedidoForm(forms.ModelForm):
+    """Form de cada ITEM do pedido."""
     class Meta:
         model = ItemPedido
-        fields = ['material', 'quantidade', 'valor_unitario', 'observacao']
+        fields = [
+            'material',
+            'quantidade',
+            'unidade_medida',
+            'valor_unitario',
+            'observacao',
+        ]
         widgets = {
-            'material': forms.Select(attrs={
-                'class': 'form-select select2-material',
-            }),
-            'quantidade': forms.NumberInput(attrs={
-                'class': 'form-control', 'min': '1', 'value': '1',
-            }),
-            'valor_unitario': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.01', 'min': '0',
-            }),
-            'observacao': forms.TextInput(attrs={
-                'class': 'form-control', 'placeholder': 'Opcional',
-            }),
+            'material': forms.Select(attrs={'class': 'form-select'}),
+            'quantidade': forms.NumberInput(
+                attrs={'class': 'form-control', 'min': '1', 'step': '1'}
+            ),
+            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
+            'valor_unitario': forms.NumberInput(
+                attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}
+            ),
+            'observacao': forms.TextInput(
+                attrs={'class': 'form-control form-control-sm',
+                       'placeholder': 'Obs. do item (opcional)'}
+            ),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['material'].queryset = Material.objects.filter(ativo=True)
+
+
+class RevisaoPedidoForm(forms.ModelForm):
+    """Solicitante corrige o pedido devolvido pelo gerente."""
+    class Meta:
+        model = Pedido
+        fields = [
+            'tipo_obra',
+            'contrato',
+            'data_necessaria',
+            'observacao',
+        ]
+        widgets = {
+            'tipo_obra': forms.Select(attrs={'class': 'form-select'}),
+            'contrato': forms.Select(attrs={'class': 'form-select'}),
+            'data_necessaria': forms.DateInput(
+                attrs={'class': 'form-control', 'type': 'date'}
+            ),
+            'observacao': forms.Textarea(
+                attrs={'class': 'form-control', 'rows': 3}
+            ),
+        }
+
+    def clean_data_necessaria(self):
+        data = self.cleaned_data.get('data_necessaria')
+        if data and data < date.today():
+            raise ValidationError("A data necessária não pode ser no passado.")
+        return data
 
 
 class ReprovarPedidoForm(forms.Form):
@@ -432,8 +430,18 @@ class ReprovarPedidoForm(forms.Form):
     )
 
 
+class DevolverPedidoForm(forms.Form):
+    """Gerente devolve para revisão."""
+    motivo = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 'rows': 3,
+            'placeholder': 'Informe o que precisa ser corrigido...',
+        }),
+        label="Motivo da Devolução",
+    )
+
+
 class ConfirmarRecebimentoForm(forms.Form):
-    """Formulário de confirmação de recebimento do pedido."""
     observacao_recebimento = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control', 'rows': 3,
@@ -448,148 +456,7 @@ class ConfirmarRecebimentoForm(forms.Form):
     )
 
 
-# ═══════════════════════════════════════════════════
-# ESTOQUE CONSUMO (Saída manual)
-# ═══════════════════════════════════════════════════
-class SaidaConsumoForm(forms.Form):
-    """Formulário para registrar saída manual de material de consumo."""
-    material = forms.ModelChoiceField(
-        queryset=Material.objects.filter(
-            ativo=True, classificacao=CategoriaMaterial.CONSUMO
-        ),
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Material",
-    )
-    quantidade = forms.IntegerField(
-        min_value=1,
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control', 'min': '1',
-        }),
-        label="Quantidade",
-    )
-    justificativa = forms.CharField(
-        max_length=255,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ex: Entregue para limpeza do bloco A',
-        }),
-        label="Justificativa",
-    )
-
-# ═══════════════════════════════════════════════════
-# PEDIDO — FORMS NOVOS/ATUALIZADOS
-# ═══════════════════════════════════════════════════
-
-from .models import (
-    AnexoPedido, HistoricoPedido,
-    SolicitacaoCompra, AnexoSolicitacao, HistoricoSolicitacao,
-    TipoObra, TipoNotaFiscal,
-)
-
-
-class PedidoForm(forms.ModelForm):
-    """Form atualizado com campos novos (tipo_obra, descrição, upload)."""
-
-    class Meta:
-        model = Pedido
-        fields = [
-            'contrato', 'tipo_obra', 'descricao_material',
-            'quantidade', 'unidade_medida', 'tipo_insumo',
-            'data_necessaria', 'observacao',
-        ]
-        widgets = {
-            'contrato': forms.Select(attrs={'class': 'form-select'}),
-            'tipo_obra': forms.Select(attrs={'class': 'form-select'}),
-            'descricao_material': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 5,
-                'placeholder': (
-                    'Informe descrição DETALHADA: nome do material, '
-                    'marca/modelo preferencial, dimensões, cor, '
-                    'especificações técnicas, norma, etc.'
-                ),
-            }),
-            'quantidade': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.01',
-                'min': '0.01', 'placeholder': 'Ex: 10',
-            }),
-            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
-            'tipo_insumo': forms.Select(attrs={'class': 'form-select'}),
-            'data_necessaria': forms.DateInput(attrs={
-                'class': 'form-control', 'type': 'date',
-            }),
-            'observacao': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 3,
-                'placeholder': 'Observações gerais do pedido (opcional)...',
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        qs = Contrato.objects.filter(ativo=True)
-        if self.user and not self.user.is_superuser:
-            filial_ativa = getattr(self.user, 'filial_ativa', None)
-            if filial_ativa:
-                qs = qs.filter(filial=filial_ativa)
-        self.fields['contrato'].queryset = qs
-
-    def clean_descricao_material(self):
-        desc = self.cleaned_data.get('descricao_material', '').strip()
-        if desc and len(desc) < 20:
-            raise ValidationError(
-                "A descrição deve ter pelo menos 20 caracteres. "
-                "Seja detalhado para evitar retrabalho na cotação."
-            )
-        return desc
-
-    def clean_data_necessaria(self):
-        data = self.cleaned_data.get('data_necessaria')
-        if data and data < date.today():
-            raise ValidationError("A data necessária não pode ser no passado.")
-        return data
-
-
-class DevolverPedidoForm(forms.Form):
-    """Gerente devolve para revisão."""
-    motivo = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'class': 'form-control', 'rows': 3,
-            'placeholder': 'Informe o que precisa ser corrigido...',
-        }),
-        label="Motivo da Devolução",
-    )
-
-
-class RevisaoPedidoForm(forms.ModelForm):
-    """Solicitante corrige o pedido devolvido."""
-
-    class Meta:
-        model = Pedido
-        fields = [
-            'descricao_material', 'quantidade', 'unidade_medida',
-            'tipo_insumo', 'data_necessaria', 'observacao',
-        ]
-        widgets = {
-            'descricao_material': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 5,
-            }),
-            'quantidade': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.01', 'min': '0.01',
-            }),
-            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
-            'tipo_insumo': forms.Select(attrs={'class': 'form-select'}),
-            'data_necessaria': forms.DateInput(attrs={
-                'class': 'form-control', 'type': 'date',
-            }),
-            'observacao': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 3,
-            }),
-        }
-
-
 class AnexoPedidoForm(forms.ModelForm):
-    """Upload de anexo no pedido."""
-
     class Meta:
         model = AnexoPedido
         fields = ['arquivo', 'descricao']
@@ -618,24 +485,42 @@ class AnexoPedidoForm(forms.ModelForm):
 
 
 # ═══════════════════════════════════════════════════
-# SOLICITAÇÃO DE COMPRA — FORMS
+# ESTOQUE CONSUMO (Saída manual)
 # ═══════════════════════════════════════════════════
+class SaidaConsumoForm(forms.Form):
+    material = forms.ModelChoiceField(
+        queryset=Material.objects.filter(
+            ativo=True, classificacao=CategoriaMaterial.CONSUMO
+        ),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Material",
+    )
+    quantidade = forms.IntegerField(
+        min_value=1,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+        label="Quantidade",
+    )
+    justificativa = forms.CharField(
+        max_length=255,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ex: Entregue para limpeza do bloco A',
+        }),
+        label="Justificativa",
+    )
 
+
+# ═══════════════════════════════════════════════════
+# SOLICITAÇÃO DE COMPRA
+# ═══════════════════════════════════════════════════
 class CotacaoForm(forms.ModelForm):
-    """Comprador preenche dados da cotação."""
-
     class Meta:
         model = SolicitacaoCompra
-        fields = [
-            'data_cotacao', 'numero_cotacao',
-            'cnpj_compra', 'tipo_nota_fiscal',
-        ]
+        fields = ['data_cotacao', 'numero_cotacao', 'cnpj_compra', 'tipo_nota_fiscal']
         widgets = {
-            'data_cotacao': forms.DateInput(attrs={
-                'class': 'form-control', 'type': 'date',
-            }),
+            'data_cotacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'numero_cotacao': forms.TextInput(attrs={
-                'class': 'form-control', 'placeholder': 'Nº da cotação no Sienge',
+                'class': 'form-control', 'placeholder': 'Nº da cotação',
             }),
             'cnpj_compra': forms.TextInput(attrs={
                 'class': 'form-control', 'placeholder': '00.000.000/0000-00',
@@ -652,28 +537,20 @@ class CotacaoForm(forms.ModelForm):
 
 
 class ValidarCotacaoForm(forms.Form):
-    """Gerente valida cotação."""
     data_validacao = forms.DateField(
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         label="Data da Validação",
     )
 
 
-class CriarPedidoSiengeForm(forms.ModelForm):
-    """Comprador cria pedido no Sienge."""
-
+class CriarPedidoForm(forms.ModelForm):
     class Meta:
         model = SolicitacaoCompra
-        fields = [
-            'data_criacao_pedido', 'numero_pedido_sienge',
-            'fornecedor', 'valor_pedido',
-        ]
+        fields = ['data_criacao_pedido', 'numero_pedido', 'fornecedor', 'valor_pedido']
         widgets = {
-            'data_criacao_pedido': forms.DateInput(attrs={
-                'class': 'form-control', 'type': 'date',
-            }),
-            'numero_pedido_sienge': forms.TextInput(attrs={
-                'class': 'form-control', 'placeholder': 'Nº do pedido no Sienge',
+            'data_criacao_pedido': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'numero_pedido': forms.TextInput(attrs={
+                'class': 'form-control', 'placeholder': 'Nº do pedido',
             }),
             'fornecedor': forms.Select(attrs={'class': 'form-select'}),
             'valor_pedido': forms.NumberInput(attrs={
@@ -689,13 +566,13 @@ class CriarPedidoSiengeForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        for campo in ['data_criacao_pedido', 'numero_pedido_sienge', 'fornecedor', 'valor_pedido']:
+        for campo in ['data_criacao_pedido', 'numero_pedido', 'fornecedor', 'valor_pedido']:
             if not cleaned.get(campo):
                 self.add_error(campo, 'Campo obrigatório.')
         return cleaned
 
 
-class AprovarPedidoSiengeForm(forms.Form):
+class AprovarPedidoForm(forms.Form):
     data_aprovacao_pedido = forms.DateField(
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         label="Data da Aprovação do Pedido",
@@ -775,3 +652,4 @@ class ObservacaoSolicitacaoForm(forms.Form):
         }),
         label="Observação",
     )
+

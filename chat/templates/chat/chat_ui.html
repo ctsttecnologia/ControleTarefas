@@ -1,9 +1,9 @@
-    {% load static %}
+﻿    {% load static %}
 
-    <!-- Sistema de Chat Avançado v3.0 -->
+    <!-- Sistema de Chat AvanÃ§ado v3.0 -->
     <div class="chat-system-wrapper">
 
-        <!-- Botão Flutuante do Chat -->
+        <!-- BotÃ£o Flutuante do Chat -->
         <button type="button" class="floating-chat-btn" id="chat-modal-trigger"
             title="Abrir Chat"
             aria-label="Abrir Chat">
@@ -31,7 +31,7 @@
                         Conversas
                     </h2>
                     <div class="header-actions">
-                        <!-- Botão de busca global -->
+                        <!-- BotÃ£o de busca global -->
                         <button type="button" class="btn btn-link text-white" id="global-search-btn" 
                                 title="Busca global de mensagens">
                             <i class="bi bi-search"></i>
@@ -57,7 +57,7 @@
                 <!-- Body do Sidebar -->
                 <div class="chat-list-body">
                     
-                    <!-- Ação Nova Conversa -->
+                    <!-- AÃ§Ã£o Nova Conversa -->
                     <div class="chat-list-action">
                         <a href="#" id="iniciar-nova-conversa" data-bs-toggle="modal" data-bs-target="#novaConversaModal">
                             <i class="bi bi-chat-dots-fill"></i> 
@@ -68,11 +68,11 @@
                     <!-- Lista de Conversas Ativas -->
                     <div id="active-chats-list">
                 
-                        <!-- Esta seção será carregada dinamicamente via JavaScript -->
+                        <!-- Esta seÃ§Ã£o serÃ¡ carregada dinamicamente via JavaScript -->
                         <div id="dynamic-content-section" class="dynamic-content-section">
                             <div class="loading-placeholder">
                                 <div class="spinner-border spinner-border-sm text-muted"></div>
-                                <span class="text-muted ms-2">Carregando conteúdo...</span>
+                                <span class="text-muted ms-2">Carregando conteÃºdo...</span>
                             </div>
                         </div>
                     
@@ -102,7 +102,7 @@
                     <!-- Body do Modal -->
                     <div class="modal-body p-0">
                         
-                        <!-- Tabs de Navegação -->
+                        <!-- Tabs de NavegaÃ§Ã£o -->
                         <ul class="nav nav-tabs nav-fill" id="newChatTab" role="tablist">
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link active" id="dm-tab-button" data-bs-toggle="tab" 
@@ -127,7 +127,7 @@
                             </li>
                         </ul>
 
-                        <!-- Conteúdo das Tabs -->
+                        <!-- ConteÃºdo das Tabs -->
                         <div class="tab-content" id="newChatTabContent" style="min-height: 400px;">
                             
                             <!-- Tab: Conversa Individual -->
@@ -138,13 +138,13 @@
                                             <i class="bi bi-search text-muted"></i>
                                         </span>
                                         <input type="text" class="form-control border-start-0" 
-                                            id="dm-user-search" placeholder="Buscar usuário por nome ou email...">
+                                            id="dm-user-search" placeholder="Buscar usuÃ¡rio por nome ou email...">
                                     </div>
                                 </div>
                                 <div class="user-list-container" id="dm-user-list-container" style="max-height: 350px; overflow-y: auto;">
                                     <div class="loading-state">
                                         <div class="spinner-border spinner-border-sm"></div>
-                                        <p>Carregando usuários...</p>
+                                        <p>Carregando usuÃ¡rios...</p>
                                     </div>
                                 </div>
                             </div>
@@ -166,15 +166,15 @@
                                             <label for="group-participants-select" class="form-label fw-semibold">
                                                 <i class="bi bi-person-plus me-2"></i>
                                                 Participantes 
-                                                <span class="text-muted">(Use Ctrl/Cmd + clique para múltipla seleção)</span>
+                                                <span class="text-muted">(Use Ctrl/Cmd + clique para mÃºltipla seleÃ§Ã£o)</span>
                                             </label>
                                             <select class="form-select" id="group-participants-select" name="participants"
                                                     multiple required size="8" style="min-height: 200px;">
-                                                <option value="" disabled>Carregando usuários...</option>
+                                                <option value="" disabled>Carregando usuÃ¡rios...</option>
                                             </select>
                                             <div class="form-text">
                                                 <i class="bi bi-info-circle me-1"></i>
-                                                Selecione pelo menos 1 pessoa além de você
+                                                Selecione pelo menos 1 pessoa alÃ©m de vocÃª
                                             </div>
                                         </div>
                                         <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
@@ -192,7 +192,7 @@
                                             <i class="bi bi-search text-muted"></i>
                                         </span>
                                         <input type="text" class="form-control border-start-0" 
-                                            id="task-search" placeholder="Buscar tarefa por título...">
+                                            id="task-search" placeholder="Buscar tarefa por tÃ­tulo...">
                                     </div>
                                 </div>
                                 <div class="task-list-container" id="task-list-container" style="max-height: 350px; overflow-y: auto;">
@@ -216,15 +216,15 @@
                 <div id="chat-dialog-header-bar" class="chat-dialog-header-bar">
                     <div class="header-info">
                         <span id="chat-dialog-header-title" class="chat-title">Chat</span>
-                        <!-- Status do usuário -->
+                        <!-- Status do usuÃ¡rio -->
                         <div class="header-status">
                             <span class="status-indicator offline"></span>
-                            <span class="last-seen">Último acesso: agora</span>
+                            <span class="last-seen">Ãšltimo acesso: agora</span>
                         </div>
                     </div>
                     
                     <div class="header-buttons">
-                        <!-- Botão de busca no chat será adicionado aqui pelo JavaScript -->
+                        <!-- BotÃ£o de busca no chat serÃ¡ adicionado aqui pelo JavaScript -->
                         <!--
                         <div id="chat-search-button-container" class="chat-search-button-container">
                             <button type="button" class="btn btn-sm btn-outline-secondary" 
@@ -233,8 +233,8 @@
                             </button>
                         </div>
                         -->
-                        <!-- Botão de informações da conversa -->
-                        <button id="chat-info-btn" class="btn btn-link text-white" title="Informações da conversa">
+                        <!-- BotÃ£o de informaÃ§Ãµes da conversa -->
+                        <button id="chat-info-btn" class="btn btn-link text-white" title="InformaÃ§Ãµes da conversa">
                             <i class="bi bi-info-circle"></i>
                         </button>
                         <!-- Controle de som -->
@@ -253,7 +253,7 @@
                     </div>
                 </div>
                 
-                <!-- Container de busca no chat será inserido aqui pelo JavaScript -->
+                <!-- Container de busca no chat serÃ¡ inserido aqui pelo JavaScript -->
                 <div id="chat-search-container" class="chat-search-container" style="display: none;">
                     <div class="chat-search-header">
                         <i class="bi bi-search"></i>
@@ -264,19 +264,19 @@
                         </button>
                     </div>
                     <div class="chat-search-results" id="chat-search-results">
-                        <!-- Resultados da busca serão inseridos dinamicamente -->
+                        <!-- Resultados da busca serÃ£o inseridos dinamicamente -->
                     </div>
                 </div>
             </div>
         
-            <!-- Conteúdo do Chat -->
+            <!-- ConteÃºdo do Chat -->
             <div class="chat-dialog-content" id="chat-dialog-content">
                 
                 <!-- Log de Mensagens -->
                 <div class="chat-log" id="chat-log" role="log" aria-live="polite">
                     <div class="welcome-state">
                         <i class="bi bi-chat-heart" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
-                        <p>Selecione uma conversa para começar</p>
+                        <p>Selecione uma conversa para comeÃ§ar</p>
                         <div class="welcome-actions">
                             <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#novaConversaModal">
                                 <i class="bi bi-plus-circle me-2"></i>
@@ -286,10 +286,10 @@
                     </div>
                 </div>
                 
-                <!-- Indicadores de digitação -->
+                <!-- Indicadores de digitaÃ§Ã£o -->
                 <div id="typing-indicators" class="typing-indicators"></div>
                 
-                <!-- Preview de resposta será inserido aqui pelo JavaScript -->
+                <!-- Preview de resposta serÃ¡ inserido aqui pelo JavaScript -->
                 <div id="response-preview-container" class="response-preview-container" style="display: none;">
                     <div class="response-preview-header">
                         <i class="bi bi-eye"></i>
@@ -299,7 +299,7 @@
                         </button>
                     </div>
                     <div class="response-preview-content" id="response-preview-content">
-                        <!-- Conteúdo do preview será inserido dinamicamente -->
+                        <!-- ConteÃºdo do preview serÃ¡ inserido dinamicamente -->
                     </div>
                     <div class="response-preview-actions">
                         <button type="button" class="btn btn-sm btn-secondary" id="edit-preview-btn">
@@ -310,10 +310,10 @@
                         </button>
                     </div>
                 </div>
-                <!-- Área de Input -->
+                <!-- Ãrea de Input -->
                 <div class="chat-input-section" id="chat-input-area">
                     <div class="input-group">
-                        <!-- Botão de anexar arquivo (atualizado) -->
+                        <!-- BotÃ£o de anexar arquivo (atualizado) -->
                         <button id="attach-image-btn" class="btn btn-outline-light" type="button" title="Anexar arquivo">
                             <i class="bi bi-paperclip"></i>
                         </button>
@@ -327,7 +327,7 @@
                                 style="resize: none; overflow: hidden;">
                         </textarea>
                         
-                        <!-- Botão de enviar -->
+                        <!-- BotÃ£o de enviar -->
                         <button type="button" id="chat-message-submit" class="btn btn-primary" aria-label="Enviar Mensagem">
                             <i class="bi bi-send"></i>
                         </button>
@@ -342,45 +342,45 @@
             </div>
         </div>
 
-        <!-- Modal de Informações da Conversa -->
+        <!-- Modal de InformaÃ§Ãµes da Conversa -->
         <div class="modal fade" id="chatInfoModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">
                             <i class="bi bi-info-circle me-2"></i>
-                            Informações da Conversa
+                            InformaÃ§Ãµes da Conversa
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body" id="chat-info-content">
-                        <!-- Conteúdo será preenchido pelo JavaScript -->
+                        <!-- ConteÃºdo serÃ¡ preenchido pelo JavaScript -->
                         <div class="loading-state text-center p-4">
                             <div class="spinner-border spinner-border-sm"></div>
-                            <p class="mt-2 mb-0">Carregando informações...</p>
+                            <p class="mt-2 mb-0">Carregando informaÃ§Ãµes...</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Container de Notificações Toast -->
+        <!-- Container de NotificaÃ§Ãµes Toast -->
         <div id="chat-notifications-container" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;">
-            <!-- Notificações serão inseridas aqui pelo JavaScript -->
+            <!-- NotificaÃ§Ãµes serÃ£o inseridas aqui pelo JavaScript -->
         </div>
 
     </div>
 
-    <!-- Dados do usuário atual para o JavaScript -->
+    <!-- Dados do usuÃ¡rio atual para o JavaScript -->
     {{ request.user.username|json_script:"json-username" }}
     {{ request.user.id|json_script:"json-user-id" }}
 
     <!-- CSS do Chat -->
     <link rel="stylesheet" href="{% static 'css/chat-modern.css' %}">
 
-    <!-- CSS específico para funcionalidades avançadas -->
+    <!-- CSS especÃ­fico para funcionalidades avanÃ§adas -->
     <style>
-    /* Estilos específicos para o template refatorado */
+    /* Estilos especÃ­ficos para o template refatorado */
 
     /* Header Info */
     .header-info {
@@ -418,7 +418,7 @@
     .header-buttons {
         
         display: flex;
-        justify-content: flex-end; /* Alinha os itens à direita */
+        justify-content: flex-end; /* Alinha os itens Ã  direita */
         align-items: center;        /* Alinha ao centro verticalmente */
         gap: 6px;
     }

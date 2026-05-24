@@ -4,9 +4,14 @@
 
 import pytest
 from django.contrib.auth.models import Group
-
 from usuario.models import Filial, GroupCardPermissions, Usuario
+from django.contrib.auth.models import Group
 
+from core.constants import (
+    GRUPO_TECNICO,
+    GRUPO_ADMINISTRADOR,
+    GRUPO_GESTAO_QUALIDADE,
+)
 
 @pytest.mark.django_db
 class TestFilialModel:
@@ -85,6 +90,29 @@ class TestUsuarioModel:
     def test_is_administrador_false_quando_usuario_comum(self, usuario_comum):
         assert usuario_comum.is_administrador is False
 
+    def test_is_tecnico_true(usuario_factory):
+        user = usuario_factory()
+        grupo, _ = Group.objects.get_or_create(name=GRUPO_TECNICO)
+        user.groups.add(grupo)
+        assert user.is_tecnico is True
+
+    def test_is_tecnico_false_sem_grupo(usuario_factory):
+        user = usuario_factory()
+        assert user.is_tecnico is False
+
+
+    def test_is_administrador(usuario_factory):
+        user = usuario_factory()
+        grupo, _ = Group.objects.get_or_create(name=GRUPO_ADMINISTRADOR)
+        user.groups.add(grupo)
+        assert user.is_administrador is True
+
+
+    def test_is_da_qualidade(usuario_factory):
+        user = usuario_factory()
+        grupo, _ = Group.objects.get_or_create(name=GRUPO_GESTAO_QUALIDADE)
+        user.groups.add(grupo)
+        assert user.is_da_qualidade is True
 
 @pytest.mark.django_db
 class TestGroupCardPermissionsModel:
