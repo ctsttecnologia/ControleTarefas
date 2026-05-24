@@ -1,11 +1,11 @@
-﻿{# RelatÃ³rio Consolidado de Planos de AÃ§Ã£o #}
+{# Relatório Consolidado de Planos de Ação #}
 {% extends "pgr_gestao/pgr_base.html" %}
 
-{% block title %}RelatÃ³rio - Planos de AÃ§Ã£o{% endblock %}
+{% block title %}Relatório - Planos de Ação{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:relatorios' %}">RelatÃ³rios</a></li>
-<li class="breadcrumb-item active">Planos de AÃ§Ã£o</li>
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:relatorios' %}">Relatórios</a></li>
+<li class="breadcrumb-item active">Planos de Ação</li>
 {% endblock %}
 
 {% block extra_pgr_css %}
@@ -31,8 +31,8 @@
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h1><i class="bi bi-list-task"></i> Planos de AÃ§Ã£o</h1>
-            <p class="mb-0">Acompanhamento consolidado dos planos de aÃ§Ã£o vinculados ao PGR</p>
+            <h1><i class="bi bi-list-task"></i> Planos de Ação</h1>
+            <p class="mb-0">Acompanhamento consolidado dos planos de ação vinculados ao PGR</p>
         </div>
         <div class="d-flex gap-2 no-print">
             <button onclick="window.print()" class="btn btn-light">
@@ -65,7 +65,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted small mb-1 text-uppercase fw-bold">ConcluÃ­dos</p>
+                        <p class="text-muted small mb-1 text-uppercase fw-bold">Concluídos</p>
                         <h2 class="fw-bold mb-0 text-success">{{ planos_concluidos }}</h2>
                     </div>
                     <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center"
@@ -81,7 +81,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted small mb-1 text-uppercase fw-bold">Taxa de ConclusÃ£o</p>
+                        <p class="text-muted small mb-1 text-uppercase fw-bold">Taxa de Conclusão</p>
                         <h2 class="fw-bold mb-0 text-info">{{ taxa_conclusao|floatformat:1 }}%</h2>
                     </div>
                     <div class="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center"
@@ -113,7 +113,7 @@
     </div>
 </div>
 
-<!-- GrÃ¡ficos -->
+<!-- Gráficos -->
 <div class="row g-4">
     <div class="col-lg-6">
         <div class="card h-100">
@@ -136,7 +136,7 @@
                         <small class="text-muted">
                             {% if item.status == 'pendente' %}Pendente
                             {% elif item.status == 'em_andamento' %}Em Andamento
-                            {% elif item.status == 'concluido' %}ConcluÃ­do
+                            {% elif item.status == 'concluido' %}Concluído
                             {% elif item.status == 'cancelado' %}Cancelado
                             {% else %}{{ item.status }}{% endif %}:
                             <strong>{{ item.total }}</strong>
@@ -178,7 +178,7 @@
                         <th>Status</th>
                         <th class="text-center">Quantidade</th>
                         <th class="text-end">Custo Estimado Total</th>
-                        <th style="width: 35%;">ProporÃ§Ã£o</th>
+                        <th style="width: 35%;">Proporção</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -193,7 +193,7 @@
                                 {% else %}bg-info{% endif %} fs-6">
                                 {% if item.status == 'pendente' %}<i class="bi bi-clock me-1"></i>Pendente
                                 {% elif item.status == 'em_andamento' %}<i class="bi bi-arrow-repeat me-1"></i>Em Andamento
-                                {% elif item.status == 'concluido' %}<i class="bi bi-check-lg me-1"></i>ConcluÃ­do
+                                {% elif item.status == 'concluido' %}<i class="bi bi-check-lg me-1"></i>Concluído
                                 {% elif item.status == 'cancelado' %}<i class="bi bi-slash-circle me-1"></i>Cancelado
                                 {% else %}{{ item.status }}{% endif %}
                             </span>
@@ -203,7 +203,7 @@
                             {% if item.custo_total %}
                                 R$ {{ item.custo_total|floatformat:2 }}
                             {% else %}
-                                <span class="text-muted">â€”</span>
+                                <span class="text-muted">—</span>
                             {% endif %}
                         </td>
                         <td>
@@ -245,7 +245,7 @@
             <table class="table table-hover mb-0 align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>DescriÃ§Ã£o / AÃ§Ã£o</th>
+                        <th>Descrição / Ação</th>
                         <th>Risco Vinculado</th>
                         <th class="text-center">Status</th>
                         <th class="text-center">Prioridade</th>
@@ -261,7 +261,7 @@
                                 {{ plano.descricao|truncatewords:12 }}
                             </a>
                         </td>
-                        <td class="small">{{ plano.risco_identificado|default:"â€”" }}</td>
+                        <td class="small">{{ plano.risco_identificado|default:"—" }}</td>
                         <td class="text-center">
                             <span class="badge
                                 {% if plano.status == 'pendente' %}bg-warning text-dark
@@ -291,7 +291,7 @@
                             <div class="text-success">
                                 <i class="bi bi-check-circle-fill display-4 d-block mb-2"></i>
                                 <strong>Nenhum plano atrasado!</strong>
-                                <p class="text-muted mb-0 small">Todos os planos estÃ£o dentro do prazo.</p>
+                                <p class="text-muted mb-0 small">Todos os planos estão dentro do prazo.</p>
                             </div>
                         </td>
                     </tr>
@@ -315,14 +315,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const STATUS_LABEL = {
         'pendente': 'Pendente', 'em_andamento': 'Em Andamento',
-        'concluido': 'ConcluÃ­do', 'cancelado': 'Cancelado'
+        'concluido': 'Concluído', 'cancelado': 'Cancelado'
     };
     const STATUS_COR = {
         'pendente': '#ffc107', 'em_andamento': '#0d6efd',
         'concluido': '#198754', 'cancelado': '#6c757d'
     };
     const PRIORIDADE_LABEL = {
-        'baixa': 'Baixa', 'media': 'MÃ©dia', 'alta': 'Alta', 'urgente': 'Urgente'
+        'baixa': 'Baixa', 'media': 'Média', 'alta': 'Alta', 'urgente': 'Urgente'
     };
     const PRIORIDADE_COR = {
         'baixa': '#0dcaf0', 'media': '#ffc107', 'alta': '#fd7e14', 'urgente': '#dc3545'

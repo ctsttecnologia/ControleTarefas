@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 
 {% block title %}{{ titulo }}{% endblock %}
@@ -122,7 +122,7 @@
     }
     .btn-sign-clear:hover { border-color: #cbd5e0; background: #f7fafc; color: #4a5568; }
 
-    /* â•â•â• DARK MODE â•â•â• */
+    /* ═══ DARK MODE ═══ */
     [data-bs-theme="dark"] .sign-container { background: #1a1d23; }
     [data-bs-theme="dark"] .sign-card { box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
     [data-bs-theme="dark"] .sign-body { background-color: var(--bs-body-bg); }
@@ -139,7 +139,7 @@
     <div class="card sign-card">
 
         {% if assinatura_obj.esta_assinada %}
-        <!-- â•â•â• ASSINADO â•â•â• -->
+        <!-- ═══ ASSINADO ═══ -->
         <div class="sign-header sign-header-success">
             <div class="sign-header-icon">
                 <i class="bi bi-check-circle-fill"></i>
@@ -149,14 +149,14 @@
         <div class="sign-body text-center">
             <p class="lead">
                 Este documento foi assinado por <strong>{{ assinatura_obj.nome_assinante }}</strong>
-                em {{ assinatura_obj.data_assinatura|date:"d/m/Y" }} Ã s {{ assinatura_obj.data_assinatura|date:"H:i" }}.
+                em {{ assinatura_obj.data_assinatura|date:"d/m/Y" }} às {{ assinatura_obj.data_assinatura|date:"H:i" }}.
             </p>
             <div class="success-details text-start">
                 <dl class="row mb-0">
                     <dt class="col-sm-4">Assinante</dt>
                     <dd class="col-sm-8">{{ assinatura_obj.nome_assinante }}</dd>
                     <dt class="col-sm-4">Data/Hora</dt>
-                    <dd class="col-sm-8">{{ assinatura_obj.data_assinatura|date:"d/m/Y \Ã \s H:i" }}</dd>
+                    <dd class="col-sm-8">{{ assinatura_obj.data_assinatura|date:"d/m/Y \à\s H:i" }}</dd>
                     <dt class="col-sm-4">Status</dt>
                     <dd class="col-sm-8">
                         <span class="badge bg-success" style="border-radius: 50rem;">
@@ -168,7 +168,7 @@
         </div>
 
         {% else %}
-        <!-- â•â•â• PENDENTE ASSINATURA â•â•â• -->
+        <!-- ═══ PENDENTE ASSINATURA ═══ -->
         <div class="sign-header sign-header-pending">
             <div class="sign-header-icon">
                 <i class="bi bi-pen-fill"></i>
@@ -176,7 +176,7 @@
             <h3>{{ titulo }}</h3>
         </div>
         <div class="sign-body">
-            <p class="lead mb-1">OlÃ¡, <strong>{{ nome_assinante }}</strong>.</p>
+            <p class="lead mb-1">Olá, <strong>{{ nome_assinante }}</strong>.</p>
             <p class="text-muted mb-4">Desenhe sua assinatura no campo abaixo para validar o certificado.</p>
 
             <form id="signature-form" method="POST" action="{% url 'treinamentos:pagina_assinatura' token=token %}">
@@ -187,7 +187,7 @@
                 </div>
                 <div class="signature-hint text-center">
                     <i class="bi bi-hand-index-thumb me-1"></i>
-                    Use o mouse ou o dedo para assinar dentro da Ã¡rea pontilhada
+                    Use o mouse ou o dedo para assinar dentro da área pontilhada
                 </div>
 
                 <input type="hidden" name="assinatura_json" id="assinatura_json">
@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => wrapper.style.transform = 'translateX(5px)', 100);
             setTimeout(() => wrapper.style.transform = 'translateX(-3px)', 200);
             setTimeout(() => wrapper.style.transform = 'translateX(0)', 300);
-            alert('Por favor, forneÃ§a sua assinatura.');
+            alert('Por favor, forneça sua assinatura.');
             return;
         }
         document.getElementById('assinatura_json').value = signaturePad.toDataURL('image/svg+xml');

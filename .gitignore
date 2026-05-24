@@ -67,3 +67,6 @@ debug_*.html
 debug_*.txt
 
 .debug/
+
+# Script utilitário de manutenção
+scripts/fix_mojibake.py

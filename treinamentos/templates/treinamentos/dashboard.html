@@ -1,4 +1,4 @@
-﻿
+
 {% extends 'base.html' %}
 {% load static %}
 
@@ -6,7 +6,7 @@
 
 {% block extra_css %}
 <style>
-    /* â•â•â• VARIÃVEIS UNIFICADAS â•â•â• */
+    /* ═══ VARIÁVEIS UNIFICADAS ═══ */
     :root {
         --dash-primary: #00b8d4;
         --dash-primary-dark: #0097a7;
@@ -14,7 +14,7 @@
         --dash-gradient-end: #667eea;
     }
 
-    /* â•â•â• HERO HEADER â•â•â• */
+    /* ═══ HERO HEADER ═══ */
     .dash-hero {
         background: linear-gradient(135deg, var(--dash-gradient-start), var(--dash-gradient-end));
         border-radius: 1rem;
@@ -45,7 +45,7 @@
     .dash-hero h1 { font-weight: 700; font-size: 1.75rem; }
     .dash-hero p  { opacity: 0.85; margin-bottom: 0; }
 
-    /* â•â•â• TABS DE MÃ“DULO â•â•â• */
+    /* ═══ TABS DE MÓDULO ═══ */
     .module-tabs { border-bottom: 2px solid var(--bs-border-color); margin-bottom: 2rem; }
     .module-tabs .nav-link {
         font-weight: 600; color: var(--bs-secondary-color);
@@ -56,7 +56,7 @@
     .module-tabs .nav-link.active { color: var(--dash-primary); border-bottom-color: var(--dash-primary); background: transparent; }
     .module-tabs .nav-link i { font-size: 1.1rem; }
 
-    /* â•â•â• KPI CARDS â•â•â• */
+    /* ═══ KPI CARDS ═══ */
     .kpi-card {
         border: none; border-radius: 0.875rem;
         background-color: #ffffff;
@@ -72,7 +72,7 @@
     .kpi-value { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
     .kpi-label  { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
 
-    /* â•â•â• CHART CARDS â•â•â• */
+    /* ═══ CHART CARDS ═══ */
     .chart-card {
         border: none; border-radius: 0.875rem;
         background-color: #ffffff;
@@ -86,7 +86,7 @@
     }
     .chart-wrapper { position: relative; height: 320px; width: 100%; padding: 1rem; }
 
-    /* â•â•â• EAD CARD DE ACESSO RÃPIDO â•â•â• */
+    /* ═══ EAD CARD DE ACESSO RÁPIDO ═══ */
     .ead-access-card {
         border: none; border-radius: 0.875rem;
         background: linear-gradient(135deg, var(--dash-gradient-start), var(--dash-gradient-end));
@@ -112,18 +112,18 @@
         background: rgba(255,255,255,0.15); border-radius: 0.625rem;
     }
 
-    /* â•â•â• EMPTY STATE â•â•â• */
+    /* ═══ EMPTY STATE ═══ */
     .empty-chart { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #adb5bd; }
     .empty-chart i { font-size: 3rem; margin-bottom: 0.5rem; opacity: 0.4; }
 
-    /* â•â•â• PRINT â•â•â• */
+    /* ═══ PRINT ═══ */
     @media print {
         .dash-hero { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .kpi-card, .chart-card { box-shadow: none !important; border: 1px solid #ddd !important; }
         .no-print { display: none !important; }
     }
 
-    /* â•â•â• DARK MODE â•â•â• */
+    /* ═══ DARK MODE ═══ */
     [data-bs-theme="dark"] .kpi-card,
     [data-bs-theme="dark"] .chart-card { background-color: var(--bs-body-bg); }
     [data-bs-theme="dark"] .chart-card .card-header { border-bottom-color: rgba(255,255,255,0.08); }
@@ -141,7 +141,7 @@
                 <h1 class="mb-1">
                     <i class="bi bi-mortarboard-fill me-2"></i>Dashboard de Treinamentos
                 </h1>
-                <p class="mb-0">VisÃ£o consolidada de todos os treinamentos, participantes e investimentos</p>
+                <p class="mb-0">Visão consolidada de todos os treinamentos, participantes e investimentos</p>
             </div>
             <div class="d-flex gap-2 no-print">
                 <button onclick="window.print()" class="btn btn-sm btn-outline-light">
@@ -174,7 +174,7 @@
 
     <div class="tab-content" id="moduleTabsContent">
 
-        <!-- â•â•â•â•â•â•â•â•â•â• PANEL: PRESENCIAL â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ══════════ PANEL: PRESENCIAL ══════════ -->
         <div class="tab-pane fade show active" id="panel-presencial" role="tabpanel">
 
             <!-- KPIs Presencial -->
@@ -244,19 +244,19 @@
                 </div>
             </div>
 
-            <!-- GrÃ¡ficos Presencial â€” Linha 1 -->
+            <!-- Gráficos Presencial — Linha 1 -->
             <div class="row g-4 mb-4">
                 <div class="col-lg-6">
                     <div class="card chart-card shadow-sm h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-pie-chart-fill text-primary me-2"></i>Treinamentos por Ãrea</span>
-                            <span class="badge bg-primary bg-opacity-10 text-primary" id="badgeAreaTotal">â€”</span>
+                            <span><i class="bi bi-pie-chart-fill text-primary me-2"></i>Treinamentos por Área</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary" id="badgeAreaTotal">—</span>
                         </div>
                         <div class="card-body p-0">
                             <div class="chart-wrapper">
                                 <canvas id="chartArea"></canvas>
                                 <div class="empty-chart d-none" id="emptyArea">
-                                    <i class="bi bi-pie-chart"></i><span>Nenhum dado disponÃ­vel</span>
+                                    <i class="bi bi-pie-chart"></i><span>Nenhum dado disponível</span>
                                 </div>
                             </div>
                         </div>
@@ -266,13 +266,13 @@
                     <div class="card chart-card shadow-sm h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-bullseye text-success me-2"></i>Status dos Treinamentos</span>
-                            <span class="badge bg-success bg-opacity-10 text-success" id="badgeStatusTotal">â€”</span>
+                            <span class="badge bg-success bg-opacity-10 text-success" id="badgeStatusTotal">—</span>
                         </div>
                         <div class="card-body p-0">
                             <div class="chart-wrapper">
                                 <canvas id="chartStatus"></canvas>
                                 <div class="empty-chart d-none" id="emptyStatus">
-                                    <i class="bi bi-bullseye"></i><span>Nenhum dado disponÃ­vel</span>
+                                    <i class="bi bi-bullseye"></i><span>Nenhum dado disponível</span>
                                 </div>
                             </div>
                         </div>
@@ -280,19 +280,19 @@
                 </div>
             </div>
 
-            <!-- GrÃ¡ficos Presencial â€” Linha 2 -->
+            <!-- Gráficos Presencial — Linha 2 -->
             <div class="row g-4">
                 <div class="col-lg-8">
                     <div class="card chart-card shadow-sm h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-bar-chart-fill text-warning me-2"></i>Investimento por Ãrea</span>
-                            <span class="badge bg-warning bg-opacity-10 text-warning" id="badgeCustoTotal">â€”</span>
+                            <span><i class="bi bi-bar-chart-fill text-warning me-2"></i>Investimento por Área</span>
+                            <span class="badge bg-warning bg-opacity-10 text-warning" id="badgeCustoTotal">—</span>
                         </div>
                         <div class="card-body p-0">
                             <div class="chart-wrapper">
                                 <canvas id="chartCusto"></canvas>
                                 <div class="empty-chart d-none" id="emptyCusto">
-                                    <i class="bi bi-bar-chart"></i><span>Nenhum dado disponÃ­vel</span>
+                                    <i class="bi bi-bar-chart"></i><span>Nenhum dado disponível</span>
                                 </div>
                             </div>
                         </div>
@@ -301,7 +301,7 @@
                 <div class="col-lg-4">
                     <div class="card chart-card shadow-sm h-100">
                         <div class="card-header">
-                            <i class="bi bi-graph-up text-info me-2"></i>Resumo RÃ¡pido
+                            <i class="bi bi-graph-up text-info me-2"></i>Resumo Rápido
                         </div>
                         <div class="card-body">
                             <ul class="list-unstyled mb-0">
@@ -349,7 +349,7 @@
 
         </div><!-- /panel-presencial -->
 
-        <!-- â•â•â•â•â•â•â•â•â•â• PANEL: EAD â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ══════════ PANEL: EAD ══════════ -->
         <div class="tab-pane fade" id="panel-ead" role="tabpanel">
 
             <!-- KPIs EAD -->
@@ -416,7 +416,7 @@
                 </div>
             </div>
 
-            <!-- Acesso RÃ¡pido EAD + GrÃ¡fico Status -->
+            <!-- Acesso Rápido EAD + Gráfico Status -->
             <div class="row g-4 mb-4">
                 <div class="col-lg-8">
                     <div class="card ead-access-card shadow-sm">
@@ -425,15 +425,15 @@
                                 <i class="bi bi-laptop me-2"></i>Plataforma EAD
                             </h5>
                             <p class="mb-4 opacity-75">
-                                Gerencie cursos online, acompanhe matrÃ­culas e emita certificados.
+                                Gerencie cursos online, acompanhe matrículas e emita certificados.
                             </p>
                             <div class="row g-3">
                                 <div class="col-sm-6 col-md-4">
                                     <a href="{% url 'treinamentos:ead_catalogo' %}" class="ead-quick-link">
                                         <i class="bi bi-collection-play"></i>
                                         <div>
-                                            <div class="fw-semibold">CatÃ¡logo de Cursos</div>
-                                            <small class="opacity-75">Cursos disponÃ­veis</small>
+                                            <div class="fw-semibold">Catálogo de Cursos</div>
+                                            <small class="opacity-75">Cursos disponíveis</small>
                                         </div>
                                     </a>
                                 </div>
@@ -466,13 +466,13 @@
                 <div class="col-lg-4">
                     <div class="card chart-card shadow-sm h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-pie-chart-fill text-info me-2"></i>MatrÃ­culas por Status</span>
+                            <span><i class="bi bi-pie-chart-fill text-info me-2"></i>Matrículas por Status</span>
                         </div>
                         <div class="card-body p-0">
                             <div class="chart-wrapper" style="height:260px;">
                                 <canvas id="chartEadStatus"></canvas>
                                 <div class="empty-chart d-none" id="emptyEadStatus">
-                                    <i class="bi bi-pie-chart"></i><span>Nenhum dado disponÃ­vel</span>
+                                    <i class="bi bi-pie-chart"></i><span>Nenhum dado disponível</span>
                                 </div>
                             </div>
                         </div>
@@ -485,13 +485,13 @@
                 <div class="col-12">
                     <div class="card chart-card shadow-sm">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-trophy-fill text-warning me-2"></i>Top Cursos â€” Mais Matriculados</span>
+                            <span><i class="bi bi-trophy-fill text-warning me-2"></i>Top Cursos — Mais Matriculados</span>
                         </div>
                         <div class="card-body p-0">
                             <div class="chart-wrapper" style="height: 280px;">
                                 <canvas id="chartEadTopCursos"></canvas>
                                 <div class="empty-chart d-none" id="emptyEadTop">
-                                    <i class="bi bi-bar-chart"></i><span>Nenhum curso com matrÃ­culas</span>
+                                    <i class="bi bi-bar-chart"></i><span>Nenhum curso com matrículas</span>
                                 </div>
                             </div>
                         </div>
@@ -504,7 +504,7 @@
     </div><!-- /tab-content -->
 
     <div class="text-muted text-center small mt-4 py-2">
-        <i class="bi bi-clock me-1"></i> Dados atualizados em tempo real ao acessar esta pÃ¡gina
+        <i class="bi bi-clock me-1"></i> Dados atualizados em tempo real ao acessar esta página
     </div>
 
 </div>
@@ -516,17 +516,17 @@
 document.addEventListener('DOMContentLoaded', () => {
     let chartInstances = [];
 
-    // â•â•â• 1. PARSE JSON â•â•â•
+    // ═══ 1. PARSE JSON ═══
     let dashboardData;
     try {
         dashboardData = JSON.parse('{{ dashboard_data_json|escapejs }}');
-        if (typeof dashboardData !== 'object' || dashboardData === null) throw new Error("invÃ¡lido");
+        if (typeof dashboardData !== 'object' || dashboardData === null) throw new Error("inválido");
     } catch (e) {
         console.error("Erro dados dashboard:", e);
         dashboardData = { area: [], status: [], custo: [], ead_status: [], ead_top_cursos: [] };
     }
 
-    // â•â•â• 2. PALETAS â•â•â•
+    // ═══ 2. PALETAS ═══
     const PALETA = [
         '#00b8d4', '#1cc88a', '#667eea', '#f6c23e', '#e74a3b',
         '#858796', '#36b9cc', '#4e73df', '#17a673', '#2c9faf'
@@ -546,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'expirado':     '#f6c23e',
     };
 
-    // â•â•â• 3. HELPERS â•â•â•
+    // ═══ 3. HELPERS ═══
     const getTheme = () => {
         const dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
         return {
@@ -562,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el) el.classList.toggle('d-none', hasData);
     };
 
-    // â•â•â• 4. INIT TODOS OS CHARTS â•â•â•
+    // ═══ 4. INIT TODOS OS CHARTS ═══
     const initCharts = () => {
         chartInstances.forEach(c => c.destroy());
         chartInstances = [];
@@ -574,7 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         const bodyBg = getComputedStyle(document.body).backgroundColor || '#fff';
 
-        // â”€â”€ DOUGHNUT HELPER â”€â”€
+        // ── DOUGHNUT HELPER ──
         const makeDoughnut = (canvasId, emptyId, badgeId, data, colorFn) => {
             const labels = data.map(i => i.nome_legivel || i.label);
             const values = data.map(i => i.total || i.count || 0);
@@ -582,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleEmpty(emptyId, hasData);
             if (badgeId) {
                 const badge = document.getElementById(badgeId);
-                if (badge) badge.textContent = hasData ? values.reduce((a,b) => a+b, 0) + ' total' : 'â€”';
+                if (badge) badge.textContent = hasData ? values.reduce((a,b) => a+b, 0) + ' total' : '—';
             }
             if (!hasData) return;
             const ctx = document.getElementById(canvasId);
@@ -619,21 +619,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
         };
 
-        // â”€â”€ PRESENCIAL: Ãrea â”€â”€
+        // ── PRESENCIAL: Área ──
         makeDoughnut('chartArea', 'emptyArea', 'badgeAreaTotal', dashboardData.area || []);
 
-        // â”€â”€ PRESENCIAL: Status â”€â”€
+        // ── PRESENCIAL: Status ──
         makeDoughnut('chartStatus', 'emptyStatus', 'badgeStatusTotal', dashboardData.status || [],
             (item) => PALETA_STATUS[(item.nome_legivel || '').toLowerCase()] || '#adb5bd'
         );
 
-        // â”€â”€ PRESENCIAL: Custo (Barras) â”€â”€
+        // ── PRESENCIAL: Custo (Barras) ──
         const custoLabels = (dashboardData.custo || []).map(i => i.nome_legivel);
         const custoValues = (dashboardData.custo || []).map(i => i.total);
         const hasCusto = custoLabels.length > 0 && custoValues.some(v => v > 0);
         toggleEmpty('emptyCusto', hasCusto);
         const badgeCusto = document.getElementById('badgeCustoTotal');
-        if (badgeCusto) badgeCusto.textContent = hasCusto ? fmtBRL(custoValues.reduce((a,b) => a+b, 0)) : 'â€”';
+        if (badgeCusto) badgeCusto.textContent = hasCusto ? fmtBRL(custoValues.reduce((a,b) => a+b, 0)) : '—';
         if (hasCusto) {
             const ctx = document.getElementById('chartCusto');
             if (ctx) {
@@ -664,12 +664,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // â”€â”€ EAD: MatrÃ­culas por Status (UMA VEZ SÃ“!) â”€â”€
+        // ── EAD: Matrículas por Status (UMA VEZ SÓ!) ──
         makeDoughnut('chartEadStatus', 'emptyEadStatus', null, dashboardData.ead_status || [],
             (item) => PALETA_EAD_STATUS[item.status || ''] || '#adb5bd'
         );
 
-        // â”€â”€ EAD: Top Cursos (Barras Horizontais) â”€â”€
+        // ── EAD: Top Cursos (Barras Horizontais) ──
         const topData = dashboardData.ead_top_cursos || [];
         const hasTop = topData.length > 0;
         toggleEmpty('emptyEadTop', hasTop);
@@ -681,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     data: {
                         labels: topData.map(i => i.titulo),
                         datasets: [{
-                            label: 'MatrÃ­culas',
+                            label: 'Matrículas',
                             data: topData.map(i => i.total),
                             backgroundColor: PALETA.slice(0, topData.length).map(c => c + '33'),
                             borderColor: PALETA.slice(0, topData.length),
@@ -704,14 +704,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // â•â•â• 5. OBSERVER DE TEMA â•â•â•
+    // ═══ 5. OBSERVER DE TEMA ═══
     new MutationObserver((mutations) => {
         for (const m of mutations) {
             if (m.attributeName === 'data-bs-theme') { initCharts(); break; }
         }
     }).observe(document.documentElement, { attributes: true });
 
-    // â•â•â• 6. REDIMENSIONAR CHARTS AO TROCAR ABA â•â•â•
+    // ═══ 6. REDIMENSIONAR CHARTS AO TROCAR ABA ═══
     document.getElementById('tab-ead')?.addEventListener('shown.bs.tab', () => {
         chartInstances.forEach(c => c.resize());
     });
@@ -719,7 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chartInstances.forEach(c => c.resize());
     });
 
-    // â•â•â• 7. GO! â•â•â•
+    // ═══ 7. GO! ═══
     initCharts();
 });
 </script>

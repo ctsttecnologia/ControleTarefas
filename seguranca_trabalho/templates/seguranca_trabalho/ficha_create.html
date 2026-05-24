@@ -1,4 +1,4 @@
-﻿
+
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load widget_tweaks %}
 
@@ -13,7 +13,7 @@
             <h4>
                 <i class="bi bi-plus-circle me-2"></i>Nova Ficha de EPI
             </h4>
-            <span class="sst-page-subtitle">Criar ficha de controle para um funcionÃ¡rio</span>
+            <span class="sst-page-subtitle">Criar ficha de controle para um funcionário</span>
         </div>
         <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="sst-btn-header">
             <i class="bi bi-arrow-left"></i> Voltar
@@ -26,7 +26,7 @@
         <div class="sst-card">
             <div class="sst-card-header">
                 <i class="bi bi-person-plus"></i>
-                <h6>Selecione o FuncionÃ¡rio</h6>
+                <h6>Selecione o Funcionário</h6>
             </div>
             <form method="post" novalidate id="fichaForm">
                 {% csrf_token %}
@@ -41,22 +41,22 @@
 
                     <div class="mb-4">
                         <label for="{{ form.funcionario.id_for_label }}" class="sst-form-label">
-                            FuncionÃ¡rio <span class="required">*</span>
+                            Funcionário <span class="required">*</span>
                         </label>
                         {% render_field form.funcionario class+="form-select" %}
                         {% for error in form.funcionario.errors %}
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                         <small class="form-text">
-                            Selecione o funcionÃ¡rio para criar a ficha de EPI
+                            Selecione o funcionário para criar a ficha de EPI
                         </small>
                     </div>
 
                     <div class="sst-alert sst-alert--info">
                         <i class="bi bi-info-circle-fill"></i>
                         <small>
-                            Apenas funcionÃ¡rios ativos e sem ficha de EPI sÃ£o exibidos.
-                            ApÃ³s criar a ficha, vocÃª poderÃ¡ registrar entregas de EPIs.
+                            Apenas funcionários ativos e sem ficha de EPI são exibidos.
+                            Após criar a ficha, você poderá registrar entregas de EPIs.
                         </small>
                     </div>
                 </div>

@@ -1,8 +1,8 @@
-﻿
+
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}400 - RequisiÃ§Ã£o InvÃ¡lida{% endblock %}
+{% block title %}400 - Requisição Inválida{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
@@ -12,20 +12,20 @@
                 <h1 class="display-1 text-danger">
                     <i class="fas fa-exclamation-triangle"></i> 400
                 </h1>
-                <h2 class="mb-4">RequisiÃ§Ã£o InvÃ¡lida</h2>
+                <h2 class="mb-4">Requisição Inválida</h2>
                 <p class="lead mb-4">
-                    Os dados enviados nÃ£o puderam ser processados. 
-                    Verifique as informaÃ§Ãµes e tente novamente.
+                    Os dados enviados não puderam ser processados. 
+                    Verifique as informações e tente novamente.
                 </p>
                 
                 <div class="error-details mb-4">
                     <p class="text-muted">
-                        PossÃ­veis causas:
+                        Possíveis causas:
                     </p>
                     <ul class="list-unstyled">
-                        <li><i class="fas fa-circle-notch fa-xs"></i> FormulÃ¡rio incompleto ou com dados invÃ¡lidos</li>
+                        <li><i class="fas fa-circle-notch fa-xs"></i> Formulário incompleto ou com dados inválidos</li>
                         <li><i class="fas fa-circle-notch fa-xs"></i> Formato de dados incorreto</li>
-                        <li><i class="fas fa-circle-notch fa-xs"></i> RequisiÃ§Ã£o malformada</li>
+                        <li><i class="fas fa-circle-notch fa-xs"></i> Requisição malformada</li>
                     </ul>
                 </div>
 
@@ -34,7 +34,7 @@
                         <i class="fas fa-arrow-left"></i> Voltar
                     </a>
                     <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-primary btn-lg">
-                        <i class="fas fa-home"></i> Ir para o InÃ­cio
+                        <i class="fas fa-home"></i> Ir para o Início
                     </a>
                 </div>
             </div>

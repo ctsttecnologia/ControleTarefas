@@ -1,7 +1,7 @@
-﻿
+
 {% extends "base.html" %}
 
-{% block title %}Resultado da AvaliaÃ§Ã£o{% endblock %}
+{% block title %}Resultado da Avaliação{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -53,7 +53,7 @@
 
 {% block content %}
 
-<!-- â•â•â• HERO DO RESULTADO â•â•â• -->
+<!-- ═══ HERO DO RESULTADO ═══ -->
 <section class="resultado-hero
     {% if aprovado_completo %}hero-aprovado
     {% elif nota_ok and not ch_ok %}hero-pendente
@@ -66,9 +66,9 @@
             <div class="col-md-7">
                 <h2 class="fw-bold mb-2">
                     {% if aprovado_completo %}
-                        <i class="bi bi-trophy-fill me-2"></i>ParabÃ©ns! VocÃª foi aprovado!
+                        <i class="bi bi-trophy-fill me-2"></i>Parabéns! Você foi aprovado!
                     {% elif nota_ok and not ch_ok %}
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Nota aprovada, mas falta carga horÃ¡ria
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Nota aprovada, mas falta carga horária
                     {% elif not nota_ok and tentativa.matricula.tentativas_avaliacao < tentativa.matricula.curso.max_tentativas_avaliacao %}
                         <i class="bi bi-arrow-repeat me-2"></i>Nota insuficiente
                     {% else %}
@@ -77,8 +77,8 @@
                 </h2>
                 <p class="mb-0" style="opacity:.85; font-size: 1.05rem;">
                     {{ tentativa.matricula.curso.titulo }}
-                    â€” Tentativa {{ tentativa.numero_tentativa }}
-                    â€” {{ tentativa.finalizada_em|date:"d/m/Y H:i" }}
+                    — Tentativa {{ tentativa.numero_tentativa }}
+                    — {{ tentativa.finalizada_em|date:"d/m/Y H:i" }}
                 </p>
             </div>
             <div class="col-md-3 text-md-end mt-3 mt-md-0">
@@ -91,12 +91,12 @@
     </div>
 </section>
 
-<!-- â•â•â• CRITÃ‰RIOS DE APROVAÃ‡ÃƒO â•â•â• -->
+<!-- ═══ CRITÉRIOS DE APROVAÇÃO ═══ -->
 <section class="container py-4">
-    <h5 class="fw-bold mb-3"><i class="bi bi-clipboard-check me-2"></i>CritÃ©rios de AprovaÃ§Ã£o</h5>
+    <h5 class="fw-bold mb-3"><i class="bi bi-clipboard-check me-2"></i>Critérios de Aprovação</h5>
 
     <div class="row g-3 mb-4">
-        <!-- CritÃ©rio 1: Nota -->
+        <!-- Critério 1: Nota -->
         <div class="col-md-6">
             <div class="criterio-card {% if nota_ok %}criterio-ok{% else %}criterio-falha{% endif %}">
                 <div>
@@ -107,17 +107,17 @@
                     {% endif %}
                 </div>
                 <div>
-                    <strong>Nota da AvaliaÃ§Ã£o</strong>
+                    <strong>Nota da Avaliação</strong>
                     <br>
                     <span class="text-muted">
                         Sua nota: <strong>{{ tentativa.nota }}</strong>
-                        â€” MÃ­nima: <strong>{{ tentativa.matricula.curso.nota_minima }}</strong>
+                        — Mínima: <strong>{{ tentativa.matricula.curso.nota_minima }}</strong>
                     </span>
                 </div>
             </div>
         </div>
 
-        <!-- CritÃ©rio 2: Carga HorÃ¡ria -->
+        <!-- Critério 2: Carga Horária -->
         <div class="col-md-6">
             <div class="criterio-card {% if ch_ok %}criterio-ok{% else %}criterio-pendente{% endif %}">
                 <div>
@@ -128,16 +128,16 @@
                     {% endif %}
                 </div>
                 <div>
-                    <strong>Carga HorÃ¡ria MÃ­nima</strong>
+                    <strong>Carga Horária Mínima</strong>
                     <br>
                     <span class="text-muted">
                         Cumprida: <strong>{{ matricula.carga_horaria_cumprida_formatada }}</strong>
-                        â€” Exigida: <strong>{{ tentativa.matricula.curso.carga_horaria_total }}h</strong>
+                        — Exigida: <strong>{{ tentativa.matricula.curso.carga_horaria_total }}h</strong>
                     </span>
                     {% if not ch_ok %}
                     <br>
                     <small class="text-muted">
-                        ({{ matricula.percentual_carga_horaria }}% concluÃ­do)
+                        ({{ matricula.percentual_carga_horaria }}% concluído)
                     </small>
                     {% endif %}
                 </div>
@@ -145,44 +145,44 @@
         </div>
     </div>
 
-    <!-- â•â•â• ALERTA DE CH PENDENTE â•â•â• -->
+    <!-- ═══ ALERTA DE CH PENDENTE ═══ -->
     {% if nota_ok and not ch_ok %}
     <div class="alert alert-warning border-warning d-flex align-items-start gap-3 mb-4"
          style="border-left: 5px solid #f6c23e !important;">
         <i class="bi bi-camera-video-fill fs-3 text-warning mt-1"></i>
         <div>
             <h6 class="fw-bold mb-1">
-                Volte aos vÃ­deos â€” Ã© necessÃ¡rio completar a carga horÃ¡ria!
+                Volte aos vídeos — é necessário completar a carga horária!
             </h6>
             <p class="mb-2">
-                Sua nota <strong>{{ tentativa.nota }}</strong> atingiu a mÃ­nima,
-                mas vocÃª cumpriu apenas
+                Sua nota <strong>{{ tentativa.nota }}</strong> atingiu a mínima,
+                mas você cumpriu apenas
                 <strong>{{ matricula.carga_horaria_cumprida_formatada }}</strong>
                 de <strong>{{ tentativa.matricula.curso.carga_horaria_total }}h</strong> exigidas
                 ({{ matricula.percentual_carga_horaria }}%).
             </p>
             <a href="{% url 'treinamentos:ead_curso_detail' slug=tentativa.matricula.curso.slug %}"
                class="btn btn-warning btn-sm fw-bold">
-                <i class="bi bi-play-circle me-1"></i> Voltar ao ConteÃºdo do Curso
+                <i class="bi bi-play-circle me-1"></i> Voltar ao Conteúdo do Curso
             </a>
         </div>
     </div>
     {% endif %}
 
-    <!-- â•â•â• ALERTA NOTA INSUFICIENTE â•â•â• -->
+    <!-- ═══ ALERTA NOTA INSUFICIENTE ═══ -->
     {% if not nota_ok %}
     <div class="alert alert-danger border-danger d-flex align-items-start gap-3 mb-4"
          style="border-left: 5px solid #e74a3b !important;">
         <i class="bi bi-journal-x fs-3 text-danger mt-1"></i>
         <div>
-            <h6 class="fw-bold mb-1">Nota insuficiente para aprovaÃ§Ã£o</h6>
+            <h6 class="fw-bold mb-1">Nota insuficiente para aprovação</h6>
             <p class="mb-2">
-                Sua nota <strong>{{ tentativa.nota }}</strong> ficou abaixo da mÃ­nima
+                Sua nota <strong>{{ tentativa.nota }}</strong> ficou abaixo da mínima
                 <strong>{{ tentativa.matricula.curso.nota_minima }}</strong>.
                 {% if tentativa.matricula.tentativas_avaliacao < tentativa.matricula.curso.max_tentativas_avaliacao %}
-                VocÃª ainda tem
+                Você ainda tem
                 <strong>{{ tentativa.matricula.curso.max_tentativas_avaliacao|add:"-"|add:tentativa.matricula.tentativas_avaliacao }} tentativa(s)</strong>.
-                Revise o conteÃºdo e tente novamente.
+                Revise o conteúdo e tente novamente.
                 {% else %}
                 Suas tentativas foram esgotadas. Aguarde o gestor liberar uma nova tentativa.
                 {% endif %}
@@ -197,7 +197,7 @@
     </div>
     {% endif %}
 
-    <!-- â•â•â• GABARITO â•â•â• -->
+    <!-- ═══ GABARITO ═══ -->
     <h5 class="fw-bold mb-3 mt-4">
         <i class="bi bi-list-ol me-2"></i>Gabarito Completo
     </h5>
@@ -212,7 +212,7 @@
                 {% else %}
                     <i class="bi bi-x-circle-fill text-danger me-1"></i>
                 {% endif %}
-                QuestÃ£o {{ forloop.counter }}
+                Questão {{ forloop.counter }}
             </strong>
             <span class="badge bg-light text-dark">Peso: {{ item.questao.peso }}</span>
         </div>
@@ -238,7 +238,7 @@
                     {% if alt == item.escolhida and not alt.correta %}
                         <span class="badge bg-danger ms-1">Sua resposta</span>
                     {% elif alt == item.escolhida and alt.correta %}
-                        <span class="badge bg-success ms-1">Sua resposta âœ”</span>
+                        <span class="badge bg-success ms-1">Sua resposta ✔</span>
                     {% endif %}
                 </div>
             </div>
@@ -247,14 +247,14 @@
             {% if item.questao.explicacao %}
             <div class="alert alert-info mt-3 mb-0 py-2 small">
                 <i class="bi bi-lightbulb me-1"></i>
-                <strong>ExplicaÃ§Ã£o:</strong> {{ item.questao.explicacao }}
+                <strong>Explicação:</strong> {{ item.questao.explicacao }}
             </div>
             {% endif %}
         </div>
     </div>
     {% endfor %}
 
-    <!-- â•â•â• AÃ‡Ã•ES FINAIS â•â•â• -->
+    <!-- ═══ AÇÕES FINAIS ═══ -->
     <div class="d-flex justify-content-center gap-3 mt-4 pt-3 border-top">
         {% if aprovado_completo %}
             <a href="{% url 'treinamentos:ead_curso_detail' slug=tentativa.matricula.curso.slug %}"
@@ -264,7 +264,7 @@
         {% elif nota_ok and not ch_ok %}
             <a href="{% url 'treinamentos:ead_curso_detail' slug=tentativa.matricula.curso.slug %}"
                class="btn btn-warning btn-lg">
-                <i class="bi bi-play-circle me-1"></i> Voltar aos VÃ­deos
+                <i class="bi bi-play-circle me-1"></i> Voltar aos Vídeos
             </a>
         {% elif tentativa.matricula.pode_fazer_avaliacao %}
             <a href="{% url 'treinamentos:ead_avaliacao' matricula_id=tentativa.matricula.pk %}"

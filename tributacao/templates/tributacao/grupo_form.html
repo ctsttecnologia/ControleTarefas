@@ -1,4 +1,4 @@
-﻿
+
 <!-- templates/tributacao/grupo_form.html -->
 {% extends "tributacao/base_tributacao.html" %}
 
@@ -18,7 +18,7 @@
         </div>
         {% endif %}
 
-        <!-- â•â•â• DADOS DO GRUPO â•â•â• -->
+        <!-- ═══ DADOS DO GRUPO ═══ -->
         <div class="card mb-3">
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0"><i class="bi bi-collection"></i> Dados do Grupo</h5>
@@ -45,11 +45,11 @@
                         {{ form.cfop }}
                     </div>
                     <div class="col-md-3">
-                        <label for="{{ form.ncm.id_for_label }}" class="form-label">NCM PadrÃ£o</label>
+                        <label for="{{ form.ncm.id_for_label }}" class="form-label">NCM Padrão</label>
                         {{ form.ncm }}
                     </div>
                     <div class="col-md-4">
-                        <label for="{{ form.descricao.id_for_label }}" class="form-label">DescriÃ§Ã£o</label>
+                        <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição</label>
                         {{ form.descricao }}
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
@@ -64,10 +64,10 @@
             </div>
         </div>
 
-        <!-- â•â•â• TRIBUTAÃ‡ÃƒO FEDERAL â•â•â• -->
+        <!-- ═══ TRIBUTAÇÃO FEDERAL ═══ -->
         <div class="card mb-3">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="bi bi-bank"></i> TributaÃ§Ã£o Federal (IPI / PIS / COFINS)</h5>
+                <h5 class="mb-0"><i class="bi bi-bank"></i> Tributação Federal (IPI / PIS / COFINS)</h5>
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -81,7 +81,7 @@
                     </div>
                     <div class="col-md-2">
                         <label for="{{ federal_form.aliquota_ipi.id_for_label }}" class="form-label">
-                            AlÃ­quota IPI (%)
+                            Alíquota IPI (%)
                         </label>
                         {{ federal_form.aliquota_ipi }}
                     </div>
@@ -96,7 +96,7 @@
                     </div>
                     <div class="col-md-2">
                         <label for="{{ federal_form.aliquota_pis.id_for_label }}" class="form-label">
-                            AlÃ­quota PIS (%)
+                            Alíquota PIS (%)
                         </label>
                         {{ federal_form.aliquota_pis }}
                     </div>
@@ -104,7 +104,7 @@
                         <div class="form-check">
                             {{ federal_form.gera_credito_pis }}
                             <label class="form-check-label" for="{{ federal_form.gera_credito_pis.id_for_label }}">
-                                Gera crÃ©dito de PIS
+                                Gera crédito de PIS
                             </label>
                         </div>
                     </div>
@@ -121,7 +121,7 @@
                     </div>
                     <div class="col-md-2">
                         <label for="{{ federal_form.aliquota_cofins.id_for_label }}" class="form-label">
-                            AlÃ­quota COFINS (%)
+                            Alíquota COFINS (%)
                         </label>
                         {{ federal_form.aliquota_cofins }}
                     </div>
@@ -129,7 +129,7 @@
                         <div class="form-check">
                             {{ federal_form.gera_credito_cofins }}
                             <label class="form-check-label" for="{{ federal_form.gera_credito_cofins.id_for_label }}">
-                                Gera crÃ©dito de COFINS
+                                Gera crédito de COFINS
                             </label>
                         </div>
                     </div>
@@ -137,7 +137,7 @@
                     <!-- Obs -->
                     <div class="col-12">
                         <label for="{{ federal_form.observacoes.id_for_label }}" class="form-label">
-                            ObservaÃ§Ãµes
+                            Observações
                         </label>
                         {{ federal_form.observacoes }}
                     </div>
@@ -145,10 +145,10 @@
             </div>
         </div>
 
-        <!-- â•â•â• TRIBUTAÃ‡ÃƒO ESTADUAL (FORMSET) â•â•â• -->
+        <!-- ═══ TRIBUTAÇÃO ESTADUAL (FORMSET) ═══ -->
         <div class="card mb-3">
             <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-geo-alt"></i> TributaÃ§Ã£o Estadual (ICMS por UF)</h5>
+                <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Tributação Estadual (ICMS por UF)</h5>
                 {% if perms.tributacao.add_uf or user.is.superuser %}
                 <button type="button" class="btn btn-sm btn-dark" id="btn-add-estadual">
                     <i class="bi bi-plus"></i> Adicionar UF
@@ -189,7 +189,7 @@
                             <div class="col-md-2 d-flex align-items-end gap-2">
                                 <div class="form-check">
                                     {{ estadual_form.permite_credito }}
-                                    <label class="form-check-label small">CrÃ©dito</label>
+                                    <label class="form-check-label small">Crédito</label>
                                 </div>
                             </div>
 
@@ -227,7 +227,7 @@
                                 {% endif %}
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small">ObservaÃ§Ãµes</label>
+                                <label class="form-label small">Observações</label>
                                 {{ estadual_form.observacoes }}
                             </div>
 
@@ -242,11 +242,11 @@
             </div>
         </div>
 
-        <!-- BotÃµes -->
+        <!-- Botões -->
         <div class="d-flex gap-2">
             {% if perms.tributacao.add_grupo or user.is.superuser %}
             <button type="submit" class="btn btn-primary btn-lg">
-                <i class="bi bi-check-lg"></i> Salvar Grupo TributÃ¡rio
+                <i class="bi bi-check-lg"></i> Salvar Grupo Tributário
             </button>
             {% endif %}
             <a href="{% url 'tributacao:grupo_list' %}" class="btn btn-outline-secondary btn-lg">

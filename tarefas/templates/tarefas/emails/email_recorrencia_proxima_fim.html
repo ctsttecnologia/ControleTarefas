@@ -1,7 +1,7 @@
-﻿<!-- templates/tarefas/emails/email_recorrencia_proxima_fim.html -->
+<!-- templates/tarefas/emails/email_recorrencia_proxima_fim.html -->
 {% extends 'tarefas/emails/_email_base.html' %}
 
-{% block email_title %}RecorrÃªncia PrÃ³xima do Fim{% endblock %}
+{% block email_title %}Recorrência Próxima do Fim{% endblock %}
 
 {% block header_color %}#ef4444{% endblock %}
 
@@ -9,29 +9,29 @@
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 12px auto;">
     <tr>
         <td style="width:48px; height:48px; background:rgba(255,255,255,0.2); border-radius:50%; text-align:center; line-height:48px;">
-            <span style="font-size:22px;">â°</span>
+            <span style="font-size:22px;">⏰</span>
         </td>
     </tr>
 </table>
 {% endblock %}
 
-{% block header_title %}RecorrÃªncia PrÃ³xima do Fim{% endblock %}
+{% block header_title %}Recorrência Próxima do Fim{% endblock %}
 
 {% block header_subtitle %}
 <p style="margin:8px 0 0; font-size:13px; color:rgba(255,255,255,0.85);">
-    Uma rotina recorrente estÃ¡ programada para encerrar
+    Uma rotina recorrente está programada para encerrar
 </p>
 {% endblock %}
 
 {% block email_body %}
 <!-- Greeting -->
 <p style="margin:0 0 20px; font-size:15px; color:#1a1a2e; line-height:1.5;">
-    OlÃ¡{% if destinatario.first_name %} <strong>{{ destinatario.first_name }}</strong>{% endif %},
+    Olá{% if destinatario.first_name %} <strong>{{ destinatario.first_name }}</strong>{% endif %},
 </p>
 
 <p style="margin:0 0 24px; font-size:14px; color:#3a3f55; line-height:1.6;">
-    A recorrÃªncia da tarefa abaixo estÃ¡ chegando ao fim. ApÃ³s essa data,
-    <strong>novas instÃ¢ncias nÃ£o serÃ£o geradas automaticamente</strong>.
+    A recorrência da tarefa abaixo está chegando ao fim. Após essa data,
+    <strong>novas instâncias não serão geradas automaticamente</strong>.
     Se desejar continuar com essa rotina, estenda a data fim ou encerre conscientemente.
 </p>
 
@@ -40,10 +40,10 @@
     <tr>
         <td style="background:#fef2f2; border:1px solid #fecaca; border-left:4px solid #ef4444; border-radius:8px; padding:16px 20px;">
             <p style="margin:0 0 4px; font-size:12px; font-weight:700; color:#991b1b; text-transform:uppercase; letter-spacing:0.04em;">
-                â° Termina em {{ dias_restantes }} dia{{ dias_restantes|pluralize:"s" }}
+                ⏰ Termina em {{ dias_restantes }} dia{{ dias_restantes|pluralize:"s" }}
             </p>
             <p style="margin:0; font-size:14px; font-weight:600; color:#991b1b;">
-                Data fim da recorrÃªncia: {{ data_fim_fmt }}
+                Data fim da recorrência: {{ data_fim_fmt }}
             </p>
         </td>
     </tr>
@@ -61,13 +61,13 @@
     </tr>
     <tr>
         <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
-            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">FrequÃªncia</p>
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Frequência</p>
             <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
-                ðŸ” {{ frequencia }}
+                🔁 {{ frequencia }}
             </p>
         </td>
         <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
-            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">OcorrÃªncias Geradas</p>
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Ocorrências Geradas</p>
             <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
                 #{{ total_ocorrencias }}
             </p>
@@ -75,9 +75,9 @@
     </tr>
     <tr>
         <td style="padding:12px 20px; width:50%; {% if tarefa_raiz.projeto %}border-bottom:1px solid #edf0f5;{% endif %}">
-            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">ResponsÃ¡vel</p>
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Responsável</p>
             <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
-                {% if tarefa_raiz.responsavel %}{{ tarefa_raiz.responsavel.get_full_name|default:tarefa_raiz.responsavel.username }}{% else %}NÃ£o atribuÃ­do{% endif %}
+                {% if tarefa_raiz.responsavel %}{{ tarefa_raiz.responsavel.get_full_name|default:tarefa_raiz.responsavel.username }}{% else %}Não atribuído{% endif %}
             </p>
         </td>
         <td style="padding:12px 20px; width:50%; {% if tarefa_raiz.projeto %}border-bottom:1px solid #edf0f5;{% endif %}">
@@ -92,7 +92,7 @@
         <td colspan="2" style="padding:12px 20px;">
             <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Projeto</p>
             <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
-                ðŸ“ {{ tarefa_raiz.projeto }}
+                📁 {{ tarefa_raiz.projeto }}
             </p>
         </td>
     </tr>
@@ -104,13 +104,13 @@
     <tr>
         <td style="background:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid #3b82f6; border-radius:8px; padding:16px 20px;">
             <p style="margin:0 0 8px; font-size:12px; font-weight:700; color:#1e40af; text-transform:uppercase; letter-spacing:0.04em;">
-                ðŸ’¡ O que vocÃª pode fazer?
+                💡 O que você pode fazer?
             </p>
             <p style="margin:0 0 6px; font-size:13px; color:#1e3a8a; line-height:1.5;">
-                <strong>Continuar a rotina:</strong> edite a tarefa e estenda a data fim de recorrÃªncia.
+                <strong>Continuar a rotina:</strong> edite a tarefa e estenda a data fim de recorrência.
             </p>
             <p style="margin:0; font-size:13px; color:#1e3a8a; line-height:1.5;">
-                <strong>Encerrar:</strong> nenhuma aÃ§Ã£o necessÃ¡ria â€” encerra automaticamente apÃ³s {{ data_fim_fmt }}.
+                <strong>Encerrar:</strong> nenhuma ação necessária — encerra automaticamente após {{ data_fim_fmt }}.
             </p>
         </td>
     </tr>
@@ -123,7 +123,7 @@
         <td style="background-color:#ef4444; border-radius:8px;">
             <a href="{{ tarefa_editar_url }}"
                style="display:inline-block; padding:14px 32px; font-size:14px; font-weight:700; color:#ffffff; text-decoration:none; letter-spacing:0.02em;">
-                Estender RecorrÃªncia â†’
+                Estender Recorrência →
             </a>
         </td>
     </tr>

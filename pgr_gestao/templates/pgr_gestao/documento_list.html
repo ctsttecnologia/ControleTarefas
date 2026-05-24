@@ -1,4 +1,4 @@
-﻿{# Lista de Documentos PGR #}
+{# Lista de Documentos PGR #}
 {% extends "pgr_gestao/pgr_base.html" %}
 {% load static %}
 
@@ -23,7 +23,7 @@
     </div>
 </div>
 
-<!-- EstatÃ­sticas -->
+<!-- Estatísticas -->
 <div class="row mb-4 g-3">
     <div class="col-md-3 col-6">
         <div class="card stats-card text-center h-100">
@@ -53,7 +53,7 @@
         <div class="card stats-card warning text-center h-100">
             <div class="card-body">
                 <h3 class="text-warning">{{ docs_em_revisao|default:0 }}</h3>
-                <small class="text-muted">Em RevisÃ£o</small>
+                <small class="text-muted">Em Revisão</small>
             </div>
         </div>
     </div>
@@ -90,7 +90,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Buscar</label>
-                <input type="text" name="search" class="form-control" placeholder="CÃ³digo ou empresa..."
+                <input type="text" name="search" class="form-control" placeholder="Código ou empresa..."
                        value="{{ request.GET.search }}">
             </div>
             <div class="col-md-1 d-flex align-items-end">
@@ -112,15 +112,15 @@
             <table class="table table-hover table-clickable align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>CÃ³digo</th>
+                        <th>Código</th>
                         <th>Empresa</th>
                         <th>Local</th>
                         <th>Status</th>
-                        <th>ElaboraÃ§Ã£o</th>
+                        <th>Elaboração</th>
                         <th>Vencimento</th>
-                        <th class="text-center">VersÃ£o</th>
-                        <th>ConclusÃ£o</th>
-                        <th class="text-center">AÃ§Ãµes</th>
+                        <th class="text-center">Versão</th>
+                        <th>Conclusão</th>
+                        <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -135,7 +135,7 @@
                             {% elif doc.status == 'vencido' %}
                             <span class="badge badge-status-vencido">Vencido</span>
                             {% elif doc.status == 'em_revisao' %}
-                            <span class="badge badge-status-em-revisao">Em RevisÃ£o</span>
+                            <span class="badge badge-status-em-revisao">Em Revisão</span>
                             {% else %}
                             <span class="badge bg-secondary">{{ doc.get_status_display }}</span>
                             {% endif %}
@@ -146,7 +146,7 @@
                             {% if doc.dias_para_vencimento < 0 %}
                             <br><small class="text-danger">
                                 <i class="bi bi-exclamation-circle"></i>
-                                Vencido hÃ¡ {{ doc.dias_vencido|default:doc.dias_para_vencimento }} dias
+                                Vencido há {{ doc.dias_vencido|default:doc.dias_para_vencimento }} dias
                             </small>
                             {% elif doc.dias_para_vencimento <= 30 %}
                             <br><small class="text-warning">
@@ -205,7 +205,7 @@
             </table>
         </div>
 
-        <!-- PaginaÃ§Ã£o -->
+        <!-- Paginação -->
         {% if documentos.has_other_pages %}
         <nav class="mt-4">
             <ul class="pagination justify-content-center mb-0">

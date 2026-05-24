@@ -1,4 +1,4 @@
-﻿
+
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
@@ -13,7 +13,7 @@
     <div class="d-flex justify-content-between align-items-center">
         <div>
             <h1><i class="bi bi-exclamation-triangle"></i> Riscos Identificados</h1>
-            <p class="mb-0">InventÃ¡rio de Riscos Ocupacionais</p>
+            <p class="mb-0">Inventário de Riscos Ocupacionais</p>
         </div>
         {% if perms.pgr_gestao.add_riscoidentificado %}
         <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-light btn-lg">
@@ -23,7 +23,7 @@
     </div>
 </div>
 
-<!-- EstatÃ­sticas RÃ¡pidas -->
+<!-- Estatísticas Rápidas -->
 <div class="row mb-4 g-3">
     <div class="col-md-3 col-6">
         <div class="card stats-card text-center">
@@ -37,7 +37,7 @@
         <div class="card stats-card danger text-center">
             <div class="card-body">
                 <h3 class="text-danger">{{ riscos_criticos }}</h3>
-                <small class="text-muted">Riscos CrÃ­ticos</small>
+                <small class="text-muted">Riscos Críticos</small>
             </div>
         </div>
     </div>
@@ -78,14 +78,14 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">ClassificaÃ§Ã£o</label>
+                <label class="form-label">Classificação</label>
                 <select name="classificacao" class="form-select">
                     <option value="">Todas</option>
-                    <option value="critico" {% if request.GET.classificacao == 'critico' %}selected{% endif %}>CrÃ­tico</option>
+                    <option value="critico" {% if request.GET.classificacao == 'critico' %}selected{% endif %}>Crítico</option>
                     <option value="muito_grave" {% if request.GET.classificacao == 'muito_grave' %}selected{% endif %}>Muito Grave</option>
                     <option value="moderado" {% if request.GET.classificacao == 'moderado' %}selected{% endif %}>Moderado</option>
                     <option value="marginal" {% if request.GET.classificacao == 'marginal' %}selected{% endif %}>Marginal</option>
-                    <option value="negligenciavel" {% if request.GET.classificacao == 'negligenciavel' %}selected{% endif %}>NegligenciÃ¡vel</option>
+                    <option value="negligenciavel" {% if request.GET.classificacao == 'negligenciavel' %}selected{% endif %}>Negligenciável</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -136,19 +136,19 @@
             <table class="table table-hover table-sm table-clickable align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>CÃ³digo</th>
+                        <th>Código</th>
                         <th>Tipo</th>
                         <th>Agente</th>
                         <th>Fonte Geradora</th>
                         <th>GES</th>
-                        <th>ClassificaÃ§Ã£o</th>
+                        <th>Classificação</th>
                         <th>Status</th>
                         <th>Prioridade</th>
                         <th class="text-center">G</th>
                         <th class="text-center">E</th>
                         <th class="text-center">S</th>
                         <th class="text-center">P</th>
-                        <th class="text-center">AÃ§Ãµes</th>
+                        <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -197,7 +197,7 @@
                                 </a>
                                 {% endif %}
                                 <a href="{% url 'pgr_gestao:plano_acao_create' %}?risco={{ risco.pk }}"
-                                   class="btn btn-outline-success" title="Criar Plano de AÃ§Ã£o">
+                                   class="btn btn-outline-success" title="Criar Plano de Ação">
                                     <i class="bi bi-list-task"></i>
                                 </a>
                             </div>
@@ -220,7 +220,7 @@
             </table>
         </div>
 
-        <!-- PaginaÃ§Ã£o -->
+        <!-- Paginação -->
         {% if riscos.has_other_pages %}
         <nav class="mt-4">
             <ul class="pagination justify-content-center">

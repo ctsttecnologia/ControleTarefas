@@ -1,8 +1,8 @@
-﻿
+
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Resultado da ImportaÃ§Ã£o{% endblock %}
+{% block title %}Resultado da Importação{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -14,7 +14,7 @@
                 <div class="card-body py-3">
                     <h4 class="mb-0">
                         <i class="bi bi-clipboard-check me-2"></i>
-                        Resultado da ImportaÃ§Ã£o
+                        Resultado da Importação
                     </h4>
                 </div>
             </div>
@@ -108,13 +108,13 @@
             </div>
             {% endif %}
 
-            <!-- AÃ§Ãµes -->
+            <!-- Ações -->
             <div class="d-flex justify-content-between">
                 <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left me-1"></i> Voltar para Lista
                 </a>
                 <a href="{% url 'cliente:importacao_massa' %}" class="btn btn-primary">
-                    <i class="bi bi-arrow-repeat me-1"></i> Nova ImportaÃ§Ã£o
+                    <i class="bi bi-arrow-repeat me-1"></i> Nova Importação
                 </a>
             </div>
 

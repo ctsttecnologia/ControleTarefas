@@ -1,16 +1,16 @@
-﻿
+
 {% extends "controle_de_telefone/_base_telefone.html" %}
 {% load crispy_forms_tags %}
 
-{% block title %}{{ title|default:"FormulÃ¡rio de VÃ­nculo" }}{% endblock %}
+{% block title %}{{ title|default:"Formulário de Vínculo" }}{% endblock %}
 
 {% block content %}
 <div cclass="container-fluid py-4 px-lg-5">
-    <!-- CabeÃ§alho -->
+    <!-- Cabeçalho -->
     <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
         <div>
             <h2 class="h4 fw-bold mb-1">
-                <i class="bi bi-link-45deg text-info me-2"></i>{{ title|default:"FormulÃ¡rio de VÃ­nculo" }}
+                <i class="bi bi-link-45deg text-info me-2"></i>{{ title|default:"Formulário de Vínculo" }}
             </h2>
         </div>
         <a href="{{ request.META.HTTP_REFERER|default:'..' }}" class="btn btn-outline-secondary btn-sm">
@@ -27,7 +27,7 @@
                     <div class="alert bg-info bg-opacity-10 border-0 d-flex align-items-start gap-3 mb-4" role="alert">
                         <i class="bi bi-info-circle text-info fs-5 flex-shrink-0 mt-1"></i>
                         <div style="font-size: 0.88rem;">
-                            O Termo de Responsabilidade em PDF serÃ¡ gerado e anexado automaticamente apÃ³s salvar.
+                            O Termo de Responsabilidade em PDF será gerado e anexado automaticamente após salvar.
                             Utilize os campos abaixo se precisar incluir uma assinatura digitalizada ou o documento assinado.
                         </div>
                     </div>
@@ -37,7 +37,7 @@
 
                         {{ form|crispy }}
 
-                        <!-- Ãrea de Assinatura -->
+                        <!-- Área de Assinatura -->
                         {% if request.user == object.funcionario.usuario and not object.assinatura_digital and not object.termo_assinado %}
                         <div class="mt-4 p-4 rounded-3" style="background: #f8f9fa;">
                             <label class="form-label fw-semibold text-dark d-flex align-items-center gap-2" style="font-size: 0.85rem;">

@@ -1,15 +1,15 @@
-﻿
+
 {% extends "controle_de_telefone/_base_telefone.html" %}
 
 {% block title %}{{ titulo|default:"Nova Recarga" }}{% endblock %}
 
 {% block content %}
 <div class="container py-4" style="max-width: 960px;">
-    <!-- CabeÃ§alho -->
+    <!-- Cabeçalho -->
     <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
         <div>
             <h2 class="h4 fw-bold mb-1">
-                <i class="bi bi-cash-coin text-success me-2"></i>{{ titulo|default:"Nova Recarga de CrÃ©dito" }}
+                <i class="bi bi-cash-coin text-success me-2"></i>{{ titulo|default:"Nova Recarga de Crédito" }}
             </h2>
         </div>
         <div>
@@ -37,12 +37,12 @@
         </div>
         {% endif %}
 
-        <!-- SeÃ§Ã£o 1: Linha e ResponsÃ¡veis -->
+        <!-- Seção 1: Linha e Responsáveis -->
         <div class="card border-0 shadow-sm rounded-3 mb-4">
             <div class="card-header bg-white border-bottom py-3">
                 <h6 class="fw-bold mb-0">
                     <i class="bi bi-people text-primary me-2"></i>
-                    <span class="badge bg-primary rounded-pill me-2">1</span>Linha & ResponsÃ¡veis
+                    <span class="badge bg-primary rounded-pill me-2">1</span>Linha & Responsáveis
                 </h6>
             </div>
             <div class="card-body p-4">
@@ -55,7 +55,7 @@
                         {% if form.linha.errors %}
                         <div class="invalid-feedback d-block">{{ form.linha.errors|join:", " }}</div>
                         {% endif %}
-                        <small class="form-text text-muted">NÃºmero que receberÃ¡ a recarga</small>
+                        <small class="form-text text-muted">Número que receberá a recarga</small>
                     </div>
 
                     <div class="col-md-6">
@@ -77,13 +77,13 @@
                         {% if form.usuario_credito.errors %}
                         <div class="invalid-feedback d-block">{{ form.usuario_credito.errors|join:", " }}</div>
                         {% endif %}
-                        <small class="form-text text-muted">Quem usarÃ¡ os crÃ©ditos</small>
+                        <small class="form-text text-muted">Quem usará os créditos</small>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- SeÃ§Ã£o 2: Tipo e Valor -->
+        <!-- Seção 2: Tipo e Valor -->
         <div class="card border-0 shadow-sm rounded-3 mb-4">
             <div class="card-header bg-white border-bottom py-3">
                 <h6 class="fw-bold mb-0">
@@ -127,7 +127,7 @@
                         {% if form.franquia_dados_mb.errors %}
                         <div class="invalid-feedback d-block">{{ form.franquia_dados_mb.errors|join:", " }}</div>
                         {% endif %}
-                        <small class="form-text text-muted">Ex: 1024 = 1 GB Â· 5120 = 5 GB</small>
+                        <small class="form-text text-muted">Ex: 1024 = 1 GB · 5120 = 5 GB</small>
                     </div>
 
                     <div class="col-md-6" id="campo-voz">
@@ -146,12 +146,12 @@
             </div>
         </div>
 
-        <!-- SeÃ§Ã£o 3: Datas -->
+        <!-- Seção 3: Datas -->
         <div class="card border-0 shadow-sm rounded-3 mb-4">
             <div class="card-header bg-white border-bottom py-3">
                 <h6 class="fw-bold mb-0">
                     <i class="bi bi-calendar-check text-info me-2"></i>
-                    <span class="badge bg-info rounded-pill me-2">3</span>Datas & VigÃªncia
+                    <span class="badge bg-info rounded-pill me-2">3</span>Datas & Vigência
                 </h6>
             </div>
             <div class="card-body p-4">
@@ -189,14 +189,14 @@
                     <div class="col-12">
                         <div class="alert alert-info mb-0 d-flex align-items-center gap-2" id="alerta-duracao" style="display: none !important;">
                             <i class="bi bi-info-circle-fill"></i>
-                            <span>DuraÃ§Ã£o da vigÃªncia: <strong id="texto-duracao">â€”</strong></span>
+                            <span>Duração da vigência: <strong id="texto-duracao">—</strong></span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- SeÃ§Ã£o 4: Justificativa e Comprovante -->
+        <!-- Seção 4: Justificativa e Comprovante -->
         <div class="card border-0 shadow-sm rounded-3 mb-4">
             <div class="card-header bg-white border-bottom py-3">
                 <h6 class="fw-bold mb-0">
@@ -225,7 +225,7 @@
                         {% if form.codigo_transacao.errors %}
                         <div class="invalid-feedback d-block">{{ form.codigo_transacao.errors|join:", " }}</div>
                         {% endif %}
-                        <small class="form-text text-muted">Preencha apÃ³s realizar a recarga</small>
+                        <small class="form-text text-muted">Preencha após realizar a recarga</small>
                     </div>
 
                     <div class="col-md-6">
@@ -256,13 +256,13 @@
             </div>
         </div>
 
-        <!-- AÃ§Ãµes -->
+        <!-- Ações -->
         <div class="d-flex gap-2 justify-content-end flex-wrap mb-4">
             <a href="{% url 'controle_de_telefone:recarga_list' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-x-lg me-1"></i>Cancelar
             </a>
             <button type="submit" class="btn btn-success">
-                <i class="bi bi-check-lg me-1"></i>{{ object|yesno:"Salvar AlteraÃ§Ãµes,Cadastrar Recarga" }}
+                <i class="bi bi-check-lg me-1"></i>{{ object|yesno:"Salvar Alterações,Cadastrar Recarga" }}
             </button>
         </div>
     </form>
@@ -300,7 +300,7 @@
         }
     }
 
-    // Calcula duraÃ§Ã£o da vigÃªncia
+    // Calcula duração da vigência
     function calcularDuracao() {
         if (!dataInicio.value || !dataTermino.value) {
             alertaDuracao.style.display = 'none';
@@ -315,7 +315,7 @@
         if (diffDias < 0) {
             alertaDuracao.classList.remove('alert-info');
             alertaDuracao.classList.add('alert-danger');
-            textoDuracao.textContent = 'Data de tÃ©rmino Ã© anterior ao inÃ­cio!';
+            textoDuracao.textContent = 'Data de término é anterior ao início!';
         } else if (diffDias === 0) {
             alertaDuracao.classList.remove('alert-danger');
             alertaDuracao.classList.add('alert-info');

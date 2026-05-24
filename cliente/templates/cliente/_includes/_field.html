@@ -1,12 +1,12 @@
-﻿{% comment %}
-Componente reutilizÃ¡vel para renderizar campos de formulÃ¡rio Bootstrap 5.
+{% comment %}
+Componente reutilizável para renderizar campos de formulário Bootstrap 5.
 
 Uso:
   {% include 'cliente/_includes/_field.html' with field=form.nome col="col-md-6" %}
 
-VariÃ¡veis opcionais:
-  col   â†’ classe de coluna (padrÃ£o: "col-md-6")
-  hint  â†’ texto auxiliar customizado (sobrescreve field.help_text)
+Variáveis opcionais:
+  col   → classe de coluna (padrão: "col-md-6")
+  hint  → texto auxiliar customizado (sobrescreve field.help_text)
 {% endcomment %}
 
 {% load widget_tweaks %}
@@ -23,7 +23,7 @@ VariÃ¡veis opcionais:
     </label>
 
     {% if field|is_checkbox %}
-        {# â”€â”€ Checkbox / Switch â”€â”€ #}
+        {# ── Checkbox / Switch ── #}
         <div class="form-check form-switch mt-1">
             {% render_field field class+="form-check-input" %}
             <label class="form-check-label text-muted" for="{{ field.id_for_label }}">
@@ -32,7 +32,7 @@ VariÃ¡veis opcionais:
         </div>
 
     {% elif field.name == 'logradouro' %}
-        {# â”€â”€ Logradouro: renderizado pelo TomSelect no JS â”€â”€ #}
+        {# ── Logradouro: renderizado pelo TomSelect no JS ── #}
         {% if field.errors %}
             {% render_field field class+="form-select is-invalid" %}
         {% else %}
@@ -40,7 +40,7 @@ VariÃ¡veis opcionais:
         {% endif %}
 
     {% elif field|is_select %}
-        {# â”€â”€ Select padrÃ£o â”€â”€ #}
+        {# ── Select padrão ── #}
         {% if field.errors %}
             {% render_field field class+="form-select is-invalid" %}
         {% else %}
@@ -48,7 +48,7 @@ VariÃ¡veis opcionais:
         {% endif %}
 
     {% elif field|is_textarea %}
-        {# â”€â”€ Textarea â”€â”€ #}
+        {# ── Textarea ── #}
         {% if field.errors %}
             {% render_field field class+="form-control is-invalid" rows="3" placeholder=field.label %}
         {% else %}
@@ -56,7 +56,7 @@ VariÃ¡veis opcionais:
         {% endif %}
 
     {% else %}
-        {# â”€â”€ Input padrÃ£o (text, email, date, numberâ€¦) â”€â”€ #}
+        {# ── Input padrão (text, email, date, number…) ── #}
         {% if field.errors %}
             {% render_field field class+="form-control is-invalid" placeholder=field.label %}
         {% else %}
@@ -64,12 +64,12 @@ VariÃ¡veis opcionais:
         {% endif %}
     {% endif %}
 
-    {# â”€â”€ Erros â”€â”€ #}
+    {# ── Erros ── #}
     {% for error in field.errors %}
     <div class="invalid-feedback d-block">{{ error }}</div>
     {% endfor %}
 
-    {# â”€â”€ Texto auxiliar â”€â”€ #}
+    {# ── Texto auxiliar ── #}
     {% if hint %}
         <div class="form-text">{{ hint }}</div>
     {% elif field.help_text and not field|is_checkbox %}

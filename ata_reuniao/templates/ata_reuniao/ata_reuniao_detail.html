@@ -1,13 +1,13 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 
-{% block title %}Ata #{{ ata.id }} â€” {{ ata.titulo|truncatechars:40 }}{% endblock %}
+{% block title %}Ata #{{ ata.id }} — {{ ata.titulo|truncatechars:40 }}{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       ðŸŽ¨ DESIGN TOKENS
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════
+       🎨 DESIGN TOKENS
+       ═══════════════════════════════════════════ */
     :root {
         --primary-gradient: linear-gradient(135deg, #4e73df 0%, #224abe 50%, #1a3a8a 100%);
         --card-radius: 1rem;
@@ -16,7 +16,7 @@
         --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* â•â•â• HERO â•â•â• */
+    /* ═══ HERO ═══ */
     .detail-hero {
         border-radius: var(--card-radius);
         color: #fff;
@@ -64,7 +64,7 @@
     }
     .hero-badge.danger { background: rgba(231,74,59,0.35); border-color: rgba(231,74,59,0.4); }
 
-    /* â•â•â• PROGRESS PRAZO â•â•â• */
+    /* ═══ PROGRESS PRAZO ═══ */
     .deadline-progress {
         margin-top: 1.25rem;
         background: rgba(255,255,255,0.15);
@@ -87,7 +87,7 @@
         margin-top: 6px;
     }
 
-    /* â•â•â• INFO CARD â•â•â• */
+    /* ═══ INFO CARD ═══ */
     .info-card {
         border: none;
         border-radius: var(--card-radius);
@@ -105,7 +105,7 @@
         display: flex; align-items: center; gap: 0.5rem;
     }
 
-    /* â•â•â• INFO ITEMS â•â•â• */
+    /* ═══ INFO ITEMS ═══ */
     .info-item {
         display: flex; justify-content: space-between; align-items: center;
         padding: 0.875rem 1.5rem;
@@ -121,13 +121,13 @@
     .info-item-label i { width: 16px; text-align: center; }
     .info-item-value { font-weight: 600; color: #2d3748; font-size: 0.9rem; }
 
-    /* â•â•â• ACTION CONTENT â•â•â• */
+    /* ═══ ACTION CONTENT ═══ */
     .action-content {
         font-size: 0.95rem; line-height: 1.8; color: #4a5568;
         white-space: pre-wrap;
     }
 
-    /* â•â•â• COMMENT FORM â•â•â• */
+    /* ═══ COMMENT FORM ═══ */
     .comment-form textarea {
         border: 2px solid #e2e8f0;
         border-radius: 0.625rem;
@@ -146,7 +146,7 @@
     .char-counter.warning { color: #f6c23e; }
     .char-counter.danger { color: #e74a3b; }
 
-    /* â•â•â• AVATAR â•â•â• */
+    /* ═══ AVATAR ═══ */
     .avatar-circle {
         width: 36px; height: 36px;
         border-radius: 50%;
@@ -158,7 +158,7 @@
     }
     .avatar-circle.sm { width: 28px; height: 28px; font-size: 0.7rem; }
 
-    /* â•â•â• TIMELINE â•â•â• */
+    /* ═══ TIMELINE ═══ */
     .timeline { list-style: none; padding: 0; margin: 0; }
     .timeline-item {
         position: relative;
@@ -203,7 +203,7 @@
     }
     .timeline-empty-icon i { font-size: 1.25rem; color: #adb5bd; }
 
-    /* â•â•â• PILLS / BADGES â•â•â• */
+    /* ═══ PILLS / BADGES ═══ */
     .status-pill-lg {
         padding: 0.35rem 1rem;
         border-radius: 50rem;
@@ -222,19 +222,19 @@
         50%      { box-shadow: 0 0 0 6px rgba(231,74,59,0); }
     }
 
-    /* â•â•â• STICKY SIDEBAR (desktop) â•â•â• */
+    /* ═══ STICKY SIDEBAR (desktop) ═══ */
     @media (min-width: 992px) {
         .sidebar-sticky { position: sticky; top: 1rem; }
     }
 
-    /* â•â•â• TOAST â•â•â• */
+    /* ═══ TOAST ═══ */
     .toast-container { z-index: 1100; }
 
-    /* â•â•â• BTN SPINNER â•â•â• */
+    /* ═══ BTN SPINNER ═══ */
     .btn-loading { pointer-events: none; opacity: 0.7; }
     .btn-loading .spinner-border-sm { display: inline-block !important; }
 
-    /* â•â•â• DARK MODE â•â•â• */
+    /* ═══ DARK MODE ═══ */
     [data-bs-theme="dark"] .detail-hero { background: linear-gradient(135deg, #224abe, #1a2d6d); }
     [data-bs-theme="dark"] .info-card .card-header { border-bottom-color: rgba(255,255,255,0.06); }
     [data-bs-theme="dark"] .info-item { border-bottom-color: rgba(255,255,255,0.04); }
@@ -261,7 +261,7 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- â•â•â• HERO â•â•â• -->
+    <!-- ═══ HERO ═══ -->
     <div class="detail-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div class="flex-grow-1">
@@ -274,7 +274,7 @@
                     </span>
                     {% endif %}
                 </div>
-                <h1>{{ ata.titulo|default:"Ata de ReuniÃ£o" }}</h1>
+                <h1>{{ ata.titulo|default:"Ata de Reunião" }}</h1>
                 <div class="hero-meta">
                     <span class="hero-meta-item"><i class="bi bi-hash"></i> #{{ ata.id }}</span>
                     <span class="hero-meta-item"><i class="bi bi-briefcase"></i> {{ ata.contrato.nome }}</span>
@@ -284,8 +284,8 @@
                     {% endif %}
                 </div>
 
-                {# Barra de progresso de prazo â€” sÃ³ aparece se houver prazo e nÃ£o estiver concluÃ­do #}
-                {% if ata.prazo and ata.status != 'ConcluÃ­do' %}
+                {# Barra de progresso de prazo — só aparece se houver prazo e não estiver concluído #}
+                {% if ata.prazo and ata.status != 'Concluído' %}
                 <div class="deadline-progress" id="deadlineBar" data-entrada="{{ ata.entrada|date:'Y-m-d' }}" data-prazo="{{ ata.prazo|date:'Y-m-d' }}">
                     <div class="deadline-progress-bar" style="width: 0%"></div>
                 </div>
@@ -322,13 +322,13 @@
     </div>
 
     <div class="row g-4">
-        <!-- â•â•â• COLUNA PRINCIPAL â•â•â• -->
+        <!-- ═══ COLUNA PRINCIPAL ═══ -->
         <div class="col-lg-8">
 
-            <!-- AÃ§Ã£o / Proposta -->
+            <!-- Ação / Proposta -->
             <div class="card info-card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5><i class="bi bi-clipboard-check text-primary"></i> AÃ§Ã£o / Proposta</h5>
+                    <h5><i class="bi bi-clipboard-check text-primary"></i> Ação / Proposta</h5>
                     <button class="btn btn-sm btn-light" onclick="copyText('actionContent', this)" title="Copiar texto">
                         <i class="bi bi-clipboard"></i>
                     </button>
@@ -338,11 +338,11 @@
                 </div>
             </div>
 
-            <!-- ComentÃ¡rio -->
+            <!-- Comentário -->
             {% if perms.ata_reuniao.change_atareuniao or user.is_superuser %}
             <div class="card info-card mb-4 no-print">
                 <div class="card-header">
-                    <h5><i class="bi bi-chat-dots text-success"></i> Adicionar ComentÃ¡rio</h5>
+                    <h5><i class="bi bi-chat-dots text-success"></i> Adicionar Comentário</h5>
                 </div>
                 <div class="card-body p-4">
                     <form id="commentForm" method="post"
@@ -354,7 +354,7 @@
                                   id="commentText"
                                   rows="3"
                                   maxlength="1000"
-                                  placeholder="Escreva um comentÃ¡rio ou atualizaÃ§Ã£o... (Ctrl+Enter para enviar)"
+                                  placeholder="Escreva um comentário ou atualização... (Ctrl+Enter para enviar)"
                                   required></textarea>
                         <div class="d-flex justify-content-between align-items-center">
                             <small class="char-counter" id="charCounter">0 / 1000</small>
@@ -368,10 +368,10 @@
             </div>
             {% endif %}
 
-            <!-- HistÃ³rico -->
+            <!-- Histórico -->
             <div class="card info-card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5><i class="bi bi-clock-history text-warning"></i> HistÃ³rico</h5>
+                    <h5><i class="bi bi-clock-history text-warning"></i> Histórico</h5>
                     <span class="badge bg-warning bg-opacity-10 text-warning fw-bold" style="border-radius: 50rem;" id="historyCount">
                         {{ ata.historico.all|length }} registro{{ ata.historico.all|length|pluralize:"s" }}
                     </span>
@@ -388,7 +388,7 @@
                             <div class="timeline-content">
                                 <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                                     <span class="timeline-author">
-                                        {{ item.usuario.get_full_name|default:"UsuÃ¡rio do Sistema" }}
+                                        {{ item.usuario.get_full_name|default:"Usuário do Sistema" }}
                                     </span>
                                     <span class="timeline-date" title="{{ item.timestamp|date:'d/m/Y H:i:s' }}">
                                         <i class="bi bi-clock me-1"></i>
@@ -406,7 +406,7 @@
                                 <i class="bi bi-chat-square-dots"></i>
                             </div>
                             <h6 class="fw-bold mb-1">Nenhum registro ainda</h6>
-                            <p class="text-muted small mb-0">O histÃ³rico aparecerÃ¡ aqui quando houver comentÃ¡rios.</p>
+                            <p class="text-muted small mb-0">O histórico aparecerá aqui quando houver comentários.</p>
                         </div>
                         {% endfor %}
                     </ul>
@@ -414,19 +414,19 @@
             </div>
         </div>
 
-        <!-- â•â•â• SIDEBAR â•â•â• -->
+        <!-- ═══ SIDEBAR ═══ -->
         <div class="col-lg-4">
             <div class="sidebar-sticky">
                 <div class="card info-card">
                     <div class="card-header">
-                        <h5><i class="bi bi-info-circle text-primary"></i> InformaÃ§Ãµes</h5>
+                        <h5><i class="bi bi-info-circle text-primary"></i> Informações</h5>
                     </div>
                     <div class="p-0">
                         <div class="info-item">
                             <span class="info-item-label"><i class="bi bi-flag"></i> Status</span>
                             {% with s=ata.status %}
                             <span class="badge status-pill-lg
-                                {% if s == 'ConcluÃ­do' %}bg-success
+                                {% if s == 'Concluído' %}bg-success
                                 {% elif s == 'Andamento' or s == 'Em Andamento' %}bg-primary
                                 {% elif s == 'Pendente' %}bg-warning text-dark
                                 {% elif s == 'Cancelado' %}bg-secondary
@@ -436,7 +436,7 @@
                             {% endwith %}
                         </div>
                         <div class="info-item">
-                            <span class="info-item-label"><i class="bi bi-person-fill"></i> ResponsÃ¡vel</span>
+                            <span class="info-item-label"><i class="bi bi-person-fill"></i> Responsável</span>
                             <div class="d-flex align-items-center gap-2">
                                 {% if ata.responsavel %}
                                 <div class="avatar-circle sm">{{ ata.responsavel.nome_completo|slice:":2"|upper }}</div>
@@ -468,7 +468,7 @@
                         <div class="info-item">
                             <span class="info-item-label"><i class="bi bi-alarm"></i> Prazo</span>
                             <span class="info-item-value d-flex align-items-center gap-2">
-                                {{ ata.prazo|date:"d/m/Y"|default:"NÃ£o definido" }}
+                                {{ ata.prazo|date:"d/m/Y"|default:"Não definido" }}
                                 {% if ata.is_overdue %}
                                 <span class="overdue-alert">
                                     <i class="bi bi-exclamation-triangle me-1"></i>Vencido
@@ -487,7 +487,7 @@
                 <div class="card info-card mt-4 no-print">
                     <div class="card-header">
                         <h5 style="font-size: 0.9rem;">
-                            <i class="bi bi-lightning-fill text-warning"></i> AÃ§Ãµes RÃ¡pidas
+                            <i class="bi bi-lightning-fill text-warning"></i> Ações Rápidas
                         </h5>
                     </div>
                     <div class="card-body d-grid gap-2">
@@ -520,7 +520,7 @@
     </div>
 </div>
 
-<!-- â•â•â• TOAST CONTAINER â•â•â• -->
+<!-- ═══ TOAST CONTAINER ═══ -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
     <div id="appToast" class="toast align-items-center text-white border-0" role="alert">
         <div class="d-flex">
@@ -537,7 +537,7 @@
 (function() {
     'use strict';
 
-    // â•â•â• TOAST HELPER â•â•â•
+    // ═══ TOAST HELPER ═══
     function showToast(msg, type = 'success') {
         const toast = document.getElementById('appToast');
         toast.className = `toast align-items-center text-white border-0 bg-${type}`;
@@ -545,14 +545,14 @@
         new bootstrap.Toast(toast, { delay: 3000 }).show();
     }
 
-    // â•â•â• COPIAR LINK â•â•â•
+    // ═══ COPIAR LINK ═══
     window.copyLink = function() {
         navigator.clipboard.writeText(window.location.href)
-            .then(() => showToast('ðŸ”— Link copiado!'))
+            .then(() => showToast('🔗 Link copiado!'))
             .catch(() => showToast('Erro ao copiar', 'danger'));
     };
 
-    // â•â•â• COPIAR TEXTO â•â•â•
+    // ═══ COPIAR TEXTO ═══
     window.copyText = function(id, btn) {
         const text = document.getElementById(id).innerText;
         navigator.clipboard.writeText(text).then(() => {
@@ -566,7 +566,7 @@
         });
     };
 
-    // â•â•â• CHAR COUNTER â•â•â•
+    // ═══ CHAR COUNTER ═══
     const textarea = document.getElementById('commentText');
     const counter  = document.getElementById('charCounter');
     if (textarea && counter) {
@@ -579,7 +579,7 @@
         });
     }
 
-    // â•â•â• AJAX COMMENT SUBMIT â•â•â•
+    // ═══ AJAX COMMENT SUBMIT ═══
     const form = document.getElementById('commentForm');
     if (form) {
         // Ctrl+Enter envia
@@ -609,27 +609,27 @@
 
                 if (!response.ok) throw new Error('Falha no envio');
 
-                // Tenta usar JSON; se a view ainda nÃ£o retornar JSON, recarrega
+                // Tenta usar JSON; se a view ainda não retornar JSON, recarrega
                 const ct = response.headers.get('content-type') || '';
                 if (ct.includes('application/json')) {
                     const data = await response.json();
                     addTimelineItem(data);
                     textarea.value = '';
                     counter.textContent = '0 / 1000';
-                    showToast('âœ… ComentÃ¡rio adicionado!');
+                    showToast('✅ Comentário adicionado!');
                 } else {
-                    // Fallback: recarrega a pÃ¡gina
+                    // Fallback: recarrega a página
                     window.location.reload();
                 }
             } catch (err) {
-                showToast('âŒ Erro ao enviar comentÃ¡rio', 'danger');
+                showToast('❌ Erro ao enviar comentário', 'danger');
             } finally {
                 btn.classList.remove('btn-loading');
                 spinner.style.display = 'none';
             }
         });
     }
-    // â•â•â• ADICIONAR ITEM NA TIMELINE (AJAX) â•â•â•
+    // ═══ ADICIONAR ITEM NA TIMELINE (AJAX) ═══
     function addTimelineItem(data) {
         const list  = document.getElementById('timelineList');
         const empty = document.getElementById('emptyState');
@@ -662,7 +662,7 @@
         }
     }
 
-    // â•â•â• ESCAPE HTML (seguranÃ§a XSS) â•â•â•
+    // ═══ ESCAPE HTML (segurança XSS) ═══
     function escapeHtml(str) {
         if (!str) return '';
         const div = document.createElement('div');
@@ -670,7 +670,7 @@
         return div.innerHTML;
     }
 
-    // â•â•â• PROGRESS BAR DE PRAZO â•â•â•
+    // ═══ PROGRESS BAR DE PRAZO ═══
     const bar = document.getElementById('deadlineBar');
     if (bar) {
         const entrada = new Date(bar.dataset.entrada);
@@ -690,7 +690,7 @@
 
         if (info) {
             if (diasRestantes < 0) {
-                info.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i>Vencido hÃ¡ ${Math.abs(diasRestantes)} dia(s)`;
+                info.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i>Vencido há ${Math.abs(diasRestantes)} dia(s)`;
             } else if (diasRestantes === 0) {
                 info.innerHTML = `<i class="bi bi-clock-fill me-1"></i><strong>Vence hoje!</strong>`;
             } else if (diasRestantes <= 3) {
@@ -701,15 +701,15 @@
         }
     }
 
-    // â•â•â• TEMPO RELATIVO (com hover na data completa) â•â•â•
+    // ═══ TEMPO RELATIVO (com hover na data completa) ═══
     function relativeTime(iso) {
         const diff = (Date.now() - new Date(iso)) / 1000;
-        if (diff < 60)     return 'agora hÃ¡ pouco';
-        if (diff < 3600)   return `hÃ¡ ${Math.floor(diff / 60)} min`;
-        if (diff < 86400)  return `hÃ¡ ${Math.floor(diff / 3600)} h`;
-        if (diff < 604800) return `hÃ¡ ${Math.floor(diff / 86400)} dia(s)`;
-        if (diff < 2592000) return `hÃ¡ ${Math.floor(diff / 604800)} semana(s)`;
-        return null; // mais de 30 dias: mantÃ©m o formato original
+        if (diff < 60)     return 'agora há pouco';
+        if (diff < 3600)   return `há ${Math.floor(diff / 60)} min`;
+        if (diff < 86400)  return `há ${Math.floor(diff / 3600)} h`;
+        if (diff < 604800) return `há ${Math.floor(diff / 86400)} dia(s)`;
+        if (diff < 2592000) return `há ${Math.floor(diff / 604800)} semana(s)`;
+        return null; // mais de 30 dias: mantém o formato original
     }
 
     document.querySelectorAll('.relative-time').forEach(el => {
@@ -723,14 +723,14 @@
         }
     });
 
-    // â•â•â• ATALHOS DE TECLADO â•â•â•
+    // ═══ ATALHOS DE TECLADO ═══
     document.addEventListener('keydown', (e) => {
         // Ignora se estiver digitando em input/textarea/contenteditable
         const tag = document.activeElement.tagName;
         const isEditable = document.activeElement.isContentEditable;
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || isEditable) return;
 
-        // Esc â†’ Voltar
+        // Esc → Voltar
         if (e.key === 'Escape') {
             const back = document.querySelector('a[href*="ata_reuniao_list"]');
             if (back) {
@@ -739,7 +739,7 @@
             }
         }
 
-        // E â†’ Editar
+        // E → Editar
         if (e.key.toLowerCase() === 'e' && !e.ctrlKey && !e.metaKey && !e.altKey) {
             const edit = document.querySelector('a[href*="ata_reuniao_update"]');
             if (edit) {
@@ -748,7 +748,7 @@
             }
         }
 
-        // C â†’ Focar no comentÃ¡rio
+        // C → Focar no comentário
         if (e.key.toLowerCase() === 'c' && !e.ctrlKey && !e.metaKey && !e.altKey) {
             if (textarea) {
                 e.preventDefault();
@@ -758,10 +758,10 @@
         }
     });
 
-    // â•â•â• DICA DE ATALHOS (primeira visita) â•â•â•
+    // ═══ DICA DE ATALHOS (primeira visita) ═══
     if (!localStorage.getItem('ataShortcutsHintShown')) {
         setTimeout(() => {
-            showToast('ðŸ’¡ Dica: use E para editar, C para comentar, Esc para voltar', 'info');
+            showToast('💡 Dica: use E para editar, C para comentar, Esc para voltar', 'info');
             localStorage.setItem('ataShortcutsHintShown', '1');
         }, 2000);
     }

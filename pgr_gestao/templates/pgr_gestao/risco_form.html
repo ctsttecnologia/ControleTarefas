@@ -1,4 +1,4 @@
-﻿{% extends 'pgr_gestao/pgr_base.html' %}
+{% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 {% load widget_tweaks %}
 
@@ -15,7 +15,7 @@
         <i class="bi bi-exclamation-triangle"></i>
         {% if form.instance.pk %}Editar Risco{% else %}Identificar Novo Risco{% endif %}
     </h1>
-    <p class="mb-0">FormulÃ¡rio de IdentificaÃ§Ã£o e AvaliaÃ§Ã£o de Riscos Ocupacionais</p>
+    <p class="mb-0">Formulário de Identificação e Avaliação de Riscos Ocupacionais</p>
 </div>
 
 <div class="row">
@@ -27,10 +27,10 @@
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
             {% endif %}
 
-            <!-- SEÃ‡ÃƒO 1: IdentificaÃ§Ã£o BÃ¡sica -->
+            <!-- SEÇÃO 1: Identificação Básica -->
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
-                    <i class="bi bi-card-text"></i> 1. IdentificaÃ§Ã£o BÃ¡sica
+                    <i class="bi bi-card-text"></i> 1. Identificação Básica
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -40,16 +40,16 @@
                             {% if form.pgr_documento.errors %}<div class="text-danger small">{{ form.pgr_documento.errors }}</div>{% endif %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.codigo_risco.id_for_label }}" class="form-label">CÃ³digo do Risco</label>
+                            <label for="{{ form.codigo_risco.id_for_label }}" class="form-label">Código do Risco</label>
                             {% render_field form.codigo_risco class="form-control" placeholder="Ex: RISCO-001" %}
                             <small class="form-text text-muted">Deixe em branco para gerar automaticamente</small>
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.ges.id_for_label }}" class="form-label">GES (Grupo de ExposiÃ§Ã£o Similar)</label>
+                            <label for="{{ form.ges.id_for_label }}" class="form-label">GES (Grupo de Exposição Similar)</label>
                             {% render_field form.ges class="form-select" %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.data_identificacao.id_for_label }}" class="form-label required-field">Data de IdentificaÃ§Ã£o</label>
+                            <label for="{{ form.data_identificacao.id_for_label }}" class="form-label required-field">Data de Identificação</label>
                             {% render_field form.data_identificacao class="form-control" type="date" %}
                         </div>
                         <div class="col-md-6">
@@ -64,10 +64,10 @@
                 </div>
             </div>
 
-            <!-- SEÃ‡ÃƒO 2: CaracterizaÃ§Ã£o -->
+            <!-- SEÇÃO 2: Caracterização -->
             <div class="card mb-4">
                 <div class="card-header bg-danger text-white">
-                    <i class="bi bi-radioactive"></i> 2. CaracterizaÃ§Ã£o do Risco
+                    <i class="bi bi-radioactive"></i> 2. Caracterização do Risco
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -76,33 +76,33 @@
                             {% render_field form.tipo_risco class="form-select" %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.perfil_exposicao.id_for_label }}" class="form-label">Perfil de ExposiÃ§Ã£o</label>
+                            <label for="{{ form.perfil_exposicao.id_for_label }}" class="form-label">Perfil de Exposição</label>
                             {% render_field form.perfil_exposicao class="form-select" %}
                         </div>
                         <div class="col-12">
                             <label for="{{ form.agente.id_for_label }}" class="form-label required-field">Agente de Risco</label>
-                            {% render_field form.agente class="form-control" placeholder="Ex: RuÃ­do, Poeira, EsforÃ§o Repetitivo, etc." %}
+                            {% render_field form.agente class="form-control" placeholder="Ex: Ruído, Poeira, Esforço Repetitivo, etc." %}
                         </div>
                         <div class="col-12">
                             <label for="{{ form.fonte_geradora.id_for_label }}" class="form-label">Fonte Geradora</label>
-                            {% render_field form.fonte_geradora class="form-control" placeholder="Ex: MÃ¡quinas, Equipamentos, Processos, etc." %}
+                            {% render_field form.fonte_geradora class="form-control" placeholder="Ex: Máquinas, Equipamentos, Processos, etc." %}
                         </div>
                         <div class="col-12">
-                            <label for="{{ form.meio_propagacao.id_for_label }}" class="form-label">Meio de PropagaÃ§Ã£o</label>
-                            {% render_field form.meio_propagacao class="form-control" placeholder="Ex: Ar, Contato direto, InalaÃ§Ã£o, etc." %}
+                            <label for="{{ form.meio_propagacao.id_for_label }}" class="form-label">Meio de Propagação</label>
+                            {% render_field form.meio_propagacao class="form-control" placeholder="Ex: Ar, Contato direto, Inalação, etc." %}
                         </div>
                         <div class="col-12">
-                            <label for="{{ form.possiveis_efeitos_saude.id_for_label }}" class="form-label">PossÃ­veis Efeitos Ã  SaÃºde</label>
+                            <label for="{{ form.possiveis_efeitos_saude.id_for_label }}" class="form-label">Possíveis Efeitos à Saúde</label>
                             {% render_field form.possiveis_efeitos_saude class="form-control" rows="3" %}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- SEÃ‡ÃƒO 3: AvaliaÃ§Ã£o -->
+            <!-- SEÇÃO 3: Avaliação -->
             <div class="card mb-4">
                 <div class="card-header bg-warning text-dark">
-                    <i class="bi bi-grid-3x3-gap"></i> 3. AvaliaÃ§Ã£o do Risco (Matriz de Severidade)
+                    <i class="bi bi-grid-3x3-gap"></i> 3. Avaliação do Risco (Matriz de Severidade)
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info">
@@ -117,7 +117,7 @@
                                 <small class="form-text text-muted">Tabela 2</small>
                             </div>
                             <div class="col-md-3">
-                                <label for="{{ form.exposicao_e.id_for_label }}" class="form-label required-field">ExposiÃ§Ã£o (E)</label>
+                                <label for="{{ form.exposicao_e.id_for_label }}" class="form-label required-field">Exposição (E)</label>
                                 {% render_field form.exposicao_e class="form-select" id="exposicao_e" %}
                                 <small class="form-text text-muted">Tabela 3</small>
                             </div>
@@ -132,26 +132,26 @@
                                 <small class="form-text text-muted">Tabela 6</small>
                             </div>
                             <div class="col-md-6">
-                                <label for="{{ form.classificacao_risco.id_for_label }}" class="form-label">ClassificaÃ§Ã£o do Risco</label>
+                                <label for="{{ form.classificacao_risco.id_for_label }}" class="form-label">Classificação do Risco</label>
                                 {% render_field form.classificacao_risco class="form-select" id="classificacao_risco" %}
                                 <small class="form-text text-muted">Calculada automaticamente (Tabela 8)</small>
                             </div>
                             <div class="col-md-6">
-                                <label for="{{ form.prioridade_acao.id_for_label }}" class="form-label">Prioridade de AÃ§Ã£o</label>
+                                <label for="{{ form.prioridade_acao.id_for_label }}" class="form-label">Prioridade de Ação</label>
                                 {% render_field form.prioridade_acao class="form-select" %}
                                 <small class="form-text text-muted">Definida automaticamente</small>
                             </div>
                         </div>
 
                         <div id="resultado-classificacao" class="alert alert-secondary text-center mt-3" style="display: none;">
-                            <h5>ClassificaÃ§Ã£o Calculada:</h5>
+                            <h5>Classificação Calculada:</h5>
                             <h2><span id="badge-classificacao" class="badge"></span></h2>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- SEÃ‡ÃƒO 4: Controles -->
+            <!-- SEÇÃO 4: Controles -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <i class="bi bi-shield-check"></i> 4. Controles Existentes e Status
@@ -163,7 +163,7 @@
                             {% render_field form.status_controle class="form-select" %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.metodo_avaliacao.id_for_label }}" class="form-label">MÃ©todo de AvaliaÃ§Ã£o</label>
+                            <label for="{{ form.metodo_avaliacao.id_for_label }}" class="form-label">Método de Avaliação</label>
                             {% render_field form.metodo_avaliacao class="form-select" %}
                         </div>
                         <div class="col-12">
@@ -171,7 +171,7 @@
                             {% render_field form.medidas_controle_existentes class="form-control" rows="3" %}
                         </div>
                         <div class="col-12">
-                            <label for="{{ form.observacoes.id_for_label }}" class="form-label">ObservaÃ§Ãµes</label>
+                            <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observações</label>
                             {% render_field form.observacoes class="form-control" rows="3" %}
                         </div>
                     </div>
@@ -198,40 +198,40 @@
                 <i class="bi bi-question-circle"></i> Ajuda
             </div>
             <div class="card-body">
-                <h6>Tabela 2 â€” Gravidade (G)</h6>
+                <h6>Tabela 2 — Gravidade (G)</h6>
                 <ul class="small list-unstyled">
                     <li><strong>1:</strong> Pequeno porte</li>
-                    <li><strong>2:</strong> MÃ©dio porte</li>
+                    <li><strong>2:</strong> Médio porte</li>
                     <li><strong>3:</strong> Grande porte</li>
                     <li><strong>4:</strong> Muito grande porte</li>
-                    <li><strong>5:</strong> CatastrÃ³fico</li>
+                    <li><strong>5:</strong> Catastrófico</li>
                 </ul>
                 <hr>
-                <h6>Tabela 3 â€” ExposiÃ§Ã£o (E)</h6>
+                <h6>Tabela 3 — Exposição (E)</h6>
                 <ul class="small list-unstyled">
                     <li><strong>1:</strong> Raramente</li>
                     <li><strong>2:</strong> Ocasionalmente</li>
                     <li><strong>3:</strong> Frequentemente</li>
-                    <li><strong>4:</strong> Constantemente-diÃ¡ria</li>
-                    <li><strong>5:</strong> Constantemente-contÃ­nua</li>
+                    <li><strong>4:</strong> Constantemente-diária</li>
+                    <li><strong>5:</strong> Constantemente-contínua</li>
                 </ul>
                 <hr>
-                <h6>Tabela 5 â€” Severidade (S)</h6>
+                <h6>Tabela 5 — Severidade (S)</h6>
                 <ul class="small list-unstyled">
-                    <li><strong>A:</strong> NegligenciÃ¡vel</li>
+                    <li><strong>A:</strong> Negligenciável</li>
                     <li><strong>B:</strong> Marginal</li>
                     <li><strong>C:</strong> Moderado</li>
                     <li><strong>D:</strong> Muito Grave</li>
-                    <li><strong>E:</strong> CrÃ­tico</li>
+                    <li><strong>E:</strong> Crítico</li>
                 </ul>
                 <hr>
-                <h6>Tabela 6 â€” Probabilidade (P)</h6>
+                <h6>Tabela 6 — Probabilidade (P)</h6>
                 <ul class="small list-unstyled">
-                    <li><strong>1:</strong> Muito improvÃ¡vel</li>
-                    <li><strong>2:</strong> ImprovÃ¡vel</li>
-                    <li><strong>3:</strong> PossÃ­vel</li>
-                    <li><strong>4:</strong> ProvÃ¡vel</li>
-                    <li><strong>5:</strong> Muito provÃ¡vel</li>
+                    <li><strong>1:</strong> Muito improvável</li>
+                    <li><strong>2:</strong> Improvável</li>
+                    <li><strong>3:</strong> Possível</li>
+                    <li><strong>4:</strong> Provável</li>
+                    <li><strong>5:</strong> Muito provável</li>
                 </ul>
             </div>
         </div>
@@ -257,8 +257,8 @@ $(document).ready(function() {
         'E-1': 'marginal', 'E-2': 'moderado', 'E-3': 'muito_grave', 'E-4': 'muito_grave', 'E-5': 'critico'
     };
     const labelClassificacao = {
-        'negligenciavel': 'NegligenciÃ¡vel', 'marginal': 'Marginal',
-        'moderado': 'Moderado', 'muito_grave': 'Muito Grave', 'critico': 'CrÃ­tico'
+        'negligenciavel': 'Negligenciável', 'marginal': 'Marginal',
+        'moderado': 'Moderado', 'muito_grave': 'Muito Grave', 'critico': 'Crítico'
     };
 
     function calcularClassificacao() {

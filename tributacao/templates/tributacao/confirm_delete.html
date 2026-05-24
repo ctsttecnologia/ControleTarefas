@@ -1,4 +1,4 @@
-﻿
+
 <!-- templates/tributacao/confirm_delete.html -->
 {% extends "tributacao/base_tributacao.html" %}
 
@@ -8,13 +8,13 @@
 <div class="container-fluid py-4">
     <div class="card border-danger" style="max-width: 600px; margin: 0 auto;">
         <div class="card-header bg-danger text-white">
-            <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Confirmar ExclusÃ£o</h5>
+            <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão</h5>
         </div>
         <div class="card-body text-center">
             <p class="fs-5">Tem certeza que deseja excluir?</p>
             <p class="mb-1"><strong>{{ tipo }}:</strong></p>
             <p class="fs-4 text-danger">{{ objeto }}</p>
-            <p class="text-muted small">Esta aÃ§Ã£o nÃ£o pode ser desfeita.</p>
+            <p class="text-muted small">Esta ação não pode ser desfeita.</p>
 
             <form method="post" class="mt-3">
                 {% csrf_token %}

@@ -1,4 +1,4 @@
-﻿# notifications/tests.py
+# notifications/tests.py
 
 """
 Suite completa de testes do sistema de notificações (sino do header).

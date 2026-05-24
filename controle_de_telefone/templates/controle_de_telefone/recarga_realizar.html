@@ -1,12 +1,12 @@
-﻿
+
 {% extends "controle_de_telefone/_base_telefone.html" %}
 
-{% block title %}Realizar Recarga â€” {{ recarga.linha.numero }}{% endblock %}
+{% block title %}Realizar Recarga — {{ recarga.linha.numero }}{% endblock %}
 
 {% block content %}
 <div class="container py-4" style="max-width: 720px;">
 
-    <!-- CabeÃ§alho -->
+    <!-- Cabeçalho -->
     <header class="mb-4 pb-3 border-bottom">
         <nav aria-label="breadcrumb" class="mb-1">
             <ol class="breadcrumb mb-0" style="font-size: 0.8rem;">
@@ -23,7 +23,7 @@
             <i class="bi bi-check-circle text-success me-2"></i>Marcar Recarga como Realizada
         </h2>
         <small class="text-muted">
-            Confirme os dados da operaÃ§Ã£o e anexe o comprovante.
+            Confirme os dados da operação e anexe o comprovante.
         </small>
     </header>
 
@@ -36,7 +36,7 @@
                     <div class="fw-semibold text-dark font-monospace">{{ recarga.linha.numero }}</div>
                 </div>
                 <div class="col-md-4">
-                    <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.5px;">UsuÃ¡rio</small>
+                    <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Usuário</small>
                     <div class="fw-semibold text-dark">{{ recarga.usuario_credito.nome_completo }}</div>
                 </div>
                 <div class="col-md-4">
@@ -47,7 +47,7 @@
         </div>
     </div>
 
-    <!-- FormulÃ¡rio -->
+    <!-- Formulário -->
     <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-4">
             <form method="post" enctype="multipart/form-data" novalidate>
@@ -97,8 +97,8 @@
                 <div class="alert alert-info d-flex align-items-start gap-2" role="alert">
                     <i class="bi bi-info-circle-fill fs-5"></i>
                     <div class="small">
-                        Ao confirmar, o status da recarga serÃ¡ alterado para <strong>Realizada</strong>.
-                        Esta aÃ§Ã£o serÃ¡ registrada no histÃ³rico.
+                        Ao confirmar, o status da recarga será alterado para <strong>Realizada</strong>.
+                        Esta ação será registrada no histórico.
                     </div>
                 </div>
 

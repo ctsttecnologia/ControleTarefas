@@ -1,14 +1,14 @@
-﻿
+
 {% comment %}
 Componente para exibir badges de status padronizados
-Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valor='critico' texto='CrÃ­tico' %}
+Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valor='critico' texto='Crítico' %}
 {% endcomment %}
 
 {% if tipo == 'risco' %}
-    {# Badges para ClassificaÃ§Ã£o de Riscos #}
+    {# Badges para Classificação de Riscos #}
     {% if valor == 'critico' %}
         <span class="badge badge-risco-critico {{ classes }}">
-            <i class="fas fa-radiation"></i> {{ texto|default:"CrÃ­tico" }}
+            <i class="fas fa-radiation"></i> {{ texto|default:"Crítico" }}
         </span>
     {% elif valor == 'muito_grave' %}
         <span class="badge badge-risco-muito-grave {{ classes }}">
@@ -24,7 +24,7 @@ Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valo
         </span>
     {% elif valor == 'negligenciavel' %}
         <span class="badge badge-risco-negligenciavel {{ classes }}">
-            <i class="fas fa-check-circle"></i> {{ texto|default:"NegligenciÃ¡vel" }}
+            <i class="fas fa-check-circle"></i> {{ texto|default:"Negligenciável" }}
         </span>
     {% else %}
         <span class="badge bg-secondary {{ classes }}">{{ texto|default:"N/A" }}</span>
@@ -42,11 +42,11 @@ Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valo
         </span>
     {% elif valor == 'em_revisao' %}
         <span class="badge badge-status-em-revisao {{ classes }}">
-            <i class="fas fa-sync-alt"></i> {{ texto|default:"Em RevisÃ£o" }}
+            <i class="fas fa-sync-alt"></i> {{ texto|default:"Em Revisão" }}
         </span>
     {% elif valor == 'elaboracao' %}
         <span class="badge bg-info {{ classes }}">
-            <i class="fas fa-edit"></i> {{ texto|default:"Em ElaboraÃ§Ã£o" }}
+            <i class="fas fa-edit"></i> {{ texto|default:"Em Elaboração" }}
         </span>
     {% elif valor == 'cancelado' %}
         <span class="badge bg-secondary {{ classes }}">
@@ -82,7 +82,7 @@ Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valo
     {# Badges para Prioridade #}
     {% if valor == 'critica' %}
         <span class="badge bg-danger {{ classes }}">
-            <i class="fas fa-exclamation"></i> {{ texto|default:"CrÃ­tica" }}
+            <i class="fas fa-exclamation"></i> {{ texto|default:"Crítica" }}
         </span>
     {% elif valor == 'alta' %}
         <span class="badge bg-warning text-dark {{ classes }}">
@@ -90,7 +90,7 @@ Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valo
         </span>
     {% elif valor == 'media' %}
         <span class="badge bg-info {{ classes }}">
-            <i class="fas fa-minus"></i> {{ texto|default:"MÃ©dia" }}
+            <i class="fas fa-minus"></i> {{ texto|default:"Média" }}
         </span>
     {% elif valor == 'baixa' %}
         <span class="badge bg-secondary {{ classes }}">
@@ -101,10 +101,10 @@ Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valo
     {% endif %}
 
 {% elif tipo == 'status_plano' %}
-    {# Badges para Status de Plano de AÃ§Ã£o #}
+    {# Badges para Status de Plano de Ação #}
     {% if valor == 'concluido' %}
         <span class="badge bg-success {{ classes }}">
-            <i class="fas fa-check-circle"></i> {{ texto|default:"ConcluÃ­do" }}
+            <i class="fas fa-check-circle"></i> {{ texto|default:"Concluído" }}
         </span>
     {% elif valor == 'em_andamento' %}
         <span class="badge bg-info {{ classes }}">
@@ -130,19 +130,19 @@ Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valo
     {# Badges para Categorias de Riscos #}
     {% if valor == 'fisico' %}
         <span class="badge bg-primary {{ classes }}">
-            <i class="fas fa-thermometer-half"></i> {{ texto|default:"FÃ­sico" }}
+            <i class="fas fa-thermometer-half"></i> {{ texto|default:"Físico" }}
         </span>
     {% elif valor == 'quimico' %}
         <span class="badge bg-danger {{ classes }}">
-            <i class="fas fa-flask"></i> {{ texto|default:"QuÃ­mico" }}
+            <i class="fas fa-flask"></i> {{ texto|default:"Químico" }}
         </span>
     {% elif valor == 'biologico' %}
         <span class="badge bg-success {{ classes }}">
-            <i class="fas fa-bacteria"></i> {{ texto|default:"BiolÃ³gico" }}
+            <i class="fas fa-bacteria"></i> {{ texto|default:"Biológico" }}
         </span>
     {% elif valor == 'ergonomico' %}
         <span class="badge bg-warning text-dark {{ classes }}">
-            <i class="fas fa-user"></i> {{ texto|default:"ErgonÃ´mico" }}
+            <i class="fas fa-user"></i> {{ texto|default:"Ergonômico" }}
         </span>
     {% elif valor == 'acidente' %}
         <span class="badge bg-dark {{ classes }}">
@@ -150,7 +150,7 @@ Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valo
         </span>
     {% elif valor == 'mecanico' %}
         <span class="badge bg-secondary {{ classes }}">
-            <i class="fas fa-cogs"></i> {{ texto|default:"MecÃ¢nico" }}
+            <i class="fas fa-cogs"></i> {{ texto|default:"Mecânico" }}
         </span>
     {% else %}
         <span class="badge bg-secondary {{ classes }}">{{ texto|default:"N/A" }}</span>
@@ -164,7 +164,7 @@ Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valo
         </span>
     {% elif valor == False or valor == 'nao_conforme' %}
         <span class="badge bg-danger {{ classes }}">
-            <i class="fas fa-times-circle"></i> {{ texto|default:"NÃ£o Conforme" }}
+            <i class="fas fa-times-circle"></i> {{ texto|default:"Não Conforme" }}
         </span>
     {% else %}
         <span class="badge bg-secondary {{ classes }}">
@@ -185,10 +185,10 @@ Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valo
     {% endif %}
 
 {% elif tipo == 'perfil_exposicao' %}
-    {# Badges para Perfil de ExposiÃ§Ã£o #}
+    {# Badges para Perfil de Exposição #}
     {% if valor == 'continua' %}
         <span class="badge bg-danger {{ classes }}">
-            <i class="fas fa-clock"></i> {{ texto|default:"ContÃ­nua" }}
+            <i class="fas fa-clock"></i> {{ texto|default:"Contínua" }}
         </span>
     {% elif valor == 'intermitente' %}
         <span class="badge bg-warning text-dark {{ classes }}">
@@ -207,7 +207,7 @@ Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valo
     {% endif %}
 
 {% else %}
-    {# Badge genÃ©rico #}
+    {# Badge genérico #}
     <span class="badge bg-secondary {{ classes }}">{{ texto|default:"N/A" }}</span>
 {% endif %}
 

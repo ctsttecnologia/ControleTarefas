@@ -1,8 +1,8 @@
-﻿<!-- FormulÃ¡rio para Adicionar ou Editar Carro -->
+<!-- Formulário para Adicionar ou Editar Carro -->
 {% extends "automovel/_base_automovel.html" %}
 {% load static crispy_forms_tags %}
 
-{% block title %}{% if object %}Editar VeÃ­culo{% else %}Novo VeÃ­culo{% endif %}{% endblock %}
+{% block title %}{% if object %}Editar Veículo{% else %}Novo Veículo{% endif %}{% endblock %}
 
 {% block module_css %}
 <style>
@@ -54,12 +54,12 @@
             <div>
                 <h1>
                     {% if object %}
-                    <i class="bi bi-pencil-square me-2"></i>Editar VeÃ­culo
+                    <i class="bi bi-pencil-square me-2"></i>Editar Veículo
                     {% else %}
-                    <i class="bi bi-plus-square-dotted me-2"></i>Cadastrar VeÃ­culo
+                    <i class="bi bi-plus-square-dotted me-2"></i>Cadastrar Veículo
                     {% endif %}
                 </h1>
-                <p>{% if object %}Atualize os dados do veÃ­culo{% else %}Registre um novo veÃ­culo na frota{% endif %}</p>
+                <p>{% if object %}Atualize os dados do veículo{% else %}Registre um novo veículo na frota{% endif %}</p>
             </div>
             <a href="{% url 'automovel:carro_list' %}" class="btn btn-sm btn-outline-light">
                 <i class="bi bi-arrow-left me-1"></i> Voltar
@@ -79,7 +79,7 @@
                     </a>
                     <button type="submit" class="btn btn-save">
                         <i class="bi bi-check-circle-fill me-2"></i>
-                        {% if object %}Atualizar{% else %}Cadastrar VeÃ­culo{% endif %}
+                        {% if object %}Atualizar{% else %}Cadastrar Veículo{% endif %}
                     </button>
                 </div>
             </form>

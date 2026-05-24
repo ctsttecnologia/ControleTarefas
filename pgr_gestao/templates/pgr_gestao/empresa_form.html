@@ -1,4 +1,4 @@
-﻿{# Empresa â€” FormulÃ¡rio de criaÃ§Ã£o/ediÃ§Ã£o #}
+{# Empresa — Formulário de criação/edição #}
 {% extends "pgr_gestao/pgr_base.html" %}
 {% load static %}
 {% load widget_tweaks %}
@@ -38,16 +38,16 @@
 
     <div class="row">
         <div class="col-lg-8">
-            <!-- Dados BÃ¡sicos -->
+            <!-- Dados Básicos -->
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
-                    <i class="bi bi-card-heading"></i> Dados BÃ¡sicos
+                    <i class="bi bi-card-heading"></i> Dados Básicos
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-8">
                             <label for="{{ form.cliente.id_for_label }}" class="form-label fw-semibold required-field">
-                                RazÃ£o Social
+                                Razão Social
                             </label>
                             {% render_field form.cliente class="form-control" placeholder="Digite para buscar..." %}
                             {% if form.cliente.errors %}
@@ -85,9 +85,9 @@
                         </div>
                         <div class="col-md-9">
                             <label for="{{ form.grau_risco_texto.id_for_label }}" class="form-label fw-semibold">
-                                Grau de Risco (por extenso) {# ðŸ”§ corrigido typo #}
+                                Grau de Risco (por extenso) {# 🔧 corrigido typo #}
                             </label>
-                            {% render_field form.grau_risco_texto class="form-control" placeholder="DescriÃ§Ã£o do grau de risco" %}
+                            {% render_field form.grau_risco_texto class="form-control" placeholder="Descrição do grau de risco" %}
                             {% if form.grau_risco_texto.errors %}
                             <div class="text-danger small mt-1">{{ form.grau_risco_texto.errors }}</div>
                             {% endif %}
@@ -95,7 +95,7 @@
 
                         <div class="col-md-3">
                             <label for="{{ form.numero_empregados.id_for_label }}" class="form-label fw-semibold">
-                                NÂº Empregados
+                                Nº Empregados
                             </label>
                             {% render_field form.numero_empregados class="form-control" type="number" %}
                             {% if form.numero_empregados.errors %}
@@ -104,7 +104,7 @@
                         </div>
                         <div class="col-md-9">
                             <label for="{{ form.numero_empregados_texto.id_for_label }}" class="form-label fw-semibold">
-                                NÂº Empregados (por extenso)
+                                Nº Empregados (por extenso)
                             </label>
                             {% render_field form.numero_empregados_texto class="form-control" placeholder="Ex: cento e cinquenta empregados" %}
                             {% if form.numero_empregados_texto.errors %}
@@ -123,9 +123,9 @@
                         </div>
                         <div class="col-md-9">
                             <label for="{{ form.descricao_cnae.id_for_label }}" class="form-label fw-semibold">
-                                DescriÃ§Ã£o CNAE
+                                Descrição CNAE
                             </label>
-                            {% render_field form.descricao_cnae class="form-control" placeholder="DescriÃ§Ã£o da atividade econÃ´mica" %}
+                            {% render_field form.descricao_cnae class="form-control" placeholder="Descrição da atividade econômica" %}
                             {% if form.descricao_cnae.errors %}
                             <div class="text-danger small mt-1">{{ form.descricao_cnae.errors }}</div>
                             {% endif %}
@@ -154,10 +154,10 @@
                 </div>
             </div>
 
-            <!-- EndereÃ§o -->
+            <!-- Endereço -->
             <div class="card mb-4">
                 <div class="card-header bg-secondary text-white">
-                    <i class="bi bi-geo-alt-fill"></i> EndereÃ§o
+                    <i class="bi bi-geo-alt-fill"></i> Endereço
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -176,8 +176,8 @@
                             {% endif %}
                         </div>
                         <div class="col-md-2">
-                            <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">NÃºmero</label>
-                            {% render_field form.numero class="form-control" placeholder="NÂº" %}
+                            <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">Número</label>
+                            {% render_field form.numero class="form-control" placeholder="Nº" %}
                             {% if form.numero.errors %}
                             <div class="text-danger small mt-1">{{ form.numero.errors }}</div>
                             {% endif %}
@@ -224,7 +224,7 @@
                 </div>
             </div>
 
-            <!-- BotÃµes -->
+            <!-- Botões -->
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between flex-wrap gap-2">
@@ -233,7 +233,7 @@
                         </a>
                         <button type="submit" class="btn btn-primary btn-lg">
                             <i class="bi bi-save"></i>
-                            {% if form.instance.pk %}Salvar AlteraÃ§Ãµes{% else %}Cadastrar Empresa{% endif %}
+                            {% if form.instance.pk %}Salvar Alterações{% else %}Cadastrar Empresa{% endif %}
                         </button>
                     </div>
                 </div>
@@ -244,7 +244,7 @@
         <div class="col-lg-4">
             <div class="card sticky-top help-sidebar" style="top: 80px;">
                 <div class="card-header bg-info text-white">
-                    <i class="bi bi-info-circle-fill"></i> InformaÃ§Ãµes
+                    <i class="bi bi-info-circle-fill"></i> Informações
                 </div>
                 <div class="card-body">
                     <div class="form-check form-switch mb-3">
@@ -255,9 +255,9 @@
                     </div>
 
                     <hr>
-                    <h6>Campos ObrigatÃ³rios</h6>
+                    <h6>Campos Obrigatórios</h6>
                     <ul class="small">
-                        <li>RazÃ£o Social</li>
+                        <li>Razão Social</li>
                         <li>CNPJ</li>
                         <li>Tipo de Empresa</li>
                     </ul>
@@ -266,7 +266,7 @@
                     <h6>Grau de Risco (NR-4)</h6>
                     <ul class="small list-unstyled">
                         <li><span class="badge bg-success">1</span> Risco Baixo</li>
-                        <li><span class="badge bg-info">2</span> Risco MÃ©dio</li>
+                        <li><span class="badge bg-info">2</span> Risco Médio</li>
                         <li><span class="badge bg-warning text-dark">3</span> Risco Alto</li>
                         <li><span class="badge bg-danger">4</span> Risco Muito Alto</li>
                     </ul>
@@ -274,7 +274,7 @@
                     <hr>
                     <p class="small text-muted mb-0">
                         <i class="bi bi-lightbulb-fill text-warning"></i>
-                        <strong>Dica:</strong> O CNAE e Grau de Risco sÃ£o utilizados para determinar as exigÃªncias do PGR.
+                        <strong>Dica:</strong> O CNAE e Grau de Risco são utilizados para determinar as exigências do PGR.
                     </p>
                 </div>
             </div>
@@ -286,7 +286,7 @@
 {% block extra_pgr_js %}
 <script>
 $(document).ready(function() {
-    // MÃ¡scara CNPJ
+    // Máscara CNPJ
     $('#id_cnpj').on('input', function() {
         let value = $(this).val().replace(/\D/g, '');
         if (value.length <= 14) {
@@ -298,7 +298,7 @@ $(document).ready(function() {
         }
     });
 
-    // MÃ¡scara CEP
+    // Máscara CEP
     $('#id_cep').on('input', function() {
         let value = $(this).val().replace(/\D/g, '');
         if (value.length <= 8) {
@@ -322,7 +322,7 @@ $(document).ready(function() {
         }
     });
 
-    // MÃ¡scara Telefone
+    // Máscara Telefone
     $('#id_telefone').on('input', function() {
         let value = $(this).val().replace(/\D/g, '');
         if (value.length <= 11) {
@@ -337,7 +337,7 @@ $(document).ready(function() {
         }
     });
 
-    // Select2 â€” Autocompletar Cliente
+    // Select2 — Autocompletar Cliente
     if ($('#id_cliente').length && typeof $.fn.select2 !== 'undefined') {
         $('#id_cliente').select2({
             theme: 'bootstrap-5',

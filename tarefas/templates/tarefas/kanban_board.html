@@ -1,4 +1,4 @@
-﻿
+
 <!-- templates/tarefas/kanban_board.html -->
 {% extends 'base.html' %}
 {% load static %}
@@ -8,10 +8,10 @@
 {% block extra_css %}
 <style>
 /* =============================================================================
-   KANBAN BOARD â€” Responsivo + Dark/Light Theme
+   KANBAN BOARD — Responsivo + Dark/Light Theme
    ============================================================================= */
 
-/* â”€â”€ ðŸŽ¨ VariÃ¡veis de Tema (Light - default) â”€â”€ */
+/* ── 🎨 Variáveis de Tema (Light - default) ── */
 :root,
 [data-bs-theme="light"] {
     --kanban-title-color: #1a1a2e;
@@ -61,7 +61,7 @@
     --kanban-badge-normal-border: #c7d8f5;
 }
 
-/* â”€â”€ ðŸŒ™ Tema Escuro â”€â”€ */
+/* ── 🌙 Tema Escuro ── */
 [data-bs-theme="dark"] {
     --kanban-title-color: #f1f5f9;
     --kanban-column-bg: rgba(255, 255, 255, 0.04);
@@ -110,7 +110,7 @@
     --kanban-badge-normal-border: rgba(99, 102, 241, 0.35);
 }
 
-/* â”€â”€ Wrapper â”€â”€ */
+/* ── Wrapper ── */
 .kanban-wrapper {
     padding: 1rem;
     max-width: 100%;
@@ -123,7 +123,7 @@
     }
 }
 
-/* â”€â”€ Header â”€â”€ */
+/* ── Header ── */
 .kanban-header {
     display: flex;
     flex-wrap: wrap;
@@ -148,7 +148,7 @@
     align-items: center;
 }
 
-/* â”€â”€ Board Layout â”€â”€ */
+/* ── Board Layout ── */
 .kanban-board {
     display: grid;
     gap: 1rem;
@@ -183,7 +183,7 @@
     }
 }
 
-/* â”€â”€ Column â”€â”€ */
+/* ── Column ── */
 .kanban-column {
     display: flex;
     flex-direction: column;
@@ -206,7 +206,7 @@
     box-shadow: 0 2px 8px var(--kanban-column-shadow);
 }
 
-/* â”€â”€ Column Header â”€â”€ */
+/* ── Column Header ── */
 .kanban-column-header {
     display: flex;
     justify-content: space-between;
@@ -225,7 +225,7 @@
     color: var(--kanban-column-title-color);
 }
 
-/* â”€â”€ Status Dots â”€â”€ */
+/* ── Status Dots ── */
 .kanban-status-dot {
     width: 10px;
     height: 10px;
@@ -248,7 +248,7 @@
 .kanban-header-concluida    { border-bottom-color: #22c55e !important; }
 .kanban-header-pausada      { border-bottom-color: #8b5cf6 !important; }
 
-/* â”€â”€ Count Badge â”€â”€ */
+/* ── Count Badge ── */
 .kanban-count {
     background: var(--kanban-count-bg);
     color: var(--kanban-count-color);
@@ -261,7 +261,7 @@
     line-height: 1.3;
 }
 
-/* â”€â”€ Cards Container â”€â”€ */
+/* ── Cards Container ── */
 .kanban-cards {
     flex: 1;
     overflow-y: auto;
@@ -272,7 +272,7 @@
     min-height: 80px;
 }
 
-/* Scrollbar â€” Webkit */
+/* Scrollbar — Webkit */
 .kanban-cards::-webkit-scrollbar {
     width: 5px;
 }
@@ -287,13 +287,13 @@
     background: var(--kanban-scrollbar-thumb-hover);
 }
 
-/* Scrollbar â€” Firefox */
+/* Scrollbar — Firefox */
 .kanban-cards {
     scrollbar-width: thin;
     scrollbar-color: var(--kanban-scrollbar-thumb) transparent;
 }
 
-/* â”€â”€ Card â”€â”€ */
+/* ── Card ── */
 .kanban-card {
     background: var(--kanban-card-bg);
     border: 1px solid var(--kanban-card-border);
@@ -415,7 +415,7 @@
     flex-shrink: 0;
 }
 
-/* â”€â”€ Empty State â”€â”€ */
+/* ── Empty State ── */
 .kanban-empty {
     display: flex;
     flex-direction: column;
@@ -429,7 +429,7 @@
     flex: 1;
 }
 
-/* â”€â”€ Drag & Drop States â”€â”€ */
+/* ── Drag & Drop States ── */
 .kanban-ghost {
     opacity: 0.4;
     border: 2px dashed #6366f1 !important;
@@ -460,7 +460,7 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
     border-color: rgba(99, 102, 241, 0.2);
 }
 
-/* â”€â”€ Filter Select â”€â”€ */
+/* ── Filter Select ── */
 .kanban-filter-select {
     min-width: 180px;
     font-size: 0.8rem;
@@ -478,7 +478,7 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
     outline: none;
 }
 
-/* â”€â”€ Filter Tag â”€â”€ */
+/* ── Filter Tag ── */
 .kanban-filter-tag {
     display: inline-flex;
     align-items: center;
@@ -502,7 +502,7 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
     color: #ef4444;
 }
 
-/* â”€â”€ Mobile â”€â”€ */
+/* ── Mobile ── */
 @media (max-width: 767.98px) {
     .kanban-wrapper {
         padding: 0.75rem;
@@ -524,7 +524,7 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
     }
 }
 
-/* â”€â”€ Print â”€â”€ */
+/* ── Print ── */
 @media print {
     .kanban-board {
         grid-template-columns: repeat(5, 1fr) !important;
@@ -548,10 +548,10 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
             <p class="kanban-subtitle">Arraste as tarefas entre colunas para atualizar o status</p>
         </div>
         <div class="kanban-actions">
-            <!-- â•â•â• FILTRO POR RESPONSÃVEL â•â•â• -->
+            <!-- ═══ FILTRO POR RESPONSÁVEL ═══ -->
             <form method="get" class="d-inline-flex align-items-center gap-2" id="kanbanFilterForm">
                 <select name="responsavel" class="kanban-filter-select" onchange="this.form.submit()">
-                    <option value="">ðŸ‘¤ Todos os responsÃ¡veis</option>
+                    <option value="">👤 Todos os responsáveis</option>
                     {% for user in responsaveis %}
                     <option value="{{ user.pk }}" {% if responsavel_atual == user.pk|stringformat:"d" %}selected{% endif %}>
                         {{ user.get_full_name|default:user.username }}
@@ -564,10 +564,10 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
                 </a>
                 {% endif %}
             </form>
-            <!-- â•â•â• FIM DO FILTRO â•â•â• -->
+            <!-- ═══ FIM DO FILTRO ═══ -->
             {% if perms.tarefas.view_calendario or user.is_superuser %}
-            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="RelatÃ³rios">
-                <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">RelatÃ³rios</span>
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
+                <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
             </a>
             {% endif %}
             {% if perms.tarefas.add_tarefas or user.is_superuser %}
@@ -576,8 +576,8 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
             </a>
             {% endif %}
             {% if perms.tarefas.view_calendario or user.is_superuser %}
-            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="CalendÃ¡rio">
-                <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">CalendÃ¡rio</span>
+            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Calendário">
+                <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
             </a>
             {% endif %}
             {% if perms.tarefas.add_tarefas or user.is_superuser %}
@@ -593,7 +593,7 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
     <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem;">
         <span class="kanban-filter-tag">
             <i class="bi bi-person-fill"></i>
-            ResponsÃ¡vel:
+            Responsável:
             {% for user in responsaveis %}
                 {% if user.pk|stringformat:"d" == responsavel_atual %}
                     {{ user.get_full_name|default:user.username }}
@@ -736,9 +736,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => card.classList.remove('kanban-save-error'), 2000);
     }
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // SORTABLE â€” Drag & Drop
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════
+    // SORTABLE — Drag & Drop
+    // ═══════════════════════════════════════════════════════
 
     document.querySelectorAll('.kanban-cards').forEach(container => {
         new Sortable(container, {
@@ -814,7 +814,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     card.style.pointerEvents = 'auto';
                     revertCard(card, oldStatus);
                     showToast(
-                        '<i class="bi bi-wifi-off me-1"></i>Erro de conexÃ£o. A tarefa foi revertida.',
+                        '<i class="bi bi-wifi-off me-1"></i>Erro de conexão. A tarefa foi revertida.',
                         'danger'
                     );
                 });

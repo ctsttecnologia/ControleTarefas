@@ -1,4 +1,4 @@
-﻿
+
 
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load i18n %}
@@ -9,9 +9,9 @@
 {% block extra_css %}
 {{ block.super }}
 <style>
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       VARIÃVEIS â€” TEMA CLARO
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════════════
+       VARIÁVEIS — TEMA CLARO
+       ═══════════════════════════════════════════════════════ */
     :root,
     [data-bs-theme="light"] {
         --mz-bg:             #ffffff;
@@ -41,9 +41,9 @@
         --mz-scrollbar-thumb: #cbd5e1;
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       VARIÃVEIS â€” TEMA ESCURO
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════════════
+       VARIÁVEIS — TEMA ESCURO
+       ═══════════════════════════════════════════════════════ */
     [data-bs-theme="dark"] {
         --mz-bg:             #1a1d23;
         --mz-bg-alt:         #1e2128;
@@ -72,9 +72,9 @@
         --mz-scrollbar-thumb: #3d4555;
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    /* ═══════════════════════════════════════════════════════
        PAGE HEADER
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ═══════════════════════════════════════════════════════ */
     .mz-page-header {
         background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
         border-radius: 0.75rem;
@@ -113,9 +113,9 @@
         font-size: 0.85rem;
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    /* ═══════════════════════════════════════════════════════
        LEGENDA
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ═══════════════════════════════════════════════════════ */
     .mz-legend {
         background: var(--mz-accent-soft);
         border: 1px solid var(--mz-border);
@@ -154,9 +154,9 @@
         display: inline-block;
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    /* ═══════════════════════════════════════════════════════
        CARD PRINCIPAL
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ═══════════════════════════════════════════════════════ */
     .mz-card {
         background: var(--mz-bg);
         border: 1px solid var(--mz-border);
@@ -191,9 +191,9 @@
         font-weight: 600;
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    /* ═══════════════════════════════════════════════════════
        WRAPPER SCROLL
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ═══════════════════════════════════════════════════════ */
     .mz-wrapper {
         overflow: auto;
         max-height: 65vh;
@@ -221,9 +221,9 @@
         background: var(--mz-scrollbar-track);
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    /* ═══════════════════════════════════════════════════════
        TABELA MATRIZ
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ═══════════════════════════════════════════════════════ */
     .mz-table {
         width: 100%;
         border-collapse: separate;
@@ -241,7 +241,7 @@
         white-space: nowrap;
     }
 
-    /* â”€â”€ Header â”€â”€ */
+    /* ── Header ── */
     .mz-table thead th {
         position: sticky;
         top: 0;
@@ -268,7 +268,7 @@
         min-width: 130px;
     }
 
-    /* â”€â”€ Coluna Fixa (FunÃ§Ã£o) â”€â”€ */
+    /* ── Coluna Fixa (Função) ── */
     .mz-table tbody th {
         position: sticky;
         left: 0;
@@ -290,7 +290,7 @@
         opacity: 0.7;
     }
 
-    /* â”€â”€ CÃ©lulas â”€â”€ */
+    /* ── Células ── */
     .mz-table tbody td {
         text-align: center;
         padding: 0.35rem;
@@ -298,7 +298,7 @@
         transition: background-color 0.15s ease;
     }
 
-    /* â”€â”€ Hover na linha â”€â”€ */
+    /* ── Hover na linha ── */
     .mz-table tbody tr:hover th {
         background: var(--mz-hover-col) !important;
     }
@@ -307,7 +307,7 @@
         background: var(--mz-hover) !important;
     }
 
-    /* â”€â”€ Linhas zebradas â”€â”€ */
+    /* ── Linhas zebradas ── */
     .mz-table tbody tr:nth-child(even) th {
         background: var(--mz-bg);
     }
@@ -316,9 +316,9 @@
         background: var(--mz-bg-alt);
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    /* ═══════════════════════════════════════════════════════
        INPUT DA MATRIZ
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ═══════════════════════════════════════════════════════ */
     .mz-input {
         width: 100%;
         max-width: 80px;
@@ -372,9 +372,9 @@
         color: var(--mz-text);
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    /* ═══════════════════════════════════════════════════════
        FOOTER
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ═══════════════════════════════════════════════════════ */
     .mz-footer {
         display: flex;
         justify-content: space-between;
@@ -420,9 +420,9 @@
         box-shadow: 0 2px 6px rgba(37,99,235,.2);
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    /* ═══════════════════════════════════════════════════════
        EMPTY STATE
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ═══════════════════════════════════════════════════════ */
     .mz-empty {
         text-align: center;
         padding: 4rem 2rem;
@@ -441,9 +441,9 @@
         color: var(--mz-text);
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    /* ═══════════════════════════════════════════════════════
        TOOLBAR (BUSCA + STATS)
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ═══════════════════════════════════════════════════════ */
     .mz-toolbar {
         display: flex;
         justify-content: space-between;
@@ -507,9 +507,9 @@
         color: var(--mz-text);
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    /* ═══════════════════════════════════════════════════════
        RESPONSIVO
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+       ═══════════════════════════════════════════════════════ */
     @media (max-width: 768px) {
         .mz-page-header {
             padding: 1rem 1.25rem;
@@ -538,9 +538,9 @@
 
 {% block sst_content %}
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════════ -->
 <!-- PAGE HEADER                                             -->
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════════ -->
 <div class="mz-page-header">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
@@ -548,7 +548,7 @@
                 <i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ titulo_pagina }}
             </h4>
             <span class="mz-subtitle">
-                {% trans "Defina a frequÃªncia de troca (em meses) para cada EPI por funÃ§Ã£o" %}
+                {% trans "Defina a frequência de troca (em meses) para cada EPI por função" %}
             </span>
         </div>
         <div class="d-flex gap-2">
@@ -558,7 +558,7 @@
                     hx-target="#modal-content"
                     data-bs-toggle="modal"
                     data-bs-target="#genericModal">
-                <i class="bi bi-plus-lg me-1"></i> Nova FunÃ§Ã£o
+                <i class="bi bi-plus-lg me-1"></i> Nova Função
             </button>
             {% endif %}
 
@@ -566,35 +566,35 @@
     </div>
 </div>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════════ -->
 <!-- LEGENDA                                                 -->
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════════ -->
 <div class="mz-legend">
     <i class="bi bi-info-circle-fill"></i>
     <div>
         <div class="mz-legend-items">
             <span class="mz-legend-item">
                 <span class="mz-legend-swatch" style="background: var(--mz-qn-bg); border: 1.5px solid var(--mz-input-border);"></span>
-                <strong>QN</strong> = Quando NecessÃ¡rio (vazio ou 0)
+                <strong>QN</strong> = Quando Necessário (vazio ou 0)
             </span>
             <span class="mz-legend-item">
                 <span class="mz-legend-swatch" style="background: var(--mz-val-bg); border: 1.5px solid var(--mz-accent);"></span>
-                <strong>NÂº</strong> = FrequÃªncia de troca em <strong>meses</strong>
+                <strong>Nº</strong> = Frequência de troca em <strong>meses</strong>
             </span>
         </div>
     </div>
 </div>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════════ -->
 <!-- CARD MATRIZ                                             -->
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════════ -->
 <div class="mz-card">
     <div class="mz-card-header">
         <h6>
-            <i class="bi bi-table me-2"></i>Matriz de EPIs por FunÃ§Ã£o
+            <i class="bi bi-table me-2"></i>Matriz de EPIs por Função
         </h6>
         <span class="mz-badge">
-            {{ funcoes|length }} funÃ§Ãµes Ã— {{ equipamentos|length }} equipamentos
+            {{ funcoes|length }} funções × {{ equipamentos|length }} equipamentos
         </span>
     </div>
 
@@ -605,13 +605,13 @@
             <i class="bi bi-search"></i>
             <input type="text"
                    id="mzSearchFuncao"
-                   placeholder="Buscar funÃ§Ã£o..."
+                   placeholder="Buscar função..."
                    autocomplete="off">
         </div>
         <div class="mz-stats">
             <span class="mz-stat-item">
                 <i class="bi bi-briefcase"></i>
-                <span class="mz-stat-value">{{ funcoes|length }}</span> funÃ§Ãµes
+                <span class="mz-stat-value">{{ funcoes|length }}</span> funções
             </span>
             <span class="mz-stat-item">
                 <i class="bi bi-shield-check"></i>
@@ -634,7 +634,7 @@
                             <i class="bi bi-notebook-fill me-1"></i> {% trans "Registro" %}
                         </th>
                         <th>
-                            <i class="bi bi-briefcase me-1"></i> {% trans "FunÃ§Ã£o" %}
+                            <i class="bi bi-briefcase me-1"></i> {% trans "Função" %}
                         </th>
                         {% for equipamento in equipamentos %}
                         <th title="{{ equipamento.nome }}">
@@ -675,7 +675,7 @@
     <div class="mz-footer">
         <div class="mz-footer-info">
             <i class="bi bi-keyboard me-1"></i>
-            Use <kbd>Tab</kbd> para navegar entre campos Â· <kbd>0</kbd> ou vazio = QN
+            Use <kbd>Tab</kbd> para navegar entre campos · <kbd>0</kbd> ou vazio = QN
         </div>
         <button type="submit" form="matrizForm" class="mz-btn-save">
             <i class="bi bi-check-lg"></i>
@@ -691,14 +691,14 @@
         </div>
         <h6>Nenhum dado para exibir</h6>
         <p>
-            {% if not funcoes %}Cadastre funÃ§Ãµes primeiro.{% endif %}
+            {% if not funcoes %}Cadastre funções primeiro.{% endif %}
             {% if not equipamentos %}Cadastre equipamentos primeiro.{% endif %}
         </p>
     </div>
     {% endif %}
 </div>
 
-<!-- Modal GenÃ©rico -->
+<!-- Modal Genérico -->
 <div class="modal fade" id="genericModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content" id="modal-content"></div>
@@ -712,7 +712,7 @@
 (function () {
     'use strict';
 
-    // â”€â”€ Atualizar data-state dos inputs â”€â”€
+    // ── Atualizar data-state dos inputs ──
     function atualizarEstado(input) {
         const val = input.value.trim();
         if (val === '' || val === '0') {
@@ -723,7 +723,7 @@
         }
     }
 
-    // â”€â”€ Contar preenchidos â”€â”€
+    // ── Contar preenchidos ──
     function contarPreenchidos() {
         const inputs = document.querySelectorAll('.mz-input');
         let count = 0;
@@ -734,7 +734,7 @@
         if (statEl) statEl.textContent = count;
     }
 
-    // â”€â”€ Init: aplicar estado e contar â”€â”€
+    // ── Init: aplicar estado e contar ──
     document.querySelectorAll('.mz-input').forEach(input => {
         atualizarEstado(input);
 
@@ -755,7 +755,7 @@
 
     contarPreenchidos();
 
-    // â”€â”€ Busca de funÃ§Ãµes â”€â”€
+    // ── Busca de funções ──
     const searchInput = document.getElementById('mzSearchFuncao');
     if (searchInput) {
         searchInput.addEventListener('input', function () {
@@ -769,7 +769,7 @@
         });
     }
 
-    // â”€â”€ Atalho Ctrl+S para salvar â”€â”€
+    // ── Atalho Ctrl+S para salvar ──
     document.addEventListener('keydown', function (e) {
         if ((e.ctrlKey || e.metaKey) && e.key === 's') {
             e.preventDefault();

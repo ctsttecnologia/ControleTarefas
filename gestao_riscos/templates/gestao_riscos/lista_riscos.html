@@ -1,5 +1,5 @@
-﻿
-<!-- Template para exibir a lista de riscos, incidentes recentes e inspeÃ§Ãµes pendentes -->
+
+<!-- Template para exibir a lista de riscos, incidentes recentes e inspeções pendentes -->
 {% extends "base.html" %}
 {% load static %}
 
@@ -8,9 +8,9 @@
 {% block content %}
 <div class="container-fluid py-4">
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-         HEADER - PadrÃ£o do Painel de RH
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         HEADER - Padrão do Painel de RH
+    ═══════════════════════════════════════════════════════════════════════ -->
     <div class="card bg-primary text-white shadow-sm mb-4">
         <div class="card-body py-3">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -18,7 +18,7 @@
                     <h4 class="mb-1">
                         <i class="bi bi-shield-exclamation me-2"></i>{{ titulo_pagina }}
                     </h4>
-                    <small class="opacity-75">Monitoramento de incidentes e inspeÃ§Ãµes de seguranÃ§a</small>  
+                    <small class="opacity-75">Monitoramento de incidentes e inspeções de segurança</small>  
                     
                     <nav class="navbar navbar-expand-lg">
                         {% if dias_sem_acidentes is not None %}
@@ -46,7 +46,7 @@
                     {% endif %}
                     {% if perms.gestao_riscos.add_inspecao or user.is_superuser %}  
                     <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="btn btn-light">
-                        <i class="bi bi-calendar-plus me-1"></i> Nova InspeÃ§Ã£o
+                        <i class="bi bi-calendar-plus me-1"></i> Nova Inspeção
                     </a>
                     {% endif %}
                 </div>
@@ -54,9 +54,9 @@
         </div>
     </div>
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    <!-- ═══════════════════════════════════════════════════════════════════════
          CARDS KPI
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    ═══════════════════════════════════════════════════════════════════════ -->
     <div class="row g-3 mb-4">
         <!-- Card: Incidentes Recentes -->
         <div class="col-6 col-lg-3">
@@ -73,7 +73,7 @@
             </div>
         </div>
 
-        <!-- Card: InspeÃ§Ãµes Pendentes -->
+        <!-- Card: Inspeções Pendentes -->
         <div class="col-6 col-lg-3">
             <div class="card border-start border-primary border-1 shadow-sm h-100">
                 <div class="card-body d-flex align-items-center">
@@ -82,7 +82,7 @@
                     </div>
                     <div>
                         <h3 class="mb-0 fw-bold">{{ inspecoes_pendentes|length }}</h3>
-                        <small class="text-muted text-uppercase">InspeÃ§Ãµes Pendentes</small>
+                        <small class="text-muted text-uppercase">Inspeções Pendentes</small>
                     </div>
                 </div>
             </div>
@@ -103,7 +103,7 @@
             </div>
         </div>
 
-        <!-- Card: CalendÃ¡rio -->
+        <!-- Card: Calendário -->
         <div class="col-6 col-lg-3">
             <a href="{% url 'gestao_riscos:calendario' %}" class="text-decoration-none">
                 <div class="card border-start border-info border-1 shadow-sm h-100">
@@ -112,8 +112,8 @@
                             <i class="bi bi-calendar3 text-info fs-4"></i>
                         </div>
                         <div>
-                            <h6 class="mb-0 fw-bold text-dark">Ver CalendÃ¡rio</h6>
-                            <small class="text-muted text-uppercase">Agenda de InspeÃ§Ãµes</small>
+                            <h6 class="mb-0 fw-bold text-dark">Ver Calendário</h6>
+                            <small class="text-muted text-uppercase">Agenda de Inspeções</small>
                         </div>
                     </div>
                 </div>
@@ -121,9 +121,9 @@
         </div>
     </div>
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-         CONTEÃšDO PRINCIPAL - Grid de 2 colunas
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         CONTEÚDO PRINCIPAL - Grid de 2 colunas
+    ═══════════════════════════════════════════════════════════════════════ -->
     <div class="row g-4">
         
         <!-- COLUNA ESQUERDA: Incidentes e Acidentes -->
@@ -131,7 +131,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="bi bi-exclamation-octagon-fill me-2"></i>Ãšltimos Acidentes e Incidentes
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i>Últimos Acidentes e Incidentes
                     </h5>
                     <span class="badge bg-light text-danger">{{ incidentes|length }} registros</span>
                 </div>
@@ -140,11 +140,11 @@
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>DescriÃ§Ã£o</th>
+                                    <th>Descrição</th>
                                     <th>Setor</th>
-                                    <th>Tipo OcorrÃªncia</th>
-                                    <th>ClassificaÃ§Ã£o</th>
-                                    <th>Data OcorrÃªncia</th>
+                                    <th>Tipo Ocorrência</th>
+                                    <th>Classificação</th>
+                                    <th>Data Ocorrência</th>
                                     <th>Data Registro</th>
                                     <th>Dias Afastados</th>
                                 </tr>
@@ -176,11 +176,11 @@
                                             <i class="bi bi-trophy-fill me-2"></i>
                                             {{ dias_sem_acidentes }} dia{{ dias_sem_acidentes|pluralize:"s" }} sem acidentes!
                                         </h4>
-                                        <p class="text-muted mb-0">Continue mantendo o ambiente seguro! ðŸŽ‰</p>
+                                        <p class="text-muted mb-0">Continue mantendo o ambiente seguro! 🎉</p>
                                         <div class="mt-3">
                                             <span class="badge bg-success fs-6 px-4 py-2">
                                                 <i class="bi bi-calendar-check me-1"></i>
-                                                Desde {{ data_ultimo_acidente|date:"d/m/Y"|default:"o inÃ­cio dos registros" }}
+                                                Desde {{ data_ultimo_acidente|date:"d/m/Y"|default:"o início dos registros" }}
                                             </span>
                                         </div>
                                     </td>
@@ -193,14 +193,14 @@
             </div>
         </div>
 
-        <!-- COLUNA DIREITA: InspeÃ§Ãµes -->
+        <!-- COLUNA DIREITA: Inspeções -->
         <div class="col-lg-5">
             
-            <!-- InspeÃ§Ãµes Pendentes (Confirmadas) -->
+            <!-- Inspeções Pendentes (Confirmadas) -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">
-                        <i class="bi bi-clipboard2-check me-2"></i>InspeÃ§Ãµes Pendentes
+                        <i class="bi bi-clipboard2-check me-2"></i>Inspeções Pendentes
                     </h6>
                     <span class="badge bg-light text-primary">{{ inspecoes_pendentes|length }}</span>
                 </div>
@@ -212,7 +212,7 @@
                             <br>
                             <small class="text-muted">
                                 <i class="bi bi-person me-1"></i>
-                                {{ inspecao.responsavel.get_short_name|default:"NÃ£o atribuÃ­do" }}
+                                {{ inspecao.responsavel.get_short_name|default:"Não atribuído" }}
                             </small>
                         </div>
                         <span class="badge bg-primary rounded-pill">
@@ -222,17 +222,17 @@
                     {% empty %}
                     <div class="list-group-item text-center py-4">
                         <i class="bi bi-calendar2-check text-success fs-3"></i>
-                        <p class="small text-muted mb-0 mt-2">Nenhuma inspeÃ§Ã£o pendente</p>
+                        <p class="small text-muted mb-0 mt-2">Nenhuma inspeção pendente</p>
                     </div>
                     {% endfor %}
                 </div>
             </div>
 
-            <!-- InspeÃ§Ãµes Propostas (Aguardando AprovaÃ§Ã£o) -->
+            <!-- Inspeções Propostas (Aguardando Aprovação) -->
             <div class="card shadow-sm">
                 <div class="card-header bg-warning d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">
-                        <i class="bi bi-bell-fill me-2"></i>Propostas AutomÃ¡ticas
+                        <i class="bi bi-bell-fill me-2"></i>Propostas Automáticas
                     </h6>
                     <span class="badge bg-dark">{{ inspecoes_propostas|length }}</span>
                 </div>
@@ -253,7 +253,7 @@
                     {% empty %}
                     <div class="list-group-item text-center py-4">
                         <i class="bi bi-patch-check text-info fs-3"></i>
-                        <p class="small text-muted mb-0 mt-2">Nenhuma proposta automÃ¡tica</p>
+                        <p class="small text-muted mb-0 mt-2">Nenhuma proposta automática</p>
                     </div>
                     {% endfor %}
                 </div>

@@ -1,4 +1,4 @@
-﻿{# Detalhes do Treinamento #}
+{# Detalhes do Treinamento #}
 {% extends 'base.html' %}
 {% load static %}
 
@@ -6,7 +6,7 @@
 
 {% block extra_css %}
 <style>
-    /* â•â•â• HERO â•â•â• */
+    /* ═══ HERO ═══ */
     .detail-hero {
         border-radius: 1rem;
         color: #fff;
@@ -56,7 +56,7 @@
         font-weight: 600;
     }
 
-    /* â•â•â• INFO CARD â•â•â• */
+    /* ═══ INFO CARD ═══ */
     .info-card {
         border: none;
         border-radius: 0.875rem;
@@ -75,7 +75,7 @@
         gap: 0.5rem;
     }
 
-    /* â•â•â• INFO GRID â•â•â• */
+    /* ═══ INFO GRID ═══ */
     .info-grid { padding: 0; }
     .info-item {
         display: flex;
@@ -102,7 +102,7 @@
         font-size: 0.9rem;
     }
 
-    /* â•â•â• PARTICIPANT TABLE â•â•â• */
+    /* ═══ PARTICIPANT TABLE ═══ */
     .participant-table {
         border-collapse: separate;
         border-spacing: 0;
@@ -125,7 +125,7 @@
     .participant-table tbody tr:last-child td { border-bottom: none; }
     .participant-table tbody tr:hover { background: rgba(28,200,138,0.03); }
 
-    /* â•â•â• AVATAR â•â•â• */
+    /* ═══ AVATAR ═══ */
     .avatar-circle {
         width: 38px;
         height: 38px;
@@ -136,7 +136,7 @@
     .participant-name { font-weight: 600; font-size: 0.9rem; color: #2d3748; }
     .participant-role { font-size: 0.78rem; color: #a0aec0; }
 
-    /* â•â•â• PRESENCE INDICATOR â•â•â• */
+    /* ═══ PRESENCE INDICATOR ═══ */
     .presence-dot {
         width: 28px;
         height: 28px;
@@ -149,7 +149,7 @@
     .presence-yes { background: rgba(28,200,138,0.12); color: #1cc88a; }
     .presence-no  { background: rgba(231,74,59,0.12); color: #e74a3b; }
 
-    /* â•â•â• SCORE BAR â•â•â• */
+    /* ═══ SCORE BAR ═══ */
     .score-wrapper { width: 80px; }
     .score-bar {
         height: 6px;
@@ -160,7 +160,7 @@
     .score-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
     .score-text { font-size: 0.75rem; font-weight: 700; text-align: right; margin-top: 2px; }
 
-    /* â•â•â• SUMMARY PANEL â•â•â• */
+    /* ═══ SUMMARY PANEL ═══ */
     .summary-card {
         border: none;
         border-radius: 0.875rem;
@@ -203,7 +203,7 @@
         margin: 0;
     }
 
-    /* â•â•â• QUICK STATS â•â•â• */
+    /* ═══ QUICK STATS ═══ */
     .quick-stat {
         text-align: center;
         padding: 1rem 0.5rem;
@@ -211,7 +211,7 @@
     .quick-stat-value { font-size: 1.5rem; font-weight: 800; line-height: 1.2; }
     .quick-stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #858796; font-weight: 600; }
 
-    /* â•â•â• EMPTY STATE â•â•â• */
+    /* ═══ EMPTY STATE ═══ */
     .participants-empty {
         padding: 3rem 2rem;
         text-align: center;
@@ -228,7 +228,7 @@
     }
     .participants-empty-icon i { font-size: 1.5rem; color: #adb5bd; }
 
-    /* â•â•â• DARK MODE â•â•â• */
+    /* ═══ DARK MODE ═══ */
     [data-bs-theme="dark"] .info-card .card-header { border-bottom-color: rgba(255,255,255,0.06); }
     [data-bs-theme="dark"] .info-item { border-bottom-color: rgba(255,255,255,0.04); }
     [data-bs-theme="dark"] .info-item:hover { background: rgba(255,255,255,0.02); }
@@ -241,7 +241,7 @@
     [data-bs-theme="dark"] .summary-description { border-top-color: rgba(255,255,255,0.06); }
     [data-bs-theme="dark"] .summary-description p { color: #a0aec0; }
 
-    /* â•â•â• PRINT â•â•â• */
+    /* ═══ PRINT ═══ */
     @media print {
         .no-print { display: none !important; }
         .detail-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -253,7 +253,7 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- â•â•â• HERO HEADER â•â•â• -->
+    <!-- ═══ HERO HEADER ═══ -->
     <div class="detail-hero status-{% if treinamento.status == 'P' %}agendado{% elif treinamento.status == 'A' %}em_andamento{% elif treinamento.status == 'F' %}concluido{% elif treinamento.status == 'C' %}cancelado{% else %}default{% endif %}">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
@@ -299,14 +299,14 @@
                 <button onclick="window.print()" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-printer"></i>
                 </button>
-                <!-- Modal de ConfirmaÃ§Ã£o de ExclusÃ£o -->
+                <!-- Modal de Confirmação de Exclusão -->
                 {% if perms.treinamentos.delete_treinamento %}
                 <div class="modal fade" id="modalExcluir" tabindex="-1" aria-labelledby="modalExcluirLabel" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content border-0 shadow">
                             <div class="modal-header bg-danger text-white border-0">
                                 <h5 class="modal-title" id="modalExcluirLabel">
-                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar ExclusÃ£o
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Exclusão
                                 </h5>
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
                             </div>
@@ -315,7 +315,7 @@
                                 <p class="fw-bold fs-5 text-danger mb-3">{{ treinamento.nome }}</p>
                                 <div class="alert alert-warning d-flex align-items-center gap-2 mb-0" role="alert">
                                     <i class="bi bi-info-circle-fill"></i>
-                                    <small>Esta aÃ§Ã£o Ã© <strong>irreversÃ­vel</strong>. Todos os participantes vinculados tambÃ©m serÃ£o removidos.</small>
+                                    <small>Esta ação é <strong>irreversível</strong>. Todos os participantes vinculados também serão removidos.</small>
                                 </div>
                             </div>
                             <div class="modal-footer border-0">
@@ -338,13 +338,13 @@
     </div>
 
     <div class="row g-4">
-        <!-- â•â•â• COLUNA PRINCIPAL â•â•â• -->
+        <!-- ═══ COLUNA PRINCIPAL ═══ -->
         <div class="col-lg-8">
 
-            <!-- InformaÃ§Ãµes Gerais -->
+            <!-- Informações Gerais -->
             <div class="card info-card shadow-sm mb-4">
                 <div class="card-header">
-                    <h5><i class="bi bi-info-circle-fill text-primary"></i> InformaÃ§Ãµes Gerais</h5>
+                    <h5><i class="bi bi-info-circle-fill text-primary"></i> Informações Gerais</h5>
                 </div>
                 <div class="info-grid">
                     <div class="info-item">
@@ -352,7 +352,7 @@
                         <span class="info-item-value">{{ treinamento.tipo_curso }}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-item-label"><i class="bi bi-calendar-plus"></i> Data InÃ­cio</span>
+                        <span class="info-item-label"><i class="bi bi-calendar-plus"></i> Data Início</span>
                         <span class="info-item-value">{{ treinamento.data_inicio|date:"d/m/Y H:i" }}</span>
                     </div>
                     <div class="info-item">
@@ -360,20 +360,20 @@
                         <span class="info-item-value">{{ treinamento.data_vencimento|date:"d/m/Y"|default:"N/A" }}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-item-label"><i class="bi bi-clock-history"></i> DuraÃ§Ã£o</span>
+                        <span class="info-item-label"><i class="bi bi-clock-history"></i> Duração</span>
                         <span class="info-item-value">{{ treinamento.duracao }} horas</span>
                     </div>
                     <div class="info-item">
                         <span class="info-item-label"><i class="bi bi-geo-alt"></i> Local</span>
-                        <span class="info-item-value">{{ treinamento.local|default:"â€”" }}</span>
+                        <span class="info-item-value">{{ treinamento.local|default:"—" }}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-item-label"><i class="bi bi-person-badge"></i> ResponsÃ¡vel</span>
-                        <span class="info-item-value">{{ treinamento.responsavel|default:"NÃ£o definido" }}</span>
+                        <span class="info-item-label"><i class="bi bi-person-badge"></i> Responsável</span>
+                        <span class="info-item-value">{{ treinamento.responsavel|default:"Não definido" }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-item-label"><i class="bi bi-mic"></i> Palestrante</span>
-                        <span class="info-item-value">{{ treinamento.palestrante|default:"NÃ£o definido" }}</span>
+                        <span class="info-item-value">{{ treinamento.palestrante|default:"Não definido" }}</span>
                     </div>
                 </div>
             </div>
@@ -394,8 +394,8 @@
                         <table class="table participant-table mb-0">
                             <thead>
                                 <tr>
-                                    <th>FuncionÃ¡rio</th>
-                                    <th class="text-center" style="width: 100px;">PresenÃ§a</th>
+                                    <th>Funcionário</th>
+                                    <th class="text-center" style="width: 100px;">Presença</th>
                                     <th class="text-center" style="width: 120px;">Aproveitamento</th>
                                     <th class="text-center" style="width: 120px;">Certificado</th>
                                 </tr>
@@ -446,7 +446,7 @@
                                             </div>
                                         </div>
                                         {% else %}
-                                        <span class="text-muted">â€”</span>
+                                        <span class="text-muted">—</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
@@ -466,7 +466,7 @@
                                             <i class="bi bi-file-earmark-pdf me-1"></i> Gerar
                                         </a>
                                         {% else %}
-                                        <span class="text-muted" data-bs-toggle="tooltip" title="NÃ£o disponÃ­vel">
+                                        <span class="text-muted" data-bs-toggle="tooltip" title="Não disponível">
                                             <i class="bi bi-dash-circle" style="font-size: 1.1rem;"></i>
                                         </span>
                                         {% endif %}
@@ -482,7 +482,7 @@
                             <i class="bi bi-person-x"></i>
                         </div>
                         <h6 class="fw-bold mb-1">Nenhum participante</h6>
-                        <p class="text-muted small mb-3">Este treinamento ainda nÃ£o possui participantes registrados.</p>
+                        <p class="text-muted small mb-3">Este treinamento ainda não possui participantes registrados.</p>
                         {% if perms.treinamentos.change_treinamento %}
                         <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}" class="btn btn-sm btn-primary">
                             <i class="bi bi-plus-circle me-1"></i> Adicionar Participantes
@@ -494,7 +494,7 @@
             </div>
         </div>
 
-        <!-- â•â•â• SIDEBAR â•â•â• -->
+        <!-- ═══ SIDEBAR ═══ -->
         <div class="col-lg-4">
 
             <!-- Quick Stats -->
@@ -511,7 +511,7 @@
                         </div>
                         <div class="col-4 quick-stat">
                             <div class="quick-stat-value text-warning">{{ treinamento.duracao|default:"0" }}h</div>
-                            <div class="quick-stat-label">DuraÃ§Ã£o</div>
+                            <div class="quick-stat-label">Duração</div>
                         </div>
                     </div>
                 </div>
@@ -538,7 +538,7 @@
                     </div>
                     <div class="summary-item">
                         <span class="summary-label">Previstos</span>
-                        <span class="summary-value">{{ treinamento.participantes_previstos|default:"â€”" }}</span>
+                        <span class="summary-value">{{ treinamento.participantes_previstos|default:"—" }}</span>
                     </div>
                     <div class="summary-item">
                         <span class="summary-label">Registrados</span>
@@ -556,8 +556,8 @@
                     {% endif %}
                 </div>
                 <div class="summary-description">
-                    <h6>DescriÃ§Ã£o</h6>
-                    <p>{{ treinamento.descricao|linebreaksbr|default:"Nenhuma descriÃ§Ã£o fornecida." }}</p>
+                    <h6>Descrição</h6>
+                    <p>{{ treinamento.descricao|linebreaksbr|default:"Nenhuma descrição fornecida." }}</p>
                 </div>
             </div>
 
@@ -565,7 +565,7 @@
             <div class="card summary-card shadow-sm no-print">
                 <div class="card-header bg-transparent border-bottom">
                     <h5 class="text-dark mb-0" style="font-size: 0.9rem;">
-                        <i class="bi bi-lightning-fill text-warning me-1"></i> AÃ§Ãµes RÃ¡pidas
+                        <i class="bi bi-lightning-fill text-warning me-1"></i> Ações Rápidas
                     </h5>
                 </div>
                 <div class="card-body d-grid gap-2">

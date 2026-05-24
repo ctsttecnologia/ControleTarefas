@@ -1,4 +1,4 @@
-﻿{# templates/usuario/grupo_form.html #}
+{# templates/usuario/grupo_form.html #}
 {% extends 'usuario/base_usuario.html' %}
 {% load widget_tweaks %}
 
@@ -8,7 +8,7 @@
     {{ form.media.css }}
     <style>
         /* =============================================
-           SEÃ‡Ã•ES â€” usa variÃ¡veis globais do tema
+           SEÇÕES — usa variáveis globais do tema
            ============================================= */
         .section-divider {
             font-size: 0.75rem;
@@ -22,7 +22,7 @@
         }
 
         /* =============================================
-           SWITCHES â€” caixa adaptativa
+           SWITCHES — caixa adaptativa
            ============================================= */
         .switch-card {
             background-color: var(--surface-subtle);
@@ -33,7 +33,7 @@
         }
 
         /* =============================================
-           WIDGET FilteredSelectMultiple â€” TEMA ADAPTATIVO
+           WIDGET FilteredSelectMultiple — TEMA ADAPTATIVO
            ============================================= */
         .selector {
             display: flex !important;
@@ -43,7 +43,7 @@
             width: 100% !important;
         }
 
-        /* PainÃ©is (disponÃ­veis / escolhidos) */
+        /* Painéis (disponíveis / escolhidos) */
         .selector .selector-available,
         .selector .selector-chosen {
             flex: 1 !important;
@@ -58,7 +58,7 @@
             width: auto !important;
         }
 
-        /* CabeÃ§alhos dos painÃ©is */
+        /* Cabeçalhos dos painéis */
         .selector h2 {
             font-size: 0.8rem !important;
             font-weight: 600 !important;
@@ -69,7 +69,7 @@
             color: var(--bs-body-color) !important;
         }
 
-        /* Ãrea do filtro (busca) */
+        /* Área do filtro (busca) */
         .selector .selector-filter {
             padding: 0.4rem 0.5rem !important;
             border-bottom: 1px solid var(--bs-border-color) !important;
@@ -105,7 +105,7 @@
             opacity: 0.7;
         }
 
-        /* Listas de opÃ§Ãµes */
+        /* Listas de opções */
         .selector select {
             flex-grow: 1;
             border: none !important;
@@ -162,7 +162,7 @@
         .selector .selector-control a:hover img {
             filter: brightness(0) invert(1);
         }
-        /* Inverte Ã­cones do widget no tema escuro */
+        /* Inverte ícones do widget no tema escuro */
         [data-bs-theme="dark"] .selector .selector-control a img,
         [data-bs-theme="dark"] .selector .selector-filter label img {
             filter: invert(0.85);
@@ -171,7 +171,7 @@
             filter: brightness(0) invert(1);
         }
 
-        /* BotÃµes "Escolher todos" / "Limpar todos" */
+        /* Botões "Escolher todos" / "Limpar todos" */
         .selector .selector-chooseall,
         .selector .selector-clearall {
             font-size: 0.72rem !important;
@@ -204,14 +204,14 @@
             .selector .selector-control { flex-direction: row; padding: 0.25rem 0; }
         }
 
-        /* Altura maior para o widget de permissÃµes */
+        /* Altura maior para o widget de permissões */
         #id_user_permissions_from,
         #id_user_permissions_to {
             min-height: 250px !important;
         }
 
         /* =============================================
-           BARRA DE FORÃ‡A DE SENHA (texto adaptativo)
+           BARRA DE FORÇA DE SENHA (texto adaptativo)
            ============================================= */
         #password-strength-text.text-warning {
             color: #ffc107 !important;
@@ -247,7 +247,7 @@
 
             {# Nome do Grupo #}
             <div class="section-divider">
-                <i class="bi bi-tag me-1"></i>IdentificaÃ§Ã£o
+                <i class="bi bi-tag me-1"></i>Identificação
             </div>
 
             <div class="row mb-4">
@@ -262,9 +262,9 @@
                 </div>
             </div>
 
-            {# PermissÃµes (FilteredSelectMultiple) #}
+            {# Permissões (FilteredSelectMultiple) #}
             <div class="section-divider">
-                <i class="bi bi-shield-check me-1"></i>PermissÃµes
+                <i class="bi bi-shield-check me-1"></i>Permissões
             </div>
 
             <div class="mb-3">
@@ -274,7 +274,7 @@
                 {% endfor %}
             </div>
 
-            {# AÃ§Ãµes #}
+            {# Ações #}
             <hr class="my-4">
             <div class="d-flex justify-content-end gap-2">
                 <a href="{% url 'usuario:grupo_lista' %}" class="btn btn-outline-secondary">

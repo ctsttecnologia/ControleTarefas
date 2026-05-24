@@ -1,4 +1,4 @@
-﻿<!-- PÃ¡gina de CalendÃ¡rio de Agendamentos -->
+<!-- Página de Calendário de Agendamentos -->
 {% extends "automovel/_base_automovel.html" %}
 {% load static %}
 
@@ -32,7 +32,7 @@
     .calendar-card { border: none; border-radius: 0.875rem; }
     .calendar-card .card-body { padding: 1.25rem; }
 
-    /* â•â•â• FullCalendar Overrides â•â•â• */
+    /* ═══ FullCalendar Overrides ═══ */
     .fc { font-size: 0.85rem; }
     .fc .fc-toolbar-title { font-weight: 700; font-size: 1.15rem; }
     .fc .fc-button { border-radius: 0.5rem !important; font-weight: 600; font-size: 0.8rem; }
@@ -65,12 +65,12 @@
 
 {% block automovel_content %}
 
-    <!-- â•â•â• HERO â•â•â• -->
+    <!-- ═══ HERO ═══ -->
     <div class="calendar-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
                 <h1><i class="bi bi-calendar3 me-2"></i>{{ title }}</h1>
-                <p>Visualize os agendamentos no calendÃ¡rio interativo</p>
+                <p>Visualize os agendamentos no calendário interativo</p>
             </div>
             <div class="d-flex gap-2 no-print">
                 {% if perms.automovel.add_agendamento or user.is_superuser %}
@@ -85,7 +85,7 @@
         </div>
     </div>
 
-    <!-- â•â•â• CALENDAR â•â•â• -->
+    <!-- ═══ CALENDAR ═══ -->
     <div class="card calendar-card shadow-sm">
         <div class="card-body">
             <div id="calendar"></div>
@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         buttonText: {
             today: 'Hoje',
-            month: 'MÃªs',
+            month: 'Mês',
             week: 'Semana',
             day: 'Dia',
             list: 'Lista'
@@ -130,9 +130,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const props = info.event.extendedProps;
             const content = `
                 <ul class="event-details-list">
-                    <li><strong>VeÃ­culo:</strong> ${props.carro || 'â€”'}</li>
-                    <li><strong>ResponsÃ¡vel:</strong> ${props.responsavel || 'â€”'}</li>
-                    <li><strong>Status:</strong> ${props.status || 'â€”'}</li>
+                    <li><strong>Veículo:</strong> ${props.carro || '—'}</li>
+                    <li><strong>Responsável:</strong> ${props.responsavel || '—'}</li>
+                    <li><strong>Status:</strong> ${props.status || '—'}</li>
                 </ul>
             `;
             info.el.setAttribute('data-bs-toggle', 'popover');

@@ -1,4 +1,4 @@
-﻿
+
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
@@ -28,10 +28,10 @@
             </a>
             {% endif %}
             <a href="{% url 'pgr_gestao:plano_acao_create' %}?risco={{ risco.pk }}" class="btn btn-success">
-                <i class="bi bi-list-task"></i> Criar Plano de AÃ§Ã£o
+                <i class="bi bi-list-task"></i> Criar Plano de Ação
             </a>
             <a href="{% url 'pgr_gestao:avaliacao_create_risco' risco.pk %}" class="btn btn-info">
-                <i class="bi bi-graph-up"></i> Nova AvaliaÃ§Ã£o
+                <i class="bi bi-graph-up"></i> Nova Avaliação
             </a>
         </div>
     </div>
@@ -39,18 +39,18 @@
 
 <div class="row">
     <div class="col-lg-8">
-        <!-- IdentificaÃ§Ã£o -->
+        <!-- Identificação -->
         <div class="card mb-4">
-            <div class="card-header"><i class="bi bi-info-circle"></i> IdentificaÃ§Ã£o do Risco</div>
+            <div class="card-header"><i class="bi bi-info-circle"></i> Identificação do Risco</div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <p><strong>CÃ³digo:</strong> {{ risco.codigo_risco|default:"N/A" }}</p>
+                        <p><strong>Código:</strong> {{ risco.codigo_risco|default:"N/A" }}</p>
                         <p><strong>Tipo de Risco:</strong> {{ risco.tipo_risco.nome }}</p>
                         <p><strong>Categoria:</strong> {{ risco.tipo_risco.get_categoria_display }}</p>
                         <p><strong>Agente:</strong> {{ risco.agente }}</p>
                         <p><strong>Fonte Geradora:</strong> {{ risco.fonte_geradora|default:"N/A" }}</p>
-                        <p><strong>Meio de PropagaÃ§Ã£o:</strong> {{ risco.meio_propagacao|default:"N/A" }}</p>
+                        <p><strong>Meio de Propagação:</strong> {{ risco.meio_propagacao|default:"N/A" }}</p>
                     </div>
                     <div class="col-md-6">
                         <p><strong>Documento PGR:</strong>
@@ -64,7 +64,7 @@
                             {% else %}N/A{% endif %}
                         </p>
                         <p><strong>Cargo:</strong> {{ risco.cargo.nome|default:"N/A" }}</p>
-                        <p><strong>Perfil de ExposiÃ§Ã£o:</strong> {{ risco.get_perfil_exposicao_display }}</p>
+                        <p><strong>Perfil de Exposição:</strong> {{ risco.get_perfil_exposicao_display }}</p>
                         <p><strong>Status de Controle:</strong>
                             {% if risco.status_controle == 'controlado' %}
                             <span class="badge bg-success">{{ risco.get_status_controle_display }}</span>
@@ -74,13 +74,13 @@
                             <span class="badge bg-warning text-dark">{{ risco.get_status_controle_display }}</span>
                             {% endif %}
                         </p>
-                        <p><strong>Data de IdentificaÃ§Ã£o:</strong> {{ risco.data_identificacao|date:"d/m/Y" }}</p>
+                        <p><strong>Data de Identificação:</strong> {{ risco.data_identificacao|date:"d/m/Y" }}</p>
                     </div>
                 </div>
 
                 {% if risco.possiveis_efeitos_saude %}
                 <hr>
-                <p><strong>PossÃ­veis Efeitos Ã  SaÃºde:</strong></p>
+                <p><strong>Possíveis Efeitos à Saúde:</strong></p>
                 <p>{{ risco.possiveis_efeitos_saude|linebreaks }}</p>
                 {% endif %}
 
@@ -92,15 +92,15 @@
 
                 {% if risco.observacoes %}
                 <hr>
-                <p><strong>ObservaÃ§Ãµes:</strong></p>
+                <p><strong>Observações:</strong></p>
                 <p>{{ risco.observacoes|linebreaks }}</p>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Matriz de AvaliaÃ§Ã£o -->
+        <!-- Matriz de Avaliação -->
         <div class="card mb-4">
-            <div class="card-header"><i class="bi bi-grid-3x3-gap"></i> Matriz de AvaliaÃ§Ã£o de Risco</div>
+            <div class="card-header"><i class="bi bi-grid-3x3-gap"></i> Matriz de Avaliação de Risco</div>
             <div class="card-body">
                 <div class="row text-center g-3">
                     <div class="col-md-3 col-6">
@@ -112,7 +112,7 @@
                     </div>
                     <div class="col-md-3 col-6">
                         <div class="matriz-fator-box">
-                            <h6>ExposiÃ§Ã£o (E)</h6>
+                            <h6>Exposição (E)</h6>
                             <h2>{{ risco.exposicao_e }}</h2>
                             <small class="text-muted">{{ risco.get_exposicao_e_display|default:"N/A" }}</small>
                         </div>
@@ -134,14 +134,14 @@
                 </div>
                 <hr>
                 <div class="text-center">
-                    <h5>ClassificaÃ§Ã£o Final</h5>
+                    <h5>Classificação Final</h5>
                     <h2>
                         <span class="badge badge-risco-{{ risco.classificacao_risco }}" style="font-size: 1.5rem;">
                             {{ risco.get_classificacao_risco_display }}
                         </span>
                     </h2>
                     <p class="text-muted mb-0">
-                        <strong>Prioridade de AÃ§Ã£o:</strong>
+                        <strong>Prioridade de Ação:</strong>
                         <span class="badge bg-{{ risco.prioridade_acao }}">
                             {{ risco.get_prioridade_acao_display }}
                         </span>
@@ -159,15 +159,15 @@
             </div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
-                    <span>MÃ©todo de AvaliaÃ§Ã£o:</span>
+                    <span>Método de Avaliação:</span>
                     <strong>{{ risco.get_metodo_avaliacao_display }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
-                    <span>AvaliaÃ§Ãµes Realizadas:</span>
+                    <span>Avaliações Realizadas:</span>
                     <strong>{{ avaliacoes.count }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
-                    <span>Planos de AÃ§Ã£o:</span>
+                    <span>Planos de Ação:</span>
                     <strong>{{ planos_acao.count }}</strong>
                 </div>
                 <div class="d-flex justify-content-between">
@@ -198,7 +198,7 @@
 
         {% if treinamentos_necessarios %}
         <div class="card">
-            <div class="card-header"><i class="bi bi-mortarboard"></i> Treinamentos NecessÃ¡rios</div>
+            <div class="card-header"><i class="bi bi-mortarboard"></i> Treinamentos Necessários</div>
             <div class="card-body">
                 <ul class="list-unstyled mb-0">
                     {% for treinamento in treinamentos_necessarios %}
@@ -218,7 +218,7 @@
 <ul class="nav nav-tabs mb-3" id="riscoTabs" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#avaliacoes" type="button">
-            <i class="bi bi-graph-up"></i> AvaliaÃ§Ãµes ({{ avaliacoes.count }})
+            <i class="bi bi-graph-up"></i> Avaliações ({{ avaliacoes.count }})
         </button>
     </li>
     <li class="nav-item" role="presentation">
@@ -228,19 +228,19 @@
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#planos" type="button">
-            <i class="bi bi-list-task"></i> Planos de AÃ§Ã£o ({{ planos_acao.count }})
+            <i class="bi bi-list-task"></i> Planos de Ação ({{ planos_acao.count }})
         </button>
     </li>
 </ul>
 
 <div class="tab-content">
-    <!-- AvaliaÃ§Ãµes -->
+    <!-- Avaliações -->
     <div class="tab-pane fade show active" id="avaliacoes" role="tabpanel">
         <div class="card">
             <div class="card-header d-flex justify-content-between">
-                <span>AvaliaÃ§Ãµes Quantitativas</span>
+                <span>Avaliações Quantitativas</span>
                 <a href="{% url 'pgr_gestao:avaliacao_create_risco' risco.pk %}" class="btn btn-sm btn-primary">
-                    <i class="bi bi-plus-lg"></i> Nova AvaliaÃ§Ã£o
+                    <i class="bi bi-plus-lg"></i> Nova Avaliação
                 </a>
             </div>
             <div class="card-body">
@@ -268,7 +268,7 @@
                                     {% if avaliacao.conforme %}
                                     <span class="badge bg-success">Conforme</span>
                                     {% else %}
-                                    <span class="badge bg-danger">NÃ£o Conforme</span>
+                                    <span class="badge bg-danger">Não Conforme</span>
                                     {% endif %}
                                 </td>
                                 <td>{{ avaliacao.equipamento_utilizado|default:"N/A"|truncatewords:5 }}</td>
@@ -278,7 +278,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center py-4 mb-0">Nenhuma avaliaÃ§Ã£o quantitativa registrada.</p>
+                <p class="text-muted text-center py-4 mb-0">Nenhuma avaliação quantitativa registrada.</p>
                 {% endif %}
             </div>
         </div>
@@ -304,12 +304,12 @@
                             <tr>
                                 <td><span class="badge bg-info">{{ medida.medida_controle.get_tipo_display }}</span></td>
                                 <td>{{ medida.medida_controle.descricao }}</td>
-                                <td>{{ medida.medida_controle.prioridade }}Â°</td>
+                                <td>{{ medida.medida_controle.prioridade }}°</td>
                                 <td>
                                     {% if medida.implementada %}
                                     <i class="bi bi-check-circle-fill text-success"></i> Sim
                                     {% else %}
-                                    <i class="bi bi-x-circle-fill text-danger"></i> NÃ£o
+                                    <i class="bi bi-x-circle-fill text-danger"></i> Não
                                     {% endif %}
                                 </td>
                             </tr>
@@ -318,7 +318,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center py-4 mb-0">Nenhuma medida de controle especÃ­fica cadastrada.</p>
+                <p class="text-muted text-center py-4 mb-0">Nenhuma medida de controle específica cadastrada.</p>
                 {% endif %}
             </div>
         </div>
@@ -328,7 +328,7 @@
     <div class="tab-pane fade" id="planos" role="tabpanel">
         <div class="card">
             <div class="card-header d-flex justify-content-between">
-                <span>Planos de AÃ§Ã£o para este Risco</span>
+                <span>Planos de Ação para este Risco</span>
                 <a href="{% url 'pgr_gestao:plano_acao_create' %}?risco={{ risco.pk }}" class="btn btn-sm btn-success">
                     <i class="bi bi-plus-lg"></i> Novo Plano
                 </a>
@@ -339,13 +339,13 @@
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th>DescriÃ§Ã£o</th>
+                                <th>Descrição</th>
                                 <th>Tipo</th>
                                 <th>Prioridade</th>
                                 <th>Status</th>
                                 <th>Prazo</th>
-                                <th>ResponsÃ¡vel</th>
-                                <th class="text-center">AÃ§Ãµes</th>
+                                <th>Responsável</th>
+                                <th class="text-center">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -373,7 +373,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted text-center py-4 mb-0">Nenhum plano de aÃ§Ã£o criado para este risco.</p>
+                <p class="text-muted text-center py-4 mb-0">Nenhum plano de ação criado para este risco.</p>
                 {% endif %}
             </div>
         </div>

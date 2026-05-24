@@ -1,20 +1,20 @@
-﻿
+
 {% extends 'usuario/base_usuario.html' %}
 {% load static %}
 {% load template_utils %} 
 
-{% block title %}Gerenciar PermissÃµes de Cards{% endblock %}
+{% block title %}Gerenciar Permissões de Cards{% endblock %}
 
 {% block content %}
 {% include 'usuario/includes/submenu.html' %}
 <div class="container mt-5">
     <div class="card-header bg-white d-flex justify-content-between ">
         <h5 class="mb-0">
-            <i class="bi bi-shield-lock-fill me-2 text-primary"></i>Gerenciar PermissÃµes de Cards
+            <i class="bi bi-shield-lock-fill me-2 text-primary"></i>Gerenciar Permissões de Cards
         </h5>
     </div>
     <div class="card-body">
-         <span class="text-muted">Aqui vocÃª pode configurar quais cards cada grupo de usuÃ¡rios tem permissÃ£o para visualizar no perfil. Marque ou desmarque os cards para cada grupo e clique em "Salvar PermissÃµes" para aplicar as mudanÃ§as.</span>
+         <span class="text-muted">Aqui você pode configurar quais cards cada grupo de usuários tem permissão para visualizar no perfil. Marque ou desmarque os cards para cada grupo e clique em "Salvar Permissões" para aplicar as mudanças.</span>
          <br>
     </div>
     <form method="post">
@@ -51,7 +51,7 @@
             </div>
             {% endfor %}
         </div>
-        <button type="submit" class="btn btn-primary mt-4">Salvar PermissÃµes</button>
+        <button type="submit" class="btn btn-primary mt-4">Salvar Permissões</button>
     </form>
 </div>
 {% endblock %}

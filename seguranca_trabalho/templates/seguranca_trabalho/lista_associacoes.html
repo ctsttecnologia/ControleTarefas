@@ -1,20 +1,20 @@
-﻿
+
 
 {% extends "seguranca_trabalho/_base_sst.html" %}
 
-{% block title %}AssociaÃ§Ãµes Cargo Ã— FunÃ§Ã£o{% endblock %}
+{% block title %}Associações Cargo × Função{% endblock %}
 
 {% block sst_content %}
 
 <div class="sst-page-header">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h4><i class="bi bi-diagram-3 me-2"></i>AssociaÃ§Ãµes Cargo Ã— FunÃ§Ã£o</h4>
-            <span class="sst-page-subtitle">Vincule cargos Ã s funÃ§Ãµes de seguranÃ§a</span>
+            <h4><i class="bi bi-diagram-3 me-2"></i>Associações Cargo × Função</h4>
+            <span class="sst-page-subtitle">Vincule cargos às funções de segurança</span>
         </div>
         {% if perms.seguranca_trabalho.add_cargofuncao %}
         <a href="{% url 'seguranca_trabalho:associar_funcao_cargo' %}" class="sst-btn-header sst-btn-header--secundary">
-            <i class="bi bi-plus-circle"></i> Nova AssociaÃ§Ã£o
+            <i class="bi bi-plus-circle"></i> Nova Associação
         </a>
         {% endif %}
     </div>
@@ -29,7 +29,7 @@
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                     <input type="text" class="form-control" id="q" name="q"
-                           value="{{ request.GET.q }}" placeholder="Nome do cargo ou funÃ§Ã£o...">
+                           value="{{ request.GET.q }}" placeholder="Nome do cargo ou função...">
                 </div>
             </div>
             <div class="col-md-4 d-flex gap-2">
@@ -48,15 +48,15 @@
 <div class="sst-card">
     <div class="sst-card-header">
         <i class="bi bi-table"></i>
-        <h6>Lista de AssociaÃ§Ãµes</h6>
+        <h6>Lista de Associações</h6>
     </div>
     <div class="sst-table-wrapper">
         <table class="sst-table">
             <thead>
                 <tr>
                     <th>Cargo</th>
-                    <th>FunÃ§Ã£o</th>
-                    <th class="text-center" style="width: 100px;">AÃ§Ãµes</th>
+                    <th>Função</th>
+                    <th class="text-center" style="width: 100px;">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -76,7 +76,7 @@
                                 hx-post="{% url 'seguranca_trabalho:desvincular_funcao_cargo' assoc.funcao_id assoc.cargo_id %}"
                                 hx-target="#assoc-{{ assoc.funcao_id }}-{{ assoc.cargo_id }}"
                                 hx-swap="outerHTML"
-                                hx-confirm="Deseja remover esta associaÃ§Ã£o?"
+                                hx-confirm="Deseja remover esta associação?"
                                 title="Remover">
                             <i class="bi bi-trash3"></i>
                         </button>
@@ -88,10 +88,10 @@
                     <td colspan="3">
                         <div class="sst-empty">
                             <div class="sst-empty-icon"><i class="bi bi-inbox"></i></div>
-                            <h6>Nenhuma associaÃ§Ã£o encontrada</h6>
+                            <h6>Nenhuma associação encontrada</h6>
                             {% if perms.seguranca_trabalho.add_cargofuncao %}
                             <a href="{% url 'seguranca_trabalho:criar_associacao' %}" class="sst-btn-primary mt-2" style="font-size:.82rem; padding:.4rem 1rem;">
-                                <i class="bi bi-plus-circle"></i> Criar primeira associaÃ§Ã£o
+                                <i class="bi bi-plus-circle"></i> Criar primeira associação
                             </a>
                             {% endif %}
                         </div>

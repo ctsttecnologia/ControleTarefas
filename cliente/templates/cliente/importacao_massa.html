@@ -1,8 +1,8 @@
-﻿
+
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}ImportaÃ§Ã£o em Massa de Clientes{% endblock %}
+{% block title %}Importação em Massa de Clientes{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -14,22 +14,22 @@
                 <div class="card-body py-3">
                     <h4 class="mb-0">
                         <i class="bi bi-cloud-arrow-up me-2"></i>
-                        ImportaÃ§Ã£o em Massa de Clientes
+                        Importação em Massa de Clientes
                     </h4>
                 </div>
             </div>
 
-            <!-- InstruÃ§Ãµes -->
+            <!-- Instruções -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <h5 class="card-title text-primary">
                         <i class="bi bi-info-circle me-1"></i> Como funciona?
                     </h5>
                     <ol class="mb-3">
-                        <li>Baixe a <strong>planilha modelo</strong> clicando no botÃ£o abaixo.</li>
+                        <li>Baixe a <strong>planilha modelo</strong> clicando no botão abaixo.</li>
                         <li>Preencha os dados na aba <strong>"Dados Clientes"</strong>.</li>
-                        <li>Envie a planilha preenchida no formulÃ¡rio.</li>
-                        <li>Confira o <strong>relatÃ³rio</strong> com os resultados.</li>
+                        <li>Envie a planilha preenchida no formulário.</li>
+                        <li>Confira o <strong>relatório</strong> com os resultados.</li>
                     </ol>
                     <a href="{% url 'cliente:download_modelo_importacao' %}"
                        class="btn btn-success">
@@ -39,7 +39,7 @@
                 </div>
             </div>
 
-            <!-- FormulÃ¡rio de Upload -->
+            <!-- Formulário de Upload -->
             <div class="card shadow-sm">
                 <div class="card-header bg-light">
                     <h5 class="mb-0">
@@ -69,7 +69,7 @@
                                 <i class="bi bi-arrow-left me-1"></i> Voltar
                             </a>
                             <button type="submit" class="btn btn-primary" id="btn-enviar">
-                                <i class="bi bi-upload me-1"></i> Processar ImportaÃ§Ã£o
+                                <i class="bi bi-upload me-1"></i> Processar Importação
                             </button>
                         </div>
                     </form>

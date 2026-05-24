@@ -1,4 +1,4 @@
-﻿
+
 {# ferramentas/ferramenta_form.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load widget_tweaks %}
@@ -37,9 +37,9 @@
                     </div>
                     {% endif %}
 
-                    {# SeÃ§Ã£o: IdentificaÃ§Ã£o #}
+                    {# Seção: Identificação #}
                     <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
-                        <i class="bi bi-tag me-1"></i>IdentificaÃ§Ã£o
+                        <i class="bi bi-tag me-1"></i>Identificação
                     </h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
@@ -48,19 +48,19 @@
                             {% for e in form.nome.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                         </div>
                         <div class="col-md-3">
-                            <label for="{{ form.codigo_identificacao.id_for_label }}" class="form-label">CÃ³digo <span class="text-danger">*</span></label>
+                            <label for="{{ form.codigo_identificacao.id_for_label }}" class="form-label">Código <span class="text-danger">*</span></label>
                             {% render_field form.codigo_identificacao class="form-control" %}
                             {% for e in form.codigo_identificacao.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                         </div>
                         <div class="col-md-3">
-                            <label for="{{ form.patrimonio.id_for_label }}" class="form-label">PatrimÃ´nio</label>
+                            <label for="{{ form.patrimonio.id_for_label }}" class="form-label">Patrimônio</label>
                             {% render_field form.patrimonio class="form-control" %}
                         </div>
                     </div>
 
-                    {# SeÃ§Ã£o: EspecificaÃ§Ãµes #}
+                    {# Seção: Especificações #}
                     <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
-                        <i class="bi bi-gear me-1"></i>EspecificaÃ§Ãµes
+                        <i class="bi bi-gear me-1"></i>Especificações
                     </h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-3">
@@ -72,7 +72,7 @@
                             {% render_field form.modelo class="form-control" %}
                         </div>
                         <div class="col-md-3">
-                            <label for="{{ form.serie.id_for_label }}" class="form-label">SÃ©rie</label>
+                            <label for="{{ form.serie.id_for_label }}" class="form-label">Série</label>
                             {% render_field form.serie class="form-control" %}
                         </div>
                         <div class="col-md-3">
@@ -81,13 +81,13 @@
                         </div>
                     </div>
 
-                    {# SeÃ§Ã£o: Controle #}
+                    {# Seção: Controle #}
                     <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
                         <i class="bi bi-clipboard-data me-1"></i>Controle
                     </h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-3">
-                            <label for="{{ form.data_aquisicao.id_for_label }}" class="form-label">AquisiÃ§Ã£o <span class="text-danger">*</span></label>
+                            <label for="{{ form.data_aquisicao.id_for_label }}" class="form-label">Aquisição <span class="text-danger">*</span></label>
                             {% render_field form.data_aquisicao class="form-control" %}
                             {% for e in form.data_aquisicao.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                         </div>
@@ -96,17 +96,17 @@
                             {% render_field form.quantidade class="form-control" %}
                         </div>
                         <div class="col-md-3">
-                            <label for="{{ form.numero_laudo_tecnico.id_for_label }}" class="form-label">NÂº Laudo</label>
+                            <label for="{{ form.numero_laudo_tecnico.id_for_label }}" class="form-label">Nº Laudo</label>
                             {% render_field form.numero_laudo_tecnico class="form-control" %}
                         </div>
                         <div class="col-md-3">
-                            <label for="{{ form.localizacao_padrao.id_for_label }}" class="form-label">LocalizaÃ§Ã£o <span class="text-danger">*</span></label>
+                            <label for="{{ form.localizacao_padrao.id_for_label }}" class="form-label">Localização <span class="text-danger">*</span></label>
                             {% render_field form.localizacao_padrao class="form-control" %}
                             {% for e in form.localizacao_padrao.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                         </div>
                     </div>
 
-                    {# SeÃ§Ã£o: Relacionamentos #}
+                    {# Seção: Relacionamentos #}
                     <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
                         <i class="bi bi-link-45deg me-1"></i>Relacionamentos
                     </h6>
@@ -124,16 +124,16 @@
                         </div>
                     </div>
 
-                    {# ObservaÃ§Ãµes #}
+                    {# Observações #}
                     <div class="mb-4">
-                        <label for="{{ form.observacoes.id_for_label }}" class="form-label">ObservaÃ§Ãµes</label>
+                        <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observações</label>
                         {% render_field form.observacoes class="form-control" %}
                     </div>
 
-                    {# RodapÃ© #}
+                    {# Rodapé #}
                     <hr>
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted"><span class="text-danger">*</span> Campos obrigatÃ³rios</small>
+                        <small class="text-muted"><span class="text-danger">*</span> Campos obrigatórios</small>
                         <div class="d-flex gap-2">
                             {% if perms.ferramentas.view_ferramenta or user.is_superuser %}
                             <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-outline-secondary">Cancelar</a>

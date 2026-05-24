@@ -1,15 +1,15 @@
-﻿
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>RelatÃ³rio Gerencial de Suprimentos</title>
+    <title>Relatório Gerencial de Suprimentos</title>
     <style>
         @page {
             size: A4 landscape;
             margin: 1.5cm 1.5cm 2cm 1.5cm;
             @bottom-center {
-                content: "PÃ¡gina " counter(page) " de " counter(pages);
+                content: "Página " counter(page) " de " counter(pages);
                 font-size: 9px;
                 color: #666;
             }
@@ -55,17 +55,17 @@
 </head>
 <body>
 
-    {# â”€â”€ CABEÃ‡ALHO â”€â”€ #}
+    {# ── CABEÇALHO ── #}
     <div class="header">
-        <h1>ðŸ“Š RelatÃ³rio Gerencial de Suprimentos</h1>
-        <p>PerÃ­odo: {{ relatorio.parametros.periodo_label }} &nbsp;|&nbsp;
+        <h1>📊 Relatório Gerencial de Suprimentos</h1>
+        <p>Período: {{ relatorio.parametros.periodo_label }} &nbsp;|&nbsp;
            Gerado em: {{ gerado_em|date:"d/m/Y H:i" }} &nbsp;|&nbsp;
-           UsuÃ¡rio: {{ usuario }}</p>
+           Usuário: {{ usuario }}</p>
     </div>
 
-    {# â•â•â•â•â•â•â•â•â•â•â• SEÃ‡ÃƒO 1: QUALITATIVO (RESUMO) â•â•â•â•â•â•â•â•â•â•â• #}
+    {# ═══════════ SEÇÃO 1: QUALITATIVO (RESUMO) ═══════════ #}
     <div class="section">
-        <h2>1. Resumo Verba Ã— Gasto</h2>
+        <h2>1. Resumo Verba × Gasto</h2>
 
         <div class="card-grid">
             {% for r in relatorio.qualitativo.resumo_categorias %}
@@ -98,13 +98,13 @@
         </table>
     </div>
 
-    {# â•â•â•â•â•â•â•â•â•â•â• SEÃ‡ÃƒO 2: EVOLUÃ‡ÃƒO MENSAL â•â•â•â•â•â•â•â•â•â•â• #}
+    {# ═══════════ SEÇÃO 2: EVOLUÇÃO MENSAL ═══════════ #}
     <div class="section">
-        <h2>2. EvoluÃ§Ã£o Mensal â€” Verba Ã— Gasto</h2>
+        <h2>2. Evolução Mensal — Verba × Gasto</h2>
         <table>
             <thead>
                 <tr>
-                    <th>MÃªs</th>
+                    <th>Mês</th>
                     <th class="text-end">Verba EPI</th>
                     <th class="text-end">Gasto EPI</th>
                     <th class="text-end">Verba Consumo</th>
@@ -133,10 +133,10 @@
         </table>
     </div>
 
-    {# â•â•â•â•â•â•â•â•â•â•â• SEÃ‡ÃƒO 3: QUANTITATIVO â•â•â•â•â•â•â•â•â•â•â• #}
+    {# ═══════════ SEÇÃO 3: QUANTITATIVO ═══════════ #}
     <div class="page-break"></div>
     <div class="section">
-        <h2>3. Quantitativo â€” Compras por Categoria</h2>
+        <h2>3. Quantitativo — Compras por Categoria</h2>
         <table>
             <thead>
                 <tr>
@@ -185,11 +185,11 @@
         </table>
     </div>
 
-    {# â•â•â•â•â•â•â•â•â•â•â• SEÃ‡ÃƒO 4: ALERTAS â•â•â•â•â•â•â•â•â•â•â• #}
+    {# ═══════════ SEÇÃO 4: ALERTAS ═══════════ #}
     {% if relatorio.alertas.total_alertas > 0 %}
     <div class="page-break"></div>
     <div class="section">
-        <h2>4. ðŸ”´ Gastos Acima da Meta â€” {{ relatorio.alertas.total_alertas }} desvios</h2>
+        <h2>4. 🔴 Gastos Acima da Meta — {{ relatorio.alertas.total_alertas }} desvios</h2>
         <p style="margin-bottom: 8px;">
             <strong>Excesso total: <span class="text-danger">R$ {{ relatorio.alertas.total_excesso_geral|floatformat:2 }}</span></strong>
         </p>
@@ -197,7 +197,7 @@
             <thead>
                 <tr>
                     <th>Contrato</th>
-                    <th>MÃªs</th>
+                    <th>Mês</th>
                     <th>Categoria</th>
                     <th class="text-end">Verba</th>
                     <th class="text-end">Gasto</th>
@@ -228,10 +228,10 @@
     </div>
     {% endif %}
 
-    {# â•â•â•â•â•â•â•â•â•â•â• SEÃ‡ÃƒO 5: ECONOMIAS â•â•â•â•â•â•â•â•â•â•â• #}
+    {# ═══════════ SEÇÃO 5: ECONOMIAS ═══════════ #}
     <div class="page-break"></div>
     <div class="section">
-        <h2>5. ðŸŸ¢ Economias</h2>
+        <h2>5. 🟢 Economias</h2>
         <table>
             <thead>
                 <tr><th>Categoria</th><th class="text-end">Total Economizado</th></tr>
@@ -251,7 +251,7 @@
         </table>
 
         {% if relatorio.economias.ranking_contratos %}
-        <h3>Ranking â€” Contratos que Mais Economizaram</h3>
+        <h3>Ranking — Contratos que Mais Economizaram</h3>
         <table>
             <thead><tr><th>#</th><th>Contrato</th><th class="text-end">Economia</th></tr></thead>
             <tbody>
@@ -267,13 +267,13 @@
         {% endif %}
     </div>
 
-    {# â•â•â•â•â•â•â•â•â•â•â• SEÃ‡ÃƒO 6: ESTIMATIVAS â•â•â•â•â•â•â•â•â•â•â• #}
+    {# ═══════════ SEÇÃO 6: ESTIMATIVAS ═══════════ #}
     <div class="section">
-        <h2>6. ðŸ“ˆ ProjeÃ§Ã£o â€” PrÃ³ximos 6 Meses</h2>
+        <h2>6. 📈 Projeção — Próximos 6 Meses</h2>
         <table>
             <thead>
                 <tr>
-                    <th>MÃªs</th>
+                    <th>Mês</th>
                     <th class="text-end">Verba Total</th>
                     <th class="text-end">Gasto Estimado</th>
                     <th class="text-end">Saldo Estimado</th>
@@ -293,14 +293,14 @@
             </tbody>
         </table>
 
-        <h3>TendÃªncias (Ãšltimos 6 meses)</h3>
+        <h3>Tendências (Últimos 6 meses)</h3>
         <table>
             <thead>
                 <tr>
                     <th>Categoria</th>
-                    <th class="text-end">MÃ©dia Mensal</th>
-                    <th class="text-center">TendÃªncia</th>
-                    <th class="text-center">VariaÃ§Ã£o</th>
+                    <th class="text-end">Média Mensal</th>
+                    <th class="text-center">Tendência</th>
+                    <th class="text-center">Variação</th>
                 </tr>
             </thead>
             <tbody>
@@ -310,11 +310,11 @@
                     <td class="text-end">R$ {{ dados.media|floatformat:2 }}</td>
                     <td class="text-center">
                         {% if dados.tendencia == 'subindo' %}
-                            <span class="badge bg-danger">â†‘ SUBINDO</span>
+                            <span class="badge bg-danger">↑ SUBINDO</span>
                         {% elif dados.tendencia == 'descendo' %}
-                            <span class="badge bg-success">â†“ DESCENDO</span>
+                            <span class="badge bg-success">↓ DESCENDO</span>
                         {% else %}
-                            <span class="badge bg-info">â€” ESTÃVEL</span>
+                            <span class="badge bg-info">— ESTÁVEL</span>
                         {% endif %}
                     </td>
                     <td class="text-center">{{ dados.variacao_tendencia }}%</td>

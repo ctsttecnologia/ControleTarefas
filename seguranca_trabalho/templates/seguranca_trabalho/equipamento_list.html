@@ -1,7 +1,7 @@
-﻿
+
 {% extends "seguranca_trabalho/_base_sst.html" %}
 
-{% block title %}CatÃ¡logo de Equipamentos{% endblock %}
+{% block title %}Catálogo de Equipamentos{% endblock %}
 
 {% block sst_content %}
 
@@ -10,9 +10,9 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
             <h4>
-                <i class="bi bi-hdd-stack me-2"></i>CatÃ¡logo de Equipamentos (EPIs)
+                <i class="bi bi-hdd-stack me-2"></i>Catálogo de Equipamentos (EPIs)
             </h4>
-            <span class="sst-page-subtitle">Gerencie os tipos de equipamentos disponÃ­veis</span>
+            <span class="sst-page-subtitle">Gerencie os tipos de equipamentos disponíveis</span>
         </div>
         {% if perms.seguranca_trabalho.add_equipamento or user.is_superuser %}
         <a href="{% url 'seguranca_trabalho:equipamento_create' %}" class="sst-btn-header sst-btn-header--secundary">
@@ -34,13 +34,13 @@
                 <tr>
                     <th>Nome / Modelo</th>
                     <th class="text-center">Em Estoque</th>
-                    <th class="text-center">SaÃ­das</th>
-                    <th class="text-center">MÃ­nimo</th>
+                    <th class="text-center">Saídas</th>
+                    <th class="text-center">Mínimo</th>
                     <th>Fabricante</th>
                     <th>CA</th>
                     <th>Validade CA</th>
                     <th class="text-center">Status</th>
-                    <th class="text-center" style="width: 120px;">AÃ§Ãµes</th>
+                    <th class="text-center" style="width: 120px;">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -54,11 +54,11 @@
                     </td>
                     <td class="text-center">
                         {% if equipamento.estoque_atual <= equipamento.estoque_minimo %}
-                        <span class="sst-badge sst-badge--danger" title="MÃ­n: {{ equipamento.estoque_minimo }}">
+                        <span class="sst-badge sst-badge--danger" title="Mín: {{ equipamento.estoque_minimo }}">
                             <i class="bi bi-exclamation-triangle-fill"></i> {{ equipamento.estoque_atual }}
                         </span>
                         {% elif equipamento.estoque_atual <= equipamento.estoque_minimo|add:"10" %}
-                        <span class="sst-badge sst-badge--warning" title="MÃ­n: {{ equipamento.estoque_minimo }}">
+                        <span class="sst-badge sst-badge--warning" title="Mín: {{ equipamento.estoque_minimo }}">
                             <i class="bi bi-exclamation-circle-fill"></i> {{ equipamento.estoque_atual }}
                         </span>
                         {% else %}
@@ -71,18 +71,18 @@
                             <i class="bi bi-box-arrow-up me-1"></i>{{ equipamento.total_saidas }}
                         </span>
                         {% else %}
-                        <span class="text-muted-custom">â€”</span>
+                        <span class="text-muted-custom">—</span>
                         {% endif %}
                     </td>
                     <td class="text-center">
                         <small class="text-muted-custom">{{ equipamento.estoque_minimo }}</small>
                     </td>
-                    <td>{{ equipamento.fabricante.nome_fantasia|default:equipamento.fabricante.razao_social|default:"â€”" }}</td>
+                    <td>{{ equipamento.fabricante.nome_fantasia|default:equipamento.fabricante.razao_social|default:"—" }}</td>
                     <td>
                         {% if equipamento.certificado_aprovacao %}
                         <code>{{ equipamento.certificado_aprovacao }}</code>
                         {% else %}
-                        <span class="text-muted-custom">â€”</span>
+                        <span class="text-muted-custom">—</span>
                         {% endif %}
                     </td>
                     <td>

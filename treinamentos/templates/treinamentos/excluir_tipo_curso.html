@@ -1,7 +1,7 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Confirmar ExclusÃ£o{% endblock %}
+{% block title %}Confirmar Exclusão{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -22,7 +22,7 @@
         box-shadow: 0 20px 60px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
     }
 
-    /* â•â•â• HEADER â•â•â• */
+    /* ═══ HEADER ═══ */
     .delete-header {
         background: linear-gradient(135deg, #e74a3b 0%, #be2617 100%);
         padding: 2.5rem 2rem 2rem;
@@ -89,7 +89,7 @@
         position: relative;
     }
 
-    /* â•â•â• BODY â•â•â• */
+    /* ═══ BODY ═══ */
     .delete-body {
         padding: 2rem 2.5rem 2.5rem;
         text-align: center;
@@ -149,7 +149,7 @@
         margin-top: 2px;
     }
 
-    /* â•â•â• BUTTONS â•â•â• */
+    /* ═══ BUTTONS ═══ */
     .delete-actions {
         display: flex;
         gap: 0.75rem;
@@ -191,14 +191,14 @@
         transform: translateY(0);
     }
 
-    /* â•â•â• COUNTDOWN (Optional UX) â•â•â• */
+    /* ═══ COUNTDOWN (Optional UX) ═══ */
     .delete-countdown {
         font-size: 0.78rem;
         color: #a0aec0;
         margin-top: 1rem;
     }
 
-    /* â•â•â• DARK MODE â•â•â• */
+    /* ═══ DARK MODE ═══ */
     [data-bs-theme="dark"] .delete-card { box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
     [data-bs-theme="dark"] .delete-body { background: var(--bs-body-bg); }
     [data-bs-theme="dark"] .delete-body .lead { color: #a0aec0; }
@@ -215,17 +215,17 @@
 <div class="delete-container">
     <div class="card delete-card">
 
-        <!-- â•â•â• HEADER â•â•â• -->
+        <!-- ═══ HEADER ═══ -->
         <div class="delete-header">
             <div class="delete-icon">
                 <i class="bi bi-trash3-fill"></i>
             </div>
-            <h2>Confirmar ExclusÃ£o</h2>
+            <h2>Confirmar Exclusão</h2>
         </div>
 
-        <!-- â•â•â• BODY â•â•â• -->
+        <!-- ═══ BODY ═══ -->
         <div class="delete-body">
-            <p class="lead">VocÃª estÃ¡ prestes a excluir permanentemente:</p>
+            <p class="lead">Você está prestes a excluir permanentemente:</p>
 
             <div class="delete-target">
                 <div class="delete-target-icon">
@@ -241,8 +241,8 @@
                 <p>
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <span>
-                        Todos os treinamentos associados a este tipo serÃ£o afetados.
-                        <strong>Esta aÃ§Ã£o nÃ£o pode ser desfeita.</strong>
+                        Todos os treinamentos associados a este tipo serão afetados.
+                        <strong>Esta ação não pode ser desfeita.</strong>
                     </span>
                 </p>
             </div>

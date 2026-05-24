@@ -1,7 +1,7 @@
-﻿
+
 {% extends "dashboard/_base_dashboard_fullscreen.html" %}
 
-{% block title %}PGR â€” Modo Painel{% endblock %}
+{% block title %}PGR — Modo Painel{% endblock %}
 
 {% block tv_content %}
 
@@ -55,9 +55,9 @@
                     </div>
                     <div>
                         <div class="fw-bold text-danger" style="font-size: 1.8rem; line-height: 1;">{{ riscos_criticos|length }}</div>
-                        <div class="text-muted fw-semibold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Riscos CrÃ­ticos</div>
+                        <div class="text-muted fw-semibold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Riscos Críticos</div>
                         <small class="text-muted" style="font-size: 0.75rem;">
-                            NÃ£o controlados{% if total_riscos > 0 %} Â· {{ total_riscos }} total{% endif %}
+                            Não controlados{% if total_riscos > 0 %} · {{ total_riscos }} total{% endif %}
                         </small>
                     </div>
                 </div>
@@ -96,7 +96,7 @@
                     <div>
                         <div class="fw-bold text-success" style="font-size: 1.8rem; line-height: 1;">{{ total_ges }}</div>
                         <div class="text-muted fw-semibold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">GES Ativos</div>
-                        <small class="text-muted" style="font-size: 0.75rem;">Grupos de ExposiÃ§Ã£o Similar</small>
+                        <small class="text-muted" style="font-size: 0.75rem;">Grupos de Exposição Similar</small>
                     </div>
                 </div>
             </div>
@@ -108,11 +108,11 @@
     <div class="alert alert-warning border-0 shadow-sm mb-4 d-flex align-items-start gap-3" role="alert">
         <i class="bi bi-exclamation-triangle-fill fs-4 mt-1"></i>
         <div>
-            <h6 class="alert-heading mb-1 fw-bold">Documentos prÃ³ximos ao vencimento</h6>
+            <h6 class="alert-heading mb-1 fw-bold">Documentos próximos ao vencimento</h6>
             {% for doc in documentos_proximo_vencimento %}
             <div class="mb-1" style="font-size: 0.85rem;">
                 <strong>{{ doc.codigo_documento }}</strong>
-                <span class="text-muted">â€” {{ doc.empresa }}</span>
+                <span class="text-muted">— {{ doc.empresa }}</span>
                 <span class="text-danger fw-bold ms-1">({{ doc.dias_para_vencimento }}d)</span>
             </div>
             {% endfor %}
@@ -126,7 +126,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold text-dark">
-                        <i class="bi bi-pie-chart text-warning me-2"></i>Riscos por ClassificaÃ§Ã£o
+                        <i class="bi bi-pie-chart text-warning me-2"></i>Riscos por Classificação
                     </h6>
                     {% if total_riscos %}
                     <span class="badge bg-light text-muted rounded-pill">{{ total_riscos }} total</span>
@@ -175,7 +175,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-bottom">
                     <h6 class="mb-0 fw-bold text-dark">
-                        <i class="bi bi-clock-history text-info me-2"></i>Ãšltimas RevisÃµes
+                        <i class="bi bi-clock-history text-info me-2"></i>Últimas Revisões
                     </h6>
                 </div>
                 <div class="p-0">
@@ -185,7 +185,7 @@
                         <div>
                             <div class="fw-semibold text-dark" style="font-size: 0.88rem;">{{ doc.codigo_documento }}</div>
                             <small class="text-muted">
-                                {{ doc.empresa }} â€” {{ doc.atualizado_em|date:"d/m/Y H:i" }}
+                                {{ doc.empresa }} — {{ doc.atualizado_em|date:"d/m/Y H:i" }}
                             </small>
                         </div>
                         <span class="badge rounded-pill
@@ -208,7 +208,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-bottom">
                     <h6 class="mb-0 fw-bold text-dark">
-                        <i class="bi bi-journal-check text-warning me-2"></i>Ãšltimos Planos de AÃ§Ã£o
+                        <i class="bi bi-journal-check text-warning me-2"></i>Últimos Planos de Ação
                     </h6>
                 </div>
                 <div class="p-0">
@@ -232,7 +232,7 @@
                     {% empty %}
                     <div class="text-center text-muted py-5">
                         <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
-                        <p class="mt-2 mb-0">Nenhum plano de aÃ§Ã£o</p>
+                        <p class="mt-2 mb-0">Nenhum plano de ação</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -248,16 +248,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const classificacaoData = {{ riscos_por_classificacao|safe }};
     const statusData = {{ riscos_por_status|safe }};
 
-    // â•â•â• Tema CLARO â•â•â•
+    // ═══ Tema CLARO ═══
     Chart.defaults.color = '#495057';
     Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.08)';
 
     const CORES_CLASSIFICACAO = {
-        'negligenciavel': { cor: '#1cc88a', label: 'NegligenciÃ¡vel' },
+        'negligenciavel': { cor: '#1cc88a', label: 'Negligenciável' },
         'marginal':       { cor: '#36b9cc', label: 'Marginal' },
         'moderado':       { cor: '#f6c23e', label: 'Moderado' },
         'muito_grave':    { cor: '#e74a3b', label: 'Muito Grave' },
-        'critico':        { cor: '#a71d2a', label: 'CrÃ­tico' },
+        'critico':        { cor: '#a71d2a', label: 'Crítico' },
     };
 
     const CORES_STATUS = {
@@ -277,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return mapa[key] ? mapa[key].cor : PALETA_FALLBACK[index % PALETA_FALLBACK.length];
     }
 
-    // â”€â”€ Doughnut â”€â”€
+    // ── Doughnut ──
     if (classificacaoData.length > 0) {
         const ctx1 = document.getElementById('chartRiscosClassificacao');
         if (ctx1) {
@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // â”€â”€ Bar â”€â”€
+    // ── Bar ──
     if (statusData.length > 0) {
         const ctx2 = document.getElementById('chartRiscosStatus');
         if (ctx2) {

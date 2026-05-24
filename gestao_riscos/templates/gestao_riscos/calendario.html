@@ -1,5 +1,5 @@
-﻿
-<!-- Template para exibir o calendÃ¡rio de inspeÃ§Ãµes -->
+
+<!-- Template para exibir o calendário de inspeções -->
 {% extends "base.html" %}
 {% load static %}
 
@@ -8,10 +8,10 @@
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
 <style>
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       CALENDÃRIO DE INSPEÃ‡Ã•ES â€” Adaptativo Claro/Escuro
-       Usa as variÃ¡veis globais do tema (style.css)
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════════════════════
+       CALENDÁRIO DE INSPEÇÕES — Adaptativo Claro/Escuro
+       Usa as variáveis globais do tema (style.css)
+    ═══════════════════════════════════════════════════════════════ */
 
     #calendar {
         background-color: var(--surface-elevated);
@@ -21,7 +21,7 @@
         transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    /* â”€â”€â”€ CabeÃ§alho do calendÃ¡rio (toolbar) â”€â”€â”€ */
+    /* ─── Cabeçalho do calendário (toolbar) ─── */
     #calendar .fc-toolbar-title {
         color: var(--text-strong);
         font-weight: 600;
@@ -55,7 +55,7 @@
         box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.25) !important;
     }
 
-    /* â”€â”€â”€ Estrutura interna (linhas, colunas, bordas) â”€â”€â”€ */
+    /* ─── Estrutura interna (linhas, colunas, bordas) ─── */
     #calendar .fc-theme-standard td,
     #calendar .fc-theme-standard th,
     #calendar .fc-theme-standard .fc-scrollgrid {
@@ -77,7 +77,7 @@
         text-decoration: none;
     }
 
-    /* â”€â”€â”€ CÃ©lulas de dias â”€â”€â”€ */
+    /* ─── Células de dias ─── */
     #calendar .fc-daygrid-day {
         background-color: var(--surface-elevated);
         transition: background-color 0.2s ease;
@@ -106,7 +106,7 @@
         background-color: var(--surface-subtle);
     }
 
-    /* â”€â”€â”€ Dia de hoje (destaque) â”€â”€â”€ */
+    /* ─── Dia de hoje (destaque) ─── */
     #calendar .fc-day-today {
         background-color: rgba(var(--bs-primary-rgb), 0.08) !important;
     }
@@ -116,7 +116,7 @@
         font-weight: 700;
     }
 
-    /* â”€â”€â”€ Eventos â”€â”€â”€ */
+    /* ─── Eventos ─── */
     #calendar .fc-event {
         border: none !important;
         cursor: pointer;
@@ -137,7 +137,7 @@
         color: #fff;
     }
 
-    /* â”€â”€â”€ VisualizaÃ§Ã£o "Lista" (listWeek) â”€â”€â”€ */
+    /* ─── Visualização "Lista" (listWeek) ─── */
     #calendar .fc-list {
         border-color: var(--bs-border-color);
     }
@@ -163,7 +163,7 @@
         color: var(--bs-text-muted);
     }
 
-    /* â”€â”€â”€ "Mais eventos" (popover) â”€â”€â”€ */
+    /* ─── "Mais eventos" (popover) ─── */
     #calendar .fc-daygrid-more-link {
         color: var(--bs-primary);
         font-weight: 600;
@@ -185,38 +185,38 @@
         background-color: var(--surface-elevated) !important;
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       AJUSTES ESPECÃFICOS PARA TEMA ESCURO
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════════════════════
+       AJUSTES ESPECÍFICOS PARA TEMA ESCURO
+    ═══════════════════════════════════════════════════════════════ */
     [data-bs-theme="dark"] #calendar {
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
 
-    /* CabeÃ§alho da grade â€” mais contraste no escuro */
+    /* Cabeçalho da grade — mais contraste no escuro */
     [data-bs-theme="dark"] #calendar .fc-col-header-cell {
         background-color: var(--surface-muted);
     }
 
-    /* Linhas de divisÃ£o mais sutis */
+    /* Linhas de divisão mais sutis */
     [data-bs-theme="dark"] #calendar .fc-theme-standard td,
     [data-bs-theme="dark"] #calendar .fc-theme-standard th,
     [data-bs-theme="dark"] #calendar .fc-scrollgrid {
         border-color: var(--bs-border-color);
     }
 
-    /* Hover mais visÃ­vel no escuro */
+    /* Hover mais visível no escuro */
     [data-bs-theme="dark"] #calendar .fc-daygrid-day:hover {
         background-color: rgba(0, 184, 212, 0.12);
     }
 
-    /* BotÃ£o "Hoje" desabilitado no escuro â€” sutil */
+    /* Botão "Hoje" desabilitado no escuro — sutil */
     [data-bs-theme="dark"] #calendar .fc-button:disabled {
         opacity: 0.4;
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       LEGENDA â€” badges com tamanho fixo
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════════════════════
+       LEGENDA — badges com tamanho fixo
+    ═══════════════════════════════════════════════════════════════ */
     .legenda-badge {
         display: inline-block;
         width: 18px;
@@ -244,7 +244,7 @@
                     <h4 class="mb-1">
                         <i class="bi bi-calendar3 me-2"></i>{{ titulo_pagina }}
                     </h4>
-                    <small class="opacity-75">Clique em um dia para agendar uma nova inspeÃ§Ã£o</small>
+                    <small class="opacity-75">Clique em um dia para agendar uma nova inspeção</small>
                 </div>
                 <div class="d-flex gap-2">
                     {% if perms.gestao_riscos.view_risco or user.is_superuser %}
@@ -254,7 +254,7 @@
                     {% endif %}
                     {% if perms.gestao_riscos.add_inspecao or user.is_superuser %}
                     <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="btn btn-light">
-                        <i class="bi bi-plus-circle me-1"></i> Nova InspeÃ§Ã£o
+                        <i class="bi bi-plus-circle me-1"></i> Nova Inspeção
                     </a>
                     {% endif %}
                 </div>
@@ -271,16 +271,16 @@
                     <span class="legenda-badge bg-primary"></span> Pendente
                 </span>
                 <span class="d-flex align-items-center">
-                    <span class="legenda-badge bg-warning"></span> Aguardando AprovaÃ§Ã£o
+                    <span class="legenda-badge bg-warning"></span> Aguardando Aprovação
                 </span>
                 <span class="d-flex align-items-center">
-                    <span class="legenda-badge bg-success"></span> ConcluÃ­da
+                    <span class="legenda-badge bg-success"></span> Concluída
                 </span>
             </div>
         </div>
     </div>
 
-    <!-- CalendÃ¡rio -->
+    <!-- Calendário -->
     <div class="card shadow-sm">
         <div class="card-body">
             <div id="calendar"></div>
@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         buttonText: {
             today: 'Hoje',
-            month: 'MÃªs',
+            month: 'Mês',
             week: 'Semana',
             list: 'Lista'
         },

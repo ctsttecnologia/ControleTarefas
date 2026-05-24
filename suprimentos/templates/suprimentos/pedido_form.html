@@ -1,16 +1,16 @@
-﻿
+
 
 {% extends "suprimentos/suprimentos_base.html" %}
 {% load static %}
 
-{% block title %}{{ titulo_pagina }} â€” Suprimentos{% endblock %}
+{% block title %}{{ titulo_pagina }} — Suprimentos{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
 
-            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+            <!-- ═══════════════════ HEADER ═══════════════════ -->
             <div class="d-flex justify-content-between align-items-start mb-4">
                 <div>
                     <h2 class="mb-0">{{ titulo_pagina }}</h2>
@@ -25,12 +25,12 @@
                 </div>
             </div>
 
-            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• FORM â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+            <!-- ═══════════════════ FORM ═══════════════════ -->
 
             <form method="post" enctype="multipart/form-data" id="form-pedido" novalidate>
                 {% csrf_token %}
 
-                <!-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Erros gerais â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+                <!-- ─────────── Erros gerais ─────────── -->
                 {% if form.errors or itens_formset.non_form_errors %}
                 <div class="alert alert-danger">
                     <i class="bi bi-exclamation-triangle me-2"></i>
@@ -46,7 +46,7 @@
                 </div>
                 {% endif %}
 
-                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARD: DADOS DO PEDIDO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+                <!-- ═══════════════════ CARD: DADOS DO PEDIDO ═══════════════════ -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0"><i class="bi bi-clipboard-list me-2"></i>Dados do Pedido</h5>
@@ -67,19 +67,19 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">
-                                    Data NecessÃ¡ria <span class="text-danger">*</span>
+                                    Data Necessária <span class="text-danger">*</span>
                                 </label>
                                 {{ form.data_necessaria }}
                             </div>
                             <div class="col-md-8">
-                                <label class="form-label fw-bold">ObservaÃ§Ãµes Gerais</label>
+                                <label class="form-label fw-bold">Observações Gerais</label>
                                 {{ form.observacao }}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARD: ITENS DO PEDIDO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+                <!-- ═══════════════════ CARD: ITENS DO PEDIDO ═══════════════════ -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Itens do Pedido</h5>
@@ -94,7 +94,7 @@
                         <div id="itens-container">
                             {% for item_form in itens_formset %}
                             <div class="item-pedido bg-adaptive p-3 mb-3" data-form-index="{{ forloop.counter0 }}">
-                                <!-- CabeÃ§alho do item -->
+                                <!-- Cabeçalho do item -->
                                 <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
                                     <h6 class="mb-0 text-strong">
                                         <i class="bi bi-box-seam me-2 text-primary"></i>
@@ -108,7 +108,7 @@
                                 <!-- Hidden fields (id + DELETE) -->
                                 {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
 
-                                <!-- Campos visÃ­veis -->
+                                <!-- Campos visíveis -->
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label class="form-label fw-bold">
@@ -129,7 +129,7 @@
 
                                     <div class="col-md-3">
                                         <label class="form-label fw-bold">
-                                            Valor UnitÃ¡rio (R$) <span class="text-danger">*</span>
+                                            Valor Unitário (R$) <span class="text-danger">*</span>
                                         </label>
                                         {{ item_form.valor_unitario }}
                                     </div>
@@ -143,7 +143,7 @@
                                     </div>
 
                                     <div class="col-md-3">
-                                        <label class="form-label fw-bold">ObservaÃ§Ã£o</label>
+                                        <label class="form-label fw-bold">Observação</label>
                                         {{ item_form.observacao }}
                                     </div>
                                 </div>
@@ -162,7 +162,7 @@
                     </div>
                 </div>
 
-                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARD: ANEXOS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+                <!-- ═══════════════════ CARD: ANEXOS ═══════════════════ -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-secondary text-white">
                         <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Anexos (opcional)</h5>
@@ -170,7 +170,7 @@
                     <div class="card-body">
                         <p class="text-muted small mb-3">
                             <i class="bi bi-info-circle me-1"></i>
-                            Adicione PDFs, fotos, catÃ¡logos ou especificaÃ§Ãµes tÃ©cnicas. MÃ¡ximo 10MB por arquivo.
+                            Adicione PDFs, fotos, catálogos ou especificações técnicas. Máximo 10MB por arquivo.
                         </p>
                         <div id="anexos-container">
                             <div class="input-group mb-2">
@@ -184,7 +184,7 @@
                     </div>
                 </div>
 
-                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• AÃ‡Ã•ES â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+                <!-- ═══════════════════ AÇÕES ═══════════════════ -->
                 <div class="d-flex justify-content-between">
                     <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-light">
                         <i class="bi bi-arrow-left me-1"></i> CANCELAR
@@ -200,7 +200,7 @@
     </div>
 </div>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• TEMPLATE EMPTY-FORM (clonÃ¡vel via JS) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════ TEMPLATE EMPTY-FORM (clonável via JS) ═══════════════════ -->
 <template id="empty-form-template">
     <div class="item-pedido bg-adaptive p-3 mb-3" data-form-index="__prefix__">
         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
@@ -230,7 +230,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label fw-bold">
-                    Valor UnitÃ¡rio (R$) <span class="text-danger">*</span>
+                    Valor Unitário (R$) <span class="text-danger">*</span>
                 </label>
                 {{ itens_formset.empty_form.valor_unitario }}
             </div>
@@ -240,7 +240,7 @@
                        readonly value="0,00" tabindex="-1">
             </div>
             <div class="col-md-3">
-                <label class="form-label fw-bold">ObservaÃ§Ã£o</label>
+                <label class="form-label fw-bold">Observação</label>
                 {{ itens_formset.empty_form.observacao }}
             </div>
         </div>
@@ -254,9 +254,9 @@
 (function () {
     'use strict';
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // FORMSET â€” Itens do Pedido
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════
+    // FORMSET — Itens do Pedido
+    // ═══════════════════════════════════════════════════
     const $totalForms = document.querySelector('[name$="-TOTAL_FORMS"]');
     if (!$totalForms) return;
 
@@ -303,21 +303,21 @@
         });
     }
 
-    // Inicializa Select2 num elemento (se disponÃ­vel)
+    // Inicializa Select2 num elemento (se disponível)
     function initSelect2(scope) {
         if (typeof jQuery === 'undefined' || !jQuery.fn.select2) return;
         jQuery(scope).find('.select2-material').each(function () {
             if (!jQuery(this).hasClass('select2-hidden-accessible')) {
                 jQuery(this).select2({
                     width: '100%',
-                    placeholder: 'â€” Selecione um material â€”',
+                    placeholder: '— Selecione um material —',
                     allowClear: true,
                 });
             }
         });
     }
 
-    // â”€â”€â”€ Adicionar item â”€â”€â”€
+    // ─── Adicionar item ───
     if ($btnAdd) {
         $btnAdd.addEventListener('click', () => {
             const formIdx = parseInt($totalForms.value, 10);
@@ -334,7 +334,7 @@
         });
     }
 
-    // â”€â”€â”€ Remover item (delegaÃ§Ã£o) â”€â”€â”€
+    // ─── Remover item (delegação) ───
     $container.addEventListener('click', (e) => {
         const btn = e.target.closest('.btn-remove-item');
         if (!btn) return;
@@ -343,37 +343,37 @@
         const $delete = item.querySelector('input[name$="-DELETE"]');
         const $id     = item.querySelector('input[name$="-id"]');
 
-        // ConfirmaÃ§Ã£o
+        // Confirmação
         if (!confirm('Remover este item do pedido?')) return;
 
         if ($id && $id.value && $delete) {
-            // Item jÃ¡ salvo â†’ marca DELETE e esconde
+            // Item já salvo → marca DELETE e esconde
             $delete.checked = true;
             item.style.display = 'none';
         } else {
-            // Item novo â†’ remove do DOM
+            // Item novo → remove do DOM
             item.remove();
         }
         renumerar();
         recalcular();
     });
 
-    // â”€â”€â”€ Recalcular ao digitar â”€â”€â”€
+    // ─── Recalcular ao digitar ───
     document.addEventListener('input', (e) => {
         if (e.target.matches('[name$="-quantidade"], [name$="-valor_unitario"]')) {
             recalcular();
         }
     });
 
-    // â”€â”€â”€ InicializaÃ§Ã£o â”€â”€â”€
+    // ─── Inicialização ───
     initSelect2(document);
     renumerar();
     recalcular();
 
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // ANEXOS â€” mÃºltiplos arquivos
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════
+    // ANEXOS — múltiplos arquivos
+    // ═══════════════════════════════════════════════════
     const $btnAddAnexo = document.getElementById('btn-add-anexo');
     if ($btnAddAnexo) {
         $btnAddAnexo.addEventListener('click', function () {

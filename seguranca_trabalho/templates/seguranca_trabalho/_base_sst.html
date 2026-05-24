@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 
@@ -7,12 +7,12 @@
 {% block extra_css %}
 {{ block.super }}
 <style>
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       SST BASE â€” VARIÃVEIS TEMA CLARO
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════════════
+       SST BASE — VARIÁVEIS TEMA CLARO
+       ═══════════════════════════════════════════════════════ */
     :root,
     [data-bs-theme="light"] {
-        /* â”€â”€ Nav â”€â”€ */
+        /* ── Nav ── */
         --sst-nav-bg:           #ffffff;
         --sst-nav-border:       #e2e8f0;
         --sst-nav-shadow:       0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
@@ -32,7 +32,7 @@
         --sst-divider:          #f1f5f9;
         --sst-indicator-glow:   rgba(59,130,246,.3);
 
-        /* â”€â”€ Compartilhado (PÃ¡ginas) â”€â”€ */
+        /* ── Compartilhado (Páginas) ── */
         --sst-bg:              #ffffff;
         --sst-bg-alt:          #f8f9fc;
         --sst-text:            #1e293b;
@@ -62,11 +62,11 @@
         --sst-photo-bg:        #f1f5f9;
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       SST BASE â€” VARIÃVEIS TEMA ESCURO
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════════════
+       SST BASE — VARIÁVEIS TEMA ESCURO
+       ═══════════════════════════════════════════════════════ */
     [data-bs-theme="dark"] {
-        /* â”€â”€ Nav â”€â”€ */
+        /* ── Nav ── */
         --sst-nav-bg:           #1a1d23;
         --sst-nav-border:       #2d3748;
         --sst-nav-shadow:       0 1px 3px rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.15);
@@ -86,7 +86,7 @@
         --sst-divider:          #2d3748;
         --sst-indicator-glow:   rgba(96,165,250,.3);
 
-        /* â”€â”€ Compartilhado (PÃ¡ginas) â”€â”€ */
+        /* ── Compartilhado (Páginas) ── */
         --sst-bg:              #1a1d23;
         --sst-bg-alt:          #1e2128;
         --sst-text:            #e2e8f0;
@@ -116,11 +116,11 @@
         --sst-photo-bg:        #262a33;
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       COMPONENTES BASE REUTILIZÃVEIS
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════════════
+       COMPONENTES BASE REUTILIZÁVEIS
+       ═══════════════════════════════════════════════════════ */
 
-    /* â”€â”€ Page Header â”€â”€ */
+    /* ── Page Header ── */
     .sst-page-header {
         background: var(--sst-header-gradient);
         border-radius: 0.75rem;
@@ -158,7 +158,7 @@
         font-size: 0.85rem;
     }
 
-    /* â”€â”€ Header Buttons â”€â”€ */
+    /* ── Header Buttons ── */
     .sst-btn-header {
         background: rgba(255,255,255,.1);
         border: 1px solid rgba(255,255,255,.2);
@@ -209,7 +209,7 @@
         cursor: default;
     }
 
-    /* â”€â”€ Cards â”€â”€ */
+    /* ── Cards ── */
     .sst-card {
         background: var(--sst-bg);
         border: 1px solid var(--sst-border);
@@ -273,7 +273,7 @@
         background: var(--sst-bg-alt);
     }
 
-    /* â”€â”€ Section Headers (Form) â”€â”€ */
+    /* ── Section Headers (Form) ── */
     .sst-section-title {
         display: flex;
         align-items: center;
@@ -303,7 +303,7 @@
         font-size: 1rem;
     }
 
-    /* â”€â”€ Form Controls â”€â”€ */
+    /* ── Form Controls ── */
     .sst-form-label {
         font-size: 0.82rem;
         font-weight: 600;
@@ -353,7 +353,7 @@
         font-size: 0.88rem;
     }
 
-    /* â”€â”€ Buttons â”€â”€ */
+    /* ── Buttons ── */
     .sst-btn-primary {
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         color: #fff;
@@ -467,7 +467,7 @@
         border-color: var(--sst-accent);
     }
 
-    /* â”€â”€ Badges â”€â”€ */
+    /* ── Badges ── */
     .sst-badge {
         display: inline-flex;
         align-items: center;
@@ -516,7 +516,7 @@
         font-size: 0.75rem;
     }
 
-    /* â”€â”€ Info Grid (Detail Pages) â”€â”€ */
+    /* ── Info Grid (Detail Pages) ── */
     .sst-info-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -558,7 +558,7 @@
         margin: 0.25rem 0;
     }
 
-    /* â”€â”€ Alert â”€â”€ */
+    /* ── Alert ── */
     .sst-alert {
         border-radius: 0.5rem;
         padding: 0.85rem 1.25rem;
@@ -596,7 +596,7 @@
         color: var(--sst-success);
     }
 
-    /* â”€â”€ Table â”€â”€ */
+    /* ── Table ── */
     .sst-table-wrapper {
         overflow-x: auto;
     }
@@ -665,7 +665,7 @@
         color: var(--sst-text-muted);
     }
 
-    /* â”€â”€ Action Buttons in Table â”€â”€ */
+    /* ── Action Buttons in Table ── */
     .sst-action-group {
         display: inline-flex;
         gap: 0.3rem;
@@ -723,7 +723,7 @@
         background: var(--sst-bg-alt);
     }
 
-    /* â”€â”€ Empty State â”€â”€ */
+    /* ── Empty State ── */
     .sst-empty {
         text-align: center;
         padding: 3rem 1.5rem;
@@ -753,7 +753,7 @@
         font-size: 0.85rem;
     }
 
-    /* â”€â”€ Avatar â”€â”€ */
+    /* ── Avatar ── */
     .sst-avatar {
         width: 40px;
         height: 40px;
@@ -792,7 +792,7 @@
         font-size: 1.3rem;
     }
 
-    /* â”€â”€ Filter Card â”€â”€ */
+    /* ── Filter Card ── */
     .sst-filter {
         background: var(--sst-bg);
         border: 1px solid var(--sst-border);
@@ -832,7 +832,7 @@
         color: var(--sst-text-muted);
     }
 
-    /* â”€â”€ Stat Cards â”€â”€ */
+    /* ── Stat Cards ── */
     .sst-stats {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -879,14 +879,14 @@
     .sst-stat-value--danger  { color: var(--sst-danger); }
     .sst-stat-value--muted   { color: var(--sst-text-muted); }
 
-    /* â”€â”€ Pagination â”€â”€ */
+    /* ── Pagination ── */
     .sst-pagination {
         padding: 0.75rem 1.5rem;
         border-top: 1px solid var(--sst-border);
         background: var(--sst-bg-alt);
     }
 
-    /* â”€â”€ Responsive â”€â”€ */
+    /* ── Responsive ── */
     @media (max-width: 768px) {
         .sst-page-header {
             padding: 1rem 1.25rem;
@@ -905,9 +905,9 @@
         }
     }
 
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       NAVEGAÃ‡ÃƒO SECUNDÃRIA SST
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════════════
+       NAVEGAÇÃO SECUNDÁRIA SST
+       ═══════════════════════════════════════════════════════ */
     .sst-subnav {
         background: var(--sst-nav-bg);
         border: 1px solid var(--sst-nav-border);
@@ -1184,14 +1184,14 @@
                 </span>
                 <span class="sst-brand-text">
                     SST
-                    <small>SeguranÃ§a do Trabalho</small>
+                    <small>Segurança do Trabalho</small>
                 </span>
             </a>
 
             <button class="sst-toggler d-lg-none" type="button"
                     data-bs-toggle="collapse" data-bs-target="#sstNavbar"
                     aria-controls="sstNavbar" aria-expanded="false"
-                    aria-label="{% trans 'Alternar navegaÃ§Ã£o' %}">
+                    aria-label="{% trans 'Alternar navegação' %}">
                 <i class="bi bi-list"></i>
             </button>
 
@@ -1236,7 +1236,7 @@
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:funcao_list' %}"
                            class="sst-nav-link {% if 'funcao_' in request.resolver_match.url_name %}active{% endif %}">
-                            <i class="bi bi-briefcase"></i> FunÃ§Ãµes
+                            <i class="bi bi-briefcase"></i> Funções
                         </a>
                     </li>
                     {% endif %}
@@ -1259,12 +1259,12 @@
                             <i class="bi bi-chevron-down sst-more-chevron"></i>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><span class="sst-dropdown-label">MÃ³dulos Relacionados</span></li>
+                            <li><span class="sst-dropdown-label">Módulos Relacionados</span></li>
 
                             {% if perms.gestao_riscos.view_inspecao %}
                             <li>
                                 <a class="dropdown-item" href="{% url 'gestao_riscos:lista_riscos' %}">
-                                    <i class="bi bi-exclamation-triangle text-warning"></i> GestÃ£o de Riscos
+                                    <i class="bi bi-exclamation-triangle text-warning"></i> Gestão de Riscos
                                 </a>
                             </li>
                             {% endif %}
@@ -1287,11 +1287,11 @@
 
                             {% if perms.seguranca_trabalho.view_cargofuncao %}
                             <li><hr class="dropdown-divider"></li>
-                            <li><span class="sst-dropdown-label">ConfiguraÃ§Ãµes</span></li>
+                            <li><span class="sst-dropdown-label">Configurações</span></li>
                             <li>
                                 <a class="dropdown-item {% if 'associac' in request.resolver_match.url_name %}active{% endif %}"
                                    href="{% url 'seguranca_trabalho:lista_associacoes' %}">
-                                    <i class="bi bi-diagram-3 text-secondary"></i> Cargo Ã— FunÃ§Ã£o
+                                    <i class="bi bi-diagram-3 text-secondary"></i> Cargo × Função
                                 </a>
                             </li>
                             {% endif %}

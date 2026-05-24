@@ -1,22 +1,22 @@
-﻿{% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>{% block titulo %}RelatÃ³rio{% endblock %}</title>
+    <title>{% block titulo %}Relatório{% endblock %}</title>
 
     <style>
         /* ==========================================================
-           BASE REPORT â€” Identidade visual unificada (PDF/WeasyPrint)
+           BASE REPORT — Identidade visual unificada (PDF/WeasyPrint)
            Paleta sincronizada com a tela web
            ========================================================== */
 
         @page {
-            size: A4 landscape;          /* âœ… era sÃ³ "A4" â€” agora paisagem */
+            size: A4 landscape;          /* ✅ era só "A4" — agora paisagem */
             margin: 1.2cm 1.5cm 1.5cm 1.5cm;
 
             @bottom-center {
-                content: "PÃ¡gina " counter(page) " de " counter(pages);
+                content: "Página " counter(page) " de " counter(pages);
                 font-family: 'Helvetica', sans-serif;
                 font-size: 8pt;
                 color: #6b7280;
@@ -34,7 +34,7 @@
             padding: 0;
         }
 
-        /* ===== CABEÃ‡ALHO ===== */
+        /* ===== CABEÇALHO ===== */
         .report-header {
             border-bottom: 3px solid #0D6EFD;
             padding-bottom: 10px;
@@ -95,7 +95,7 @@
             line-height: 1;
         }
 
-        /* ===== SEÃ‡Ã•ES ===== */
+        /* ===== SEÇÕES ===== */
         .section {
             margin-bottom: 18px;
             page-break-inside: avoid;
@@ -109,7 +109,7 @@
             border-bottom: 1px solid #dee2e6;
         }
 
-        /* ===== TABELA PADRÃƒO ===== */
+        /* ===== TABELA PADRÃO ===== */
         .report-table {
             width: 100%;
             border-collapse: collapse;
@@ -142,7 +142,7 @@
         .text-muted  { color: #6b7280; }
         .fw-bold     { font-weight: bold; }
 
-        /* Coluna numÃ©rica */
+        /* Coluna numérica */
         .num-col {
             width: 4%;
             text-align: center;
@@ -160,7 +160,7 @@
         }
         .progress-fill {
             height: 8px;
-            background: #0D6EFD;   /* azul padrÃ£o */
+            background: #0D6EFD;   /* azul padrão */
             border-radius: 4px;
             display: block;
         }
@@ -212,13 +212,13 @@
             font-style: italic;
         }
 
-        /* ===== UTILITÃRIOS ===== */
+        /* ===== UTILITÁRIOS ===== */
         .page-break { page-break-after: always; }
 
         .rel-table-scroll {
             max-height: 480px;
             overflow-y: auto;
-            /* Sombra no rodapÃ© indicando scroll */
+            /* Sombra no rodapé indicando scroll */
             background:
                 linear-gradient(var(--rel-card-bg) 30%, transparent),
                 linear-gradient(transparent, var(--rel-card-bg) 70%) 0 100%,
@@ -235,10 +235,10 @@
 
 <body>
 
-    {# ================ CABEÃ‡ALHO ================ #}
+    {# ================ CABEÇALHO ================ #}
     <div class="report-header">
         <div class="report-header-left">
-            <h1 class="report-title">{% block report_title %}RelatÃ³rio{% endblock %}</h1>
+            <h1 class="report-title">{% block report_title %}Relatório{% endblock %}</h1>
             <p class="report-subtitle">{% block report_subtitle %}{% endblock %}</p>
         </div>
         <div class="report-header-right">
@@ -252,7 +252,7 @@
         {% block report_meta_extra %}{% endblock %}
     </div>
 
-    {# ================ CONTEÃšDO ================ #}
+    {# ================ CONTEÚDO ================ #}
     {% block content %}{% endblock %}
 
 </body>

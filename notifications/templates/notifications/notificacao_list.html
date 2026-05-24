@@ -1,18 +1,18 @@
-﻿
+
 <!-- templates/notifications/notificacao_list.html -->
 {% extends "base.html" %}
 
-{% block title %}NotificaÃ§Ãµes{% endblock %}
+{% block title %}Notificações{% endblock %}
 
 {% block breadcrumb_items %}
-    <li class="breadcrumb-item active">NotificaÃ§Ãµes</li>
+    <li class="breadcrumb-item active">Notificações</li>
 {% endblock %}
 
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center">
     <div>
-        <h2><i class="fas fa-bell me-2"></i>NotificaÃ§Ãµes</h2>
-        <p class="mb-0">{{ nao_lidas_count }} nÃ£o lida{{ nao_lidas_count|pluralize:"s" }}</p>
+        <h2><i class="fas fa-bell me-2"></i>Notificações</h2>
+        <p class="mb-0">{{ nao_lidas_count }} não lida{{ nao_lidas_count|pluralize:"s" }}</p>
     </div>
     {% if nao_lidas_count > 0 %}
         <form action="{% url 'notifications:marcar_todas_como_lidas' %}" method="post">
@@ -31,7 +31,7 @@
             <div class="col-auto">
                 <select name="filtro" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="todas" {% if filtro == 'todas' %}selected{% endif %}>Todas</option>
-                    <option value="nao_lidas" {% if filtro == 'nao_lidas' %}selected{% endif %}>NÃ£o lidas</option>
+                    <option value="nao_lidas" {% if filtro == 'nao_lidas' %}selected{% endif %}>Não lidas</option>
                     <option value="lidas" {% if filtro == 'lidas' %}selected{% endif %}>Lidas</option>
                 </select>
             </div>
@@ -49,7 +49,7 @@
     </div>
 </div>
 
-<!-- Lista de NotificaÃ§Ãµes -->
+<!-- Lista de Notificações -->
 {% if notificacoes %}
     <div class="list-group">
         {% for notif in notificacoes %}
@@ -91,9 +91,9 @@
         {% endfor %}
     </div>
 
-    <!-- PaginaÃ§Ã£o -->
+    <!-- Paginação -->
     {% if notificacoes.has_other_pages %}
-        <nav class="mt-4" aria-label="PaginaÃ§Ã£o">
+        <nav class="mt-4" aria-label="Paginação">
             <ul class="pagination justify-content-center">
                 {% if notificacoes.has_previous %}
                     <li class="page-item">
@@ -123,7 +123,7 @@
                     <li class="page-item">
                         <a class="page-link"
                            href="?page={{ notificacoes.next_page_number }}&filtro={{ filtro }}&categoria={{ categoria }}">
-                            PrÃ³xima &raquo;
+                            Próxima &raquo;
                         </a>
                     </li>
                 {% endif %}
@@ -134,12 +134,12 @@
 {% else %}
     <div class="text-center py-5">
         <i class="fas fa-bell-slash fa-3x text-muted mb-3 d-block"></i>
-        <h5 class="text-muted">Nenhuma notificaÃ§Ã£o encontrada</h5>
+        <h5 class="text-muted">Nenhuma notificação encontrada</h5>
         <p class="text-muted small">
             {% if filtro == 'nao_lidas' %}
-                Todas as notificaÃ§Ãµes jÃ¡ foram lidas! ðŸŽ‰
+                Todas as notificações já foram lidas! 🎉
             {% else %}
-                NÃ£o hÃ¡ notificaÃ§Ãµes para os filtros selecionados.
+                Não há notificações para os filtros selecionados.
             {% endif %}
         </p>
     </div>

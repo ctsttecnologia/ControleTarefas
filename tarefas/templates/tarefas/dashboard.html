@@ -1,4 +1,4 @@
-﻿<!-- templates/tarefas/dashboard.html -->
+<!-- templates/tarefas/dashboard.html -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -7,7 +7,7 @@
 {% block extra_css %}
 <style>
 /* =============================================================================
-   DASHBOARD â€” Tema Claro / Escuro
+   DASHBOARD — Tema Claro / Escuro
    ============================================================================= */
 
 :root,
@@ -37,7 +37,7 @@
     --dash-chart-bg: #1e1e2e;
 }
 
-/* â”€â”€ Layout â”€â”€ */
+/* ── Layout ── */
 .dash-wrapper {
     padding: 1rem;
     background: var(--dash-bg);
@@ -50,7 +50,7 @@
     }
 }
 
-/* â”€â”€ Header â”€â”€ */
+/* ── Header ── */
 .dash-header {
     display: flex;
     flex-wrap: wrap;
@@ -79,7 +79,7 @@
     flex-shrink: 0;
 }
 
-/* â”€â”€ KPI Cards â”€â”€ */
+/* ── KPI Cards ── */
 .kpi-grid {
     display: grid;
     gap: 1rem;
@@ -154,7 +154,7 @@
     letter-spacing: 0.04em;
 }
 
-/* â”€â”€ Dashboard Cards (GrÃ¡ficos, Tabelas) â”€â”€ */
+/* ── Dashboard Cards (Gráficos, Tabelas) ── */
 .dash-card {
     background: var(--dash-card-bg);
     border: 1px solid var(--dash-card-border);
@@ -183,7 +183,7 @@
     padding: 1.15rem;
 }
 
-/* â”€â”€ Charts Grid â”€â”€ */
+/* ── Charts Grid ── */
 .charts-grid {
     display: grid;
     gap: 1rem;
@@ -202,7 +202,7 @@
     width: 100%;
 }
 
-/* â”€â”€ Tabela de Performance â”€â”€ */
+/* ── Tabela de Performance ── */
 .dash-table {
     width: 100%;
     border-collapse: collapse;
@@ -234,7 +234,7 @@
     border-bottom: none;
 }
 
-/* â”€â”€ Tarefas Recentes â”€â”€ */
+/* ── Tarefas Recentes ── */
 .recent-task {
     display: flex;
     align-items: center;
@@ -298,13 +298,13 @@
     flex-shrink: 0;
 }
 
-/* â”€â”€ Progress Ring â”€â”€ */
+/* ── Progress Ring ── */
 .progress-ring {
     width: 52px;
     height: 52px;
 }
 
-/* â”€â”€ Badge Colors â”€â”€ */
+/* ── Badge Colors ── */
 .badge--alta, .badge--urgente {
     background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;
 }
@@ -315,7 +315,7 @@
     background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;
 }
 
-/* â”€â”€ Mobile â”€â”€ */
+/* ── Mobile ── */
 @media (max-width: 767.98px) {
     .dash-wrapper { padding: 0.75rem; }
     .dash-title { font-size: 1.15rem; }
@@ -324,7 +324,7 @@
     .chart-container { height: 220px; }
 }
 
-/* â”€â”€ Print â”€â”€ */
+/* ── Print ── */
 @media print {
     .dash-actions { display: none !important; }
     .dash-card { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
@@ -341,12 +341,12 @@
             <h1 class="dash-title">
                 <i class="bi bi-speedometer2 me-2"></i>Dashboard
             </h1>
-            <p class="dash-subtitle">VisÃ£o geral das suas tarefas</p>
+            <p class="dash-subtitle">Visão geral das suas tarefas</p>
         </div>
         <div class="dash-actions">
             {% if perms.tarefas.view_relatorio or user.is_superuser %}
-            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="RelatÃ³rios">
-                <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">RelatÃ³rios</span>
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
+                <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
             </a>
             {% endif %}
             {% if perms.tarefas.view_tarefas or user.is_superuser %}
@@ -360,8 +360,8 @@
             </a>
             {% endif %}
             {% if perms.tarefas.view_calendario or user.is_superuser %}
-            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="CalendÃ¡rio">
-                <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">CalendÃ¡rio</span>
+            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Calendário">
+                <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
             </a>    
             {% endif %}
             {% if perms.tarefas.add_tarefas or user.is_superuser %}
@@ -384,7 +384,7 @@
             <div class="kpi-icon kpi-icon--concluida"><i class="bi bi-check-circle"></i></div>
             <div class="kpi-info">
                 <div class="kpi-value">{{ tarefas_concluidas }}</div>
-                <div class="kpi-label">ConcluÃ­das</div>
+                <div class="kpi-label">Concluídas</div>
             </div>
         </div>
         <div class="kpi-card">
@@ -412,17 +412,17 @@
             <div class="kpi-icon kpi-icon--taxa"><i class="bi bi-graph-up-arrow"></i></div>
             <div class="kpi-info">
                 <div class="kpi-value">{{ taxa_conclusao }}%</div>
-                <div class="kpi-label">Taxa de ConclusÃ£o</div>
+                <div class="kpi-label">Taxa de Conclusão</div>
             </div>
         </div>
     </div>
 
-    <!-- GrÃ¡ficos -->
+    <!-- Gráficos -->
     <div class="charts-grid">
-        <!-- TendÃªncia Semanal -->
+        <!-- Tendência Semanal -->
         <div class="dash-card">
             <div class="dash-card-header">
-                <h2 class="dash-card-title"><i class="bi bi-graph-up me-2"></i>TendÃªncia Semanal</h2>
+                <h2 class="dash-card-title"><i class="bi bi-graph-up me-2"></i>Tendência Semanal</h2>
             </div>
             <div class="dash-card-body">
                 <div class="chart-container">
@@ -469,8 +469,8 @@
                             <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}">{{ tarefa.titulo }}</a>
                         </div>
                         <div class="recent-task-meta">
-                            {{ tarefa.get_status_display }} Â· {{ tarefa.data_criacao|date:"d/m/Y" }}
-                            {% if tarefa.responsavel %} Â· {{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% endif %}
+                            {{ tarefa.get_status_display }} · {{ tarefa.data_criacao|date:"d/m/Y" }}
+                            {% if tarefa.responsavel %} · {{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% endif %}
                         </div>
                     </div>
                     {% if tarefa.prioridade %}
@@ -499,7 +499,7 @@
                         <tr>
                             <th>Colaborador</th>
                             <th class="text-center">Ativas</th>
-                            <th class="text-center">ConcluÃ­das (30d)</th>
+                            <th class="text-center">Concluídas (30d)</th>
                             <th class="text-center">Produtividade</th>
                         </tr>
                     </thead>
@@ -526,7 +526,7 @@
                                     <small class="text-muted">{% widthratio u.tarefas_concluidas_30d u.tarefas_ativas 100 %}%</small>
                                 </div>
                                 {% else %}
-                                <small class="text-muted">â€”</small>
+                                <small class="text-muted">—</small>
                                 {% endif %}
                             </td>
                         </tr>
@@ -548,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         chartsData = JSON.parse('{{ charts_data_json|escapejs }}');
     } catch (e) {
-        console.error('Erro ao parsear dados dos grÃ¡ficos:', e);
+        console.error('Erro ao parsear dados dos gráficos:', e);
         return;
     }
 
@@ -562,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
     Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
     Chart.defaults.font.size = 12;
 
-    // â”€â”€ TendÃªncia Semanal â”€â”€
+    // ── Tendência Semanal ──
     const tendLabels = (chartsData.tendencia_labels || []).map(d => {
         const dt = new Date(d);
         return dt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
@@ -585,7 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     pointBackgroundColor: '#6366f1',
                 },
                 {
-                    label: 'ConcluÃ­das',
+                    label: 'Concluídas',
                     data: chartsData.tendencia_concluidas || [],
                     borderColor: '#22c55e',
                     backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -608,11 +608,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // â”€â”€ Status (Doughnut) â”€â”€
+    // ── Status (Doughnut) ──
     const statusData = chartsData.status_data || [];
     const statusColors = {
         'Pendente': '#f59e0b', 'Atrasada': '#ef4444', 'Em Andamento': '#3b82f6',
-        'ConcluÃ­da': '#22c55e', 'Pausada': '#8b5cf6', 'Cancelada': '#64748b'
+        'Concluída': '#22c55e', 'Pausada': '#8b5cf6', 'Cancelada': '#64748b'
     };
 
     new Chart(document.getElementById('chartStatus'), {
@@ -636,9 +636,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // â”€â”€ Prioridade (Bar) â”€â”€
+    // ── Prioridade (Bar) ──
     const prioData = chartsData.prioridade_data || [];
-    const prioColors = { 'Alta': '#ef4444', 'MÃ©dia': '#f59e0b', 'Baixa': '#22c55e', 'Normal': '#3b82f6' };
+    const prioColors = { 'Alta': '#ef4444', 'Média': '#f59e0b', 'Baixa': '#22c55e', 'Normal': '#3b82f6' };
 
     new Chart(document.getElementById('chartPrioridade'), {
         type: 'bar',

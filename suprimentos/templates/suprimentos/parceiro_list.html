@@ -1,4 +1,4 @@
-﻿{% extends "suprimentos/suprimentos_base.html" %}
+{% extends "suprimentos/suprimentos_base.html" %}
 {% load static %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
@@ -6,7 +6,7 @@
 {% block suprimentos_content %}
 <div class="container-fluid mt-4">
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- ═══════════════════ HEADER ═══════════════════ -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h2 class="mb-0">
@@ -32,7 +32,7 @@
         </div>
     </div>
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARDS RESUMO POR STATUS (opcional) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- ═══════════════════ CARDS RESUMO POR STATUS (opcional) ═══════════════════ -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
             <a href="?status=RASCUNHO" class="text-decoration-none">
@@ -96,8 +96,8 @@
                                 <i class="bi bi-arrow-counterclockwise fs-3 text-info"></i>
                             </div>
                             <div>
-                                <small class="text-muted d-block">Em RevisÃ£o</small>
-                                <strong class="text-strong">AtenÃ§Ã£o</strong>
+                                <small class="text-muted d-block">Em Revisão</small>
+                                <strong class="text-strong">Atenção</strong>
                             </div>
                         </div>
                     </div>
@@ -106,7 +106,7 @@
         </div>
     </div>
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARD PRINCIPAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- ═══════════════════ CARD PRINCIPAL ═══════════════════ -->
     <div class="card shadow-sm">
         <div class="card-body">
 
@@ -117,7 +117,7 @@
                         <i class="bi bi-search me-1"></i>Buscar
                     </label>
                     <input type="text" name="q" class="form-control"
-                           placeholder="NÂº pedido ou cliente..."
+                           placeholder="Nº pedido ou cliente..."
                            value="{{ filtro_q }}">
                 </div>
                 <div class="col-md-4">
@@ -151,14 +151,14 @@
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>NÂº Pedido</th>
+                            <th>Nº Pedido</th>
                             <th>Contrato</th>
                             <th>Solicitante</th>
                             <th class="text-center">Itens</th>
                             <th>Status</th>
                             <th>Data</th>
                             <th class="text-end">Valor Total</th>
-                            <th class="text-end">AÃ§Ãµes</th>
+                            <th class="text-end">Ações</th>
                         </tr>
                     </thead>
                     <tbody>

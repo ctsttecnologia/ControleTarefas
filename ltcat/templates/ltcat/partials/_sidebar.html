@@ -1,11 +1,11 @@
-﻿
+
 <!-- ltcat/templates/ltcat/partials/_sidebar.html -->
 <aside class="sidebar d-flex flex-column p-3" id="sidebar">
     <!-- Logo -->
     <div class="text-center mb-4 mt-2">
         <i class="bi bi-file-earmark-medical fs-1 text-primary"></i>
         <h5 class="fw-bold mt-1 mb-0">LTCAT</h5>
-        <small class="text-muted">GestÃ£o de Laudos</small>
+        <small class="text-muted">Gestão de Laudos</small>
     </div>
 
     <hr>
@@ -47,7 +47,7 @@
             <div class="ms-2 small">
                 <div class="fw-semibold">{{ request.user.get_full_name|default:request.user.username }}</div>
                 <div class="text-muted" style="font-size:0.75rem;">
-                    {% if request.user.perfil_ltcat.is_admin_ltcat %}Admin{% else %}UsuÃ¡rio{% endif %}
+                    {% if request.user.perfil_ltcat.is_admin_ltcat %}Admin{% else %}Usuário{% endif %}
                 </div>
             </div>
         </div>

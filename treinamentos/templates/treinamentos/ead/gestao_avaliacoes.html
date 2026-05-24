@@ -1,7 +1,7 @@
-﻿
+
 {% extends "base.html" %}
 
-{% block title %}GestÃ£o de AvaliaÃ§Ãµes â€” {{ curso.titulo }}{% endblock %}
+{% block title %}Gestão de Avaliações — {{ curso.titulo }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -9,7 +9,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="fw-bold mb-1">
-                <i class="bi bi-clipboard2-check me-2"></i>GestÃ£o de AvaliaÃ§Ãµes
+                <i class="bi bi-clipboard2-check me-2"></i>Gestão de Avaliações
             </h3>
             <p class="text-muted mb-0">{{ curso.titulo }}</p>
         </div>
@@ -29,7 +29,7 @@
                         <th class="text-center">Tentativas</th>
                         <th class="text-center">Melhor Nota</th>
                         <th class="text-center">Status</th>
-                        <th class="text-center">AÃ§Ãµes</th>
+                        <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -53,7 +53,7 @@
                                     {{ item.matricula.nota_final }}
                                 </span>
                             {% else %}
-                                <span class="text-muted">â€”</span>
+                                <span class="text-muted">—</span>
                             {% endif %}
                         </td>
                         <td class="text-center">

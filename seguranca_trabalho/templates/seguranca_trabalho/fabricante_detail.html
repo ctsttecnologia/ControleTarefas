@@ -1,4 +1,4 @@
-﻿
+
 
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load static %}
@@ -30,12 +30,12 @@
 </div>
 
 <div class="row g-4">
-    <!-- InformaÃ§Ãµes Principais -->
+    <!-- Informações Principais -->
     <div class="col-lg-6">
         <div class="sst-card" style="height: 100%;">
             <div class="sst-card-header">
                 <i class="bi bi-info-circle"></i>
-                <h6>InformaÃ§Ãµes de Cadastro</h6>
+                <h6>Informações de Cadastro</h6>
             </div>
             <div class="sst-card-body">
                 <div class="sst-info-grid">
@@ -45,7 +45,7 @@
                     </div>
                     <div class="sst-info-item">
                         <span class="sst-info-label">CNPJ</span>
-                        <span class="sst-info-value">{{ fabricante.cnpj|default:"NÃ£o informado" }}</span>
+                        <span class="sst-info-value">{{ fabricante.cnpj|default:"Não informado" }}</span>
                     </div>
                     <div class="sst-info-item">
                         <span class="sst-info-label">Status</span>
@@ -77,14 +77,14 @@
                 <div class="sst-info-grid">
                     <div class="sst-info-item">
                         <span class="sst-info-label">Contato</span>
-                        <span class="sst-info-value">{{ fabricante.contato|default:"â€”" }}</span>
+                        <span class="sst-info-value">{{ fabricante.contato|default:"—" }}</span>
                     </div>
                     <div class="sst-info-item">
                         <span class="sst-info-label">Telefone</span>
                         <span class="sst-info-value">
                             {% if fabricante.telefone %}
                             <i class="bi bi-telephone me-1" style="font-size:.85rem; opacity:.6;"></i>{{ fabricante.telefone }}
-                            {% else %}â€”{% endif %}
+                            {% else %}—{% endif %}
                         </span>
                     </div>
                     <div class="sst-info-item">
@@ -92,7 +92,7 @@
                         <span class="sst-info-value">
                             {% if fabricante.celular %}
                             <i class="bi bi-phone me-1" style="font-size:.85rem; opacity:.6;"></i>{{ fabricante.celular }}
-                            {% else %}â€”{% endif %}
+                            {% else %}—{% endif %}
                         </span>
                     </div>
                     <div class="sst-info-item">
@@ -100,7 +100,7 @@
                         <span class="sst-info-value">
                             {% if fabricante.email %}
                             <a href="mailto:{{ fabricante.email }}" style="color:var(--sst-accent);">{{ fabricante.email }}</a>
-                            {% else %}â€”{% endif %}
+                            {% else %}—{% endif %}
                         </span>
                     </div>
                     <div class="sst-info-item" style="grid-column: 1 / -1;">
@@ -110,7 +110,7 @@
                             <a href="{{ fabricante.site }}" target="_blank" style="color:var(--sst-accent);">
                                 <i class="bi bi-globe me-1" style="font-size:.85rem;"></i>{{ fabricante.site }}
                             </a>
-                            {% else %}â€”{% endif %}
+                            {% else %}—{% endif %}
                         </span>
                     </div>
                 </div>
@@ -145,8 +145,8 @@
                         {% for epi in equipamentos %}
                         <tr>
                             <td><a href="{{ epi.get_absolute_url }}">{{ epi.nome }}</a></td>
-                            <td>{{ epi.modelo|default:"â€”" }}</td>
-                            <td><code>{{ epi.certificado_aprovacao|default:"â€”" }}</code></td>
+                            <td>{{ epi.modelo|default:"—" }}</td>
+                            <td><code>{{ epi.certificado_aprovacao|default:"—" }}</code></td>
                             <td>{{ epi.data_cadastro|date:"d/m/Y" }}</td>
                             <td class="text-center">
                                 {% if epi.ativo %}

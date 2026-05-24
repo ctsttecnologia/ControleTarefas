@@ -1,5 +1,5 @@
-﻿
-<!-- Template para listar as inspeÃ§Ãµes propostas automaticamente com base na meia-vida dos EPIs rastreÃ¡veis -->
+
+<!-- Template para listar as inspeções propostas automaticamente com base na meia-vida dos EPIs rastreáveis -->
 {% extends "base.html" %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
@@ -16,11 +16,11 @@
                         <i class="bi bi-bell-fill me-2"></i>{{ titulo_pagina }}
                     </h4>
                     <small class="text-dark opacity-75">
-                        InspeÃ§Ãµes sugeridas automaticamente com base na meia-vida dos EPIs
+                        Inspeções sugeridas automaticamente com base na meia-vida dos EPIs
                     </small>
                 </div>
                 <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-dark">
-                    <i class="bi bi-calendar3 me-1"></i> Ver CalendÃ¡rio
+                    <i class="bi bi-calendar3 me-1"></i> Ver Calendário
                 </a>
             </div>
         </div>
@@ -36,10 +36,10 @@
             </div>
             <h5 class="text-muted">Tudo em dia!</h5>
             <p class="text-muted mb-0">
-                NÃ£o hÃ¡ inspeÃ§Ãµes propostas pendentes de aprovaÃ§Ã£o no momento.
+                Não há inspeções propostas pendentes de aprovação no momento.
             </p>
             <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-primary mt-3">
-                <i class="bi bi-calendar3 me-1"></i> Ir para o CalendÃ¡rio
+                <i class="bi bi-calendar3 me-1"></i> Ir para o Calendário
             </a>
         </div>
     </div>
@@ -49,10 +49,10 @@
     <div class="alert alert-info d-flex align-items-start mb-4">
         <i class="bi bi-info-circle-fill fs-4 me-3"></i>
         <div>
-            <strong>{{ inspecoes_propostas|length }} inspeÃ§Ã£o(Ãµes) proposta(s)</strong>
+            <strong>{{ inspecoes_propostas|length }} inspeção(ões) proposta(s)</strong>
             <br>
             <small>
-                Ao confirmar, vocÃª assume a responsabilidade pela inspeÃ§Ã£o e ela serÃ¡ adicionada ao seu calendÃ¡rio.
+                Ao confirmar, você assume a responsabilidade pela inspeção e ela será adicionada ao seu calendário.
             </small>
         </div>
     </div>
@@ -82,16 +82,16 @@
                             </div>
                         </div>
                         
-                        <!-- Info do FuncionÃ¡rio -->
+                        <!-- Info do Funcionário -->
                         <div class="col-lg-3">
-                            <small class="text-muted d-block">FuncionÃ¡rio</small>
+                            <small class="text-muted d-block">Funcionário</small>
                             <span class="fw-semibold">
                                 <i class="bi bi-person me-1"></i>
                                 {{ inspecao.entrega_epi.ficha.funcionario.nome_completo }}
                             </span>
                         </div>
                         
-                        <!-- Data e AÃ§Ãµes -->
+                        <!-- Data e Ações -->
                         <div class="col-lg-3">
                             <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-lg-end gap-2 mt-3 mt-lg-0">
                                 <div class="text-lg-end me-lg-3">

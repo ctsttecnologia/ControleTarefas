@@ -1,4 +1,4 @@
-﻿{% extends "admin/base_site.html" %}
+{% extends "admin/base_site.html" %}
 {% load i18n %}
 
 {% block content %}
@@ -8,7 +8,7 @@
         
         <h2>{% blocktrans with verbose_name_plural=opts.verbose_name_plural|capfirst %}Alterar a filial dos seguintes {{ verbose_name_plural }}{% endblocktrans %}</h2>
 
-        {# Bloco para exibir erros gerais do formulÃ¡rio #}
+        {# Bloco para exibir erros gerais do formulário #}
         {% if form.non_field_errors %}
             <p class="errornote">
             {% for error in form.non_field_errors %}
@@ -19,7 +19,7 @@
 
         <fieldset class="module aligned">
             <div class="form-row">
-                {# Bloco para exibir erros especÃ­ficos do campo 'filial' #}
+                {# Bloco para exibir erros específicos do campo 'filial' #}
                 {% if form.filial.errors %}
                     <ul class="errorlist">
                     {% for error in form.filial.errors %}
@@ -43,10 +43,10 @@
         {% endfor %}
         </ul>
 
-        {# Bloco para os botÃµes de confirmaÃ§Ã£o e cancelamento #}
+        {# Bloco para os botões de confirmação e cancelamento #}
         <div>
             <input type="hidden" name="post" value="yes">
-            <input type="submit" class="button" value="{% trans 'Confirmar AlteraÃ§Ã£o' %}">
+            <input type="submit" class="button" value="{% trans 'Confirmar Alteração' %}">
             <a href="#" onclick="window.history.back();" class="button cancel-link">{% trans "Cancelar" %}</a>
         </div>
     </form>

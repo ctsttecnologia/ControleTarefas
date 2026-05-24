@@ -1,12 +1,12 @@
-﻿
+
 {% extends "base.html" %}
 {% load static widget_tweaks ata_extras %}
 
-{% block title %}Atas de ReuniÃ£o{% endblock %}
+{% block title %}Atas de Reunião{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* â•â•â• HERO â•â•â• */
+    /* ═══ HERO ═══ */
     .page-hero {
         background: linear-gradient(135deg, #4e73df 0%, #224abe 50%, #1a3a8a 100%);
         border-radius: 1rem;
@@ -30,7 +30,7 @@
     .page-hero h1 { font-weight: 700; font-size: 1.65rem; margin-bottom: 0.25rem; }
     .page-hero p  { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
 
-    /* â•â•â• SEARCH CARD â•â•â• */
+    /* ═══ SEARCH CARD ═══ */
     .search-card { border: none; border-radius: 0.875rem; }
     .filter-bar {
         background: transparent;
@@ -48,7 +48,7 @@
         box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15);
     }
 
-    /* â•â•â• TABLE â•â•â• */
+    /* ═══ TABLE ═══ */
     .data-table { border-collapse: separate; border-spacing: 0; }
     .data-table thead th {
         background: #f8f9fc;
@@ -76,7 +76,7 @@
     .ata-sub { font-size: 0.75rem; color: #a0aec0; }
     .data-table td { word-break: break-word; }
 
-    /* â•â•â• STATUS BADGE â•â•â• */
+    /* ═══ STATUS BADGE ═══ */
     .status-pill {
         display: inline-flex;
         align-items: center;
@@ -96,7 +96,7 @@
     .status-cancelado { background: rgba(133,135,150,0.12); color: #5a5c69; }
     .status-cancelado::before { background: #858796; }
 
-    /* â•â•â• ACTION BUTTONS â•â•â• */
+    /* ═══ ACTION BUTTONS ═══ */
     .btn-action {
         width: 34px;
         height: 34px;
@@ -114,7 +114,7 @@
     .btn-action-edit:hover { border-color: #f6c23e; color: #f6c23e; background: rgba(246,194,62,0.06); }
     .btn-action-danger:hover { border-color: #e74a3b; color: #e74a3b; background: rgba(231,74,59,0.06); }
 
-    /* â•â•â• EMPTY STATE â•â•â• */
+    /* ═══ EMPTY STATE ═══ */
     .empty-state { padding: 4rem 2rem; text-align: center; }
     .empty-state-icon {
         width: 80px; height: 80px; border-radius: 50%;
@@ -126,7 +126,7 @@
     .result-count { font-size: 0.8rem; color: #858796; font-weight: 500; }
     .result-count strong { color: #2d3748; }
 
-    /* â•â•â• PAGINATION â•â•â• */
+    /* ═══ PAGINATION ═══ */
     .pagination-pro .page-link {
         border: none;
         border-radius: 0.5rem;
@@ -144,7 +144,7 @@
         box-shadow: 0 2px 8px rgba(78,115,223,0.3);
     }
 
-    /* â•â•â• DARK MODE â•â•â• */
+    /* ═══ DARK MODE ═══ */
     [data-bs-theme="dark"] .page-hero { background: linear-gradient(135deg, #224abe, #1a2d6d); }
     [data-bs-theme="dark"] .filter-bar { border-bottom-color: rgba(255,255,255,0.06); }
     [data-bs-theme="dark"] .filter-bar .form-select { border-color: #2d3748; }
@@ -165,12 +165,12 @@
 
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- â•â•â• HERO â•â•â• -->
+    <!-- ═══ HERO ═══ -->
     <div class="page-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
-                <h1><i class="bi bi-journal-text me-2"></i>Atas de ReuniÃ£o</h1>
-                <p>Gerencie todas as atas, aÃ§Ãµes e responsÃ¡veis</p>
+                <h1><i class="bi bi-journal-text me-2"></i>Atas de Reunião</h1>
+                <p>Gerencie todas as atas, ações e responsáveis</p>
             </div>
             <div class="d-flex gap-2 no-print">
                 {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
@@ -192,7 +192,7 @@
         </div>
     </div>
 
-    <!-- â•â•â• TABLE CARD â•â•â• -->
+    <!-- ═══ TABLE CARD ═══ -->
     <div class="card search-card shadow-sm">
         <!-- Filtros -->
         <div class="filter-bar no-print">
@@ -258,15 +258,15 @@
                     <thead>
                         <tr>
                             <th style="width: 60px;">ID</th>
-                            <th style="min-width: 200px;">TÃ­tulo</th>
+                            <th style="min-width: 200px;">Título</th>
                             <th>Contrato</th>
                             <th>Coordenador</th>
                             <th>Natureza</th>
-                            <th>ResponsÃ¡vel</th>
+                            <th>Responsável</th>
                             <th>Entrada</th>
                             <th>Prazo</th>
                             <th class="text-center">Status</th>
-                            <th class="text-end pe-4" style="width: 120px;">AÃ§Ãµes</th>
+                            <th class="text-end pe-4" style="width: 120px;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -307,7 +307,7 @@
                                     {{ ata.prazo|date:"d/m/Y" }}
                                 </small>
                                 {% else %}
-                                <span class="text-muted">â€”</span>
+                                <span class="text-muted">—</span>
                                 {% endif %}
                             </td>
                             <td class="text-center">
@@ -350,7 +350,7 @@
                                         {% if current_status or current_contrato or current_coordenador %}
                                         Nenhum resultado para os filtros aplicados.
                                         {% else %}
-                                        Comece criando a primeira ata de reuniÃ£o.
+                                        Comece criando a primeira ata de reunião.
                                         {% endif %}
                                     </p>
                                     <div class="d-flex justify-content-center gap-2">
@@ -377,7 +377,7 @@
         <!-- Pagination -->
         {% if is_paginated %}
         <div class="card-footer bg-transparent border-0 px-4 py-3">
-            <nav aria-label="PaginaÃ§Ã£o">
+            <nav aria-label="Paginação">
                 <ul class="pagination pagination-pro justify-content-center mb-0">
                     {% if page_obj.has_previous %}
                     <li class="page-item">
@@ -425,7 +425,7 @@
                 </ul>
                 <div class="text-center mt-2">
                     <small class="text-muted">
-                        PÃ¡gina <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
+                        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
                     </small>
                 </div>
             </nav>

@@ -1,19 +1,19 @@
-﻿
+
 {% extends "ltcat/base_ltcat.html" %}
 
-{% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} FunÃ§Ã£o - LTCAT{% endblock %}
+{% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Função - LTCAT{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_list' %}">Laudos</a></li>
 <li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}">{{ ltcat.codigo_documento }}</a></li>
-<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} FunÃ§Ã£o</li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Função</li>
 {% endblock %}
 
 {% block ltcat_content %}
 <div class="row justify-content-center">
     <div class="col-xl-9 col-lg-10">
 
-        {# â”€â”€ Card Principal â”€â”€ #}
+        {# ── Card Principal ── #}
         <div class="card shadow-sm border-0">
             <div class="card-header border-0 py-3"
                  style="background: linear-gradient(135deg, var(--ltcat-primary, #0d9488), var(--ltcat-secondary, #0f766e));">
@@ -24,22 +24,22 @@
                     </div>
                     <div class="min-w-0">
                         <h5 class="mb-0 text-white fw-bold">
-                            {% if form.instance.pk %}Editar FunÃ§Ã£o Analisada{% else %}Nova FunÃ§Ã£o Analisada{% endif %}
+                            {% if form.instance.pk %}Editar Função Analisada{% else %}Nova Função Analisada{% endif %}
                         </h5>
                         <small class="text-white-50 text-truncate d-block">
-                            {{ ltcat.codigo_documento }} â€” {{ ltcat.empresa.razao_social }}
+                            {{ ltcat.codigo_documento }} — {{ ltcat.empresa.razao_social }}
                         </small>
                     </div>
                 </div>
             </div>
 
             <div class="card-body p-lg-4 p-3">
-                {# â”€â”€ Alerta Contextual â”€â”€ #}
+                {# ── Alerta Contextual ── #}
                 <div class="alert border-0 py-2 mb-4"
                      style="background: var(--bs-info-bg-subtle, #cff4fc); color: var(--bs-info-text-emphasis, #055160);">
                     <i class="fas fa-info-circle me-2"></i>
                     <small>
-                        Selecione um <strong>Cargo</strong> ou <strong>FunÃ§Ã£o</strong> para preencher automaticamente
+                        Selecione um <strong>Cargo</strong> ou <strong>Função</strong> para preencher automaticamente
                         o nome e CBO, ou digite manualmente nos campos abaixo.
                     </small>
                 </div>
@@ -47,7 +47,7 @@
                 <form method="post" novalidate id="formFuncao">
                     {% csrf_token %}
 
-                    {# â”€â”€ Erros Globais â”€â”€ #}
+                    {# ── Erros Globais ── #}
                     {% if form.non_field_errors %}
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="fas fa-exclamation-circle me-2"></i>
@@ -58,14 +58,14 @@
                     </div>
                     {% endif %}
 
-                    {# â•â•â•â•â•â•â•â•â•â•â• SEÃ‡ÃƒO: SELECIONAR CARGO / FUNÃ‡ÃƒO â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ═══════════ SEÇÃO: SELECIONAR CARGO / FUNÇÃO ═══════════ #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-search me-2"></i>Vincular Cargo / FunÃ§Ã£o Existente
+                            <i class="fas fa-search me-2"></i>Vincular Cargo / Função Existente
                         </legend>
 
                         <div class="row g-3">
-                            {# â”€â”€ Select Cargo â”€â”€ #}
+                            {# ── Select Cargo ── #}
                             <div class="col-md-6">
                                 <label for="{{ form.cargo.id_for_label }}" class="form-label fw-semibold">
                                     <i class="fas fa-briefcase me-1 text-primary"></i>
@@ -74,7 +74,7 @@
                                 {{ form.cargo }}
                                 <div class="form-text">
                                     <i class="fas fa-magic me-1"></i>
-                                    Preenche <strong>Nome da FunÃ§Ã£o</strong> e <strong>CBO</strong> automaticamente.
+                                    Preenche <strong>Nome da Função</strong> e <strong>CBO</strong> automaticamente.
                                 </div>
                                 {% for error in form.cargo.errors %}
                                 <div class="invalid-feedback d-block">
@@ -83,7 +83,7 @@
                                 {% endfor %}
                             </div>
 
-                            {# â”€â”€ Select FunÃ§Ã£o ST â”€â”€ #}
+                            {# ── Select Função ST ── #}
                             <div class="col-md-6">
                                 <label for="{{ form.funcao_st.id_for_label }}" class="form-label fw-semibold">
                                     <i class="fas fa-hard-hat me-1 text-warning"></i>
@@ -92,7 +92,7 @@
                                 {{ form.funcao_st }}
                                 <div class="form-text">
                                     <i class="fas fa-magic me-1"></i>
-                                    Preenche <strong>Nome da FunÃ§Ã£o</strong> automaticamente.
+                                    Preenche <strong>Nome da Função</strong> automaticamente.
                                 </div>
                                 {% for error in form.funcao_st.errors %}
                                 <div class="invalid-feedback d-block">
@@ -102,17 +102,17 @@
                             </div>
                         </div>
 
-                        {# â”€â”€ Indicador visual de preenchimento automÃ¡tico â”€â”€ #}
+                        {# ── Indicador visual de preenchimento automático ── #}
                         <div id="autoFillAlert" class="alert alert-success border-0 py-2 mt-3 d-none">
                             <i class="fas fa-check-circle me-2"></i>
-                            <small><strong>Campos preenchidos automaticamente!</strong> VocÃª pode editar os valores abaixo se necessÃ¡rio.</small>
+                            <small><strong>Campos preenchidos automaticamente!</strong> Você pode editar os valores abaixo se necessário.</small>
                         </div>
                     </fieldset>
 
-                    {# â•â•â•â•â•â•â•â•â•â•â• SEÃ‡ÃƒO: IDENTIFICAÃ‡ÃƒO DA FUNÃ‡ÃƒO â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ═══════════ SEÇÃO: IDENTIFICAÇÃO DA FUNÇÃO ═══════════ #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-id-card me-2"></i>IdentificaÃ§Ã£o da FunÃ§Ã£o
+                            <i class="fas fa-id-card me-2"></i>Identificação da Função
                         </legend>
                         <div class="row g-3">
                             <div class="col-md-7">
@@ -149,7 +149,7 @@
                                     </span>
                                 </div>
                                 <div class="form-text">
-                                    CÃ³digo Brasileiro de OcupaÃ§Ãµes. Ex: <code>911205</code>
+                                    Código Brasileiro de Ocupações. Ex: <code>911205</code>
                                 </div>
                                 {% for error in form.cbo.errors %}
                                 <div class="invalid-feedback d-block">
@@ -160,10 +160,10 @@
                         </div>
                     </fieldset>
 
-                    {# â•â•â•â•â•â•â•â•â•â•â• SEÃ‡ÃƒO: CLASSIFICAÃ‡ÃƒO â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ═══════════ SEÇÃO: CLASSIFICAÇÃO ═══════════ #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-sitemap me-2"></i>ClassificaÃ§Ã£o / GHE
+                            <i class="fas fa-sitemap me-2"></i>Classificação / GHE
                         </legend>
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -172,7 +172,7 @@
                                 </label>
                                 {{ form.ghe }}
                                 <div class="form-text">
-                                    Grupo HomogÃªneo de ExposiÃ§Ã£o. Ex: <em>Coordenador</em>, <em>TÃ©cnico MecÃ¢nico de RefrigeraÃ§Ã£o</em>
+                                    Grupo Homogêneo de Exposição. Ex: <em>Coordenador</em>, <em>Técnico Mecânico de Refrigeração</em>
                                 </div>
                                 {% for error in form.ghe.errors %}
                                 <div class="invalid-feedback d-block">
@@ -186,7 +186,7 @@
                                 </label>
                                 {{ form.departamento }}
                                 <div class="form-text">
-                                    Ex: <em>ManutenÃ§Ã£o</em>
+                                    Ex: <em>Manutenção</em>
                                 </div>
                                 {% for error in form.departamento.errors %}
                                 <div class="invalid-feedback d-block">
@@ -197,11 +197,11 @@
                         </div>
                     </fieldset>
 
-                    {# â•â•â•â•â•â•â•â•â•â•â• SEÃ‡ÃƒO: LOCAL â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ═══════════ SEÇÃO: LOCAL ═══════════ #}
                     {% if form.local_prestacao %}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-map-marker-alt me-2"></i>Local de PrestaÃ§Ã£o
+                            <i class="fas fa-map-marker-alt me-2"></i>Local de Prestação
                         </legend>
                         <label for="{{ form.local_prestacao.id_for_label }}" class="form-label fw-semibold">
                             {{ form.local_prestacao.label }}
@@ -218,10 +218,10 @@
                     </fieldset>
                     {% endif %}
 
-                    {# â•â•â•â•â•â•â•â•â•â•â• SEÃ‡ÃƒO: ATIVIDADES â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ═══════════ SEÇÃO: ATIVIDADES ═══════════ #}
                     <fieldset class="mb-4">
                         <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-clipboard-list me-2"></i>DescriÃ§Ã£o das Atividades
+                            <i class="fas fa-clipboard-list me-2"></i>Descrição das Atividades
                         </legend>
                         <label for="{{ form.descricao_atividades.id_for_label }}" class="form-label fw-semibold">
                             {{ form.descricao_atividades.label }}
@@ -229,7 +229,7 @@
                         </label>
                         {{ form.descricao_atividades }}
                         <div class="form-text">
-                            Descreva detalhadamente as atividades da funÃ§Ã£o conforme a SeÃ§Ã£o 6 do LTCAT.
+                            Descreva detalhadamente as atividades da função conforme a Seção 6 do LTCAT.
                         </div>
                         {% for error in form.descricao_atividades.errors %}
                         <div class="invalid-feedback d-block">
@@ -238,14 +238,14 @@
                         {% endfor %}
                     </fieldset>
 
-                    {# â•â•â•â•â•â•â•â•â•â•â• BOTÃ•ES â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ═══════════ BOTÕES ═══════════ #}
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
                         <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}" class="btn btn-outline-secondary order-2 order-sm-1">
                             <i class="fas fa-arrow-left me-1"></i> Voltar ao Documento
                         </a>
                         <button type="submit" class="btn btn-primary px-4 order-1 order-sm-2">
                             <i class="fas fa-save me-1"></i>
-                            {% if form.instance.pk %}Atualizar FunÃ§Ã£o{% else %}Cadastrar FunÃ§Ã£o{% endif %}
+                            {% if form.instance.pk %}Atualizar Função{% else %}Cadastrar Função{% endif %}
                         </button>
                     </div>
                 </form>
@@ -259,9 +259,9 @@
 {% block ltcat_extra_js %}
 <script>
 (function() {
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════════
     // Elementos do DOM
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════════
     const selCargo    = document.getElementById('id_cargo');
     const selFuncaoST = document.getElementById('id_funcao_st');
     const inpNome     = document.getElementById('id_nome_funcao');
@@ -270,9 +270,9 @@
     const alertAuto   = document.getElementById('autoFillAlert');
     const autofillIcons = document.querySelectorAll('.autofill-icon');
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════════
     // Helpers
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════════
     function showAutoFillFeedback() {
         if (alertAuto) {
             alertAuto.classList.remove('d-none');
@@ -291,9 +291,9 @@
         setTimeout(() => { el.style.backgroundColor = ''; }, 2000);
     }
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // Ao selecionar CARGO â†’ preenche nome_funcao + cbo
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════════
+    // Ao selecionar CARGO → preenche nome_funcao + cbo
+    // ═══════════════════════════════════════════════════════════
     if (selCargo) {
         selCargo.addEventListener('change', function() {
             const cargoId = this.value;
@@ -307,7 +307,7 @@
                         return;
                     }
 
-                    // Preenche Nome da FunÃ§Ã£o
+                    // Preenche Nome da Função
                     if (inpNome && data.nome) {
                         inpNome.value = data.nome;
                         highlightField(inpNome);
@@ -319,7 +319,7 @@
                         highlightField(inpCBO);
                     }
 
-                    // Preenche DescriÃ§Ã£o (se vazia e cargo tem descriÃ§Ã£o)
+                    // Preenche Descrição (se vazia e cargo tem descrição)
                     if (inpDescAtiv && !inpDescAtiv.value.trim() && data.descricao) {
                         inpDescAtiv.value = data.descricao;
                         highlightField(inpDescAtiv);
@@ -331,9 +331,9 @@
         });
     }
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // Ao selecionar FUNÃ‡ÃƒO ST â†’ preenche nome_funcao
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ═══════════════════════════════════════════════════════════
+    // Ao selecionar FUNÇÃO ST → preenche nome_funcao
+    // ═══════════════════════════════════════════════════════════
     if (selFuncaoST) {
         selFuncaoST.addEventListener('change', function() {
             const funcaoId = this.value;
@@ -343,17 +343,17 @@
                 .then(r => r.json())
                 .then(data => {
                     if (data.error) {
-                        console.warn('FunÃ§Ã£o info error:', data.error);
+                        console.warn('Função info error:', data.error);
                         return;
                     }
 
-                    // Preenche Nome da FunÃ§Ã£o
+                    // Preenche Nome da Função
                     if (inpNome && data.nome) {
                         inpNome.value = data.nome;
                         highlightField(inpNome);
                     }
 
-                    // Preenche DescriÃ§Ã£o (se vazia e funÃ§Ã£o tem descriÃ§Ã£o)
+                    // Preenche Descrição (se vazia e função tem descrição)
                     if (inpDescAtiv && !inpDescAtiv.value.trim() && data.descricao) {
                         inpDescAtiv.value = data.descricao;
                         highlightField(inpDescAtiv);
@@ -361,7 +361,7 @@
 
                     showAutoFillFeedback();
                 })
-                .catch(err => console.error('Erro ao buscar funÃ§Ã£o:', err));
+                .catch(err => console.error('Erro ao buscar função:', err));
         });
     }
 

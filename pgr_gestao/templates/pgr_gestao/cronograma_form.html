@@ -1,9 +1,9 @@
-﻿{# Cronograma de AÃ§Ãµes - FormulÃ¡rio de CriaÃ§Ã£o/EdiÃ§Ã£o #}
+{# Cronograma de Ações - Formulário de Criação/Edição #}
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 {% load widget_tweaks %}
 
-{% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} AÃ§Ã£o do Cronograma{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Ação do Cronograma{% endblock %}
 
 {% block breadcrumb_items %}
 {% if pgr_documento %}
@@ -14,7 +14,7 @@
 {% else %}
 <li class="breadcrumb-item"><a href="{% url 'pgr_gestao:cronograma_list' %}">Cronograma</a></li>
 {% endif %}
-<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} AÃ§Ã£o</li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Ação</li>
 {% endblock %}
 
 {% block pgr_content %}
@@ -23,14 +23,14 @@
         <div>
             <h1>
                 <i class="bi bi-calendar-event-fill"></i>
-                {% if form.instance.pk %}Editar{% else %}Nova{% endif %} AÃ§Ã£o do Cronograma
+                {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Ação do Cronograma
             </h1>
             {% if pgr_documento %}
             <p class="mb-0">
                 Documento: <strong>{{ pgr_documento.codigo_documento }}</strong>
             </p>
             {% else %}
-            <p class="mb-0">ProgramaÃ§Ã£o de atividade do PGR</p>
+            <p class="mb-0">Programação de atividade do PGR</p>
             {% endif %}
         </div>
         <a href="{% url 'pgr_gestao:cronograma_list' %}" class="btn btn-light">
@@ -41,7 +41,7 @@
 
 <div class="card">
     <div class="card-header bg-primary text-white">
-        <i class="bi bi-pencil-square"></i> Dados da AÃ§Ã£o
+        <i class="bi bi-pencil-square"></i> Dados da Ação
     </div>
     <div class="card-body">
         <form method="post" novalidate>
@@ -62,9 +62,9 @@
             </div>
             {% endif %}
 
-            <!-- IdentificaÃ§Ã£o -->
+            <!-- Identificação -->
             <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                <i class="bi bi-card-heading"></i> IdentificaÃ§Ã£o
+                <i class="bi bi-card-heading"></i> Identificação
             </h6>
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
@@ -78,7 +78,7 @@
                 </div>
                 <div class="col-md-3">
                     <label for="{{ form.numero_item.id_for_label }}" class="form-label fw-semibold required-field">
-                        Item NÂº
+                        Item Nº
                     </label>
                     {% render_field form.numero_item class="form-control" type="number" min="1" %}
                     {% if form.numero_item.errors %}
@@ -94,15 +94,15 @@
                 </div>
             </div>
 
-            <!-- AÃ§Ã£o -->
+            <!-- Ação -->
             <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                <i class="bi bi-card-text"></i> Detalhes da AÃ§Ã£o
+                <i class="bi bi-card-text"></i> Detalhes da Ação
             </h6>
             <div class="mb-3">
                 <label for="{{ form.acao_necessaria.id_for_label }}" class="form-label fw-semibold required-field">
-                    AÃ§Ã£o NecessÃ¡ria
+                    Ação Necessária
                 </label>
-                {% render_field form.acao_necessaria class="form-control" rows="3" placeholder="Descreva a aÃ§Ã£o que precisa ser realizada..." %}
+                {% render_field form.acao_necessaria class="form-control" rows="3" placeholder="Descreva a ação que precisa ser realizada..." %}
                 {% if form.acao_necessaria.errors %}
                 <div class="text-danger small mt-1">{{ form.acao_necessaria.errors }}</div>
                 {% endif %}
@@ -111,7 +111,7 @@
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <label for="{{ form.publico_alvo.id_for_label }}" class="form-label fw-semibold">
-                        PÃºblico Alvo
+                        Público Alvo
                     </label>
                     {% render_field form.publico_alvo class="form-control" placeholder="Ex: Todos os colaboradores" %}
                     {% if form.publico_alvo.errors %}
@@ -129,23 +129,23 @@
                 </div>
             </div>
 
-            <!-- ResponsÃ¡vel e Datas -->
+            <!-- Responsável e Datas -->
             <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                <i class="bi bi-person-badge"></i> ResponsÃ¡vel e Prazos
+                <i class="bi bi-person-badge"></i> Responsável e Prazos
             </h6>
             <div class="row g-3 mb-4">
                 <div class="col-md-4">
                     <label for="{{ form.responsavel.id_for_label }}" class="form-label fw-semibold">
-                        ResponsÃ¡vel
+                        Responsável
                     </label>
-                    {% render_field form.responsavel class="form-control" placeholder="Nome do responsÃ¡vel" %}
+                    {% render_field form.responsavel class="form-control" placeholder="Nome do responsável" %}
                     {% if form.responsavel.errors %}
                     <div class="text-danger small mt-1">{{ form.responsavel.errors }}</div>
                     {% endif %}
                 </div>
                 <div class="col-md-4">
                     <label for="{{ form.data_proxima_avaliacao.id_for_label }}" class="form-label fw-semibold">
-                        PrÃ³xima AvaliaÃ§Ã£o
+                        Próxima Avaliação
                     </label>
                     {% render_field form.data_proxima_avaliacao class="form-control" type="date" %}
                     {% if form.data_proxima_avaliacao.errors %}
@@ -154,22 +154,22 @@
                 </div>
                 <div class="col-md-4">
                     <label for="{{ form.data_realizacao.id_for_label }}" class="form-label fw-semibold">
-                        Data RealizaÃ§Ã£o
+                        Data Realização
                     </label>
                     {% render_field form.data_realizacao class="form-control" type="date" %}
                     {% if form.data_realizacao.errors %}
                     <div class="text-danger small mt-1">{{ form.data_realizacao.errors }}</div>
                     {% endif %}
-                    <small class="text-muted">Preencher quando concluÃ­do</small>
+                    <small class="text-muted">Preencher quando concluído</small>
                 </div>
             </div>
 
-            <!-- ObservaÃ§Ãµes -->
+            <!-- Observações -->
             <div class="mb-4">
                 <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">
-                    ObservaÃ§Ãµes
+                    Observações
                 </label>
-                {% render_field form.observacoes class="form-control" rows="3" placeholder="InformaÃ§Ãµes adicionais..." %}
+                {% render_field form.observacoes class="form-control" rows="3" placeholder="Informações adicionais..." %}
                 {% if form.observacoes.errors %}
                 <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
                 {% endif %}

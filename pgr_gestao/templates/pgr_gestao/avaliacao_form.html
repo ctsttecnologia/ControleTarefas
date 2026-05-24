@@ -1,12 +1,12 @@
-﻿    {# AvaliaÃ§Ã£o Quantitativa - FormulÃ¡rio de CriaÃ§Ã£o/EdiÃ§Ã£o (Final) #}
+    {# Avaliação Quantitativa - Formulário de Criação/Edição (Final) #}
     {% extends 'pgr_gestao/pgr_base.html' %}
     {% load static %}
     {% load widget_tweaks %}
 
-    {% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} AvaliaÃ§Ã£o Quantitativa{% endblock %}
+    {% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação Quantitativa{% endblock %}
 
     {% block breadcrumb_items %}
-    <li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">AvaliaÃ§Ãµes</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">Avaliações</a></li>
     {% if risco %}
     <li class="breadcrumb-item">
         <a href="{{ risco.get_absolute_url }}">{{ risco.codigo_risco|default:risco.agente }}</a>
@@ -21,7 +21,7 @@
             <div>
                 <h1>
                     <i class="bi bi-graph-up-arrow"></i>
-                    {% if form.instance.pk %}Editar{% else %}Nova{% endif %} AvaliaÃ§Ã£o Quantitativa
+                    {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação Quantitativa
                 </h1>
                 <p class="mb-0">
                     {% if risco %}
@@ -30,7 +30,7 @@
                     {% elif form.instance.pk and form.instance.risco_identificado %}
                     Para o risco: <strong>{{ form.instance.risco_identificado }}</strong>
                     {% else %}
-                    Registro de mediÃ§Ã£o e avaliaÃ§Ã£o de risco
+                    Registro de medição e avaliação de risco
                     {% endif %}
                 </p>
             </div>
@@ -42,7 +42,7 @@
 
     <div class="card">
         <div class="card-header bg-primary text-white">
-            <i class="bi bi-pencil-square"></i> FormulÃ¡rio de AvaliaÃ§Ã£o
+            <i class="bi bi-pencil-square"></i> Formulário de Avaliação
         </div>
         <div class="card-body">
             <form method="post">
@@ -55,11 +55,11 @@
                 </div>
                 {% endif %}
 
-                <!-- â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â” -->
-                <!-- IDENTIFICAÃ‡ÃƒO                              -->
-                <!-- â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â” -->
+                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+                <!-- IDENTIFICAÇÃO                              -->
+                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
                 <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                    <i class="bi bi-card-heading"></i> IdentificaÃ§Ã£o
+                    <i class="bi bi-card-heading"></i> Identificação
                 </h6>
                 <div class="row g-3 mb-4">
                     <!-- Risco Identificado -->
@@ -72,7 +72,7 @@
                             value="{{ risco.tipo_risco.nome }} - {{ risco.agente }}" disabled>
                         <input type="hidden" name="{{ form.risco_identificado.html_name }}" value="{{ risco.pk }}">
                         <small class="text-muted">
-                            <i class="bi bi-lock-fill"></i> Risco prÃ©-selecionado
+                            <i class="bi bi-lock-fill"></i> Risco pré-selecionado
                         </small>
                         {% else %}
                         {% render_field form.risco_identificado class="form-select" %}
@@ -82,10 +82,10 @@
                         {% endif %}
                     </div>
 
-                    <!-- Tipo de AvaliaÃ§Ã£o -->
+                    <!-- Tipo de Avaliação -->
                     <div class="col-md-3">
                         <label for="{{ form.tipo_avaliacao.id_for_label }}" class="form-label fw-semibold required-field">
-                            Tipo de AvaliaÃ§Ã£o
+                            Tipo de Avaliação
                         </label>
                         {% render_field form.tipo_avaliacao class="form-select" %}
                         {% if form.tipo_avaliacao.errors %}
@@ -93,10 +93,10 @@
                         {% endif %}
                     </div>
 
-                    <!-- Data da AvaliaÃ§Ã£o -->
+                    <!-- Data da Avaliação -->
                     <div class="col-md-3">
                         <label for="{{ form.data_avaliacao.id_for_label }}" class="form-label fw-semibold required-field">
-                            Data da AvaliaÃ§Ã£o
+                            Data da Avaliação
                         </label>
                         {% render_field form.data_avaliacao class="form-control" %}
                         {% if form.data_avaliacao.errors %}
@@ -105,11 +105,11 @@
                     </div>
                 </div>
 
-                <!-- â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â” -->
-                <!-- MEDIÃ‡ÃƒO                                     -->
-                <!-- â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â” -->
+                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+                <!-- MEDIÇÃO                                     -->
+                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
                 <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                    <i class="bi bi-rulers"></i> MediÃ§Ã£o
+                    <i class="bi bi-rulers"></i> Medição
                 </h6>
                 <div class="row g-3 mb-4">
                     <!-- Resultado + Unidade -->
@@ -129,10 +129,10 @@
                         {% endif %}
                     </div>
 
-                    <!-- Limite de TolerÃ¢ncia -->
+                    <!-- Limite de Tolerância -->
                     <div class="col-md-4">
                         <label for="{{ form.limite_tolerancia_nr.id_for_label }}" class="form-label fw-semibold">
-                            Limite de TolerÃ¢ncia (NR)
+                            Limite de Tolerância (NR)
                         </label>
                         {% render_field form.limite_tolerancia_nr class="form-control" %}
                         {% if form.limite_tolerancia_nr.errors %}
@@ -146,7 +146,7 @@
                         <div class="form-check form-switch mt-2">
                             {% render_field form.conforme class="form-check-input" role="switch" %}
                             <label class="form-check-label" for="{{ form.conforme.id_for_label }}">
-                                EstÃ¡ conforme?
+                                Está conforme?
                             </label>
                         </div>
                         {% if form.conforme.errors %}
@@ -155,9 +155,9 @@
                     </div>
                 </div>
 
-                <!-- â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â” -->
+                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
                 <!-- METODOLOGIA E EQUIPAMENTO                   -->
-                <!-- â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â” -->
+                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
                 <h6 class="text-muted text-uppercase fw-bold small mb-3">
                     <i class="bi bi-tools"></i> Metodologia e Equipamento
                 </h6>
@@ -185,10 +185,10 @@
                         {% endif %}
                     </div>
 
-                    <!-- ResponsÃ¡vel pela AvaliaÃ§Ã£o -->
+                    <!-- Responsável pela Avaliação -->
                     <div class="col-md-5">
                         <label for="{{ form.responsavel_avaliacao.id_for_label }}" class="form-label fw-semibold">
-                            <i class="bi bi-person-badge"></i> ResponsÃ¡vel pela AvaliaÃ§Ã£o
+                            <i class="bi bi-person-badge"></i> Responsável pela Avaliação
                         </label>
                         {% render_field form.responsavel_avaliacao class="form-control" placeholder="Nome do profissional habilitado" %}
                         {% if form.responsavel_avaliacao.errors %}
@@ -197,12 +197,12 @@
                     </div>
                 </div>
 
-                <!-- OBSERVAÃ‡Ã•ES -->
+                <!-- OBSERVAÇÕES -->
                 <div class="mb-4">
                     <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">
-                        <i class="bi bi-chat-left-text"></i> ObservaÃ§Ãµes
+                        <i class="bi bi-chat-left-text"></i> Observações
                     </label>
-                    {% render_field form.observacoes class="form-control" rows="3" placeholder="Detalhes sobre a mediÃ§Ã£o, condiÃ§Ãµes do ambiente, etc." %}
+                    {% render_field form.observacoes class="form-control" rows="3" placeholder="Detalhes sobre a medição, condições do ambiente, etc." %}
                     {% if form.observacoes.errors %}
                     <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
                     {% endif %}
@@ -210,7 +210,7 @@
 
                 <hr>
 
-                <!-- BotÃµes -->
+                <!-- Botões -->
                 <div class="d-flex justify-content-between flex-wrap gap-2">
                     {% if risco %}
                     <a href="{{ risco.get_absolute_url }}" class="btn btn-outline-secondary">
@@ -228,7 +228,7 @@
 
                     <button type="submit" class="btn btn-primary btn-lg">
                         <i class="bi bi-save"></i>
-                        {% if form.instance.pk %}Salvar AlteraÃ§Ãµes{% else %}Salvar AvaliaÃ§Ã£o{% endif %}
+                        {% if form.instance.pk %}Salvar Alterações{% else %}Salvar Avaliação{% endif %}
                     </button>
                 </div>
             </form>

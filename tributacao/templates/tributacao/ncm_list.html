@@ -1,10 +1,10 @@
-﻿{% extends "tributacao/base_tributacao.html" %}
+{% extends "tributacao/base_tributacao.html" %}
 
 {% block title %}NCMs{% endblock %}
 
 {% block tributacao_content %}
 <div class="container-fluid py-4">
-    <!-- CabeÃ§alho -->
+    <!-- Cabeçalho -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3><i class="bi bi-upc-scan"></i> NCMs</h3>
         {% if pode_gerenciar %}
@@ -18,7 +18,7 @@
     <form method="get" class="mb-3">
         <div class="input-group">
             <input type="text" name="q" value="{{ q }}" class="form-control"
-                   placeholder="Buscar por cÃ³digo ou descriÃ§Ã£o...">
+                   placeholder="Buscar por código ou descrição...">
             <button class="btn btn-outline-secondary" type="submit">
                 <i class="bi bi-search"></i> Buscar
             </button>
@@ -30,12 +30,12 @@
         <table class="table table-striped table-hover">
             <thead class="table-dark">
                 <tr>
-                    <th>CÃ³digo</th>
-                    <th>DescriÃ§Ã£o</th>
+                    <th>Código</th>
+                    <th>Descrição</th>
                     <th>EX TIPI</th>
-                    <th>IPI PadrÃ£o</th>
+                    <th>IPI Padrão</th>
                     <th>Ativo</th>
-                    <th class="text-end">AÃ§Ãµes</th>
+                    <th class="text-end">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,7 +43,7 @@
                     <tr>
                         <td><code>{{ ncm.codigo }}</code></td>
                         <td>{{ ncm.descricao }}</td>
-                        <td>{{ ncm.ex_tipi|default:"â€”" }}</td>
+                        <td>{{ ncm.ex_tipi|default:"—" }}</td>
                         <td>{{ ncm.aliquota_ipi_padrao }}%</td>
                         <td>
                             {% if ncm.ativo %}
@@ -53,7 +53,7 @@
                             {% endif %}
                         </td>
                         <td class="text-end">
-                            {# ðŸ”¥ AÃ‡Ã•ES POR LINHA â€” aqui ncm.pk existe! #}
+                            {# 🔥 AÇÕES POR LINHA — aqui ncm.pk existe! #}
                             {% if pode_gerenciar %}
                                 <a href="{% url 'tributacao:ncm_update' ncm.pk %}"
                                    class="btn btn-sm btn-warning" title="Editar">

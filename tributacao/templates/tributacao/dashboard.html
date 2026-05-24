@@ -1,13 +1,13 @@
-﻿
+
 <!-- templates/tributacao/dashboard.html -->
 {% extends "tributacao/base_tributacao.html" %}
 
-{% block title %}TributaÃ§Ã£o â€” Dashboard{% endblock %}
+{% block title %}Tributação — Dashboard{% endblock %}
 
 {% block tributacao_content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-calculator"></i> TributaÃ§Ã£o</h2>
+        <h2><i class="bi bi-calculator"></i> Tributação</h2>
     </div>
 
     <!-- Cards resumo -->
@@ -61,7 +61,7 @@
             <div class="card border-warning h-100">
                 <div class="card-body text-center">
                     <h3 class="text-warning mb-1">{{ total_grupos }}</h3>
-                    <small class="text-muted">Grupos TributÃ¡rios</small>
+                    <small class="text-muted">Grupos Tributários</small>
                 </div>
                 <div class="card-footer bg-transparent text-center">
                     {% if perms.tributacao.view_grupo or user.is.superuser %}
@@ -74,17 +74,17 @@
         </div>
     </div>
 
-    <!-- Atalhos rÃ¡pidos -->
+    <!-- Atalhos rápidos -->
     <div class="card mb-4">
         <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-lightning"></i> AÃ§Ãµes RÃ¡pidas</h5>
+            <h5 class="mb-0"><i class="bi bi-lightning"></i> Ações Rápidas</h5>
         </div>
         <div class="card-body">
             <div class="row g-2">
                 <div class="col-md-3">
                     {% if perms.tributacao.add_grupo_tributario or user.is.superuser %}
-                    <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-primary w-100" title="Novo Grupo TributÃ¡rio">
-                        <i class="bi bi-plus-circle"></i> Novo Grupo TributÃ¡rio
+                    <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-primary w-100" title="Novo Grupo Tributário">
+                        <i class="bi bi-plus-circle"></i> Novo Grupo Tributário
                     </a>
                     {% endif %}
                 </div>
@@ -97,14 +97,14 @@
                 </div>
                 <div class="col-md-3">
                     {% if perms.tributacao.add_cfop or user.is.superuser %}
-                    <a href="{% url 'tributacao:cfop_create' %}" class="btn btn-outline-success w-100" title="CÃ³digo Fiscal de OperaÃ§Ãµes">
+                    <a href="{% url 'tributacao:cfop_create' %}" class="btn btn-outline-success w-100" title="Código Fiscal de Operações">
                         <i class="bi bi-plus"></i> Novo CFOP
                     </a>
                     {% endif %}
                 </div>
                 <div class="col-md-3">
                     {% if perms.tributacao.add_cst or user.is.superuser %}
-                    <a href="{% url 'tributacao:cst_create' %}" class="btn btn-outline-info w-100" title="CÃ³digo de SituaÃ§Ã£o TributÃ¡ria">
+                    <a href="{% url 'tributacao:cst_create' %}" class="btn btn-outline-info w-100" title="Código de Situação Tributária">
                         <i class="bi bi-plus"></i> Novo CST
                     </a>
                     {% endif %}
@@ -116,15 +116,15 @@
         <!-- Guia: Como funciona -->
     <div class="card border-0 shadow-sm">
         <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-info-circle text-primary"></i> Como funciona a TributaÃ§Ã£o</h5>
+            <h5 class="mb-0"><i class="bi bi-info-circle text-primary"></i> Como funciona a Tributação</h5>
         </div>
         <div class="card-body">
 
             <!-- Contexto -->
             <div class="trib-alerta mb-4">
                 <i class="bi bi-building me-1"></i>
-                <strong>Foco:</strong> Controlar a tributaÃ§Ã£o sobre <strong>compras de materiais e suprimentos</strong>
-                para ter uma visÃ£o precisa dos custos reais de aquisiÃ§Ã£o, incluindo impostos recuperÃ¡veis e nÃ£o recuperÃ¡veis.
+                <strong>Foco:</strong> Controlar a tributação sobre <strong>compras de materiais e suprimentos</strong>
+                para ter uma visão precisa dos custos reais de aquisição, incluindo impostos recuperáveis e não recuperáveis.
             </div>
             <div class="trib-exemplo-bg">
             <!-- Fluxo visual -->
@@ -144,8 +144,8 @@
                     <div class="trib-step-circle bg-success bg-opacity-10 mb-2">
                         <i class="bi bi-2-circle-fill text-success fs-4"></i>
                     </div>
-                    <p class="fw-semibold mb-1">Crie Grupos TributÃ¡rios</p>
-                    <small class="trib-text-secondary">Combine CFOP + CSTs + alÃ­quotas</small>
+                    <p class="fw-semibold mb-1">Crie Grupos Tributários</p>
+                    <small class="trib-text-secondary">Combine CFOP + CSTs + alíquotas</small>
                 </div>
                 <div class="col d-flex align-items-center justify-content-center">
                     <i class="bi bi-arrow-right fs-3 trib-text-secondary d-none d-md-block"></i>
@@ -176,47 +176,47 @@
             <!-- Detalhamento -->
             <div class="row g-4">
                 <div class="col-md-6">
-                    <h6 class="fw-bold"><i class="bi bi-collection text-primary"></i> O que Ã© um Grupo TributÃ¡rio?</h6>
+                    <h6 class="fw-bold"><i class="bi bi-collection text-primary"></i> O que é um Grupo Tributário?</h6>
                     <p class="trib-text-secondary small mb-2">
-                        Ã‰ um <strong>perfil fiscal de compra</strong> que reÃºne as regras tributÃ¡rias
+                        É um <strong>perfil fiscal de compra</strong> que reúne as regras tributárias
                         aplicadas na entrada de materiais e suprimentos:
                     </p>
                     <ul class="small trib-text-secondary">
-                        <li><strong>CFOP</strong> â€” Natureza da entrada (compra, devoluÃ§Ã£o, transferÃªncia...)</li>
-                        <li><strong>NCM</strong> â€” ClassificaÃ§Ã£o fiscal do material adquirido</li>
-                        <li><strong>Tributos Federais</strong> â€” IPI, PIS e COFINS (identifica crÃ©ditos recuperÃ¡veis)</li>
-                        <li><strong>Tributos Estaduais</strong> â€” ICMS por UF do fornecedor, com ST e FCP quando aplicÃ¡vel</li>
+                        <li><strong>CFOP</strong> — Natureza da entrada (compra, devolução, transferência...)</li>
+                        <li><strong>NCM</strong> — Classificação fiscal do material adquirido</li>
+                        <li><strong>Tributos Federais</strong> — IPI, PIS e COFINS (identifica créditos recuperáveis)</li>
+                        <li><strong>Tributos Estaduais</strong> — ICMS por UF do fornecedor, com ST e FCP quando aplicável</li>
                     </ul>
                 </div>
                 <div class="col-md-6">
                     <h6 class="fw-bold"><i class="bi bi-piggy-bank text-success"></i> Por que isso importa para custos?</h6>
                     <p class="trib-text-secondary small mb-2">
-                        Ao comprar um material, o <strong>custo real</strong> nÃ£o Ã© apenas o valor da NF-e:
+                        Ao comprar um material, o <strong>custo real</strong> não é apenas o valor da NF-e:
                     </p>
                     <ul class="small trib-text-secondary">
-                        <li><strong>Impostos recuperÃ¡veis</strong> (ICMS, PIS, COFINS com crÃ©dito)
-                            â†’ <span class="text-success fw-semibold">reduzem o custo</span></li>
-                        <li><strong>Impostos nÃ£o recuperÃ¡veis</strong> (IPI, ICMS-ST)
-                            â†’ <span class="text-danger fw-semibold">compÃµem o custo</span></li>
-                        <li><strong>Diferencial de alÃ­quota</strong> (DIFAL interestadual)
-                            â†’ custo adicional em compras de outros estados</li>
+                        <li><strong>Impostos recuperáveis</strong> (ICMS, PIS, COFINS com crédito)
+                            → <span class="text-success fw-semibold">reduzem o custo</span></li>
+                        <li><strong>Impostos não recuperáveis</strong> (IPI, ICMS-ST)
+                            → <span class="text-danger fw-semibold">compõem o custo</span></li>
+                        <li><strong>Diferencial de alíquota</strong> (DIFAL interestadual)
+                            → custo adicional em compras de outros estados</li>
                     </ul>
                     <p class="trib-text-secondary small mb-0">
-                        Com o grupo tributÃ¡rio vinculado ao material, o sistema separa automaticamente
-                        o que Ã© custo e o que Ã© crÃ©dito fiscal.
+                        Com o grupo tributário vinculado ao material, o sistema separa automaticamente
+                        o que é custo e o que é crédito fiscal.
                     </p>
                 </div>
             </div>
         </div>
             <hr class="trib-divider">
 
-            <!-- Exemplo prÃ¡tico -->
+            <!-- Exemplo prático -->
             <div class="trib-exemplo-bg">
                 <h6 class="fw-bold mb-2">
-                    <i class="bi bi-lightbulb text-warning"></i> Exemplo PrÃ¡tico â€” Compra de Material de EscritÃ³rio
+                    <i class="bi bi-lightbulb text-warning"></i> Exemplo Prático — Compra de Material de Escritório
                 </h6>
                 <p class="trib-text-secondary small mb-3">
-                    A Cetest Minas (SP) compra resmas de papel A4 de um fornecedor de <strong>SÃ£o Paulo</strong>.
+                    A Cetest Minas (SP) compra resmas de papel A4 de um fornecedor de <strong>São Paulo</strong>.
                     Valor da NF-e: <strong>R$ 1.000,00</strong>.
                 </p>
                 <div class="row">
@@ -233,22 +233,22 @@
                         <div class="small">
                             <span class="badge bg-success mb-1">Federal</span>
                             <ul class="mb-0 ps-3 trib-text-secondary">
-                                <li>IPI: CST <code>49</code> â€” 0% <span class="trib-text-secondary">(outras)</span></li>
-                                <li>PIS: CST <code>50</code> â€” 1,65%
-                                    <span class="text-danger fw-semibold">sem crÃ©dito</span></li>
-                                <li>COFINS: CST <code>50</code> â€” 7,60%
-                                    <span class="text-danger fw-semibold">sem crÃ©dito</span></li>
+                                <li>IPI: CST <code>49</code> — 0% <span class="trib-text-secondary">(outras)</span></li>
+                                <li>PIS: CST <code>50</code> — 1,65%
+                                    <span class="text-danger fw-semibold">sem crédito</span></li>
+                                <li>COFINS: CST <code>50</code> — 7,60%
+                                    <span class="text-danger fw-semibold">sem crédito</span></li>
                             </ul>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="small">
-                            <span class="badge bg-warning text-dark mb-1">Estadual (SP â†’ SP)</span>
+                            <span class="badge bg-warning text-dark mb-1">Estadual (SP → SP)</span>
                             <ul class="mb-0 ps-3 trib-text-secondary">
-                                <li>ICMS: CST <code>00</code> â€” 18%
-                                    <span class="text-danger fw-semibold">sem crÃ©dito</span></li>
+                                <li>ICMS: CST <code>00</code> — 18%
+                                    <span class="text-danger fw-semibold">sem crédito</span></li>
                                 <li>Red. Base: 0%</li>
-                                <li>ST: NÃ£o</li>
+                                <li>ST: Não</li>
                             </ul>
                         </div>
                     </div>
@@ -265,25 +265,25 @@
                             <i class="bi bi-dash-lg text-danger fs-5"></i>
                         </div>
                         <div class="col-md-3">
-                            <small class="trib-text-secondary d-block">CrÃ©ditos RecuperÃ¡veis</small>
+                            <small class="trib-text-secondary d-block">Créditos Recuperáveis</small>
                             <strong class="text-success">R$ 0,00</strong>
-                            <br><small class="trib-text-secondary">(mat. uso/consumo nÃ£o gera crÃ©dito)</small>
+                            <br><small class="trib-text-secondary">(mat. uso/consumo não gera crédito)</small>
                         </div>
                         <div class="col-md-1 d-flex justify-content-center">
                             <i class="bi bi-arrow-right-circle text-primary fs-5"></i>
                         </div>
                         <div class="col-md-4">
-                            <small class="trib-text-secondary d-block">Custo Real de AquisiÃ§Ã£o</small>
+                            <small class="trib-text-secondary d-block">Custo Real de Aquisição</small>
                             <strong class="text-primary fs-5">R$ 1.000,00</strong>
-                            <br><small class="trib-text-secondary">100% do valor Ã© custo</small>
+                            <br><small class="trib-text-secondary">100% do valor é custo</small>
                         </div>
                     </div>
                 </div>
 
-                <!-- ComparaÃ§Ã£o: se tivesse crÃ©dito -->
+                <!-- Comparação: se tivesse crédito -->
                 <div class="trib-custo-box-success mt-2">
                     <p class="small mb-2 fw-semibold text-success">
-                        <i class="bi bi-arrow-repeat"></i> E se fosse matÃ©ria-prima (com direito a crÃ©dito)?
+                        <i class="bi bi-arrow-repeat"></i> E se fosse matéria-prima (com direito a crédito)?
                     </p>
                     <div class="row align-items-center text-center">
                         <div class="col-md-3">
@@ -294,7 +294,7 @@
                             <i class="bi bi-dash-lg text-danger fs-5"></i>
                         </div>
                         <div class="col-md-3">
-                            <small class="trib-text-secondary d-block">CrÃ©ditos RecuperÃ¡veis</small>
+                            <small class="trib-text-secondary d-block">Créditos Recuperáveis</small>
                             <strong class="text-success">R$ 272,50</strong>
                             <br><small class="trib-text-secondary">ICMS R$ 180 + PIS R$ 16,50 + COFINS R$ 76</small>
                         </div>
@@ -302,9 +302,9 @@
                             <i class="bi bi-arrow-right-circle text-primary fs-5"></i>
                         </div>
                         <div class="col-md-4">
-                            <small class="trib-text-secondary d-block">Custo Real de AquisiÃ§Ã£o</small>
+                            <small class="trib-text-secondary d-block">Custo Real de Aquisição</small>
                             <strong class="text-primary fs-5">R$ 727,50</strong>
-                            <br><small class="text-success fw-semibold">â†“ 27,25% menor que o valor da NF!</small>
+                            <br><small class="text-success fw-semibold">↓ 27,25% menor que o valor da NF!</small>
                         </div>
                     </div>
                 </div>
@@ -313,7 +313,7 @@
             <div class="mt-3 text-center">
                 {% if perms.tributacao.add_grupo_tributario or user.is.superuser %}
                 <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Criar Primeiro Grupo TributÃ¡rio
+                    <i class="bi bi-plus-circle"></i> Criar Primeiro Grupo Tributário
                 </a>
                 {% endif %}
             </div>

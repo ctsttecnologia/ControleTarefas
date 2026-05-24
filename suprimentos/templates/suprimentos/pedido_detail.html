@@ -1,12 +1,12 @@
-﻿{% extends "suprimentos/suprimentos_base.html" %}
+{% extends "suprimentos/suprimentos_base.html" %}
 {% load static %}
 
-{% block title %}Pedido {{ pedido.numero }} â€” Suprimentos{% endblock %}
+{% block title %}Pedido {{ pedido.numero }} — Suprimentos{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
 
-    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+    {# ═══════════════════ HEADER ═══════════════════ #}
     <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
             <a href="{% url 'suprimentos:pedido_lista' %}" class="text-decoration-none text-muted">
@@ -24,7 +24,7 @@
                 </span>
             </h2>
             <small class="text-muted">
-                {{ pedido.contrato.cliente }} â€” {{ pedido.get_tipo_obra_display }}
+                {{ pedido.contrato.cliente }} — {{ pedido.get_tipo_obra_display }}
                 {% if solicitacao %}
                     | <a href="{% url 'suprimentos:solicitacao_detalhe' solicitacao.pk %}" class="text-success fw-bold">
                         <i class="bi bi-link-45deg me-1"></i>{{ solicitacao.numero }}
@@ -40,8 +40,8 @@
             <form method="post" action="{% url 'suprimentos:pedido_enviar' pedido.pk %}" class="d-inline">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-primary btn-sm"
-                        onclick="return confirm('Enviar para aprovaÃ§Ã£o do Gerente?')">
-                    <i class="bi bi-send me-1"></i>Enviar para AprovaÃ§Ã£o
+                        onclick="return confirm('Enviar para aprovação do Gerente?')">
+                    <i class="bi bi-send me-1"></i>Enviar para Aprovação
                 </button>
             </form>
             {% endif %}
@@ -53,7 +53,7 @@
         </div>
     </div>
 
-    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ALERTA DE REVISÃƒO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+    {# ═══════════════════ ALERTA DE REVISÃO ═══════════════════ #}
     {# {% if pedido.status == 'REVISAO' and pedido.motivo_revisao %}
     <div class="alert alert-warning border-start border-warning border-4">
         <div class="d-flex">
@@ -61,27 +61,27 @@
                 <i class="bi bi-exclamation-triangle-fill fs-2 text-warning"></i>
             </div>
             <div>
-                <h5 class="alert-heading mb-1">Pedido Devolvido para RevisÃ£o</h5>
+                <h5 class="alert-heading mb-1">Pedido Devolvido para Revisão</h5>
                 <p class="mb-0">{{ pedido.motivo_revisao }}</p>
-                <small class="text-muted">Corrija os itens indicados e reenvie para aprovaÃ§Ã£o.</small>
+                <small class="text-muted">Corrija os itens indicados e reenvie para aprovação.</small>
             </div>
         </div>
     </div>
     {% endif %} #}
 
-    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DICA INICIAL QUANDO SEM ITENS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+    {# ═══════════════════ DICA INICIAL QUANDO SEM ITENS ═══════════════════ #}
     {% if pode_editar and not itens %}
     <div class="alert alert-info border-start border-info border-4">
         <i class="bi bi-info-circle-fill me-2"></i>
-        <strong>CabeÃ§alho salvo!</strong> Agora adicione os itens do pedido no formulÃ¡rio abaixo.
+        <strong>Cabeçalho salvo!</strong> Agora adicione os itens do pedido no formulário abaixo.
     </div>
     {% endif %}
 
     <div class="row">
-        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• COLUNA PRINCIPAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+        {# ═══════════════════ COLUNA PRINCIPAL ═══════════════════ #}
         <div class="col-lg-8">
 
-            {# â”€â”€â”€ Dados do Pedido â”€â”€â”€ #}
+            {# ─── Dados do Pedido ─── #}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-clipboard-list me-2"></i>Dados do Pedido</h5>
@@ -102,13 +102,13 @@
                             <span>{{ pedido.contrato.cm }}</span>
                         </div>
                         <div class="col-md-4">
-                            <label class="fw-bold text-muted small d-block">DATA NECESSÃRIA</label>
-                            <span>{{ pedido.data_necessaria|date:"d/m/Y"|default:"â€”" }}</span>
+                            <label class="fw-bold text-muted small d-block">DATA NECESSÁRIA</label>
+                            <span>{{ pedido.data_necessaria|date:"d/m/Y"|default:"—" }}</span>
                         </div>
                         {% if pedido.observacao %}
                         <div class="col-12">
                             <hr class="my-2">
-                            <label class="fw-bold text-muted small d-block">OBSERVAÃ‡Ã•ES</label>
+                            <label class="fw-bold text-muted small d-block">OBSERVAÇÕES</label>
                             <p class="mb-0" style="white-space: pre-wrap;">{{ pedido.observacao }}</p>
                         </div>
                         {% endif %}
@@ -116,13 +116,13 @@
                 </div>
             </div>
 
-            {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• COMPARATIVO PEDIDO Ã— VERBA DO CONTRATO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+            {# ═══════════════════ COMPARATIVO PEDIDO × VERBA DO CONTRATO ═══════════════════ #}
             {% if comparativo_verba %}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="bi bi-pie-chart me-2"></i>
-                        Comparativo: Pedido Ã— Verba do Contrato
+                        Comparativo: Pedido × Verba do Contrato
                     </h5>
                     <span class="badge fs-6
                         {% if comparativo_verba.status_geral == 'EXCEDE' %}bg-danger
@@ -138,19 +138,19 @@
                         <i class="bi bi-calendar3 me-1"></i>
                         Verba referente a <strong>{{ comparativo_verba.mes_ref|date:"F/Y" }}</strong>
                         do contrato <strong>{{ pedido.contrato }}</strong>
-                        â€” {{ comparativo_verba.qtd_pedidos_mes }} pedido{{ comparativo_verba.qtd_pedidos_mes|pluralize }} no mÃªs (excluindo este)
+                        — {{ comparativo_verba.qtd_pedidos_mes }} pedido{{ comparativo_verba.qtd_pedidos_mes|pluralize }} no mês (excluindo este)
                     </p>
 
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>ClassificaÃ§Ã£o</th>
+                                    <th>Classificação</th>
                                     <th class="text-end">Verba</th>
                                     <th class="text-end">Consumido</th>
                                     <th class="text-end">Saldo Atual</th>
                                     <th class="text-end">Este Pedido</th>
-                                    <th class="text-end">Saldo ApÃ³s</th>
+                                    <th class="text-end">Saldo Após</th>
                                     <th class="text-center">% Uso</th>
                                     <th class="text-center">Status</th>
                                 </tr>
@@ -176,7 +176,7 @@
                                     <th>TOTAL</th>
                                     <th class="text-end">R$ {{ comparativo_verba.total_verba|floatformat:2 }}</th>
                                     <th class="text-end">R$ {{ comparativo_verba.total_consumido|floatformat:2 }}</th>
-                                    <th class="text-end">â€”</th>
+                                    <th class="text-end">—</th>
                                     <th class="text-end">R$ {{ comparativo_verba.total_pedido|floatformat:2 }}</th>
                                     <th class="text-end">R$ {{ comparativo_verba.total_saldo|floatformat:2 }}</th>
                                     <th colspan="2"></th>
@@ -188,25 +188,25 @@
                     {% if comparativo_verba.status_geral == 'EXCEDE' %}
                     <div class="alert alert-danger mt-3 mb-0">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        <strong>AtenÃ§Ã£o:</strong> Este pedido ultrapassa a verba mensal em pelo menos uma classificaÃ§Ã£o.
+                        <strong>Atenção:</strong> Este pedido ultrapassa a verba mensal em pelo menos uma classificação.
                         Revise com o solicitante ou solicite verba adicional antes de aprovar.
                     </div>
                     {% elif comparativo_verba.status_geral == 'ATENCAO' %}
                     <div class="alert alert-warning mt-3 mb-0">
                         <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Cuidado:</strong> ApÃ³s este pedido, alguma classificaÃ§Ã£o ficarÃ¡ acima de 90% da verba.
+                        <strong>Cuidado:</strong> Após este pedido, alguma classificação ficará acima de 90% da verba.
                     </div>
                     {% elif comparativo_verba.status_geral == 'MODERADO' %}
                     <div class="alert alert-info mt-3 mb-0">
                         <i class="bi bi-info-circle me-2"></i>
-                        Consumo moderado: alguma classificaÃ§Ã£o ficarÃ¡ acima de 70% da verba apÃ³s este pedido.
+                        Consumo moderado: alguma classificação ficará acima de 70% da verba após este pedido.
                     </div>
                     {% endif %}
                 </div>
             </div>
             {% endif %}
 
-            {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ITENS DO PEDIDO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+            {# ═══════════════════ ITENS DO PEDIDO ═══════════════════ #}
             <div class="card shadow-sm mb-4" id="card-itens">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
@@ -218,7 +218,7 @@
                     </span>
                 </div>
 
-                {# â”€â”€â”€ LISTAGEM â”€â”€â”€ #}
+                {# ─── LISTAGEM ─── #}
                 <div class="card-body p-0">
                     {% if itens %}
                     <div class="table-responsive">
@@ -243,7 +243,7 @@
                                         <br>
                                         <small class="text-muted">
                                             {{ item.material.get_classificacao_display }}
-                                            â€” {{ item.material.get_tipo_display }}
+                                            — {{ item.material.get_tipo_display }}
                                         </small>
                                         {% if item.observacao %}
                                             <br><small class="fst-italic text-muted">
@@ -254,7 +254,7 @@
                                     <td class="text-center">{{ item.quantidade|floatformat:2 }}</td>
                                     <td class="text-center">
                                         <span class="badge bg-light text-dark">
-                                            {{ item.material.get_unidade_medida_display|default:"â€”" }}
+                                            {{ item.material.get_unidade_medida_display|default:"—" }}
                                         </span>
                                     </td>
                                     <td class="text-end">R$ {{ item.valor_unitario|floatformat:2 }}</td>
@@ -293,13 +293,13 @@
                         <i class="bi bi-inbox" style="font-size: 3rem; color: #adb5bd;"></i>
                         <h6 class="mt-2 text-muted">Nenhum item adicionado.</h6>
                         {% if pode_editar %}
-                        <small class="text-muted">Use o formulÃ¡rio abaixo para adicionar o primeiro item </small>
+                        <small class="text-muted">Use o formulário abaixo para adicionar o primeiro item </small>
                         {% endif %}
                     </div>
                     {% endif %}
                 </div>
 
-                {# â”€â”€â”€ FORM ADICIONAR ITEM â”€â”€â”€ #}
+                {# ─── FORM ADICIONAR ITEM ─── #}
                 {% if pode_editar %}
                 <div class="card-footer bg-light" id="form-novo-item">
                     <h6 class="mb-3">
@@ -352,7 +352,7 @@
                         <div class="row mt-2">
                             <div class="col-md-10">
                                 <input type="text" name="observacao" class="form-control form-control-sm"
-                                       placeholder="ObservaÃ§Ã£o do item (opcional)">
+                                       placeholder="Observação do item (opcional)">
                             </div>
                             <div class="col-md-2">
                                 <input type="text" id="novoItemTotal" class="form-control form-control-sm bg-white"
@@ -364,7 +364,7 @@
                 {% endif %}
             </div>
 
-            {# â”€â”€â”€ ANEXOS â”€â”€â”€ #}
+            {# ─── ANEXOS ─── #}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-secondary text-white d-flex justify-content-between">
                     <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Anexos</h5>
@@ -389,7 +389,7 @@
                                 </div>
                                 {% endif %}
                                 <p class="small mb-1 fw-bold text-truncate">{{ anexo.nome_arquivo }}</p>
-                                <p class="small text-muted mb-2">{{ anexo.descricao|default:"Sem descriÃ§Ã£o" }}</p>
+                                <p class="small text-muted mb-2">{{ anexo.descricao|default:"Sem descrição" }}</p>
                                 <div class="d-flex justify-content-between">
                                     <a href="{{ anexo.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-download"></i>
@@ -432,10 +432,10 @@
                 </div>
             </div>
 
-            {# â”€â”€â”€ HISTÃ“RICO â”€â”€â”€ #}
+            {# ─── HISTÓRICO ─── #}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>HistÃ³rico</h5>
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Histórico</h5>
                 </div>
                 <div class="card-body p-0">
                     {% if historicopedido %}
@@ -443,7 +443,7 @@
                         <table class="table table-sm table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>VersÃ£o</th><th>Data</th><th>AlteraÃ§Ã£o</th><th>ResponsÃ¡vel</th>
+                                    <th>Versão</th><th>Data</th><th>Alteração</th><th>Responsável</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -454,7 +454,7 @@
                                     <td>
                                         {{ h.descricao }}
                                         {% if h.status_anterior and h.status_novo %}
-                                        <br><small class="text-muted">{{ h.status_anterior }} â†’ {{ h.status_novo }}</small>
+                                        <br><small class="text-muted">{{ h.status_anterior }} → {{ h.status_novo }}</small>
                                         {% endif %}
                                     </td>
                                     <td>{{ h.responsavel.get_full_name|default:h.responsavel.username }}</td>
@@ -464,20 +464,20 @@
                         </table>
                     </div>
                     {% else %}
-                    <p class="text-muted text-center py-3 mb-0">Nenhuma alteraÃ§Ã£o registrada.</p>
+                    <p class="text-muted text-center py-3 mb-0">Nenhuma alteração registrada.</p>
                     {% endif %}
                 </div>
             </div>
 
         </div>
 
-        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SIDEBAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+        {# ═══════════════════ SIDEBAR ═══════════════════ #}
         <div class="col-lg-4">
 
-            {# â”€â”€â”€ InformaÃ§Ãµes â”€â”€â”€ #}
+            {# ─── Informações ─── #}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-secondary text-white">
-                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>InformaÃ§Ãµes</h6>
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informações</h6>
                 </div>
                 <div class="card-body">
                     <dl class="mb-0">
@@ -485,10 +485,10 @@
                         <dd>{{ pedido.solicitante.get_full_name|default:pedido.solicitante.username }}</dd>
 
                         <dt class="text-muted small">Contrato</dt>
-                        <dd>{{ pedido.contrato.cm }} â€” {{ pedido.contrato.cliente }}</dd>
+                        <dd>{{ pedido.contrato.cm }} — {{ pedido.contrato.cliente }}</dd>
 
                         <dt class="text-muted small">Data do Pedido</dt>
-                        <dd>{{ pedido.data_pedido|date:"d/m/Y H:i"|default:"â€”" }}</dd>
+                        <dd>{{ pedido.data_pedido|date:"d/m/Y H:i"|default:"—" }}</dd>
 
                         <dt class="text-muted small">Qtd. de Itens</dt>
                         <dd><span class="badge bg-primary">{{ itens|length }}</span></dd>
@@ -499,29 +499,29 @@
                         {% endif %}
 
                         {% if pedido.data_aprovacao %}
-                        <dt class="text-muted small">Data AprovaÃ§Ã£o</dt>
+                        <dt class="text-muted small">Data Aprovação</dt>
                         <dd>{{ pedido.data_aprovacao|date:"d/m/Y H:i" }}</dd>
                         {% endif %}
 
                         {% if pedido.motivo_reprovacao %}
-                        <dt class="text-muted small">Motivo da ReprovaÃ§Ã£o</dt>
+                        <dt class="text-muted small">Motivo da Reprovação</dt>
                         <dd class="text-danger">{{ pedido.motivo_reprovacao }}</dd>
                         {% endif %}
                     </dl>
                 </div>
             </div>
 
-            {# â”€â”€â”€ AÃ§Ãµes do Aprovador â”€â”€â”€ #}
+            {# ─── Ações do Aprovador ─── #}
             {% if pode_aprovar %}
             <div class="card shadow-sm mb-4 border-success">
                 <div class="card-header bg-success text-white">
-                    <h6 class="mb-0"><i class="bi bi-shield-check me-2"></i>AÃ§Ãµes do Aprovador</h6>
+                    <h6 class="mb-0"><i class="bi bi-shield-check me-2"></i>Ações do Aprovador</h6>
                 </div>
                 <div class="card-body">
                     <form method="post" action="{% url 'suprimentos:pedido_aprovar' pedido.pk %}" class="mb-2">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-success w-100"
-                                onclick="return confirm('Aprovar? Isso gerarÃ¡ automaticamente uma SolicitaÃ§Ã£o de Compra.')">
+                                onclick="return confirm('Aprovar? Isso gerará automaticamente uma Solicitação de Compra.')">
                             <i class="bi bi-check-lg me-1"></i>Aprovar
                         </button>
                     </form>
@@ -532,7 +532,7 @@
                         {% csrf_token %}
                         {{ devolver_form.motivo }}
                         <button type="submit" class="btn btn-warning w-100 mt-2">
-                            <i class="bi bi-arrow-counterclockwise me-1"></i>Devolver para RevisÃ£o
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Devolver para Revisão
                         </button>
                     </form>
                     {% endif %}
@@ -552,10 +552,10 @@
             </div>
             {% endif %}
 
-            {# â”€â”€â”€ SolicitaÃ§Ã£o Gerada â”€â”€â”€ #}
+            {# ─── Solicitação Gerada ─── #}
             <div class="card shadow-sm mb-4 {% if solicitacao %}border-info{% else %}border-secondary{% endif %}">
                 <div class="card-header {% if solicitacao %}bg-info{% else %}bg-secondary{% endif %} text-white">
-                    <h6 class="mb-0"><i class="bi bi-link-45deg me-2"></i>SolicitaÃ§Ã£o Gerada</h6>
+                    <h6 class="mb-0"><i class="bi bi-link-45deg me-2"></i>Solicitação Gerada</h6>
                 </div>
                 <div class="card-body text-center">
                     {% if solicitacao %}
@@ -564,12 +564,12 @@
                         <br>
                         <a href="{% url 'suprimentos:solicitacao_detalhe' solicitacao.pk %}"
                            class="btn btn-sm btn-primary mt-2">
-                            <i class="bi bi-eye me-1"></i> Ver SolicitaÃ§Ã£o
+                            <i class="bi bi-eye me-1"></i> Ver Solicitação
                         </a>
                     {% else %}
                         <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
                         <p class="text-muted mb-0 mt-2">
-                            Nenhuma solicitaÃ§Ã£o gerada para este pedido.
+                            Nenhuma solicitação gerada para este pedido.
                         </p>
                     {% endif %}
                 </div>
@@ -581,7 +581,7 @@
 
 </div>
 
-{# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MODAL CANCELAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+{# ═══════════════════ MODAL CANCELAR ═══════════════════ #}
 {% if pode_cancelar %}
 <div class="modal fade" id="modalCancelar" tabindex="-1">
     <div class="modal-dialog">
