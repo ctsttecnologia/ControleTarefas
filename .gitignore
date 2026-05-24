@@ -62,3 +62,8 @@ auditoria_*.txt
 
 rotas_usuario.csv
 sent_emails/
+# Arquivos de debug
+debug_*.html
+debug_*.txt
+
+.debug/
