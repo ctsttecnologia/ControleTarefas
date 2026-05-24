@@ -1,16 +1,16 @@
-﻿
+
 {% extends 'notifications/emails/base_email.html' %}
 
 {% block content %}
-<h2 style="color: #f0ad4e;">ðŸ“¦ Pedido Sienge â€” AprovaÃ§Ã£o NecessÃ¡ria</h2>
+<h2 style="color: #f0ad4e;">📦 Pedido Sienge — Aprovação Necessária</h2>
 
-<p>OlÃ¡ {{ gerente.first_name|default:gerente.username }},</p>
+<p>Olá {{ gerente.first_name|default:gerente.username }},</p>
 
-<p><strong>{{ comprador }}</strong> criou um pedido no Sienge para a solicitaÃ§Ã£o <strong>{{ solicitacao.numero }}</strong>.</p>
+<p><strong>{{ comprador }}</strong> criou um pedido no Sienge para a solicitação <strong>{{ solicitacao.numero }}</strong>.</p>
 
 <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
     <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">NÂº Pedido Sienge</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Nº Pedido Sienge</td>
         <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ solicitacao.numero_pedido_sienge }}</td>
     </tr>
     <tr>
@@ -25,7 +25,7 @@
 
 <div style="text-align: center; margin: 30px 0;">
     <a href="{{ url }}" style="background: #198754; color: #fff; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-        âœ… Aprovar Pedido
+        ✅ Aprovar Pedido
     </a>
 </div>
 {% endblock %}

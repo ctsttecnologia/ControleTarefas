@@ -1,15 +1,15 @@
-﻿
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>RelatÃ³rio de FuncionÃ¡rios</title>
+    <title>Relatório de Funcionários</title>
     <style>
         @page {
             size: A4;
             margin: 1.5cm;
             @bottom-center {
-                content: "PÃ¡gina " counter(page) " de " counter(pages);
+                content: "Página " counter(page) " de " counter(pages);
                 font-family: 'Helvetica', 'Arial', sans-serif;
                 font-size: 10pt;
                 color: #555;
@@ -82,7 +82,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>RelatÃ³rio de Colaboradores Ativos</h1>
+        <h1>Relatório de Colaboradores Ativos</h1>
         <p>Documento gerado em: {{ data_emissao }}</p>
     </div>
 
@@ -97,7 +97,7 @@
                 <th style="width: 35%;">Nome Completo</th>
                 <th style="width: 20%;">Cargo</th>
                 <th style="width: 20%;">Departamento</th>
-                <th style="width: 20%;">Data de AdmissÃ£o</th>
+                <th style="width: 20%;">Data de Admissão</th>
             </tr>
         </thead>
         <tbody>
@@ -112,7 +112,7 @@
             {% empty %}
             <tr>
                 <td colspan="5" style="text-align: center; padding: 30px; color: #6c757d;">
-                    Nenhum funcionÃ¡rio encontrado.
+                    Nenhum funcionário encontrado.
                 </td>
             </tr>
             {% endfor %}
@@ -120,7 +120,7 @@
     </table>
 
     <div class="footer">
-        Gerenciador de Tarefas - RelatÃ³rio Interno Confidencial
+        Gerenciador de Tarefas - Relatório Interno Confidencial
     </div>
 </body>
 </html>

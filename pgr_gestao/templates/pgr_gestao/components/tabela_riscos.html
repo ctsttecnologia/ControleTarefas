@@ -1,15 +1,15 @@
-﻿
+
 {% load static %}
 
 <!-- 
-    Component: Tabela de Riscos ReutilizÃ¡vel
+    Component: Tabela de Riscos Reutilizável
     
-    ParÃ¢metros esperados:
+    Parâmetros esperados:
     - riscos: QuerySet de riscos
     - show_ges: Boolean (mostrar coluna GES)
     - show_documento: Boolean (mostrar coluna Documento PGR)
-    - show_actions: Boolean (mostrar coluna de aÃ§Ãµes)
-    - compact: Boolean (versÃ£o compacta)
+    - show_actions: Boolean (mostrar coluna de ações)
+    - compact: Boolean (versão compacta)
     - filterable: Boolean (adicionar filtros)
     
     Uso:
@@ -17,18 +17,18 @@
 -->
 
 {% if filterable %}
-<!-- Filtros RÃ¡pidos -->
+<!-- Filtros Rápidos -->
 <div class="card mb-3">
     <div class="card-body">
         <div class="row g-2" id="filtros-riscos">
             <div class="col-md-2">
                 <select class="form-select form-select-sm" id="filtro-classificacao">
-                    <option value="">Todas ClassificaÃ§Ãµes</option>
-                    <option value="critico">CrÃ­tico</option>
+                    <option value="">Todas Classificações</option>
+                    <option value="critico">Crítico</option>
                     <option value="muito_grave">Muito Grave</option>
                     <option value="moderado">Moderado</option>
                     <option value="marginal">Marginal</option>
-                    <option value="negligenciavel">NegligenciÃ¡vel</option>
+                    <option value="negligenciavel">Negligenciável</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -43,16 +43,16 @@
             <div class="col-md-2">
                 <select class="form-select form-select-sm" id="filtro-categoria">
                     <option value="">Todas Categorias</option>
-                    <option value="fisico">FÃ­sico</option>
-                    <option value="quimico">QuÃ­mico</option>
-                    <option value="biologico">BiolÃ³gico</option>
-                    <option value="ergonomico">ErgonÃ´mico</option>
+                    <option value="fisico">Físico</option>
+                    <option value="quimico">Químico</option>
+                    <option value="biologico">Biológico</option>
+                    <option value="ergonomico">Ergonômico</option>
                     <option value="acidente">Acidente</option>
                 </select>
             </div>
             <div class="col-md-4">
                 <input type="text" class="form-control form-control-sm" id="busca-rapida" 
-                       placeholder="ðŸ” Buscar agente, fonte geradora...">
+                       placeholder="🔍 Buscar agente, fonte geradora...">
             </div>
             <div class="col-md-2">
                 <button class="btn btn-sm btn-secondary w-100" id="limpar-filtros">
@@ -71,7 +71,7 @@
             <tr>
                 {% if not compact %}
                 <th style="width: 80px;" class="text-center">
-                    <i class="fas fa-hashtag"></i> CÃ³digo
+                    <i class="fas fa-hashtag"></i> Código
                 </th>
                 {% endif %}
                 
@@ -102,7 +102,7 @@
                 {% endif %}
                 
                 <th style="width: 120px;" class="text-center">
-                    <i class="fas fa-tachometer-alt"></i> ClassificaÃ§Ã£o
+                    <i class="fas fa-tachometer-alt"></i> Classificação
                 </th>
                 
                 <th style="width: 100px;" class="text-center">
@@ -111,7 +111,7 @@
                 
                 {% if not compact %}
                 <th style="width: 90px;" class="text-center" title="Gravidade">G</th>
-                <th style="width: 90px;" class="text-center" title="ExposiÃ§Ã£o">E</th>
+                <th style="width: 90px;" class="text-center" title="Exposição">E</th>
                 <th style="width: 90px;" class="text-center" title="Severidade">S</th>
                 <th style="width: 90px;" class="text-center" title="Probabilidade">P</th>
                 {% endif %}
@@ -122,7 +122,7 @@
                 
                 {% if show_actions %}
                 <th style="width: 150px;" class="text-center">
-                    <i class="fas fa-cog"></i> AÃ§Ãµes
+                    <i class="fas fa-cog"></i> Ações
                 </th>
                 {% endif %}
             </tr>
@@ -218,9 +218,9 @@
                     {% if not compact %}
                     <br><small class="text-muted">
                         {% if risco.metodo_avaliacao == 'quantitativo' %}
-                        <i class="fas fa-chart-line" title="AvaliaÃ§Ã£o Quantitativa"></i>
+                        <i class="fas fa-chart-line" title="Avaliação Quantitativa"></i>
                         {% else %}
-                        <i class="fas fa-clipboard-list" title="AvaliaÃ§Ã£o Qualitativa"></i>
+                        <i class="fas fa-clipboard-list" title="Avaliação Qualitativa"></i>
                         {% endif %}
                     </small>
                     {% endif %}
@@ -268,7 +268,7 @@
                 <td class="text-center">
                     {% if risco.prioridade_acao == 'critica' %}
                     <span class="badge bg-danger" style="font-size: 0.85rem;">
-                        <i class="fas fa-fire"></i> CRÃTICA
+                        <i class="fas fa-fire"></i> CRÍTICA
                     </span>
                     {% elif risco.prioridade_acao == 'alta' %}
                     <span class="badge bg-warning text-dark" style="font-size: 0.85rem;">
@@ -276,7 +276,7 @@
                     </span>
                     {% elif risco.prioridade_acao == 'media' %}
                     <span class="badge bg-info" style="font-size: 0.85rem;">
-                        <i class="fas fa-info-circle"></i> MÃ‰DIA
+                        <i class="fas fa-info-circle"></i> MÉDIA
                     </span>
                     {% else %}
                     <span class="badge bg-secondary" style="font-size: 0.85rem;">
@@ -306,7 +306,7 @@
                         
                         <a href="{% url 'pgr_gestao:plano_acao_create' %}?risco={{ risco.pk }}" 
                            class="btn btn-success" 
-                           title="Criar Plano de AÃ§Ã£o"
+                           title="Criar Plano de Ação"
                            data-bs-toggle="tooltip">
                             <i class="fas fa-tasks"></i>
                         </a>
@@ -314,7 +314,7 @@
                         {% if not compact %}
                         <a href="{% url 'pgr_gestao:avaliacao_create_risco' risco.pk %}" 
                            class="btn btn-primary" 
-                           title="Nova AvaliaÃ§Ã£o"
+                           title="Nova Avaliação"
                            data-bs-toggle="tooltip">
                             <i class="fas fa-chart-line"></i>
                         </a>
@@ -356,33 +356,33 @@
     </table>
 </div>
 
-<!-- Legenda de ClassificaÃ§Ã£o -->
+<!-- Legenda de Classificação -->
 {% if not compact %}
 <div class="card mt-3">
     <div class="card-body">
         <h6 class="card-title">
-            <i class="fas fa-info-circle"></i> Legenda de ClassificaÃ§Ã£o de Riscos
+            <i class="fas fa-info-circle"></i> Legenda de Classificação de Riscos
         </h6>
         <div class="row text-center">
             <div class="col">
-                <span class="badge badge-risco-critico">CrÃ­tico</span>
-                <br><small class="text-muted">AÃ§Ã£o Imediata</small>
+                <span class="badge badge-risco-critico">Crítico</span>
+                <br><small class="text-muted">Ação Imediata</small>
             </div>
             <div class="col">
                 <span class="badge badge-risco-muito_grave">Muito Grave</span>
-                <br><small class="text-muted">CorreÃ§Ã£o Urgente</small>
+                <br><small class="text-muted">Correção Urgente</small>
             </div>
             <div class="col">
                 <span class="badge badge-risco-moderado">Moderado</span>
-                <br><small class="text-muted">AtenÃ§Ã£o NecessÃ¡ria</small>
+                <br><small class="text-muted">Atenção Necessária</small>
             </div>
             <div class="col">
                 <span class="badge badge-risco-marginal">Marginal</span>
-                <br><small class="text-muted">Manter AtenÃ§Ã£o</small>
+                <br><small class="text-muted">Manter Atenção</small>
             </div>
             <div class="col">
-                <span class="badge badge-risco-negligenciavel">NegligenciÃ¡vel</span>
-                <br><small class="text-muted">Risco MÃ­nimo</small>
+                <span class="badge badge-risco-negligenciavel">Negligenciável</span>
+                <br><small class="text-muted">Risco Mínimo</small>
             </div>
         </div>
     </div>
@@ -419,7 +419,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let mostrar = true;
             
-            // Filtro de classificaÃ§Ã£o
+            // Filtro de classificação
             if (classificacao && rowClass !== classificacao) {
                 mostrar = false;
             }
@@ -481,7 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endif %}
 
 <style>
-    /* Estilos especÃ­ficos da tabela de riscos */
+    /* Estilos específicos da tabela de riscos */
     #tabela-riscos tbody tr:hover {
         background-color: #f1f3f5;
         transform: scale(1.01);
@@ -514,7 +514,7 @@ document.addEventListener('DOMContentLoaded', function() {
         color: white !important;
     }
     
-    /* AnimaÃ§Ã£o para linhas filtradas */
+    /* Animação para linhas filtradas */
     .risco-row {
         transition: all 0.3s ease;
     }

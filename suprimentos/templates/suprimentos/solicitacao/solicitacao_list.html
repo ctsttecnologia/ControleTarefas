@@ -1,9 +1,9 @@
-﻿
+
 {# solicitacao_list.html #}
 {% extends "suprimentos/suprimentos_base.html" %}
 {% load static %}
 
-{% block title %}SolicitaÃ§Ãµes de Compra{% endblock %}
+{% block title %}Solicitações de Compra{% endblock %}
 
 {% block extra_css %}
 {{ block.super }}
@@ -40,14 +40,14 @@
 {% block suprimentos_content %}
 <div class="container-fluid py-4">
 
-    {# â•â•â• CABEÃ‡ALHO â•â•â• #}
+    {# ═══ CABEÇALHO ═══ #}
     <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
             <h2 class="fw-bold mb-1">
-                <i class="bi bi-bag-check-fill text-primary me-2"></i>SolicitaÃ§Ãµes de Compra
+                <i class="bi bi-bag-check-fill text-primary me-2"></i>Solicitações de Compra
             </h2>
             <p class="text-muted mb-0">
-                Gerencie cotaÃ§Ãµes, aprovaÃ§Ãµes e entregas direto nesta tela
+                Gerencie cotações, aprovações e entregas direto nesta tela
             </p>
         </div>
         <div class="d-flex gap-2">
@@ -62,14 +62,14 @@
         </div>
     </div>
 
-    {# â•â•â• CARDS KPI â•â•â• #}
+    {# ═══ CARDS KPI ═══ #}
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3">
             <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #0dcaf0 !important;">
                 <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-muted small fw-semibold text-uppercase">Fazer CotaÃ§Ã£o</div>
+                            <div class="text-muted small fw-semibold text-uppercase">Fazer Cotação</div>
                             <div class="fs-2 fw-bold text-info">{{ count_cotacao }}</div>
                         </div>
                         <i class="bi bi-receipt-cutoff text-info" style="font-size:2rem;opacity:.3;"></i>
@@ -82,7 +82,7 @@
                 <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-muted small fw-semibold text-uppercase">Em AprovaÃ§Ã£o</div>
+                            <div class="text-muted small fw-semibold text-uppercase">Em Aprovação</div>
                             <div class="fs-2 fw-bold" style="color:#fd7e14;">{{ count_aprovacao }}</div>
                         </div>
                         <i class="bi bi-shield-check" style="font-size:2rem;opacity:.3;color:#fd7e14;"></i>
@@ -128,7 +128,7 @@
         </div>
     </div>
 
-    {# â•â•â• FILTROS â•â•â• #}
+    {# ═══ FILTROS ═══ #}
     <div class="card shadow-sm mb-4">
         <div class="card-body py-3">
             <form method="get" class="row g-2 align-items-end">
@@ -137,7 +137,7 @@
                     <div class="input-group input-group-sm">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input type="text" name="q" value="{{ filtro_q }}"
-                               class="form-control" placeholder="NÂº, material, contrato...">
+                               class="form-control" placeholder="Nº, material, contrato...">
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -177,18 +177,18 @@
         </div>
     </div>
 
-    {# â•â•â• LISTA DE CARDS EXPANDÃVEIS â•â•â• #}
+    {# ═══ LISTA DE CARDS EXPANDÍVEIS ═══ #}
     {% if solicitacoes %}
     <div class="d-flex flex-column gap-3">
         {% for sol in solicitacoes %}
         {% with sol_forms=forms_map|default_if_none:"" %}
         <div class="card shadow-sm sol-card status-{{ sol.status }}" id="sol-{{ sol.pk }}">
 
-            {# â”€â”€ CABEÃ‡ALHO DO CARD (sempre visÃ­vel) â”€â”€ #}
+            {# ── CABEÇALHO DO CARD (sempre visível) ── #}
             <div class="card-body py-3">
                 <div class="row align-items-center">
 
-                    {# NÃºmero + Status #}
+                    {# Número + Status #}
                     <div class="col-md-2">
                         <a href="{% url 'suprimentos:solicitacao_detalhe' sol.pk %}"
                            class="fw-bold text-decoration-none fs-6">
@@ -213,7 +213,7 @@
                     <div class="col-md-4">
                         <div class="small text-muted">
                             <i class="bi bi-file-text me-1"></i>
-                            {{ sol.contrato.cm }} â€” {{ sol.contrato.cliente|truncatechars:25 }}
+                            {{ sol.contrato.cm }} — {{ sol.contrato.cliente|truncatechars:25 }}
                         </div>
                         <div class="mt-1" style="font-size:.85rem;">
                             {{ sol.descricao_material|truncatechars:120 }}
@@ -225,7 +225,7 @@
                         {% endif %}
                     </div>
 
-                    {# ResponsÃ¡veis #}
+                    {# Responsáveis #}
                     <div class="col-md-2">
                         <div class="small">
                             <span class="text-muted">Solicitante:</span><br>
@@ -256,18 +256,18 @@
                         </div>
                     </div>
 
-                    {# BotÃ£o expandir #}
+                    {# Botão expandir #}
                     <div class="col-md-2 text-end">
                         {% if forms_map %}
                         {% with sf=forms_map|default_if_none:"" %}
-                        {# BotÃ£o de aÃ§Ã£o rÃ¡pida #}
+                        {# Botão de ação rápida #}
                         <button class="btn btn-sm btn-primary collapsed"
                                 type="button" data-bs-toggle="collapse"
                                 data-bs-target="#action-{{ sol.pk }}"
                                 aria-expanded="false">
                             <i class="bi bi-chevron-down collapse-icon me-1"></i>
                             {% if sol.status == 'FAZER_COTACAO' %}
-                                Fazer CotaÃ§Ã£o
+                                Fazer Cotação
                             {% elif sol.status == 'COTACAO_ENVIADA' %}
                                 Validar
                             {% elif sol.status == 'CRIAR_PEDIDO_CT' %}
@@ -294,18 +294,18 @@
                 </div>
             </div>
 
-            {# â”€â”€ ÃREA EXPANDÃVEL â€” FORMULÃRIOS INLINE â”€â”€ #}
+            {# ── ÁREA EXPANDÍVEL — FORMULÁRIOS INLINE ── #}
             <div class="collapse" id="action-{{ sol.pk }}">
                 <div class="sol-action-area p-4">
 
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
-                    {#  ETAPA 1: FAZER COTAÃ‡ÃƒO (Comprador)         #}
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
+                    {#  ETAPA 1: FAZER COTAÇÃO (Comprador)         #}
+                    {# ════════════════════════════════════════════ #}
                     {% if sol.status == 'FAZER_COTACAO' and is_comprador %}
                     <div class="row">
                         <div class="col-lg-8">
                             <h6 class="fw-bold text-info mb-3">
-                                <i class="bi bi-1-circle-fill me-1"></i> Registrar CotaÃ§Ã£o
+                                <i class="bi bi-1-circle-fill me-1"></i> Registrar Cotação
                             </h6>
                             <form method="post"
                                   action="{% url 'suprimentos:solicitacao_cotacao' sol.pk %}"
@@ -313,15 +313,15 @@
                                 {% csrf_token %}
                                 <div class="row g-3">
                                     <div class="col-md-3">
-                                        <label class="form-label fw-semibold small">Data CotaÃ§Ã£o *</label>
+                                        <label class="form-label fw-semibold small">Data Cotação *</label>
                                         <input type="date" name="data_cotacao"
                                                class="form-control form-control-sm" required>
                                     </div>
                                     <div class="col-md-3">
-                                        <label class="form-label fw-semibold small">NÂº CotaÃ§Ã£o *</label>
+                                        <label class="form-label fw-semibold small">Nº Cotação *</label>
                                         <input type="text" name="numero_cotacao"
                                                class="form-control form-control-sm"
-                                               placeholder="NÂº no Sienge" required>
+                                               placeholder="Nº no Sienge" required>
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label fw-semibold small">CNPJ Compra *</label>
@@ -343,18 +343,18 @@
                                 <div class="mt-3 d-flex justify-content-between align-items-center">
                                     <div class="text-muted small">
                                         <i class="bi bi-info-circle me-1"></i>
-                                        ApÃ³s enviar, o gerente serÃ¡ notificado para validar.
+                                        Após enviar, o gerente será notificado para validar.
                                     </div>
                                     <button type="submit" class="btn btn-info text-white btn-sm px-4">
-                                        <i class="bi bi-send me-1"></i> Enviar CotaÃ§Ã£o para ValidaÃ§Ã£o
+                                        <i class="bi bi-send me-1"></i> Enviar Cotação para Validação
                                     </button>
                                 </div>
                             </form>
                         </div>
-                        {# Upload de arquivo da cotaÃ§Ã£o #}
+                        {# Upload de arquivo da cotação #}
                         <div class="col-lg-4">
                             <h6 class="fw-bold text-secondary mb-3">
-                                <i class="bi bi-paperclip me-1"></i> Anexar CotaÃ§Ã£o
+                                <i class="bi bi-paperclip me-1"></i> Anexar Cotação
                             </h6>
                             <form method="post"
                                   action="{% url 'suprimentos:solicitacao_anexo' sol.pk %}"
@@ -368,7 +368,7 @@
                                 <div class="mb-2">
                                     <input type="text" name="descricao"
                                            class="form-control form-control-sm"
-                                           placeholder="DescriÃ§Ã£o (ex: CotaÃ§Ã£o Fornecedor X)">
+                                           placeholder="Descrição (ex: Cotação Fornecedor X)">
                                 </div>
                                 <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
                                     <i class="bi bi-upload me-1"></i> Upload
@@ -394,19 +394,19 @@
                     </div>
                     {% endif %}
 
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
-                    {#  ETAPA 2: VALIDAR COTAÃ‡ÃƒO (Aprovador)       #}
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
+                    {#  ETAPA 2: VALIDAR COTAÇÃO (Aprovador)       #}
+                    {# ════════════════════════════════════════════ #}
                     {% if sol.status == 'COTACAO_ENVIADA' and is_aprovador %}
                     <h6 class="fw-bold text-warning mb-3">
-                        <i class="bi bi-2-circle-fill me-1"></i> Validar CotaÃ§Ã£o
+                        <i class="bi bi-2-circle-fill me-1"></i> Validar Cotação
                     </h6>
 
-                    {# Resumo da cotaÃ§Ã£o para o aprovador #}
+                    {# Resumo da cotação para o aprovador #}
                     <div class="alert alert-light border mb-3 py-2">
                         <div class="row small">
                             <div class="col-md-3">
-                                <span class="text-muted">CotaÃ§Ã£o NÂº:</span>
+                                <span class="text-muted">Cotação Nº:</span>
                                 <strong>{{ sol.numero_cotacao }}</strong>
                             </div>
                             <div class="col-md-3">
@@ -424,7 +424,7 @@
                         </div>
                     </div>
 
-                    {# Anexos da cotaÃ§Ã£o #}
+                    {# Anexos da cotação #}
                     {% if sol.anexos.exists %}
                     <div class="mb-3">
                         <span class="small fw-semibold text-muted">Anexos:</span>
@@ -442,7 +442,7 @@
                           class="d-flex align-items-end gap-3">
                         {% csrf_token %}
                         <div>
-                            <label class="form-label fw-semibold small">Data ValidaÃ§Ã£o *</label>
+                            <label class="form-label fw-semibold small">Data Validação *</label>
                             <input type="date" name="data_validacao"
                                    class="form-control form-control-sm" required>
                         </div>
@@ -452,9 +452,9 @@
                     </form>
                     {% endif %}
 
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
                     {#  ETAPA 3: CRIAR PEDIDO (Comprador)          #}
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
                     {% if sol.status == 'CRIAR_PEDIDO_CT' and is_comprador %}
                     <h6 class="fw-bold text-primary mb-3">
                         <i class="bi bi-3-circle-fill me-1"></i> Criar Pedido / CT
@@ -464,12 +464,12 @@
                         {% csrf_token %}
                         <div class="row g-3">
                             <div class="col-md-3">
-                                <label class="form-label fw-semibold small">Data CriaÃ§Ã£o *</label>
+                                <label class="form-label fw-semibold small">Data Criação *</label>
                                 <input type="date" name="data_criacao_pedido"
                                        class="form-control form-control-sm" required>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label fw-semibold small">NÂº Pedido (Sienge) *</label>
+                                <label class="form-label fw-semibold small">Nº Pedido (Sienge) *</label>
                                 <input type="text" name="numero_pedido_sienge"
                                        class="form-control form-control-sm"
                                        placeholder="Ex: 12345" required>
@@ -493,16 +493,16 @@
                         <div class="mt-3 text-end">
                             {% if perms.suprimentos.add_solicitacao or user.is.superuser %}
                             <button type="submit" class="btn btn-primary btn-sm px-4">
-                                <i class="bi bi-box-seam me-1"></i> Registrar Pedido â†’ Enviar para AprovaÃ§Ã£o
+                                <i class="bi bi-box-seam me-1"></i> Registrar Pedido → Enviar para Aprovação
                             </button>
                             {% endif %}
                         </div>
                     </form>
                     {% endif %}
 
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
                     {#  ETAPA 4: APROVAR PEDIDO (Aprovador)        #}
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
                     {% if sol.status == 'EM_APROVACAO' and is_aprovador %}
                     <h6 class="fw-bold mb-3" style="color:#fd7e14;">
                         <i class="bi bi-4-circle-fill me-1"></i> Aprovar Pedido
@@ -512,7 +512,7 @@
                     <div class="alert alert-light border mb-3 py-2">
                         <div class="row small">
                             <div class="col-md-3">
-                                <span class="text-muted">Pedido NÂº:</span>
+                                <span class="text-muted">Pedido Nº:</span>
                                 <strong>{{ sol.numero_pedido_sienge }}</strong>
                             </div>
                             <div class="col-md-3">
@@ -525,7 +525,7 @@
                             </div>
                             <div class="col-md-3">
                                 <span class="text-muted">Comprador:</span>
-                                <strong>{{ sol.comprador.get_full_name|default:"â€”" }}</strong>
+                                <strong>{{ sol.comprador.get_full_name|default:"—" }}</strong>
                             </div>
                         </div>
                     </div>
@@ -535,7 +535,7 @@
                           class="d-flex align-items-end gap-3">
                         {% csrf_token %}
                         <div>
-                            <label class="form-label fw-semibold small">Data AprovaÃ§Ã£o *</label>
+                            <label class="form-label fw-semibold small">Data Aprovação *</label>
                             <input type="date" name="data_aprovacao_pedido"
                                    class="form-control form-control-sm" required>
                         </div>
@@ -547,9 +547,9 @@
                     </form>
                     {% endif %}
 
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
                     {#  ETAPA 5: ENVIAR AO FORNECEDOR (Comprador)  #}
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
                     {% if sol.status == 'ENVIAR_PEDIDO' and is_comprador %}
                     <h6 class="fw-bold text-purple mb-3">
                         <i class="bi bi-5-circle-fill me-1"></i> Enviar Pedido ao Fornecedor
@@ -564,7 +564,7 @@
                                    class="form-control form-control-sm" required>
                         </div>
                         <div>
-                            <label class="form-label fw-semibold small">PrevisÃ£o Entrega *</label>
+                            <label class="form-label fw-semibold small">Previsão Entrega *</label>
                             <input type="date" name="data_prevista"
                                    class="form-control form-control-sm" required>
                         </div>
@@ -576,9 +576,9 @@
                     </form>
                     {% endif %}
 
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
                     {#  ETAPA 6: REGISTRAR ENTREGA (Comprador)     #}
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
                     {% if sol.status == 'ENTREGA_PENDENTE' and is_comprador %}
                     <h6 class="fw-bold text-success mb-3">
                         <i class="bi bi-6-circle-fill me-1"></i> Registrar Entrega
@@ -587,7 +587,7 @@
                     {% if sol.data_prevista_entrega %}
                     <div class="small text-muted mb-2">
                         <i class="bi bi-calendar-event me-1"></i>
-                        PrevisÃ£o: <strong>{{ sol.data_prevista_entrega|date:"d/m/Y" }}</strong>
+                        Previsão: <strong>{{ sol.data_prevista_entrega|date:"d/m/Y" }}</strong>
                     </div>
                     {% endif %}
 
@@ -608,7 +608,7 @@
                         {% endif %}
                     </form>
                     {% else %}
-                    {# JÃ¡ entregue â†’ Encerrar #}
+                    {# Já entregue → Encerrar #}
                     <div class="alert alert-success py-2 small mb-2">
                         <i class="bi bi-check-circle me-1"></i>
                         Entregue em <strong>{{ sol.data_entrega_efetiva|date:"d/m/Y" }}</strong>
@@ -618,38 +618,38 @@
                           class="d-flex align-items-end gap-3">
                         {% csrf_token %}
                         <div>
-                            <label class="form-label fw-semibold small">NÂº Nota Fiscal *</label>
+                            <label class="form-label fw-semibold small">Nº Nota Fiscal *</label>
                             <input type="text" name="numero_nota_fiscal"
                                    class="form-control form-control-sm"
-                                   placeholder="NÂº da NF" required>
+                                   placeholder="Nº da NF" required>
                         </div>
                         {% if perms.suprimentos.change_solicitacao or user.is.superuser %}
                         <button type="submit" class="btn btn-success btn-sm px-4">
-                            <i class="bi bi-trophy me-1"></i> Encerrar SolicitaÃ§Ã£o
+                            <i class="bi bi-trophy me-1"></i> Encerrar Solicitação
                         </button>
                         {% endif %}
                     </form>
                     {% endif %}
                     {% endif %}
 
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
-                    {#  STATUS FINAL: CONCLUÃDO                    #}
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
+                    {#  STATUS FINAL: CONCLUÍDO                    #}
+                    {# ════════════════════════════════════════════ #}
                     {% if sol.status == 'CONCLUIDO' %}
                     <div class="text-center py-2">
                         <i class="bi bi-trophy-fill text-success fs-4 me-2"></i>
-                        <span class="fw-bold text-success">ConcluÃ­da</span>
+                        <span class="fw-bold text-success">Concluída</span>
                         <span class="text-muted ms-2">
                             NF: {{ sol.numero_nota_fiscal }}
-                            {% if sol.valor_pedido %} Â· R$ {{ sol.valor_pedido|floatformat:2 }}{% endif %}
-                            {% if sol.data_entrega_efetiva %} Â· {{ sol.data_entrega_efetiva|date:"d/m/Y" }}{% endif %}
+                            {% if sol.valor_pedido %} · R$ {{ sol.valor_pedido|floatformat:2 }}{% endif %}
+                            {% if sol.data_entrega_efetiva %} · {{ sol.data_entrega_efetiva|date:"d/m/Y" }}{% endif %}
                         </span>
                     </div>
                     {% endif %}
 
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
                     {#  STATUS FINAL: CANCELADO                    #}
-                    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+                    {# ════════════════════════════════════════════ #}
                     {% if sol.status == 'CANCELADO' %}
                     <div class="text-center py-2">
                         <i class="bi bi-x-octagon-fill text-secondary fs-4 me-2"></i>
@@ -665,7 +665,7 @@
         {% endfor %}
     </div>
 
-    {# â•â•â• PAGINAÃ‡ÃƒO â•â•â• #}
+    {# ═══ PAGINAÇÃO ═══ #}
     {% if is_paginated %}
     <nav class="mt-4 d-flex justify-content-center">
         <ul class="pagination pagination-sm">
@@ -701,16 +701,16 @@
     <div class="card shadow-sm">
         <div class="card-body text-center py-5">
             <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
-            <h5 class="text-muted mt-3">Nenhuma solicitaÃ§Ã£o encontrada</h5>
+            <h5 class="text-muted mt-3">Nenhuma solicitação encontrada</h5>
             <p class="text-muted">
-                As solicitaÃ§Ãµes aparecem aqui automaticamente apÃ³s a 
-                <strong>aprovaÃ§Ã£o de um pedido</strong>. 
+                As solicitações aparecem aqui automaticamente após a 
+                <strong>aprovação de um pedido</strong>. 
                 {% if is_comprador %}
-                    Inicie pela <strong>cotaÃ§Ã£o</strong> assim que uma solicitaÃ§Ã£o chegar.
+                    Inicie pela <strong>cotação</strong> assim que uma solicitação chegar.
                 {% endif %}
             </p>
             <div class="d-flex justify-content-center gap-2 mt-3">
-                {# Direciona para PEDIDOS APROVADOS aguardando virar solicitaÃ§Ã£o #}
+                {# Direciona para PEDIDOS APROVADOS aguardando virar solicitação #}
                 {% if is_comprador or user.is_superuser %}
                 <a href="{% url 'suprimentos:pedido_lista' %}?status=APROVADO" 
                 class="btn btn-info text-white">

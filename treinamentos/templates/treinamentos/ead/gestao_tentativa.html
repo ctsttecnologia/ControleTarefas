@@ -1,7 +1,7 @@
-﻿
+
 {% extends "base.html" %}
 
-{% block title %}RevisÃ£o â€” {{ tentativa.matricula.funcionario }}{% endblock %}
+{% block title %}Revisão — {{ tentativa.matricula.funcionario }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -10,11 +10,11 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="fw-bold mb-1">
-                <i class="bi bi-search me-2"></i>RevisÃ£o de Prova
+                <i class="bi bi-search me-2"></i>Revisão de Prova
             </h3>
             <p class="text-muted mb-0">
-                {{ tentativa.matricula.funcionario }} â€”
-                Tentativa {{ tentativa.numero_tentativa }} â€”
+                {{ tentativa.matricula.funcionario }} —
+                Tentativa {{ tentativa.numero_tentativa }} —
                 {{ tentativa.matricula.curso.titulo }}
             </p>
         </div>
@@ -49,7 +49,7 @@
         <div class="col-md-3">
             <div class="card text-center border-0 shadow-sm p-3">
                 <div class="fs-2 fw-bold">{{ tentativa.matricula.curso.nota_minima }}</div>
-                <small class="text-muted">Nota MÃ­nima</small>
+                <small class="text-muted">Nota Mínima</small>
             </div>
         </div>
         <div class="col-md-3">
@@ -72,9 +72,9 @@
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
             <strong>
                 <span class="badge {% if item.acertou %}bg-success{% else %}bg-danger{% endif %} me-2">
-                    {% if item.acertou %}âœ”{% else %}âœ˜{% endif %}
+                    {% if item.acertou %}✔{% else %}✘{% endif %}
                 </span>
-                QuestÃ£o {{ forloop.counter }}
+                Questão {{ forloop.counter }}
             </strong>
             <span class="badge bg-light text-dark">Peso: {{ item.questao.peso }}</span>
         </div>
@@ -107,14 +107,14 @@
             {% if item.questao.explicacao %}
             <div class="alert alert-info mt-3 mb-0 py-2">
                 <i class="bi bi-lightbulb me-1"></i>
-                <strong>ExplicaÃ§Ã£o:</strong> {{ item.questao.explicacao }}
+                <strong>Explicação:</strong> {{ item.questao.explicacao }}
             </div>
             {% endif %}
         </div>
     </div>
     {% endfor %}
 
-    <!-- AÃ§Ãµes do Gestor -->
+    <!-- Ações do Gestor -->
     <div class="d-flex justify-content-center gap-3 mt-4">
         {% if not tentativa.aprovado and tentativa.matricula.status == 'reprovado' %}
         <form method="post"

@@ -1,8 +1,8 @@
-﻿
+
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ curso.titulo }} â€” EAD{% endblock %}
+{% block title %}{{ curso.titulo }} — EAD{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -46,7 +46,7 @@
 
 {% block content %}
 
-<!-- â•â•â• HEADER â•â•â• -->
+<!-- ═══ HEADER ═══ -->
 <section class="curso-header">
     <div class="container">
         <div class="row align-items-center">
@@ -74,10 +74,10 @@
                             <div class="progress-bar bg-success"
                                  style="width: {{ matricula.progresso_percentual }}%"></div>
                         </div>
-                        <p class="mb-2 fw-bold">{{ matricula.progresso_percentual }}% concluÃ­do</p>
+                        <p class="mb-2 fw-bold">{{ matricula.progresso_percentual }}% concluído</p>
 
-                        <!-- Barra de carga horÃ¡ria -->
-                        <p class="mb-1 small">Carga horÃ¡ria</p>
+                        <!-- Barra de carga horária -->
+                        <p class="mb-1 small">Carga horária</p>
                         <div class="progress mb-2" style="height: 10px; width: 200px;">
                             <div class="progress-bar {% if ch_ok %}bg-success{% else %}bg-warning{% endif %}"
                                  style="width: {{ matricula.percentual_carga_horaria }}%"></div>
@@ -103,7 +103,7 @@
                         <a href="{% url 'treinamentos:ead_avaliacao' matricula_id=matricula.pk %}"
                            class="btn btn-warning btn-lg">
                             <i class="bi bi-pencil-square me-1"></i>
-                            {% if ultima_tentativa %}Nova Tentativa{% else %}Fazer AvaliaÃ§Ã£o{% endif %}
+                            {% if ultima_tentativa %}Nova Tentativa{% else %}Fazer Avaliação{% endif %}
                         </a>
                     </div>
                     {% endif %}
@@ -120,7 +120,7 @@
     </div>
 </section>
 
-<!-- â•â•â• RESULTADO DA AVALIAÃ‡ÃƒO â•â•â• -->
+<!-- ═══ RESULTADO DA AVALIAÇÃO ═══ -->
 {% if ultima_tentativa %}
 <section class="container py-4">
     <div class="card resultado-card shadow-sm">
@@ -140,17 +140,17 @@
                             <i class="bi bi-trophy-fill me-2"></i>Aprovado!
                         </h4>
                         <p class="mb-0" style="opacity:.85;">
-                            ParabÃ©ns! Nota e carga horÃ¡ria atingidas.
+                            Parabéns! Nota e carga horária atingidas.
                         </p>
 
                     {% elif nota_ok and not ch_ok %}
                         <h4 class="fw-bold mb-1">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            Nota aprovada â€” Falta carga horÃ¡ria!
+                            Nota aprovada — Falta carga horária!
                         </h4>
                         <p class="mb-0" style="opacity:.85;">
-                            Sua nota {{ ultima_tentativa.nota }} atingiu a mÃ­nima,
-                            mas vocÃª precisa completar a carga horÃ¡ria:
+                            Sua nota {{ ultima_tentativa.nota }} atingiu a mínima,
+                            mas você precisa completar a carga horária:
                             <strong>{{ matricula.carga_horaria_cumprida_formatada }}
                             / {{ curso.carga_horaria_total }}h</strong>
                             ({{ matricula.percentual_carga_horaria }}%).
@@ -161,7 +161,7 @@
                             <i class="bi bi-arrow-repeat me-2"></i>Nota insuficiente
                         </h4>
                         <p class="mb-0" style="opacity:.85;">
-                            Nota mÃ­nima: {{ curso.nota_minima }}. VocÃª tem
+                            Nota mínima: {{ curso.nota_minima }}. Você tem
                             {{ tentativas_restantes }} tentativa{{ tentativas_restantes|pluralize:"s" }}.
                         </p>
 
@@ -184,13 +184,13 @@
                         {% if nota_ok and not ch_ok %}
                         <a href="#conteudo-programatico"
                            class="btn btn-sm btn-light text-warning fw-bold">
-                            <i class="bi bi-play-circle me-1"></i> Voltar aos VÃ­deos
+                            <i class="bi bi-play-circle me-1"></i> Voltar aos Vídeos
                         </a>
                         {% endif %}
 
                         {% if nota_ok and ch_ok and matricula.pode_emitir_certificado %}
                         <span class="btn btn-sm btn-light text-success fw-bold">
-                            <i class="bi bi-award me-1"></i> Certificado disponÃ­vel
+                            <i class="bi bi-award me-1"></i> Certificado disponível
                         </span>
                         {% endif %}
 
@@ -215,11 +215,11 @@
                     <strong>{{ ultima_tentativa.nota }}</strong>
                 </div>
                 <div class="col-3 text-center">
-                    <div class="small" style="opacity:.7;">Nota MÃ­nima</div>
+                    <div class="small" style="opacity:.7;">Nota Mínima</div>
                     <strong>{{ curso.nota_minima }}</strong>
                 </div>
                 <div class="col-3 text-center">
-                    <div class="small" style="opacity:.7;">Carga HorÃ¡ria</div>
+                    <div class="small" style="opacity:.7;">Carga Horária</div>
                     <strong>
                         {% if ch_ok %}
                             <i class="bi bi-check-circle-fill"></i>
@@ -234,16 +234,16 @@
 </section>
 {% endif %}
 
-<!-- â•â•â• INFO CARDS â•â•â• -->
+<!-- ═══ INFO CARDS ═══ -->
 <section class="container {% if not ultima_tentativa %}py-4{% else %}pb-4{% endif %}">
     <div class="info-grid mb-4">
         <div class="info-card">
             <div class="value">{{ curso.carga_horaria_total }}h</div>
-            <div class="label">Carga HorÃ¡ria</div>
+            <div class="label">Carga Horária</div>
         </div>
         <div class="info-card">
             <div class="value">{{ curso.total_modulos }}</div>
-            <div class="label">MÃ³dulos</div>
+            <div class="label">Módulos</div>
         </div>
         <div class="info-card">
             <div class="value">{{ curso.total_aulas }}</div>
@@ -251,7 +251,7 @@
         </div>
         <div class="info-card">
             <div class="value">{{ curso.nota_minima }}</div>
-            <div class="label">Nota MÃ­nima</div>
+            <div class="label">Nota Mínima</div>
         </div>
         <div class="info-card">
             <div class="value">{{ curso.max_tentativas_avaliacao }}</div>
@@ -259,7 +259,7 @@
         </div>
     </div>
 
-    <!-- DescriÃ§Ã£o -->
+    <!-- Descrição -->
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>Sobre o Curso</h5>
@@ -267,9 +267,9 @@
         </div>
     </div>
 
-    <!-- â•â•â• MÃ³dulos e Aulas â•â•â• -->
+    <!-- ═══ Módulos e Aulas ═══ -->
     <h5 class="fw-bold mb-3" id="conteudo-programatico">
-        <i class="bi bi-list-check me-2"></i>ConteÃºdo ProgramÃ¡tico
+        <i class="bi bi-list-check me-2"></i>Conteúdo Programático
     </h5>
 
     {% for modulo in modulos %}
@@ -300,7 +300,7 @@
                         <br>
                         <span class="text-muted" style="font-size:.75rem">
                             {{ aula.duracao_estimada_min }} min
-                            {% if not aula.obrigatoria %}Â· <span class="text-info">Opcional</span>{% endif %}
+                            {% if not aula.obrigatoria %}· <span class="text-info">Opcional</span>{% endif %}
                         </span>
                     </div>
                 </div>

@@ -1,8 +1,8 @@
-﻿<!-- PÃ¡gina de VerificaÃ§Ã£o de Certificado -->
+<!-- Página de Verificação de Certificado -->
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{% if valido %}Certificado VÃ¡lido{% else %}Certificado InvÃ¡lido{% endif %}{% endblock %}
+{% block title %}{% if valido %}Certificado Válido{% else %}Certificado Inválido{% endif %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -148,12 +148,12 @@
     <div class="card verify-card">
 
         {% if valido %}
-        <!-- â•â•â• VÃLIDO â•â•â• -->
+        <!-- ═══ VÁLIDO ═══ -->
         <div class="verify-header verify-header-valid">
             <div class="verify-header-icon">
                 <i class="bi bi-shield-fill-check"></i>
             </div>
-            <h2>Certificado AutÃªntico</h2>
+            <h2>Certificado Autêntico</h2>
         </div>
         <div class="verify-body">
             <p class="text-muted text-center mb-1">Este documento foi emitido para</p>
@@ -186,7 +186,7 @@
                 </div>
                 <div class="cert-detail-item">
                     <span class="cert-detail-label">
-                        <i class="bi bi-calendar-check"></i> ConclusÃ£o
+                        <i class="bi bi-calendar-check"></i> Conclusão
                     </span>
                     <span class="cert-detail-value">{{ treinamento.data_fim|date:"d/m/Y" }}</span>
                 </div>
@@ -194,22 +194,22 @@
 
             <div class="text-center">
                 <div class="cert-stamp">
-                    <i class="bi bi-patch-check-fill"></i> Documento Verificado e AutÃªntico
+                    <i class="bi bi-patch-check-fill"></i> Documento Verificado e Autêntico
                 </div>
             </div>
         </div>
 
         {% else %}
-        <!-- â•â•â• INVÃLIDO â•â•â• -->
+        <!-- ═══ INVÁLIDO ═══ -->
         <div class="verify-header verify-header-invalid">
             <div class="verify-header-icon">
                 <i class="bi bi-shield-fill-x"></i>
             </div>
-            <h2>Certificado NÃ£o Encontrado</h2>
+            <h2>Certificado Não Encontrado</h2>
         </div>
         <div class="verify-body">
             <p class="text-muted text-center">
-                NÃ£o foi possÃ­vel localizar um certificado com o protocolo informado.
+                Não foi possível localizar um certificado com o protocolo informado.
             </p>
 
             <div class="invalid-protocol">

@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Monitoramento do Servidor{% endblock %}
@@ -17,12 +17,12 @@
         </small>
     </div>
 
-    <!-- Cards de mÃ©tricas principais -->
+    <!-- Cards de métricas principais -->
     <div class="row g-3 mb-4">
         <div class="col-md-3">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h6 class="text-muted text-uppercase small">ðŸ”¥ CPU</h6>
+                    <h6 class="text-muted text-uppercase small">🔥 CPU</h6>
                     <h2 class="mb-1"><span id="cpu-percent">-</span>%</h2>
                     <div class="progress" style="height: 6px;">
                         <div id="cpu-bar" class="progress-bar bg-success" style="width:0%"></div>
@@ -38,7 +38,7 @@
         <div class="col-md-3">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h6 class="text-muted text-uppercase small">ðŸ§  MemÃ³ria RAM</h6>
+                    <h6 class="text-muted text-uppercase small">🧠 Memória RAM</h6>
                     <h2 class="mb-1"><span id="mem-percent">-</span>%</h2>
                     <div class="progress" style="height: 6px;">
                         <div id="mem-bar" class="progress-bar bg-success" style="width:0%"></div>
@@ -53,7 +53,7 @@
         <div class="col-md-3">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h6 class="text-muted text-uppercase small">ðŸ’¾ Disco</h6>
+                    <h6 class="text-muted text-uppercase small">💾 Disco</h6>
                     <h2 class="mb-1"><span id="disco-percent">-</span>%</h2>
                     <div class="progress" style="height: 6px;">
                         <div id="disco-bar" class="progress-bar bg-success" style="width:0%"></div>
@@ -69,7 +69,7 @@
         <div class="col-md-3">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h6 class="text-muted text-uppercase small">ðŸ”„ Swap</h6>
+                    <h6 class="text-muted text-uppercase small">🔄 Swap</h6>
                     <h2 class="mb-1"><span id="swap-percent">-</span>%</h2>
                     <div class="progress" style="height: 6px;">
                         <div id="swap-bar" class="progress-bar bg-success" style="width:0%"></div>
@@ -88,7 +88,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="text-muted text-uppercase small mb-0">ðŸ“¦ Redis</h6>
+                        <h6 class="text-muted text-uppercase small mb-0">📦 Redis</h6>
                         <button class="btn btn-sm btn-link p-0 text-muted" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#redis-legenda"
                                 aria-expanded="false" title="Sobre clientes conectados">
@@ -100,7 +100,7 @@
                     <div id="redis-details">
                         <table class="table table-sm mb-0 mt-2">
                             <tr>
-                                <td>MemÃ³ria usada:</td>
+                                <td>Memória usada:</td>
                                 <td><strong><span id="redis-mem">-</span> MB</strong></td>
                             </tr>
                             <tr>
@@ -115,16 +115,16 @@
                                 <td><strong id="redis-keys">-</strong></td>
                             </tr>
                             <tr>
-                                <td>VersÃ£o:</td>
+                                <td>Versão:</td>
                                 <td><strong id="redis-versao">-</strong></td>
                             </tr>
                         </table>
                     </div>
 
-                    <!-- Legenda colapsÃ¡vel -->
+                    <!-- Legenda colapsável -->
                     <div class="collapse mt-3" id="redis-legenda">
                         <div class="card card-body bg-light p-2 small">
-                            <strong class="mb-1">ðŸ“‹ ReferÃªncia: Clientes Conectados</strong>
+                            <strong class="mb-1">📋 Referência: Clientes Conectados</strong>
                             <table class="table table-sm table-borderless mb-0 small">
                                 <thead>
                                     <tr class="border-bottom">
@@ -134,20 +134,20 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td class="py-1"><span class="badge bg-success">0â€“50</span></td>
-                                        <td class="py-1">âœ… Normal</td>
+                                        <td class="py-1"><span class="badge bg-success">0–50</span></td>
+                                        <td class="py-1">✅ Normal</td>
                                     </tr>
                                     <tr>
-                                        <td class="py-1"><span class="badge bg-warning text-dark">50â€“200</span></td>
-                                        <td class="py-1">ðŸŸ¡ AtenÃ§Ã£o (revisar pools)</td>
+                                        <td class="py-1"><span class="badge bg-warning text-dark">50–200</span></td>
+                                        <td class="py-1">🟡 Atenção (revisar pools)</td>
                                     </tr>
                                     <tr>
-                                        <td class="py-1"><span class="badge" style="background-color:#fd7e14;">200â€“1000</span></td>
-                                        <td class="py-1">ðŸŸ  Suspeito (possÃ­vel leak)</td>
+                                        <td class="py-1"><span class="badge" style="background-color:#fd7e14;">200–1000</span></td>
+                                        <td class="py-1">🟠 Suspeito (possível leak)</td>
                                     </tr>
                                     <tr>
                                         <td class="py-1"><span class="badge bg-danger">1000+</span></td>
-                                        <td class="py-1">ðŸ”´ Problema sÃ©rio (vai bater no <code>maxclients</code>)</td>
+                                        <td class="py-1">🔴 Problema sério (vai bater no <code>maxclients</code>)</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -165,7 +165,7 @@
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <h6 class="text-muted text-uppercase small">ðŸŒ¿ Celery</h6>
+                    <h6 class="text-muted text-uppercase small">🌿 Celery</h6>
                     <h2 class="mb-1"><span id="celery-fila">-</span></h2>
                     <small class="text-muted">tarefas aguardando processamento na fila</small>
                 </div>
@@ -176,7 +176,7 @@
     <!-- Processos -->
     <div class="card shadow-sm">
         <div class="card-body">
-            <h6 class="text-muted text-uppercase small">âš™ï¸ Processos da AplicaÃ§Ã£o (Top 15 por memÃ³ria)</h6>
+            <h6 class="text-muted text-uppercase small">⚙️ Processos da Aplicação (Top 15 por memória)</h6>
             <div class="table-responsive">
                 <table class="table table-sm table-hover">
                     <thead>
@@ -210,32 +210,32 @@ function atualizarBarra(barId, percent) {
     bar.className = 'progress-bar ' + corBarra(percent);
 }
 
-// ðŸ†• Avalia o status dos clientes Redis e retorna {classe, texto, tooltip}
+// 🆕 Avalia o status dos clientes Redis e retorna {classe, texto, tooltip}
 function statusClientesRedis(num) {
     if (num <= 50) {
         return {
             classe: 'bg-success',
             texto: 'Normal',
-            tooltip: '0-50: âœ… OperaÃ§Ã£o saudÃ¡vel'
+            tooltip: '0-50: ✅ Operação saudável'
         };
     } else if (num <= 200) {
         return {
             classe: 'bg-warning text-dark',
-            texto: 'AtenÃ§Ã£o',
-            tooltip: '50-200: ðŸŸ¡ Revisar pools de conexÃ£o'
+            texto: 'Atenção',
+            tooltip: '50-200: 🟡 Revisar pools de conexão'
         };
     } else if (num <= 1000) {
         return {
             classe: 'text-white',
             estilo: 'background-color:#fd7e14;',
             texto: 'Suspeito',
-            tooltip: '200-1000: ðŸŸ  PossÃ­vel connection leak'
+            tooltip: '200-1000: 🟠 Possível connection leak'
         };
     } else {
         return {
             classe: 'bg-danger',
-            texto: 'CrÃ­tico',
-            tooltip: '1000+: ðŸ”´ PrÃ³ximo do limite maxclients!'
+            texto: 'Crítico',
+            tooltip: '1000+: 🔴 Próximo do limite maxclients!'
         };
     }
 }
@@ -256,7 +256,7 @@ async function atualizar() {
         document.getElementById('load').textContent = `${d.cpu.load_1min} / ${d.cpu.load_5min} / ${d.cpu.load_15min}`;
         atualizarBarra('cpu-bar', d.cpu.percent);
 
-        // MemÃ³ria
+        // Memória
         document.getElementById('mem-percent').textContent = d.memoria.percent;
         document.getElementById('mem-usada').textContent = d.memoria.usada_mb;
         document.getElementById('mem-total').textContent = d.memoria.total_mb;
@@ -266,7 +266,7 @@ async function atualizar() {
         document.getElementById('disco-percent').textContent = d.disco.percent;
         document.getElementById('disco-usado').textContent = d.disco.usado_gb;
         document.getElementById('disco-total').textContent = d.disco.total_gb;
-        document.getElementById('disco-path').textContent = 'ðŸ“ ' + d.disco.path;
+        document.getElementById('disco-path').textContent = '📁 ' + d.disco.path;
         document.getElementById('disco-path').title = d.disco.path;
         atualizarBarra('disco-bar', d.disco.percent);
 
@@ -283,7 +283,7 @@ async function atualizar() {
         const redisErroMsg = document.getElementById('redis-erro-msg');
 
         if (d.redis.conectado) {
-            redisStatus.innerHTML = '<span class="text-success">âœ… Online</span>';
+            redisStatus.innerHTML = '<span class="text-success">✅ Online</span>';
             redisDetails.style.display = '';
             redisErro.style.display = 'none';
 
@@ -291,7 +291,7 @@ async function atualizar() {
             document.getElementById('redis-keys').textContent = d.redis.total_keys || '-';
             document.getElementById('redis-versao').textContent = d.redis.versao || '-';
 
-            // ðŸ†• Clientes com badge colorida
+            // 🆕 Clientes com badge colorida
             const numClientes = parseInt(d.redis.clientes) || 0;
             document.getElementById('redis-clients').textContent = numClientes;
 
@@ -302,12 +302,12 @@ async function atualizar() {
             badge.textContent = status.texto;
             badge.title = status.tooltip;
         } else {
-            redisStatus.innerHTML = '<span class="text-danger">âŒ Offline</span>';
+            redisStatus.innerHTML = '<span class="text-danger">❌ Offline</span>';
             redisDetails.style.display = 'none';
             redisErro.style.display = '';
             redisErroMsg.textContent = d.ambiente === 'Windows'
-                ? 'Redis nÃ£o estÃ¡ rodando localmente. Esperado em dev. Em produÃ§Ã£o (container) ele estÃ¡ sempre ativo.'
-                : 'Redis offline! Verifique o serviÃ§o: ' + (d.redis.erro || 'sem detalhes');
+                ? 'Redis não está rodando localmente. Esperado em dev. Em produção (container) ele está sempre ativo.'
+                : 'Redis offline! Verifique o serviço: ' + (d.redis.erro || 'sem detalhes');
         }
 
         // Celery
@@ -329,8 +329,8 @@ async function atualizar() {
             `).join('');
         }
     } catch (e) {
-        console.error('Erro ao buscar mÃ©tricas:', e);
-        document.getElementById('timestamp').innerHTML = '<span class="text-danger">âš ï¸ Erro: ' + e.message + '</span>';
+        console.error('Erro ao buscar métricas:', e);
+        document.getElementById('timestamp').innerHTML = '<span class="text-danger">⚠️ Erro: ' + e.message + '</span>';
     }
 }
 

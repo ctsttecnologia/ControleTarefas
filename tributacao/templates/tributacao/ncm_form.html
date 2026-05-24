@@ -1,4 +1,4 @@
-﻿
+
 <!-- templates/tributacao/ncm_form.html -->
 {% extends "tributacao/base_tributacao.html" %}
 
@@ -22,20 +22,20 @@
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-3">
-                        <label for="{{ form.codigo.id_for_label }}" class="form-label">CÃ³digo NCM</label>
+                        <label for="{{ form.codigo.id_for_label }}" class="form-label">Código NCM</label>
                         {{ form.codigo }}
                     </div>
                     <div class="col-md-6">
-                        <label for="{{ form.descricao.id_for_label }}" class="form-label">DescriÃ§Ã£o</label>
+                        <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição</label>
                         {{ form.descricao }}
                     </div>
                     <div class="col-md-3">
-                        <label for="{{ form.ex_tipi.id_for_label }}" class="form-label">ExceÃ§Ã£o TIPI</label>
+                        <label for="{{ form.ex_tipi.id_for_label }}" class="form-label">Exceção TIPI</label>
                         {{ form.ex_tipi }}
                     </div>
                     <div class="col-md-3">
                         <label for="{{ form.aliquota_ipi_padrao.id_for_label }}" class="form-label">
-                            AlÃ­quota IPI PadrÃ£o (%)
+                            Alíquota IPI Padrão (%)
                         </label>
                         {{ form.aliquota_ipi_padrao }}
                     </div>

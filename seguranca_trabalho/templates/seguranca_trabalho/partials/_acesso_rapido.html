@@ -1,15 +1,15 @@
-﻿{# templates/seguranca_trabalho/partials/_acesso_rapido_sst.html #}
+{# templates/seguranca_trabalho/partials/_acesso_rapido_sst.html #}
 
 <div class="row g-4">
     <div class="col-12">
         <h4 class="mb-3 fw-bold">
-            <i class="bi bi-lightning-charge-fill text-warning me-2"></i>Acesso RÃ¡pido
+            <i class="bi bi-lightning-charge-fill text-warning me-2"></i>Acesso Rápido
         </h4>
     </div>
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-         SEGURANÃ‡A DO TRABALHO
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         SEGURANÇA DO TRABALHO
+    ═══════════════════════════════════════════════════════════════════════ -->
     
     {% if perms.seguranca_trabalho.view_fichaepi %}
     <div class="col-lg-3 col-md-6">
@@ -32,7 +32,7 @@
                 <div class="rounded-circle bg-info bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
                     <i class="bi bi-hdd-stack text-info fs-2"></i>
                 </div>
-                <h6 class="fw-bold mb-2">CatÃ¡logo de Equipamentos</h6>
+                <h6 class="fw-bold mb-2">Catálogo de Equipamentos</h6>
                 <p class="text-muted small mb-0">EPIs, CAs e validades.</p>
             </div>
         </a>
@@ -60,7 +60,7 @@
                 <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
                     <i class="bi bi-bookmarks text-warning fs-2"></i>
                 </div>
-                <h6 class="fw-bold mb-2">CartÃ£o de SeguranÃ§a</h6>
+                <h6 class="fw-bold mb-2">Cartão de Segurança</h6>
                 <p class="text-muted small mb-0">Etiquetas de bloqueio.</p>
             </div>
         </a>
@@ -74,8 +74,8 @@
                 <div class="rounded-circle bg-secondary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
                     <i class="bi bi-card-list text-secondary fs-2"></i>
                 </div>
-                <h6 class="fw-bold mb-2">Lista de FunÃ§Ãµes</h6>
-                <p class="text-muted small mb-0">FunÃ§Ãµes cadastradas.</p>
+                <h6 class="fw-bold mb-2">Lista de Funções</h6>
+                <p class="text-muted small mb-0">Funções cadastradas.</p>
             </div>
         </a>
     </div>
@@ -89,7 +89,7 @@
                     <i class="bi bi-grid-3x3 fs-2" style="color: #6f42c1;"></i>
                 </div>
                 <h6 class="fw-bold mb-2">Matriz de EPIs</h6>
-                <p class="text-muted small mb-0">EPIs por funÃ§Ã£o.</p>
+                <p class="text-muted small mb-0">EPIs por função.</p>
             </div>
         </a>
     </div>
@@ -102,16 +102,16 @@
                 <div class="rounded-circle bg-dark bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
                     <i class="bi bi-diagram-3 text-dark fs-2"></i>
                 </div>
-                <h6 class="fw-bold mb-2">Cargo Ã— FunÃ§Ã£o</h6>
-                <p class="text-muted small mb-0">AssociaÃ§Ãµes.</p>
+                <h6 class="fw-bold mb-2">Cargo × Função</h6>
+                <p class="text-muted small mb-0">Associações.</p>
             </div>
         </a>
     </div>
     {% endif %}
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    <!-- ═══════════════════════════════════════════════════════════════════════
          PGR - PROGRAMA DE GERENCIAMENTO DE RISCOS
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    ═══════════════════════════════════════════════════════════════════════ -->
 
     {% if perms.pgr_gestao.view_pgrdocumento %}
     <div class="col-lg-3 col-md-6">
@@ -148,16 +148,16 @@
                 <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
                     <i class="bi bi-list-task text-warning fs-2"></i>
                 </div>
-                <h6 class="fw-bold mb-2">Planos de AÃ§Ã£o</h6>
-                <p class="text-muted small mb-0">AÃ§Ãµes vinculadas aos riscos.</p>
+                <h6 class="fw-bold mb-2">Planos de Ação</h6>
+                <p class="text-muted small mb-0">Ações vinculadas aos riscos.</p>
             </div>
         </a>
     </div>
     {% endif %}
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    <!-- ═══════════════════════════════════════════════════════════════════════
          LTCAT
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    ═══════════════════════════════════════════════════════════════════════ -->
 
     {% if perms.pgr_gestao.view_pgrdocumento %}
     <div class="col-lg-3 col-md-6">
@@ -167,16 +167,16 @@
                     <i class="bi bi-shield-check text-success fs-2"></i>
                 </div>
                 <h6 class="fw-bold mb-2">LTCAT</h6>
-                <p class="text-muted small mb-0">GestÃ£o de Laudos.</p>
+                <p class="text-muted small mb-0">Gestão de Laudos.</p>
             </div>
         </a>
     </div>
     {% endif %}
 
    
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-         GESTÃƒO DE RISCOS
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         GESTÃO DE RISCOS
+    ═══════════════════════════════════════════════════════════════════════ -->
 
     {% if perms.gestao_riscos.view_inspecao %}
     <div class="col-lg-3 col-md-6">
@@ -185,8 +185,8 @@
                 <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
                     <i class="bi bi-clipboard-check text-primary fs-2"></i>
                 </div>
-                <h6 class="fw-bold mb-2">InspeÃ§Ãµes</h6>
-                <p class="text-muted small mb-0">InspeÃ§Ãµes de seguranÃ§a.</p>
+                <h6 class="fw-bold mb-2">Inspeções</h6>
+                <p class="text-muted small mb-0">Inspeções de segurança.</p>
             </div>
         </a>
     </div>
@@ -206,9 +206,9 @@
     </div>
     {% endif %}
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    <!-- ═══════════════════════════════════════════════════════════════════════
          TREINAMENTOS
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    ═══════════════════════════════════════════════════════════════════════ -->
 
     {% if perms.treinamentos.view_treinamento %}
     <div class="col-lg-3 col-md-6">
@@ -218,7 +218,7 @@
                     <i class="bi bi-mortarboard text-success fs-2"></i>
                 </div>
                 <h6 class="fw-bold mb-2">Treinamentos</h6>
-                <p class="text-muted small mb-0">Treinamentos e certificaÃ§Ãµes.</p>
+                <p class="text-muted small mb-0">Treinamentos e certificações.</p>
             </div>
         </a>
     </div>

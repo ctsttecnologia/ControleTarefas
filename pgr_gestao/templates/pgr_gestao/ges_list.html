@@ -1,8 +1,8 @@
-﻿{# GES - Lista de Grupos de ExposiÃ§Ã£o Similar #}
+{# GES - Lista de Grupos de Exposição Similar #}
 {% extends "pgr_gestao/pgr_base.html" %}
 {% load static %}
 
-{% block title %}GES - Grupos de ExposiÃ§Ã£o Similar{% endblock %}
+{% block title %}GES - Grupos de Exposição Similar{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item active">GES</li>
@@ -12,8 +12,8 @@
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h1><i class="bi bi-people-fill"></i> GES - Grupos de ExposiÃ§Ã£o Similar</h1>
-            <p class="mb-0">Gerenciamento de Grupos HomogÃªneos de ExposiÃ§Ã£o</p>
+            <h1><i class="bi bi-people-fill"></i> GES - Grupos de Exposição Similar</h1>
+            <p class="mb-0">Gerenciamento de Grupos Homogêneos de Exposição</p>
         </div>
         {% if perms.pgr_gestao.add_gesgrupoexposicaosimilar %}
         <a href="{% url 'pgr_gestao:ges_create' %}" class="btn btn-light btn-lg">
@@ -23,7 +23,7 @@
     </div>
 </div>
 
-<!-- EstatÃ­sticas -->
+<!-- Estatísticas -->
 <div class="row mb-4 g-3">
     <div class="col-md-3 col-6">
         <div class="card stats-card text-center h-100">
@@ -97,7 +97,7 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">Buscar</label>
-                <input type="text" name="search" class="form-control" placeholder="CÃ³digo, nome..."
+                <input type="text" name="search" class="form-control" placeholder="Código, nome..."
                        value="{{ request.GET.search }}">
             </div>
             <div class="col-md-1 d-flex align-items-end">
@@ -119,15 +119,15 @@
             <table class="table table-hover table-clickable align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>CÃ³digo</th>
+                        <th>Código</th>
                         <th>Nome</th>
-                        <th>Cargo/FunÃ§Ã£o</th>
+                        <th>Cargo/Função</th>
                         <th>Ambiente</th>
                         <th class="text-center">Trabalhadores</th>
                         <th class="text-center">Riscos</th>
                         <th>Jornada</th>
                         <th class="text-center">Status</th>
-                        <th class="text-center">AÃ§Ãµes</th>
+                        <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -197,7 +197,7 @@
             </table>
         </div>
 
-        <!-- PaginaÃ§Ã£o -->
+        <!-- Paginação -->
         {% if grupos_exposicao.has_other_pages %}
         <nav class="mt-4">
             <ul class="pagination justify-content-center mb-0">

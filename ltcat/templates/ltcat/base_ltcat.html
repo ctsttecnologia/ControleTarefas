@@ -1,17 +1,17 @@
-﻿
+
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{% block ltcat_title %}LTCAT - Laudos TÃ©cnicos{% endblock %}{% endblock %}
+{% block title %}{% block ltcat_title %}LTCAT - Laudos Técnicos{% endblock %}{% endblock %}
 
 {% block body_class %}ltcat-app{% endblock %}
 
 {% block extra_css %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       VARIÃVEIS â€” TEMA VERDE DEGRADÃŠ LTCAT
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════
+       VARIÁVEIS — TEMA VERDE DEGRADÊ LTCAT
+       ═══════════════════════════════════════ */
     :root {
         --ltcat-primary:    #1b6b3a;
         --ltcat-secondary:  #2e9e5e;
@@ -20,7 +20,7 @@
         --ltcat-light:      #e8f5ee;
     }
 
-    /* â•â•â• Layout LTCAT â•â•â• */
+    /* ═══ Layout LTCAT ═══ */
     .ltcat-app #main-content {
         padding: 0;
     }
@@ -30,7 +30,7 @@
         margin-top: 0;
     }
 
-    /* â•â•â• Sidebar â•â•â• */
+    /* ═══ Sidebar ═══ */
     .ltcat-sidebar {
         width: 240px;
         min-width: 240px;
@@ -69,7 +69,7 @@
         padding: 0 20px;
     }
 
-    /* â•â•â• ConteÃºdo Principal â•â•â• */
+    /* ═══ Conteúdo Principal ═══ */
     .ltcat-content-area {
         flex: 1;
         padding: 20px 30px;
@@ -84,7 +84,7 @@
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
     }
 
-    /* â•â•â• Cards â•â•â• */
+    /* ═══ Cards ═══ */
     .ltcat-app .card {
         border: none;
         border-radius: 10px;
@@ -104,14 +104,14 @@
         padding: 15px 20px;
     }
 
-    /* â•â•â• Stats Cards â•â•â• */
+    /* ═══ Stats Cards ═══ */
     .stats-card              { border-left: 4px solid var(--ltcat-primary); }
     .stats-card.danger       { border-left-color: #dc3545; }
     .stats-card.warning      { border-left-color: #ffc107; }
     .stats-card.success      { border-left-color: #28a745; }
     .stats-card.info         { border-left-color: #17a2b8; }
 
-    /* â•â•â• Page Header â•â•â• */
+    /* ═══ Page Header ═══ */
     .page-header {
         background: linear-gradient(135deg, var(--ltcat-dark) 0%, var(--ltcat-primary) 40%, var(--ltcat-secondary) 100%);
         color: white;
@@ -120,7 +120,7 @@
         margin-bottom: 30px;
     }
 
-    /* â•â•â• BotÃµes â•â•â• */
+    /* ═══ Botões ═══ */
     .ltcat-app .btn-primary {
         background: linear-gradient(135deg, var(--ltcat-primary), var(--ltcat-secondary));
         border: none;
@@ -139,7 +139,7 @@
         color: #fff;
     }
 
-    /* â•â•â• Badges de Status LTCAT â•â•â• */
+    /* ═══ Badges de Status LTCAT ═══ */
     .badge-status-vigente      { background-color: #28a745; }
     .badge-status-vencido      { background-color: #dc3545; }
     .badge-status-rascunho     { background-color: #6c757d; }
@@ -148,19 +148,19 @@
     .badge-status-aprovado     { background-color: #17a2b8; }
     .badge-status-cancelado    { background-color: #6c757d; }
 
-    /* â•â•â• Tabelas â•â•â• */
+    /* ═══ Tabelas ═══ */
     .ltcat-app .table-hover tbody tr:hover {
         background-color: var(--ltcat-light);
     }
 
-    /* â•â•â• Breadcrumb â•â•â• */
+    /* ═══ Breadcrumb ═══ */
     .ltcat-breadcrumb {
         background-color: transparent;
         padding: 0;
         margin-bottom: 15px;
     }
     .ltcat-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
-        content: "â€º";
+        content: "›";
     }
     .ltcat-breadcrumb a {
         color: var(--ltcat-primary);
@@ -170,7 +170,7 @@
         color: var(--ltcat-dark);
     }
 
-    /* â•â•â• SeÃ§Ãµes colapsÃ¡veis (detail) â•â•â• */
+    /* ═══ Seções colapsáveis (detail) ═══ */
     .section-header {
         cursor: pointer;
         padding: 12px 20px;
@@ -181,7 +181,7 @@
         background-color: var(--ltcat-light);
     }
 
-    /* â•â•â• Print â•â•â• */
+    /* ═══ Print ═══ */
     @media print {
         .ltcat-sidebar, .no-print, #global-header {
             display: none !important;
@@ -193,7 +193,7 @@
         }
     }
 
-    /* â•â•â• Responsivo â•â•â• */
+    /* ═══ Responsivo ═══ */
     @media (max-width: 767.98px) {
         .ltcat-sidebar {
             display: none;
@@ -229,7 +229,7 @@
 {% block content %}
 <div class="ltcat-wrapper">
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SIDEBAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
     <nav class="ltcat-sidebar d-none d-md-block" id="ltcatSidebar">
         <div class="position-sticky" style="top: 72px;">
             <ul class="nav flex-column">
@@ -265,7 +265,7 @@
                 <li class="nav-item">
                     <a class="nav-link {% if 'locais' in request.path %}active{% endif %}"
                        href="{% url 'ltcat:local_list' %}">
-                        <i class="fas fa-map-marker-alt"></i> Locais de PrestaÃ§Ã£o
+                        <i class="fas fa-map-marker-alt"></i> Locais de Prestação
                     </a>
                 </li>
 
@@ -276,7 +276,7 @@
     <!-- Overlay mobile -->
     <div class="ltcat-sidebar-overlay" id="ltcatSidebarOverlay"></div>
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CONTEÃšDO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- ═══════════════════ CONTEÚDO ═══════════════════ -->
     <div class="ltcat-content-area">
 
         <!-- Breadcrumb -->
@@ -319,7 +319,7 @@
     var sidebar = document.getElementById('ltcatSidebar');
     var overlay = document.getElementById('ltcatSidebarOverlay');
 
-    // BotÃ£o hamburger mobile para sidebar LTCAT
+    // Botão hamburger mobile para sidebar LTCAT
     var mobileToggle = document.getElementById('ltcatMobileToggle');
     if (mobileToggle && sidebar && overlay) {
         mobileToggle.addEventListener('click', function() {

@@ -1,4 +1,4 @@
-﻿
+
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load static widget_tweaks %}
 
@@ -7,14 +7,14 @@
     <div class="col-lg-8">
         <div class="card shadow-sm">
             <div class="card-header">
-                <h4 class="mb-0">FormulÃ¡rio de Retirada: {{ mala.nome }}</h4>
-                <p class="mb-0 text-muted">CÃ³digo: {{ mala.codigo_identificacao }}</p>
+                <h4 class="mb-0">Formulário de Retirada: {{ mala.nome }}</h4>
+                <p class="mb-0 text-muted">Código: {{ mala.codigo_identificacao }}</p>
             </div>
             <div class="card-body p-4">
                 
                 <div class="alert alert-info">
-                    <h6 class="alert-heading"><i class="fas fa-info-circle"></i> ConferÃªncia de Itens</h6>
-                    <p class="mb-0">Confira abaixo os itens que compÃµem esta mala. Ao assinar, vocÃª confirma a retirada de todos os itens listados.</p>
+                    <h6 class="alert-heading"><i class="fas fa-info-circle"></i> Conferência de Itens</h6>
+                    <p class="mb-0">Confira abaixo os itens que compõem esta mala. Ao assinar, você confirma a retirada de todos os itens listados.</p>
                 </div>
                 <ul class="list-group mb-4">
                     {% for item in mala.itens.all %}
@@ -41,7 +41,7 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Assinatura do ResponsÃ¡vel:</label>
+                        <label class="form-label fw-bold">Assinatura do Responsável:</label>
                         <div class="border rounded p-1" style="background-color: #fff;">
                             <canvas id="signature-pad" class="w-100" height="200"></canvas>
                         </div>

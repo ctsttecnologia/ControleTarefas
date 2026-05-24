@@ -1,4 +1,4 @@
-﻿{% extends "dashboard/_base_dashboard.html" %}
+{% extends "dashboard/_base_dashboard.html" %}
 
 {% block dashboard_content %}
 
@@ -6,7 +6,7 @@
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
                 <h1><i class="bi bi-shield-check me-2"></i>{{ title }}</h1>
-                <p>Entregas, estoque e fluxo de equipamentos de proteÃ§Ã£o</p>
+                <p>Entregas, estoque e fluxo de equipamentos de proteção</p>
             </div>
             <div class="d-flex gap-2 no-print">
                 {% if not is_cycling %}
@@ -59,11 +59,11 @@
     </div>
 
     <div class="row g-4 mb-4">
-        <!-- Estoque CrÃ­tico -->
+        <!-- Estoque Crítico -->
         <div class="col-lg-6">
             <div class="card dash-card shadow-sm h-100">
                 <div class="card-header" style="background: linear-gradient(135deg, #e74a3b, #be2617); color: #fff; border: none;">
-                    <h5 style="color: #fff;"><i class="bi bi-exclamation-triangle-fill me-2"></i>Estoque CrÃ­tico</h5>
+                    <h5 style="color: #fff;"><i class="bi bi-exclamation-triangle-fill me-2"></i>Estoque Crítico</h5>
                 </div>
                 <div class="p-0">
                     {% if equipamentos_estoque_baixo %}
@@ -71,7 +71,7 @@
                     <div class="stock-item stock-critical">
                         <div>
                             <div class="fw-bold" style="font-size: 0.9rem;">{{ item.nome }}</div>
-                            <small class="text-muted">MÃ­nimo: {{ item.min }}</small>
+                            <small class="text-muted">Mínimo: {{ item.min }}</small>
                         </div>
                         <div class="stock-value">
                             <div class="stock-value-num">{{ item.atual }}</div>
@@ -82,8 +82,8 @@
                     {% else %}
                     <div class="dash-empty">
                         <i class="bi bi-check-circle text-success"></i>
-                        <h6 class="text-success">Estoque SaudÃ¡vel</h6>
-                        <p>Todos os itens acima do nÃ­vel mÃ­nimo.</p>
+                        <h6 class="text-success">Estoque Saudável</h6>
+                        <p>Todos os itens acima do nível mínimo.</p>
                     </div>
                     {% endif %}
                 </div>
@@ -101,7 +101,7 @@
                     </div>
                     <div class="flow-col">
                         <div class="flow-value" style="color: #858796;">{{ total_saidas }}</div>
-                        <div class="flow-label">SaÃ­das</div>
+                        <div class="flow-label">Saídas</div>
                     </div>
                 </div>
                 <div class="text-center py-3 border-top" style="border-color: #f0f2f5 !important;">
@@ -128,10 +128,10 @@
                                         <i class="bi bi-arrow-down-circle text-success me-1"></i>Entradas
                                     </th>
                                     <th class="text-center">
-                                        <i class="bi bi-arrow-up-circle text-danger me-1"></i>SaÃ­das
+                                        <i class="bi bi-arrow-up-circle text-danger me-1"></i>Saídas
                                     </th>
                                     <th class="text-center">Em Estoque</th>
-                                    <th class="text-center">MÃ­nimo</th>
+                                    <th class="text-center">Mínimo</th>
                                     <th class="text-center">Status</th>
                                 </tr>
                             </thead>
@@ -163,7 +163,7 @@
                                     </td>
                                     <td class="text-center">
                                         {% if item.status == 'critico' %}
-                                            <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>CrÃ­tico</span>
+                                            <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Crítico</span>
                                         {% elif item.status == 'alerta' %}
                                             <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle me-1"></i>Alerta</span>
                                         {% else %}
@@ -187,13 +187,13 @@
         </div>
     </div>
 
-    <!-- MovimentaÃ§Ãµes Recentes -->
+    <!-- Movimentações Recentes -->
     <div class="row g-4">
         <div class="col-12">
             <div class="card shadow-sm">
                 <div class="card-header bg-secundary d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>MovimentaÃ§Ãµes Recentes</h5>
-                    <small class="text-muted">Ãšltimas 10</small>
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Movimentações Recentes</h5>
+                    <small class="text-muted">Últimas 10</small>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -204,7 +204,7 @@
                                     <th>Equipamento</th>
                                     <th class="text-center">Tipo</th>
                                     <th class="text-center">Quantidade</th>
-                                    <th>ResponsÃ¡vel</th>
+                                    <th>Responsável</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -221,7 +221,7 @@
                                             </span>
                                         {% else %}
                                             <span class="badge bg-danger">
-                                                <i class="bi bi-arrow-up-circle me-1"></i>SaÃ­da
+                                                <i class="bi bi-arrow-up-circle me-1"></i>Saída
                                             </span>
                                         {% endif %}
                                     </td>
@@ -236,7 +236,7 @@
                                 <tr>
                                     <td colspan="5" class="text-center py-4 text-muted">
                                         <i class="bi bi-arrow-left-right fs-3 d-block mb-2"></i>
-                                        Nenhuma movimentaÃ§Ã£o registrada
+                                        Nenhuma movimentação registrada
                                     </td>
                                 </tr>
                                 {% endfor %}

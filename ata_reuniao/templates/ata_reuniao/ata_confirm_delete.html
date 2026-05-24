@@ -1,8 +1,8 @@
-﻿
+
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Confirmar ExclusÃ£o â€” Ata #{{ object.id }}{% endblock %}
+{% block title %}Confirmar Exclusão — Ata #{{ object.id }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -163,11 +163,11 @@
             <div class="delete-icon">
                 <i class="bi bi-trash3-fill"></i>
             </div>
-            <h2>Confirmar ExclusÃ£o</h2>
+            <h2>Confirmar Exclusão</h2>
         </div>
 
         <div class="delete-body">
-            <p class="lead">VocÃª estÃ¡ prestes a excluir permanentemente:</p>
+            <p class="lead">Você está prestes a excluir permanentemente:</p>
 
             <div class="delete-target">
                 <div class="delete-target-icon">
@@ -175,7 +175,7 @@
                 </div>
                 <div>
                     <div class="delete-target-name">{{ object }}</div>
-                    <div class="delete-target-sub">Ata de ReuniÃ£o #{{ object.id }}</div>
+                    <div class="delete-target-sub">Ata de Reunião #{{ object.id }}</div>
                 </div>
             </div>
 
@@ -183,8 +183,8 @@
                 <p>
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <span>
-                        Todo o histÃ³rico de comentÃ¡rios associado serÃ¡ perdido.
-                        <strong>Esta aÃ§Ã£o nÃ£o pode ser desfeita.</strong>
+                        Todo o histórico de comentários associado será perdido.
+                        <strong>Esta ação não pode ser desfeita.</strong>
                     </span>
                 </p>
             </div>

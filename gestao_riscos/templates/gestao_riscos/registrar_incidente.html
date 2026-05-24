@@ -1,5 +1,5 @@
-﻿
-<!-- Template para exibir o formulÃ¡rio de criaÃ§Ã£o/ediÃ§Ã£o de um Tipo de Risco -->
+
+<!-- Template para exibir o formulário de criação/edição de um Tipo de Risco -->
 {% extends "base.html" %}
 
 {% block title %}{{ titulo_pagina|default:"Registrar Incidente" }}{% endblock %}
@@ -15,7 +15,7 @@
                     <h4 class="mb-1">
                         <i class="bi bi-exclamation-octagon-fill me-2"></i>{{ titulo_pagina }}
                     </h4>
-                    <small class="opacity-75">Registre ocorrÃªncias e incidentes de seguranÃ§a</small>
+                    <small class="opacity-75">Registre ocorrências e incidentes de segurança</small>
                 </div>
                 <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-light">
                     <i class="bi bi-arrow-left me-1"></i> Voltar
@@ -63,7 +63,7 @@
                         </div>
                         {% endfor %}
 
-                        <!-- BotÃµes -->
+                        <!-- Botões -->
                         <div class="border-top pt-4 mt-4 d-flex justify-content-between">
                             <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-lg me-1"></i> Cancelar

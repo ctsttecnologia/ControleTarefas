@@ -1,4 +1,4 @@
-﻿{% extends "departamento_pessoal/_base_dp.html" %}
+{% extends "departamento_pessoal/_base_dp.html" %}
 {% load widget_tweaks %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
@@ -33,10 +33,10 @@
 
                         <div class="mb-3">
                             <label for="{{ form.cbo.id_for_label }}" class="form-label">
-                                CÃ³digo CBO
+                                Código CBO
                             </label>
                             {% render_field form.cbo class+="form-control" placeholder="Ex: 2524-05" %}
-                            <small class="form-text text-muted">ClassificaÃ§Ã£o Brasileira de OcupaÃ§Ãµes</small>
+                            <small class="form-text text-muted">Classificação Brasileira de Ocupações</small>
                             {% if form.cbo.errors %}
                                 <div class="invalid-feedback d-block">{{ form.cbo.errors|striptags }}</div>
                             {% endif %}
@@ -44,9 +44,9 @@
 
                         <div class="mb-3">
                             <label for="{{ form.descricao.id_for_label }}" class="form-label">
-                                DescriÃ§Ã£o SumÃ¡ria
+                                Descrição Sumária
                             </label>
-                            {% render_field form.descricao class+="form-control" rows="3" placeholder="Descreva brevemente as atribuiÃ§Ãµes do cargo..." %}
+                            {% render_field form.descricao class+="form-control" rows="3" placeholder="Descreva brevemente as atribuições do cargo..." %}
                             {% if form.descricao.errors %}
                                 <div class="invalid-feedback d-block">{{ form.descricao.errors|striptags }}</div>
                             {% endif %}

@@ -1,4 +1,4 @@
-﻿
+
 {% extends 'base.html' %}
 {% load static %}
 
@@ -149,22 +149,22 @@
                 <i class="bi bi-shield-lock-fill"></i>
             </div>
             <h2>{{ titulo|default:"Acesso Negado" }}</h2>
-            <p>Erro 403 â€” PermissÃ£o insuficiente</p>
+            <p>Erro 403 — Permissão insuficiente</p>
         </div>
 
         <div class="denied-body">
             <div class="denied-code">403</div>
 
             <p class="denied-message">
-                {{ mensagem|default:"VocÃª nÃ£o tem as permissÃµes necessÃ¡rias para visualizar esta pÃ¡gina." }}
+                {{ mensagem|default:"Você não tem as permissões necessárias para visualizar esta página." }}
             </p>
 
             <div class="denied-info">
                 <p>
                     <i class="bi bi-info-circle-fill"></i>
                     <span>
-                        Se vocÃª acredita que deveria ter acesso, entre em contato com o administrador do sistema
-                        para solicitar as permissÃµes necessÃ¡rias.
+                        Se você acredita que deveria ter acesso, entre em contato com o administrador do sistema
+                        para solicitar as permissões necessárias.
                     </span>
                 </p>
             </div>

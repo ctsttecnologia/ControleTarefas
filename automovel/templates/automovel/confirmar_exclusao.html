@@ -1,7 +1,7 @@
-﻿{% extends "automovel/_base_automovel.html" %}
+{% extends "automovel/_base_automovel.html" %}
 {% load static %}
 
-{% block title %}Confirmar ExclusÃ£o{% endblock %}
+{% block title %}Confirmar Exclusão{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -32,14 +32,14 @@
     <div class="card delete-card">
         <div class="delete-header">
             <div class="delete-icon"><i class="bi bi-trash3-fill"></i></div>
-            <h2>Confirmar ExclusÃ£o</h2>
+            <h2>Confirmar Exclusão</h2>
         </div>
         <div class="delete-body">
-            <p style="color: #4a5568;">VocÃª estÃ¡ prestes a excluir permanentemente:</p>
+            <p style="color: #4a5568;">Você está prestes a excluir permanentemente:</p>
             <div class="delete-target">
                 <h5>{{ obj }}</h5>
             </div>
-            <p class="text-muted small">Esta aÃ§Ã£o nÃ£o pode ser desfeita.</p>
+            <p class="text-muted small">Esta ação não pode ser desfeita.</p>
             <div class="delete-actions">
                 <a href="{% url 'automovel:carro_list' %}" class="btn btn-delete-cancel">
                     <i class="bi bi-arrow-left me-1"></i> Cancelar

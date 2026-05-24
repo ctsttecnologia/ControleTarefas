@@ -1,4 +1,4 @@
-﻿
+
 <!-- seguranca_trabalho/templates/seguranca_trabalho/ficha_pdf_template.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -19,7 +19,7 @@
             margin: 0;
         }
 
-        /* â•â•â• LOGOMARCA â•â•â• */
+        /* ═══ LOGOMARCA ═══ */
         .logo-header {
             text-align: right;
             margin-bottom: 12px;
@@ -38,7 +38,7 @@
             letter-spacing: 2px;
         }
 
-        /* â•â•â• SEÃ‡Ã•ES â•â•â• */
+        /* ═══ SEÇÕES ═══ */
         .secao-titulo {
             font-size: 10pt;
             font-weight: bold;
@@ -46,7 +46,7 @@
             text-align: center;
         }
 
-        /* â•â•â• DADOS â•â•â• */
+        /* ═══ DADOS ═══ */
         .dados-table {
             width: 100%;
             border-collapse: collapse;
@@ -66,7 +66,7 @@
             padding-left: 4px;
         }
 
-        /* â•â•â• TERMO â•â•â• */
+        /* ═══ TERMO ═══ */
         .termo-texto {
             font-size: 8.5pt;
             text-align: justify;
@@ -83,7 +83,7 @@
             font-weight: bold;
         }
 
-        /* â•â•â• LOCAL E ASSINATURA â•â•â• */
+        /* ═══ LOCAL E ASSINATURA ═══ */
         .local-data {
             margin: 12px 0 16px 0;
             font-size: 9pt;
@@ -99,7 +99,7 @@
             margin-left: 3px;
         }
 
-        /* â•â•â• TABELA RECEBIMENTO â•â•â• */
+        /* ═══ TABELA RECEBIMENTO ═══ */
         .recebimento-titulo {
             font-size: 10pt;
             font-weight: bold;
@@ -136,7 +136,7 @@
             padding-left: 6px;
         }
 
-        /* â•â•â• VISTO / ASSINATURA NA TABELA â•â•â• */
+        /* ═══ VISTO / ASSINATURA NA TABELA ═══ */
         .visto-cell {
             width: 120px;
             height: 45px;
@@ -150,7 +150,7 @@
             max-height: 40px;
         }
 
-        /* â•â•â• CLT RODAPÃ‰ VERMELHO â•â•â• */
+        /* ═══ CLT RODAPÉ VERMELHO ═══ */
         .clt-rodape {
             margin-top: 30px;
             padding: 10px 14px;
@@ -175,7 +175,7 @@
             color: #999;
             text-align: center;
         }
-        /* â•â•â• ASSINATURA DO FUNCIONÃRIO (TERMO) â•â•â• */
+        /* ═══ ASSINATURA DO FUNCIONÁRIO (TERMO) ═══ */
         .assinatura-funcionario {
             text-align: center;
             padding-bottom: 2px;
@@ -206,21 +206,21 @@
 </head>
 <body>
 
-    <!-- â•â•â• 1. LOGOMARCA â•â•â• -->
+    <!-- ═══ 1. LOGOMARCA ═══ -->
     <div class="logo-header">
         {% if logo_base64 %}
             <img src="{{ logo_base64|safe }}" alt="Logo">
         {% else %}
-            <span class="logo-texto">CETEST ENGENHARIA E SERVIÃ‡OS S/A</span>
+            <span class="logo-texto">CETEST ENGENHARIA E SERVIÇOS S/A</span>
         {% endif %}
     </div>
 
-    <!-- â•â•â• 2. DADOS DE IDENTIFICAÃ‡ÃƒO â•â•â• -->
-    <div class="secao-titulo">Dados de IdentificaÃ§Ã£o</div>
+    <!-- ═══ 2. DADOS DE IDENTIFICAÇÃO ═══ -->
+    <div class="secao-titulo">Dados de Identificação</div>
 
     <table class="dados-table">
         <tr>
-            <td style="width: 12%;"><span class="dados-label">FuncionÃ¡rio:</span></td>
+            <td style="width: 12%;"><span class="dados-label">Funcionário:</span></td>
             <td colspan="5" class="dados-valor">{{ ficha.funcionario.nome_completo }}</td>
         </tr>
     </table>
@@ -229,16 +229,16 @@
             <td style="width: 7%;"><span class="dados-label">Cargo:</span></td>
             <td style="width: 38%;" class="dados-valor">{{ ficha.funcionario.cargo.nome|default:"" }}</td>
             <td style="width: 2%;"></td>
-            <td style="width: 10%;"><span class="dados-label">MatrÃ­cula:</span></td>
+            <td style="width: 10%;"><span class="dados-label">Matrícula:</span></td>
             <td class="dados-valor">{{ ficha.funcionario.matricula|default:"" }}</td>
         </tr>
     </table>
     <table class="dados-table">
         <tr>
-            <td style="width: 10%;"><span class="dados-label">AdmissÃ£o:</span></td>
+            <td style="width: 10%;"><span class="dados-label">Admissão:</span></td>
             <td style="width: 20%;" class="dados-valor">{{ ficha.funcionario.data_admissao|date:"d/m/Y"|default:"" }}</td>
             <td style="width: 2%;"></td>
-            <td style="width: 10%;"><span class="dados-label">DemissÃ£o:</span></td>
+            <td style="width: 10%;"><span class="dados-label">Demissão:</span></td>
             <td style="width: 20%;" class="dados-valor">{{ ficha.funcionario.data_demissao|date:"d/m/Y"|default:"" }}</td>
             <td style="width: 2%;"></td>
             <td style="width: 10%;"><span class="dados-label">Contrato:</span></td>
@@ -246,45 +246,45 @@
         </tr>
     </table>
 
-    <!-- â•â•â• 3. TERMO â•â•â• -->
+    <!-- ═══ 3. TERMO ═══ -->
     <div class="termo-texto">
         <p>
-            Declaro, que recebi de <strong>CETEST ENGENHARIA E SERVIÃ‡OS S/A</strong>, os Equipamentos de
-            ProteÃ§Ã£o Individual â€“ EPI's â€“ abaixo relacionados, comprometendo-me a:
+            Declaro, que recebi de <strong>CETEST ENGENHARIA E SERVIÇOS S/A</strong>, os Equipamentos de
+            Proteção Individual – EPI's – abaixo relacionados, comprometendo-me a:
         </p>
         <ol>
             <li>
-                UsÃ¡-los em trabalho, zelando pela sua guarda e conservaÃ§Ã£o, devolvendo-os quando se tornarem
-                imprÃ³prios para o uso e/ou meu desligamento da CETEST ou do seu respectivo contrato;
+                Usá-los em trabalho, zelando pela sua guarda e conservação, devolvendo-os quando se tornarem
+                impróprios para o uso e/ou meu desligamento da CETEST ou do seu respectivo contrato;
             </li>
             <li>
-                Em caso de perda, mau uso, extravio ou inutilizaÃ§Ã£o proposital do EPI recebido, assumo a
-                responsabilidade quanto Ã  restituiÃ§Ã£o do seu valor atualizado, conforme autorizaÃ§Ã£o de dÃ©bito
+                Em caso de perda, mau uso, extravio ou inutilização proposital do EPI recebido, assumo a
+                responsabilidade quanto à restituição do seu valor atualizado, conforme autorização de débito
                 por mim assinada.
             </li>
         </ol>
-        <p>Declaro ainda ter recebido no ato de minha admissÃ£o e no ato do recebimento:</p>
+        <p>Declaro ainda ter recebido no ato de minha admissão e no ato do recebimento:</p>
         <ol>
-            <li>Treinamento bÃ¡sico e instruÃ§Ãµes prÃ©vias sobre a forma de utilizaÃ§Ã£o e guarda dos EPI's recebidos;</li>
-            <li>InstruÃ§Ãµes sobre os riscos a que estou exposto em minha Ã¡rea de trabalho, bem como sua prevenÃ§Ã£o.</li>
+            <li>Treinamento básico e instruções prévias sobre a forma de utilização e guarda dos EPI's recebidos;</li>
+            <li>Instruções sobre os riscos a que estou exposto em minha área de trabalho, bem como sua prevenção.</li>
         </ol>
         <p class="texto-vermelho">
-            1) Estou ciente de que o nÃ£o uso dos EPI's, constitui ato faltoso conforme artigo 158 da CLT.
+            1) Estou ciente de que o não uso dos EPI's, constitui ato faltoso conforme artigo 158 da CLT.
         </p>
     </div>
 
-    <!-- â•â•â• 4. LOCAL, DATA E ASSINATURA â•â•â• -->
+    <!-- ═══ 4. LOCAL, DATA E ASSINATURA ═══ -->
     <div class="local-data">
         <table>
             <tr>
                 <td style="width: 55%;">
                     <span class="dados-label">Local e Data:</span>
-                    {{ ficha.filial.cidade|default:"SÃ£o Paulo" }}, {{ data_emissao|date:"d" }} de {{ data_emissao|date:"F" }} de {{ data_emissao|date:"Y" }}
+                    {{ ficha.filial.cidade|default:"São Paulo" }}, {{ data_emissao|date:"d" }} de {{ data_emissao|date:"F" }} de {{ data_emissao|date:"Y" }}
                 </td>
                 <td style="width: 45%; text-align: center;">
                     {% if assinatura_funcionario %}
                         <div class="assinatura-funcionario">
-                            <img src="{{ assinatura_funcionario|safe }}" alt="Assinatura do FuncionÃ¡rio">
+                            <img src="{{ assinatura_funcionario|safe }}" alt="Assinatura do Funcionário">
                         </div>
                         <div class="assinatura-linha"></div>
                     {% else %}
@@ -297,7 +297,7 @@
         </table>
     </div>
 
-    <!-- â•â•â• 5. TABELA DE RECEBIMENTO â•â•â• -->
+    <!-- ═══ 5. TABELA DE RECEBIMENTO ═══ -->
     <div class="recebimento-titulo">Recebimento</div>
 
     <table class="tabela-recebimento">
@@ -306,9 +306,9 @@
                 <th style="width: 12%;">Data</th>
                 <th style="width: 6%;">Qtde</th>
                 <th style="width: 5%;">Un.</th>
-                <th style="width: 31%;">DescriÃ§Ã£o EPI</th>
-                <th style="width: 14%;">Certificado<br>AprovaÃ§Ã£o</th>
-                <th style="width: 10%;">DevoluÃ§Ã£o</th>
+                <th style="width: 31%;">Descrição EPI</th>
+                <th style="width: 14%;">Certificado<br>Aprovação</th>
+                <th style="width: 10%;">Devolução</th>
                 <th style="width: 22%;">Visto<br>Recebido</th>
             </tr>
         </thead>
@@ -319,9 +319,9 @@
                 <td>{{ entrega.quantidade }}</td>
                 <td>UN</td>
                 <td class="descricao-cell">
-                    {{ entrega.equipamento.nome }}{% if entrega.equipamento.modelo %} â€” {{ entrega.equipamento.modelo }}{% endif %}{% if entrega.numero_serie %}<br><small>N/S: {{ entrega.numero_serie }}</small>{% endif %}
+                    {{ entrega.equipamento.nome }}{% if entrega.equipamento.modelo %} — {{ entrega.equipamento.modelo }}{% endif %}{% if entrega.numero_serie %}<br><small>N/S: {{ entrega.numero_serie }}</small>{% endif %}
                 </td>
-                <td>{{ entrega.equipamento.certificado_aprovacao|default:"â€”" }}</td>
+                <td>{{ entrega.equipamento.certificado_aprovacao|default:"—" }}</td>
                 <td>{{ entrega.data_devolucao|date:"d/m/Y"|default:"" }}</td>
                 <td class="visto-cell">
                     {% if entrega.assinatura_base64 %}
@@ -337,19 +337,19 @@
         </tbody>
     </table>
 
-    <!-- â•â•â• 6. CLT â€” BASE VERMELHO â•â•â• -->
+    <!-- ═══ 6. CLT — BASE VERMELHO ═══ -->
     <div class="clt-rodape">
-        <div class="clt-titulo">ConsolidaÃ§Ã£o das Leis do Trabalho</div>
-        <strong>Art. 158</strong> â€“ Cabe aos empregados:<br>
-        I â€“ Observar as normas de seguranÃ§a e medicina do trabalho, inclusive as instruÃ§Ãµes de que trata o item II do artigo anterior;<br>
-        II â€“ Colaborar com a empresa na aplicaÃ§Ã£o dos dispositivos deste capÃ­tulo.<br>
-        <strong>ParÃ¡grafo Ãšnico:</strong> Constitui ato faltoso do empregado a recusa injustificada:<br>
-        b) ao uso dos equipamentos de proteÃ§Ã£o individual fornecidos pela empresa.
+        <div class="clt-titulo">Consolidação das Leis do Trabalho</div>
+        <strong>Art. 158</strong> – Cabe aos empregados:<br>
+        I – Observar as normas de segurança e medicina do trabalho, inclusive as instruções de que trata o item II do artigo anterior;<br>
+        II – Colaborar com a empresa na aplicação dos dispositivos deste capítulo.<br>
+        <strong>Parágrafo Único:</strong> Constitui ato faltoso do empregado a recusa injustificada:<br>
+        b) ao uso dos equipamentos de proteção individual fornecidos pela empresa.
     </div>
 
     <div class="rodape-sistema">
-        Documento gerado em {{ data_emissao|date:"d/m/Y" }} Ã s {{ data_emissao|time:"H:i" }} |
-        Cetest Engenharia e ServiÃ§os S/A â€” Sistema de GestÃ£o de SST
+        Documento gerado em {{ data_emissao|date:"d/m/Y" }} às {{ data_emissao|time:"H:i" }} |
+        Cetest Engenharia e Serviços S/A — Sistema de Gestão de SST
     </div>
 
 </body>

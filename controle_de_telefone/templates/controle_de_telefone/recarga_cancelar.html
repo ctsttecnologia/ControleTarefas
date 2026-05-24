@@ -1,7 +1,7 @@
-﻿
+
 {% extends "controle_de_telefone/_base_telefone.html" %}
 
-{% block title %}Cancelar Recarga â€” {{ recarga.linha.numero }}{% endblock %}
+{% block title %}Cancelar Recarga — {{ recarga.linha.numero }}{% endblock %}
 
 {% block content %}
 <div class="container py-4" style="max-width: 640px;">
@@ -27,10 +27,10 @@
     <div class="alert alert-warning d-flex align-items-start gap-2 mb-4" role="alert">
         <i class="bi bi-exclamation-triangle-fill fs-5"></i>
         <div>
-            <strong>AtenÃ§Ã£o!</strong>
+            <strong>Atenção!</strong>
             <div class="small mt-1">
-                Esta aÃ§Ã£o marcarÃ¡ a recarga como <strong>Cancelada</strong> e nÃ£o poderÃ¡ ser desfeita.
-                A recarga permanecerÃ¡ no sistema para fins de auditoria.
+                Esta ação marcará a recarga como <strong>Cancelada</strong> e não poderá ser desfeita.
+                A recarga permanecerá no sistema para fins de auditoria.
             </div>
         </div>
     </div>
@@ -44,7 +44,7 @@
                     <div class="fw-semibold text-dark font-monospace">{{ recarga.linha.numero }}</div>
                 </div>
                 <div class="col-sm-6">
-                    <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.5px;">UsuÃ¡rio</small>
+                    <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Usuário</small>
                     <div class="fw-semibold text-dark">{{ recarga.usuario_credito.nome_completo }}</div>
                 </div>
                 <div class="col-sm-6">
@@ -63,7 +63,7 @@
         </div>
     </div>
 
-    <!-- FormulÃ¡rio -->
+    <!-- Formulário -->
     <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-4">
             <form method="post" novalidate>
@@ -81,7 +81,7 @@
                         placeholder="Descreva o motivo do cancelamento..."
                         required></textarea>
                     <small class="form-text text-muted">
-                        Este motivo serÃ¡ registrado nas observaÃ§Ãµes da recarga.
+                        Este motivo será registrado nas observações da recarga.
                     </small>
                 </div>
 

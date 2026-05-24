@@ -1,12 +1,12 @@
-﻿{# Cronograma de AÃ§Ãµes - Detalhes da AÃ§Ã£o e Status #}
-{% extends 'pgr_gestao/pgr_base.html' %}  {# ðŸ”§ CORRIGIDO: era 'base.html' #}
+{# Cronograma de Ações - Detalhes da Ação e Status #}
+{% extends 'pgr_gestao/pgr_base.html' %}  {# 🔧 CORRIGIDO: era 'base.html' #}
 {% load static %}
 
-{% block title %}AÃ§Ã£o {{ acao.numero_item|stringformat:"02d" }} - Cronograma{% endblock %}
+{% block title %}Ação {{ acao.numero_item|stringformat:"02d" }} - Cronograma{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{% url 'pgr_gestao:cronograma_list' %}">Cronograma</a></li>
-<li class="breadcrumb-item active">AÃ§Ã£o #{{ acao.numero_item|stringformat:"02d" }}</li>
+<li class="breadcrumb-item active">Ação #{{ acao.numero_item|stringformat:"02d" }}</li>
 {% endblock %}
 
 {% block pgr_content %}
@@ -15,9 +15,9 @@
         <div>
             <h1>
                 <i class="bi bi-calendar-check-fill"></i>
-                AÃ§Ã£o #{{ acao.numero_item|stringformat:"02d" }}
+                Ação #{{ acao.numero_item|stringformat:"02d" }}
                 {% if acao.status == 'concluido' %}
-                <span class="badge bg-success ms-2">ConcluÃ­do</span>
+                <span class="badge bg-success ms-2">Concluído</span>
                 {% elif acao.status == 'em_andamento' %}
                 <span class="badge bg-info ms-2">Em Andamento</span>
                 {% elif acao.status == 'cancelado' %}
@@ -28,7 +28,7 @@
             </h1>
             <p class="mb-0">
                 <i class="bi bi-file-earmark-text"></i>
-                {{ acao.pgr_documento.codigo_documento }} â€”
+                {{ acao.pgr_documento.codigo_documento }} —
                 <strong>{{ acao.pgr_documento.empresa.razao_social }}</strong>
             </p>
         </div>
@@ -46,16 +46,16 @@
 </div>
 
 <div class="row">
-    <!-- InformaÃ§Ãµes Principais -->
+    <!-- Informações Principais -->
     <div class="col-lg-8">
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-                <i class="bi bi-info-circle"></i> InformaÃ§Ãµes da AÃ§Ã£o
+                <i class="bi bi-info-circle"></i> Informações da Ação
             </div>
             <div class="card-body">
                 <div class="mb-3">
                     <label class="form-label fw-semibold text-muted text-uppercase small">
-                        <i class="bi bi-card-text"></i> AÃ§Ã£o NecessÃ¡ria
+                        <i class="bi bi-card-text"></i> Ação Necessária
                     </label>
                     <p class="fs-5 mb-0">{{ acao.acao_necessaria }}</p>
                 </div>
@@ -65,7 +65,7 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold text-muted text-uppercase small">
-                            <i class="bi bi-people"></i> PÃºblico Alvo
+                            <i class="bi bi-people"></i> Público Alvo
                         </label>
                         <p class="mb-0">{{ acao.publico_alvo|default:"Todos os colaboradores" }}</p>
                     </div>
@@ -77,9 +77,9 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold text-muted text-uppercase small">
-                            <i class="bi bi-person-badge"></i> ResponsÃ¡vel
+                            <i class="bi bi-person-badge"></i> Responsável
                         </label>
-                        <p class="mb-0">{{ acao.responsavel|default:"NÃ£o informado" }}</p>
+                        <p class="mb-0">{{ acao.responsavel|default:"Não informado" }}</p>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold text-muted text-uppercase small">
@@ -97,7 +97,7 @@
                 <hr>
                 <div>
                     <label class="form-label fw-semibold text-muted text-uppercase small">
-                        <i class="bi bi-chat-left-text"></i> ObservaÃ§Ãµes
+                        <i class="bi bi-chat-left-text"></i> Observações
                     </label>
                     <p class="mb-0">{{ acao.observacoes|linebreaksbr }}</p>
                 </div>
@@ -124,7 +124,7 @@
                 </span>
                 {% elif acao.status == 'concluido' %}
                 <span class="badge bg-success fs-6 px-4 py-2">
-                    <i class="bi bi-check-circle-fill"></i> ConcluÃ­do
+                    <i class="bi bi-check-circle-fill"></i> Concluído
                 </span>
                 {% elif acao.status == 'cancelado' %}
                 <span class="badge bg-secondary fs-6 px-4 py-2">
@@ -162,10 +162,10 @@
             <div class="card-body">
                 <div class="mb-3">
                     <small class="text-muted text-uppercase fw-semibold">
-                        <i class="bi bi-calendar-event"></i> PrÃ³xima AvaliaÃ§Ã£o
+                        <i class="bi bi-calendar-event"></i> Próxima Avaliação
                     </small>
                     <p class="fw-bold fs-5 mb-0">
-                        {{ acao.data_proxima_avaliacao|date:"d/m/Y"|default:"NÃ£o definida" }}
+                        {{ acao.data_proxima_avaliacao|date:"d/m/Y"|default:"Não definida" }}
                     </p>
                     {% if acao.status != 'concluido' and acao.data_proxima_avaliacao %}
                         {% now "Y-m-d" as hoje %}
@@ -180,7 +180,7 @@
                 {% if acao.data_realizacao %}
                 <div class="mb-3">
                     <small class="text-muted text-uppercase fw-semibold">
-                        <i class="bi bi-check-circle"></i> Data de RealizaÃ§Ã£o
+                        <i class="bi bi-check-circle"></i> Data de Realização
                     </small>
                     <p class="fw-bold fs-5 mb-0 text-success">
                         {{ acao.data_realizacao|date:"d/m/Y" }}

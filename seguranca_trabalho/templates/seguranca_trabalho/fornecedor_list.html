@@ -1,4 +1,4 @@
-﻿
+
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load static %}
 
@@ -10,7 +10,7 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
             <h4><i class="bi bi-truck me-2"></i>Fornecedores</h4>
-            <span class="sst-page-subtitle">Gerencie os fornecedores de produtos e serviÃ§os</span>
+            <span class="sst-page-subtitle">Gerencie os fornecedores de produtos e serviços</span>
         </div>
         {% if perms.seguranca_trabalho.add_fornecedor or user.is_superuser %}
         <a href="{% url 'seguranca_trabalho:fornecedor_create' %}" class="sst-btn-header sst-btn-header--primary">
@@ -34,7 +34,7 @@
                     <th>Telefone</th>
                     <th>E-mail</th>
                     <th class="text-center">Status</th>
-                    <th class="text-center" style="width:100px;">AÃ§Ãµes</th>
+                    <th class="text-center" style="width:100px;">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -52,12 +52,12 @@
                     <td>
                         {% if fornecedor.telefone %}
                         <i class="bi bi-telephone me-1" style="opacity:.5;"></i>{{ fornecedor.telefone }}
-                        {% else %}â€”{% endif %}
+                        {% else %}—{% endif %}
                     </td>
                     <td>
                         {% if fornecedor.email %}
                         <a href="mailto:{{ fornecedor.email }}" style="color:var(--sst-accent);">{{ fornecedor.email }}</a>
-                        {% else %}â€”{% endif %}
+                        {% else %}—{% endif %}
                     </td>
                     <td class="text-center">
                         {% if fornecedor.ativo %}

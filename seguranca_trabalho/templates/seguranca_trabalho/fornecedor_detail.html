@@ -1,4 +1,4 @@
-﻿{% extends "seguranca_trabalho/_base_sst.html" %}
+{% extends "seguranca_trabalho/_base_sst.html" %}
 {% load static %}
 
 {% block title %}Detalhes: {{ fornecedor.razao_social }}{% endblock %}
@@ -35,12 +35,12 @@
             <div class="sst-card-body">
                 <div class="sst-info-grid">
                     <div class="sst-info-item" style="grid-column: 1 / -1;">
-                        <span class="sst-info-label">RazÃ£o Social</span>
+                        <span class="sst-info-label">Razão Social</span>
                         <span class="sst-info-value">{{ fornecedor.razao_social }}</span>
                     </div>
                     <div class="sst-info-item">
                         <span class="sst-info-label">Nome Fantasia</span>
-                        <span class="sst-info-value">{{ fornecedor.nome_fantasia|default:"â€”" }}</span>
+                        <span class="sst-info-value">{{ fornecedor.nome_fantasia|default:"—" }}</span>
                     </div>
                     <div class="sst-info-item">
                         <span class="sst-info-label">CNPJ</span>
@@ -75,7 +75,7 @@
                         <span class="sst-info-value">
                             {% if fornecedor.email %}
                             <a href="mailto:{{ fornecedor.email }}" style="color:var(--sst-accent);">{{ fornecedor.email }}</a>
-                            {% else %}â€”{% endif %}
+                            {% else %}—{% endif %}
                         </span>
                     </div>
                     <div class="sst-info-item">
@@ -83,17 +83,17 @@
                         <span class="sst-info-value">
                             {% if fornecedor.telefone %}
                             <i class="bi bi-telephone me-1" style="font-size:.85rem; opacity:.6;"></i>{{ fornecedor.telefone }}
-                            {% else %}â€”{% endif %}
+                            {% else %}—{% endif %}
                         </span>
                     </div>
                     <div class="sst-info-item" style="grid-column: 1 / -1;">
-                        <span class="sst-info-label">EndereÃ§o</span>
+                        <span class="sst-info-label">Endereço</span>
                         <span class="sst-info-value">
                             {% if fornecedor.endereco %}
                             <i class="bi bi-geo-alt me-1" style="font-size:.85rem; opacity:.6;"></i>
                             {{ fornecedor.endereco.logradouro }}, {{ fornecedor.endereco.numero }} - {{ fornecedor.endereco.cep }}
                             {% else %}
-                            <span style="color:var(--sst-text-muted);">EndereÃ§o nÃ£o cadastrado</span>
+                            <span style="color:var(--sst-text-muted);">Endereço não cadastrado</span>
                             {% endif %}
                         </span>
                     </div>
@@ -120,15 +120,15 @@
                         <tr>
                             <th>Equipamento</th>
                             <th>Fabricante</th>
-                            <th>Certificado de AprovaÃ§Ã£o</th>
+                            <th>Certificado de Aprovação</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for epi in equipamentos %}
                         <tr>
                             <td><a href="{{ epi.get_absolute_url }}">{{ epi.nome }}</a></td>
-                            <td>{{ epi.fabricante.nome|default:"â€”" }}</td>
-                            <td><code>{{ epi.certificado_aprovacao|default:"â€”" }}</code></td>
+                            <td>{{ epi.fabricante.nome|default:"—" }}</td>
+                            <td><code>{{ epi.certificado_aprovacao|default:"—" }}</code></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -136,7 +136,7 @@
                 {% else %}
                 <div class="sst-empty">
                     <div class="sst-empty-icon"><i class="bi bi-inbox"></i></div>
-                    <p>Nenhum equipamento tem este como fornecedor padrÃ£o.</p>
+                    <p>Nenhum equipamento tem este como fornecedor padrão.</p>
                 </div>
                 {% endif %}
                 {% endwith %}

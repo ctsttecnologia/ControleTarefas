@@ -1,4 +1,4 @@
-﻿{# ferramentas/retirada_form.html #}
+{# ferramentas/retirada_form.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load widget_tweaks %}
 
@@ -33,7 +33,7 @@
         <div class="card shadow-sm">
             <div class="card-header py-3">
                 <h5 class="mb-1">{{ item.nome }}</h5>
-                <small class="text-muted">CÃ³digo: {{ item.codigo_identificacao }}</small>
+                <small class="text-muted">Código: {{ item.codigo_identificacao }}</small>
             </div>
             <div class="card-body p-4">
 
@@ -85,7 +85,7 @@
 
                     {# Assinatura #}
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Assinatura do ResponsÃ¡vel <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold">Assinatura do Responsável <span class="text-danger">*</span></label>
                         <div class="signature-pad-container">
                             <canvas id="signature-pad"></canvas>
                         </div>

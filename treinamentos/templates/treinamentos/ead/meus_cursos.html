@@ -1,11 +1,11 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 
 {% block title %}Meus Cursos EAD{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* â•â•â• HERO â•â•â• */
+    /* ═══ HERO ═══ */
     .ead-hero {
         background: linear-gradient(135deg, #0077b6 0%, #6c63ff 50%, #b44ac0 100%);
         padding: 2.5rem 0 3.5rem;
@@ -50,14 +50,14 @@
         transform: translateY(-1px);
     }
 
-    /* â•â•â• CONTEÃšDO â•â•â• */
+    /* ═══ CONTEÚDO ═══ */
     .ead-body {
         margin-top: -2rem;
         position: relative;
         z-index: 2;
     }
 
-    /* â•â•â• CARDS â•â•â• */
+    /* ═══ CARDS ═══ */
     .matricula-card {
         border: none;
         border-radius: .75rem;
@@ -70,7 +70,7 @@
     }
     .matricula-card .card-body { padding: 1.25rem; }
 
-    /* â•â•â• RING DE PROGRESSO â•â•â• */
+    /* ═══ RING DE PROGRESSO ═══ */
     .progress-ring {
         width: 52px;
         height: 52px;
@@ -84,7 +84,7 @@
         background: #fff;
     }
 
-    /* â•â•â• SEÃ‡ÃƒO VAZIA â•â•â• */
+    /* ═══ SEÇÃO VAZIA ═══ */
     .ead-empty-icon {
         width: 80px;
         height: 80px;
@@ -95,7 +95,7 @@
         justify-content: center;
     }
 
-    /* â•â•â• SEÃ‡ÃƒO HEADER â•â•â• */
+    /* ═══ SEÇÃO HEADER ═══ */
     .section-header {
         display: flex;
         align-items: center;
@@ -108,7 +108,7 @@
         background: #dee2e6;
     }
 
-    /* â•â•â• BADGE TIPO â•â•â• */
+    /* ═══ BADGE TIPO ═══ */
     .badge-tipo {
         background: #f0f0f5;
         color: #555;
@@ -121,9 +121,9 @@
 
 {% block content %}
 
-{# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+{# ══════════════════════════════════════════════ #}
 {# HERO                                          #}
-{# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+{# ══════════════════════════════════════════════ #}
 <section class="ead-hero">
     <div class="container-fluid px-lg-5">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
@@ -137,7 +137,7 @@
             </div>
             <div class="d-flex gap-2 flex-shrink-0">
                 <a href="{% url 'treinamentos:ead_catalogo' %}" class="btn btn-hero btn-sm">
-                    <i class="bi bi-plus-circle me-1"></i>Explorar CatÃ¡logo
+                    <i class="bi bi-plus-circle me-1"></i>Explorar Catálogo
                 </a>
                 <a href="{% url 'treinamentos:dashboard' %}" class="btn btn-hero btn-sm">
                     <i class="bi bi-laptop me-1"></i>EAD
@@ -147,12 +147,12 @@
     </div>
 </section>
 
-{# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+{# ══════════════════════════════════════════════ #}
 {# CORPO                                          #}
-{# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+{# ══════════════════════════════════════════════ #}
 <div class="container-fluid px-lg-5 ead-body pb-5">
 
-    {# â”€â”€ Em Andamento â”€â”€ #}
+    {# ── Em Andamento ── #}
     {% if em_andamento %}
     <div class="section-header mt-4">
         <h5 class="fw-bold text-primary mb-0 flex-shrink-0">
@@ -169,7 +169,7 @@
         <div class="col-md-6 col-xl-4">
             <div class="card matricula-card shadow-sm h-100">
                 <div class="card-body">
-                    {# Topo: tÃ­tulo + ring #}
+                    {# Topo: título + ring #}
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="pe-2">
                             <h6 class="fw-bold mb-1 lh-sm">{{ m.curso.titulo }}</h6>
@@ -186,7 +186,7 @@
                              style="width: {{ m.progresso_percentual }}%; border-radius: 3px;"></div>
                     </div>
 
-                    {# MÃ©tricas #}
+                    {# Métricas #}
                     <div class="d-flex justify-content-between text-muted mb-3" style="font-size:.78rem;">
                         <span><i class="bi bi-clock me-1"></i>{{ m.carga_horaria_cumprida_formatada }}</span>
                         {% if m.dias_restantes != None %}
@@ -201,7 +201,7 @@
                         {% endif %}
                     </div>
 
-                    {# AÃ§Ãµes #}
+                    {# Ações #}
                     <div class="d-flex gap-2">
                         <a href="{% url 'treinamentos:ead_curso_detail' slug=m.curso.slug %}"
                            class="btn btn-sm btn-primary flex-grow-1">
@@ -209,7 +209,7 @@
                         </a>
                         {% if m.pode_fazer_avaliacao %}
                         <a href="{% url 'treinamentos:ead_avaliacao' matricula_id=m.pk %}"
-                           class="btn btn-sm btn-warning" title="Fazer avaliaÃ§Ã£o">
+                           class="btn btn-sm btn-warning" title="Fazer avaliação">
                             <i class="bi bi-pencil-square"></i>
                         </a>
                         {% endif %}
@@ -221,11 +221,11 @@
     </div>
     {% endif %}
 
-    {# â”€â”€ ConcluÃ­dos â”€â”€ #}
+    {# ── Concluídos ── #}
     {% if concluidos %}
     <div class="section-header">
         <h5 class="fw-bold text-success mb-0 flex-shrink-0">
-            <i class="bi bi-trophy me-1"></i>ConcluÃ­dos
+            <i class="bi bi-trophy me-1"></i>Concluídos
             <span class="badge bg-success bg-opacity-10 text-success ms-1" style="font-size:.75rem;">
                 {{ concluidos|length }}
             </span>
@@ -274,15 +274,15 @@
     </div>
     {% endif %}
 
-    {# â”€â”€ Estado Vazio â”€â”€ #}
+    {# ── Estado Vazio ── #}
     {% if not em_andamento and not concluidos %}
     <div class="text-center py-5 mt-3">
         <div class="ead-empty-icon mx-auto mb-3">
             <i class="bi bi-mortarboard display-5 text-primary"></i>
         </div>
-        <h5 class="fw-semibold text-dark mt-2">VocÃª ainda nÃ£o estÃ¡ matriculado em nenhum curso</h5>
+        <h5 class="fw-semibold text-dark mt-2">Você ainda não está matriculado em nenhum curso</h5>
         <p class="text-muted mb-4" style="font-size:.9rem;">
-            Explore nosso catÃ¡logo e comece a aprender agora mesmo
+            Explore nosso catálogo e comece a aprender agora mesmo
         </p>
         <a href="{% url 'treinamentos:ead_catalogo' %}" class="btn btn-primary px-4">
             <i class="bi bi-search me-1"></i>Explorar Cursos

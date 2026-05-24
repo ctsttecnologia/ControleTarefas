@@ -1,16 +1,16 @@
-﻿<!-- templates/tributacao/base_tributacao.html -->
+<!-- templates/tributacao/base_tributacao.html -->
 {% extends "base.html" %}
 {% load static %}
-{% block title %}TributaÃ§Ã£o - {{ block.super }}{% endblock %}
+{% block title %}Tributação - {{ block.super }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-    /*  TributaÃ§Ã£o â€” Tema Adaptativo                       */
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════════ */
+    /*  Tributação — Tema Adaptativo                       */
+    /* ═══════════════════════════════════════════════════ */
 
-    /* â”€â”€â”€ NAVBAR SECUNDÃRIA â”€â”€â”€ */
+    /* ─── NAVBAR SECUNDÁRIA ─── */
     .trib-navbar {
         background-color: #ffffff;
         border-bottom: 1px solid #dee2e6;
@@ -34,7 +34,7 @@
         color: #0d6efd !important;
     }
 
-    /* â”€â”€â”€ NAVBAR NO TEMA ESCURO â”€â”€â”€ */
+    /* ─── NAVBAR NO TEMA ESCURO ─── */
     [data-bs-theme="dark"] .trib-navbar {
         background-color: #1a1d21 !important;
         border-bottom-color: #2d3339 !important;
@@ -69,7 +69,7 @@
         filter: invert(1) grayscale(100%) brightness(200%);
     }
 
-    /* â”€â”€â”€ CARDS / CAIXAS â”€â”€â”€ */
+    /* ─── CARDS / CAIXAS ─── */
     .trib-custo-box {
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -111,7 +111,7 @@
         transition: background-color 0.3s, border-color 0.3s, color 0.3s;
     }
 
-    /* â”€â”€â”€ TEMA ESCURO (CAIXAS) â”€â”€â”€ */
+    /* ─── TEMA ESCURO (CAIXAS) ─── */
     [data-bs-theme="dark"] .trib-custo-box {
         background-color: #1a1d21;
         border-color: #495057;
@@ -166,13 +166,13 @@
 {% endblock %}
 
 {% block content %}
-{# â•â•â•â•â•â•â• Barra de navegaÃ§Ã£o secundÃ¡ria do TributaÃ§Ã£o â•â•â•â•â•â•â• #}
+{# ═══════ Barra de navegação secundária do Tributação ═══════ #}
 <nav class="navbar navbar-expand-lg trib-navbar shadow-sm sticky-top" style="z-index: 1020;">
     <div class="container-fluid">
 
         {% if perms.tributacao.view_dashboard or user.is_superuser %}
             <a class="navbar-brand fw-bold" href="{% url 'tributacao:dashboard' %}">
-                <i class="bi bi-calculator me-1"></i> TributaÃ§Ã£o
+                <i class="bi bi-calculator me-1"></i> Tributação
             </a>
         {% endif %}
 
@@ -197,7 +197,7 @@
                     <li class="nav-item">
                         <a class="nav-link {% if 'grupo' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
                            href="{% url 'tributacao:grupo_list' %}">
-                            <i class="bi bi-collection me-1"></i> Grupos TributÃ¡rios
+                            <i class="bi bi-collection me-1"></i> Grupos Tributários
                         </a>
                     </li>
                 {% endif %}
@@ -240,7 +240,7 @@
 
             {% if perms.tributacao.add_grupotributario or user.is_superuser %}
                 <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-success btn-sm">
-                    <i class="bi bi-plus-circle me-1"></i> Novo Grupo TributÃ¡rio
+                    <i class="bi bi-plus-circle me-1"></i> Novo Grupo Tributário
                 </a>
             {% endif %}
         </div>

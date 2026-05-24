@@ -1,4 +1,4 @@
-﻿
+
 <!-- templates/tarefas/tarefa_form.html -->
 {% extends 'base.html' %}
 {% load static %}
@@ -11,7 +11,7 @@
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
 <style>
 /* =============================================================================
-   FORMULÃRIO DE TAREFAS â€” Tema Claro / Escuro
+   FORMULÁRIO DE TAREFAS — Tema Claro / Escuro
    ============================================================================= */
 
 :root,
@@ -49,7 +49,7 @@
     --form-help-text: #6b6e85;
 }
 
-/* â”€â”€ Layout â”€â”€ */
+/* ── Layout ── */
 .form-wrapper {
     padding: 1rem;
     min-height: calc(100vh - 60px);
@@ -61,7 +61,7 @@
     }
 }
 
-/* â”€â”€ Header â”€â”€ */
+/* ── Header ── */
 .form-header {
     display: flex;
     flex-wrap: wrap;
@@ -90,7 +90,7 @@
     flex-shrink: 0;
 }
 
-/* â”€â”€ Form Card â”€â”€ */
+/* ── Form Card ── */
 .form-card {
     background: var(--form-card-bg);
     border: 1px solid var(--form-card-border);
@@ -111,7 +111,7 @@
     }
 }
 
-/* â”€â”€ Section Titles â”€â”€ */
+/* ── Section Titles ── */
 .form-section {
     display: flex;
     align-items: center;
@@ -143,7 +143,7 @@
     letter-spacing: 0.03em;
 }
 
-/* â”€â”€ Labels â”€â”€ */
+/* ── Labels ── */
 .form-field-label {
     font-size: 0.78rem;
     font-weight: 600;
@@ -152,11 +152,11 @@
 }
 
 [data-bs-theme="dark"] .form-field-label {
-    color: #e2e4f0 !important; /* Cor clara explÃ­cita para tema escuro */
+    color: #e2e4f0 !important; /* Cor clara explícita para tema escuro */
 }
 
 [data-bs-theme="light"] .form-field-label {
-    color: #1a1a2e !important; /* Cor escura explÃ­cita para tema claro */
+    color: #1a1a2e !important; /* Cor escura explícita para tema claro */
 }
 
 .form-field-label .required {
@@ -164,7 +164,7 @@
     margin-left: 2px;
 }
 
-/* â”€â”€ Inputs Override â”€â”€ */
+/* ── Inputs Override ── */
 .form-card .form-control,
 .form-card .form-select {
     background: var(--form-input-bg);
@@ -200,7 +200,7 @@
     font-size: 0.73rem;
 }
 
-/* â”€â”€ Switch â”€â”€ */
+/* ── Switch ── */
 .form-card .form-check-input {
     background-color: var(--form-input-border);
     border-color: var(--form-input-border);
@@ -216,7 +216,7 @@
     color: var(--form-text);
 }
 
-/* â”€â”€ System Info â”€â”€ */
+/* ── System Info ── */
 .form-system-info {
     background: var(--form-section-icon-bg);
     border-radius: 10px;
@@ -238,7 +238,7 @@
     margin: 0;
 }
 
-/* â”€â”€ Footer â”€â”€ */
+/* ── Footer ── */
 .form-footer {
     padding-top: 1.5rem;
     border-top: 1px solid var(--form-divider);
@@ -249,7 +249,7 @@
     gap: 0.75rem;
 }
 
-/* â”€â”€ Select2 Dark Override â”€â”€ */
+/* ── Select2 Dark Override ── */
 [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
     background-color: var(--form-input-bg) !important;
     border-color: var(--form-input-border) !important;
@@ -265,14 +265,14 @@
     background-color: #2e2e44 !important;
 }
 
-/* â”€â”€ Select2 Dark Override â”€â”€ */
+/* ── Select2 Dark Override ── */
 [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
     background-color: var(--form-input-bg) !important;
     border-color: var(--form-input-border) !important;
     color: var(--form-text) !important;
 }
 
-/* ðŸŽ¯ Texto digitado/placeholder dentro do multi-select */
+/* 🎯 Texto digitado/placeholder dentro do multi-select */
 [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection__rendered,
 [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-search__field {
     color: var(--form-text) !important;
@@ -282,7 +282,7 @@
     color: var(--form-help-text) !important;
 }
 
-/* ðŸ·ï¸ TAGS selecionadas (chips) â€” multi-select */
+/* 🏷️ TAGS selecionadas (chips) — multi-select */
 [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
     background-color: #3a3a52 !important;
     border-color: #4a4a68 !important;
@@ -303,7 +303,7 @@
     color: #fff !important;
 }
 
-/* ðŸ“‹ Dropdown aberto */
+/* 📋 Dropdown aberto */
 [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
     background-color: var(--form-card-bg) !important;
     border-color: var(--form-card-border) !important;
@@ -324,7 +324,7 @@
     color: var(--form-text) !important;
 }
 
-/* ðŸ” Campo de busca dentro do dropdown */
+/* 🔍 Campo de busca dentro do dropdown */
 [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field {
     background-color: var(--form-input-bg) !important;
     border-color: var(--form-input-border) !important;
@@ -362,7 +362,7 @@
         </div>
     </div>
 
-    <!-- FormulÃ¡rio -->
+    <!-- Formulário -->
     <div class="form-card">
         <div class="form-card-body">
             <form method="post" novalidate>
@@ -377,15 +377,15 @@
                 </div>
                 {% endif %}
 
-                <!-- SeÃ§Ã£o: InformaÃ§Ãµes -->
+                <!-- Seção: Informações -->
                 <div class="form-section">
                     <span class="form-section-icon"><i class="bi bi-info-circle"></i></span>
-                    <h6 class="form-section-title">InformaÃ§Ãµes da Tarefa</h6>
+                    <h6 class="form-section-title">Informações da Tarefa</h6>
                 </div>
                 <div class="row g-3 mb-4">
                     <div class="col-12">
                         <label for="{{ form.titulo.id_for_label }}" class="form-field-label">
-                            TÃ­tulo <span class="required">*</span>
+                            Título <span class="required">*</span>
                         </label>
                         {{ form.titulo }}
                         {% for error in form.titulo.errors %}
@@ -393,14 +393,14 @@
                         {% endfor %}
                     </div>
                     <div class="col-12">
-                        <label for="{{ form.descricao.id_for_label }}" class="form-field-label">DescriÃ§Ã£o</label>
+                        <label for="{{ form.descricao.id_for_label }}" class="form-field-label">Descrição</label>
                         {{ form.descricao }}
                         {% for error in form.descricao.errors %}
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-12">
-                        <label for="{{ form.ata_reuniao.id_for_label }}" class="form-field-label">Atividade da Ata de ReuniÃ£o</label>
+                        <label for="{{ form.ata_reuniao.id_for_label }}" class="form-field-label">Atividade da Ata de Reunião</label>
                         {{ form.ata_reuniao }}
                         <small class="form-text">{{ form.ata_reuniao.help_text }}</small>
                         {% for error in form.ata_reuniao.errors %}
@@ -409,14 +409,14 @@
                     </div>
                 </div>
 
-                <!-- SeÃ§Ã£o: OrganizaÃ§Ã£o -->
+                <!-- Seção: Organização -->
                 <div class="form-section">
                     <span class="form-section-icon"><i class="bi bi-diagram-3"></i></span>
-                    <h6 class="form-section-title">OrganizaÃ§Ã£o e Prazos</h6>
+                    <h6 class="form-section-title">Organização e Prazos</h6>
                 </div>
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
-                        <label for="{{ form.responsavel.id_for_label }}" class="form-field-label">ResponsÃ¡vel</label>
+                        <label for="{{ form.responsavel.id_for_label }}" class="form-field-label">Responsável</label>
                         {{ form.responsavel }}
                         {% for error in form.responsavel.errors %}
                         <div class="invalid-feedback d-block">{{ error }}</div>
@@ -446,7 +446,7 @@
                         {{ form.prioridade }}
                     </div>
                     <div class="col-md-6">
-                        <label for="{{ form.data_inicio.id_for_label }}" class="form-field-label">Data de InÃ­cio</label>
+                        <label for="{{ form.data_inicio.id_for_label }}" class="form-field-label">Data de Início</label>
                         {{ form.data_inicio }}
                         {% if form.data_inicio.help_text %}
                         <small class="form-text">{{ form.data_inicio.help_text }}</small>
@@ -472,14 +472,14 @@
                     </div>
                 </div>
 
-                <!-- SeÃ§Ã£o: Estimativas -->
+                <!-- Seção: Estimativas -->
                 <div class="form-section">
                     <span class="form-section-icon"><i class="bi bi-clock"></i></span>
                     <h6 class="form-section-title">Estimativas de Tempo</h6>
                 </div>
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
-                        <label for="{{ form.duracao_prevista.id_for_label }}" class="form-field-label">DuraÃ§Ã£o Prevista</label>
+                        <label for="{{ form.duracao_prevista.id_for_label }}" class="form-field-label">Duração Prevista</label>
                         {{ form.duracao_prevista }}
                         <small class="form-text">{{ form.duracao_prevista.help_text }}</small>
                     </div>
@@ -490,10 +490,10 @@
                     </div>
                 </div>
 
-                <!-- SeÃ§Ã£o: RecorrÃªncia -->
+                <!-- Seção: Recorrência -->
                 <div class="form-section">
                     <span class="form-section-icon"><i class="bi bi-arrow-repeat"></i></span>
-                    <h6 class="form-section-title">RecorrÃªncia</h6>
+                    <h6 class="form-section-title">Recorrência</h6>
                 </div>
                 <div class="mb-4">
                     <div class="form-check form-switch mb-3">
@@ -518,11 +518,11 @@
                     </div>
                 </div>
 
-                <!-- Info do Sistema (ediÃ§Ã£o) -->
+                <!-- Info do Sistema (edição) -->
                 {% if object.pk %}
                 <div class="form-section">
                     <span class="form-section-icon"><i class="bi bi-gear"></i></span>
-                    <h6 class="form-section-title">InformaÃ§Ãµes do Sistema</h6>
+                    <h6 class="form-section-title">Informações do Sistema</h6>
                 </div>
                 <div class="form-system-info mb-4">
                     <div class="row g-3">
@@ -531,7 +531,7 @@
                             <p class="form-system-value">{{ object.data_criacao|date:"d/m/Y H:i" }}</p>
                         </div>
                         <div class="col-md-6">
-                            <div class="form-system-label">Ãšltima AtualizaÃ§Ã£o</div>
+                            <div class="form-system-label">Última Atualização</div>
                             <p class="form-system-value">{{ object.data_atualizacao|date:"d/m/Y H:i" }}</p>
                         </div>
                     </div>
@@ -550,7 +550,7 @@
                     </div>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i>
-                        {% if object.pk %}Salvar AlteraÃ§Ãµes{% else %}Criar Tarefa{% endif %}
+                        {% if object.pk %}Salvar Alterações{% else %}Criar Tarefa{% endif %}
                     </button>
                 </div>
             </form>
@@ -564,7 +564,7 @@
 <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // â”€â”€â”€ Flatpickr â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Flatpickr ────────────────────────────────────────────
     flatpickr(".datetime-picker", {
         enableTime: true,
         dateFormat: "d/m/Y H:i",
@@ -573,7 +573,7 @@ document.addEventListener('DOMContentLoaded', function() {
         disableMobile: true
     });
 
-    // â”€â”€â”€ Select2 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Select2 ──────────────────────────────────────────────
     if (typeof $ !== 'undefined' && $.fn.select2) {
         $('.select2-widget').select2({
             theme: 'bootstrap-5',
@@ -588,32 +588,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // â”€â”€â”€ Toggle RecorrÃªncia (CORRIGIDO) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Toggle Recorrência (CORRIGIDO) ───────────────────────
     const toggle = document.getElementById('id_recorrente');
     const campos = document.getElementById('campos-recorrencia');
 
     function toggleRecorrencia() {
         if (!campos || !toggle) {
-            console.warn('[RecorrÃªncia] Elementos nÃ£o encontrados');
+            console.warn('[Recorrência] Elementos não encontrados');
             return;
         }
         if (toggle.checked) {
-            // Remove o display:none inline e forÃ§a flex
+            // Remove o display:none inline e força flex
             campos.style.display = 'flex';
-            console.log('[RecorrÃªncia] Campos EXIBIDOS');
+            console.log('[Recorrência] Campos EXIBIDOS');
         } else {
             campos.style.display = 'none';
-            console.log('[RecorrÃªncia] Campos OCULTADOS');
+            console.log('[Recorrência] Campos OCULTADOS');
         }
     }
 
     if (toggle) {
-        // Estado inicial â€” IMPORTANTE para ediÃ§Ã£o de tarefa jÃ¡ recorrente
+        // Estado inicial — IMPORTANTE para edição de tarefa já recorrente
         toggleRecorrencia();
-        // Reage a cliques do usuÃ¡rio
+        // Reage a cliques do usuário
         toggle.addEventListener('change', toggleRecorrencia);
     } else {
-        console.error('[RecorrÃªncia] Checkbox #id_recorrente nÃ£o encontrado!');
+        console.error('[Recorrência] Checkbox #id_recorrente não encontrado!');
     }
 });
 </script>

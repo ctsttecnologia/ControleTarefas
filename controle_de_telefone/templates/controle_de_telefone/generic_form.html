@@ -1,19 +1,19 @@
-﻿
+
 {% extends "controle_de_telefone/_base_telefone.html" %}
 
-{% block title %}{{ titulo|default:"FormulÃ¡rio" }}{% endblock %}
+{% block title %}{{ titulo|default:"Formulário" }}{% endblock %}
 
 {% block content %}
 <div class="container py-4" style="max-width: 800px;">
 
-    <!-- CabeÃ§alho -->
+    <!-- Cabeçalho -->
     <header class="mb-4 pb-3 border-bottom">
         <h2 class="h4 fw-bold mb-1">
-            <i class="bi bi-pencil-square text-primary me-2"></i>{{ titulo|default:"FormulÃ¡rio" }}
+            <i class="bi bi-pencil-square text-primary me-2"></i>{{ titulo|default:"Formulário" }}
         </h2>
         {% if filial_ativa %}
         <div class="d-flex align-items-center gap-2 flex-wrap">
-            <small class="text-muted">Os dados serÃ£o salvos na filial:</small>
+            <small class="text-muted">Os dados serão salvos na filial:</small>
             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
                 <i class="bi bi-building me-1"></i>{{ filial_ativa.nome }}
             </span>
@@ -29,7 +29,7 @@
     </div>
     {% endif %}
 
-    <!-- FormulÃ¡rio -->
+    <!-- Formulário -->
     <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-4 p-lg-5">
             <form method="post" enctype="multipart/form-data" novalidate>

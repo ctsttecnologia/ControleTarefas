@@ -1,10 +1,10 @@
-﻿
+
 
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Prova â€” {{ tentativa.matricula.funcionario }}</title>
+    <title>Prova — {{ tentativa.matricula.funcionario }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -90,10 +90,10 @@
 </head>
 <body>
 
-    <!-- BotÃ£o imprimir -->
+    <!-- Botão imprimir -->
     <div class="no-print" style="text-align: center; margin-bottom: 20px;">
         <button onclick="window.print()" style="padding: 10px 30px; font-size: 14px; cursor: pointer;">
-            ðŸ–¨ï¸ Imprimir
+            🖨️ Imprimir
         </button>
     </div>
 
@@ -113,23 +113,23 @@
         </tr>
         <tr>
             <td class="label">Tentativa</td>
-            <td>{{ tentativa.numero_tentativa }}Âª</td>
+            <td>{{ tentativa.numero_tentativa }}ª</td>
             <td class="label">Nota</td>
             <td>
                 <strong class="{% if tentativa.aprovado %}aprovado{% else %}reprovado{% endif %}">
                     {{ tentativa.nota }}
                 </strong>
-                (MÃ­nima: {{ tentativa.matricula.curso.nota_minima }})
+                (Mínima: {{ tentativa.matricula.curso.nota_minima }})
             </td>
         </tr>
     </table>
 
-    <!-- QuestÃµes -->
+    <!-- Questões -->
     {% for item in gabarito %}
     <div class="questao">
         <div class="questao-header">
-            QuestÃ£o {{ forloop.counter }}
-            {% if item.acertou %}âœ”{% else %}âœ˜{% endif %}
+            Questão {{ forloop.counter }}
+            {% if item.acertou %}✔{% else %}✘{% endif %}
             <span style="float:right; font-weight:normal; font-size:10px;">
                 Peso: {{ item.questao.peso }}
             </span>
@@ -141,8 +141,8 @@
             {% if alt.correta %}correta
             {% elif alt == item.escolhida and not alt.correta %}errada{% endif %}">
             <span class="marca">
-                {% if alt.correta %}âœ”
-                {% elif alt == item.escolhida and not alt.correta %}âœ˜
+                {% if alt.correta %}✔
+                {% elif alt == item.escolhida and not alt.correta %}✘
                 {% else %}â—‹{% endif %}
             </span>
             {{ alt.texto }}
@@ -156,11 +156,11 @@
     <div class="resumo">
         <p>Resultado Final</p>
         <p class="nota {% if tentativa.aprovado %}aprovado{% else %}reprovado{% endif %}">
-            {{ tentativa.nota }} â€” {% if tentativa.aprovado %}APROVADO{% else %}REPROVADO{% endif %}
+            {{ tentativa.nota }} — {% if tentativa.aprovado %}APROVADO{% else %}REPROVADO{% endif %}
         </p>
         <p style="font-size:11px; margin-top:8px;">
             Acertos: {{ total_acertos }}/{{ total_questoes }} |
-            Tentativa: {{ tentativa.numero_tentativa }}Âª |
+            Tentativa: {{ tentativa.numero_tentativa }}ª |
             Data: {{ tentativa.finalizada_em|date:"d/m/Y" }}
         </p>
     </div>

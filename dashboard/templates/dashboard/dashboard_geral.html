@@ -1,4 +1,4 @@
-﻿<!-- Dashboard de Documentos - VisÃ£o Geral e PendÃªncias -->
+<!-- Dashboard de Documentos - Visão Geral e Pendências -->
 {% extends "dashboard/_base_dashboard.html" %}
 
 {% block dashboard_content %}
@@ -8,7 +8,7 @@
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
                 <h1><i class="bi bi-pie-chart-fill me-2"></i>{{ title }}</h1>
-                <p>VisÃ£o consolidada de todos os mÃ³dulos do sistema</p>
+                <p>Visão consolidada de todos os módulos do sistema</p>
             </div>
             <div class="d-flex gap-2 no-print">
                 {% if perms.dashboard.view_dashboard_geral %}
@@ -32,7 +32,7 @@
     <div class="dash-alert alert alert-danger shadow-sm">
         <div class="dash-alert-icon text-danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
         <div>
-            <h5>AtenÃ§Ã£o NecessÃ¡ria</h5>
+            <h5>Atenção Necessária</h5>
             <div class="d-flex flex-wrap gap-2">
                 {% for a in alertas_criticos %}
                 <span class="badge bg-{{ a.tipo }} rounded-pill">
@@ -133,10 +133,10 @@
         </div>
     </div>
 
-    <!-- Acesso RÃ¡pido -->
+    <!-- Acesso Rápido -->
     {% if perms.dashboard.view_dashboard_geral %}
         <h5 class="fw-bold mb-3" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #858796;">
-            <i class="bi bi-grid me-1"></i> Acesso RÃ¡pido
+            <i class="bi bi-grid me-1"></i> Acesso Rápido
         </h5>
         <div class="row g-3">
             <div class="col-md-6 col-lg">

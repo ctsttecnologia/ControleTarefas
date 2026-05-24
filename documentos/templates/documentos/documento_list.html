@@ -1,13 +1,13 @@
-﻿
+
 {% extends "base.html" %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-    /*  Lista de Documentos â€” Tema Adaptativo             */
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════════ */
+    /*  Lista de Documentos — Tema Adaptativo             */
+    /* ═══════════════════════════════════════════════════ */
 
     /* Nome do documento adaptativo (substitui text-dark) */
     .doc-nome {
@@ -19,7 +19,7 @@
         color: #f8f9fa !important;
     }
 
-    /* CabeÃ§alho da tabela adaptativo */
+    /* Cabeçalho da tabela adaptativo */
     .doc-thead {
         background-color: #f8f9fa;
         color: #495057;
@@ -60,7 +60,7 @@
         border-top: 1px solid #2d3339;
     }
 
-    /* Textos muted mais legÃ­veis no escuro */
+    /* Textos muted mais legíveis no escuro */
     [data-bs-theme="dark"] .text-muted {
         color: #adb5bd !important;
     }
@@ -113,13 +113,13 @@
 {% block content %}
 <div class="container-fluid py-4">
 
-    {# â”€â”€ CabeÃ§alho â”€â”€ #}
+    {# ── Cabeçalho ── #}
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold mb-1">
-                <i class="bi bi-file-earmark-text me-2"></i>{{ titulo_pagina|default:"GestÃ£o de Documentos" }}
+                <i class="bi bi-file-earmark-text me-2"></i>{{ titulo_pagina|default:"Gestão de Documentos" }}
             </h2>
-            <p class="text-muted mb-0">Gerencie todos os documentos da empresa em um sÃ³ lugar.</p>
+            <p class="text-muted mb-0">Gerencie todos os documentos da empresa em um só lugar.</p>
         </div>
         {% if perms.documentos.add_documento or user.is_superuser %}
         <a href="{% url 'documentos:criar' %}" class="btn btn-primary shadow-sm">
@@ -128,7 +128,7 @@
         {% endif %}
     </div>
 
-    {# â”€â”€ Busca â”€â”€ #}
+    {# ── Busca ── #}
     <form method="get" class="row g-2 mb-3">
         <input type="hidden" name="filtro" value="{{ filtro_ativo }}">
         <div class="col-md-4">
@@ -152,7 +152,7 @@
         </div>
     </form>
 
-    {# â”€â”€ Abas de Filtro â”€â”€ #}
+    {# ── Abas de Filtro ── #}
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
             <a class="nav-link {% if filtro_ativo == 'pendentes' %}active fw-semibold{% endif %}"
@@ -186,26 +186,26 @@
         </li>
     </ul>
 
-    {# â”€â”€ Tabela â”€â”€ #}
+    {# ── Tabela ── #}
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="doc-thead">
                         <tr>
-                            <th style="min-width: 250px;">Nome / DescriÃ§Ã£o</th>
+                            <th style="min-width: 250px;">Nome / Descrição</th>
                             <th>Tipo</th>
-                            <th>VÃ­nculo</th>
+                            <th>Vínculo</th>
                             <th>Vencimento</th>
                             <th>Status</th>
-                            <th>ResponsÃ¡vel</th>
-                            <th class="text-end" style="min-width: 180px;">AÃ§Ãµes</th>
+                            <th>Responsável</th>
+                            <th class="text-end" style="min-width: 180px;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for doc in documentos %}
                         <tr>
-                            {# â”€â”€ Nome â”€â”€ #}
+                            {# ── Nome ── #}
                             <td>
                                 <div class="doc-nome">{{ doc.nome }}</div>
                                 {% if doc.descricao %}
@@ -213,14 +213,14 @@
                                 {% endif %}
                             </td>
 
-                            {# â”€â”€ Tipo â”€â”€ #}
+                            {# ── Tipo ── #}
                             <td>
                                 <span class="badge doc-badge-tipo">
                                     {{ doc.get_tipo_display }}
                                 </span>
                             </td>
 
-                            {# â”€â”€ VÃ­nculo â”€â”€ #}
+                            {# ── Vínculo ── #}
                             <td>
                                 {% if doc.is_anexado %}
                                     {% if doc.content_object %}
@@ -245,7 +245,7 @@
                                 {% endif %}
                             </td>
 
-                            {# â”€â”€ Vencimento â”€â”€ #}
+                            {# ── Vencimento ── #}
                             <td>
                                 {% if doc.data_vencimento %}
                                     <div class="d-flex align-items-center">
@@ -259,11 +259,11 @@
                                         </small>
                                     {% endif %}
                                 {% else %}
-                                    <span class="text-muted">â€”</span>
+                                    <span class="text-muted">—</span>
                                 {% endif %}
                             </td>
 
-                            {# â”€â”€ Status â”€â”€ #}
+                            {# ── Status ── #}
                             <td>
                                 {% if doc.status == 'VENCIDO' %}
                                     <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Vencido</span>
@@ -278,7 +278,7 @@
                                 {% endif %}
                             </td>
 
-                            {# â”€â”€ ResponsÃ¡vel â”€â”€ #}
+                            {# ── Responsável ── #}
                             <td>
                                 {% if doc.responsavel %}
                                     <div class="d-flex align-items-center">
@@ -289,11 +289,11 @@
                                         <span class="small">{{ doc.responsavel.get_full_name|default:doc.responsavel.username }}</span>
                                     </div>
                                 {% else %}
-                                    <span class="text-muted">â€”</span>
+                                    <span class="text-muted">—</span>
                                 {% endif %}
                             </td>
 
-                            {# â”€â”€ AÃ§Ãµes â”€â”€ #}
+                            {# ── Ações ── #}
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
                                     {% if doc.arquivo %}

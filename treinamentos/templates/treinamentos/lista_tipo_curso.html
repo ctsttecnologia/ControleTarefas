@@ -1,4 +1,4 @@
-﻿<!-- Lista de Tipos de Curso -->
+<!-- Lista de Tipos de Curso -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -166,12 +166,12 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- â•â•â• HERO â•â•â• -->
+    <!-- ═══ HERO ═══ -->
     <div class="page-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
                 <h1><i class="bi bi-bookmarks-fill me-2"></i>Tipos de Curso</h1>
-                <p>CatÃ¡logo de todos os tipos de cursos e treinamentos disponÃ­veis</p>
+                <p>Catálogo de todos os tipos de cursos e treinamentos disponíveis</p>
                 {% if cursos %}
                 <div class="d-flex flex-wrap gap-2 mt-3">
                     <span class="stat-pill"><i class="bi bi-collection"></i> {{ cursos|length }} tipo{{ cursos|length|pluralize:"s" }}</span>
@@ -191,7 +191,7 @@
         </div>
     </div>
 
-    <!-- â•â•â• TABLE CARD â•â•â• -->
+    <!-- ═══ TABLE CARD ═══ -->
     <div class="card search-card shadow-sm">
         <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
             <form method="get">
@@ -238,11 +238,11 @@
                         <tr>
                             <th style="min-width: 220px;">Nome</th>
                             <th>Modalidade</th>
-                            <th>Ãrea</th>
+                            <th>Área</th>
                             <th class="text-center">Validade</th>
                             <th class="text-center">Certificado</th>
                             <th class="text-center">Status</th>
-                            <th class="text-end pe-4" style="width: 100px;">AÃ§Ãµes</th>
+                            <th class="text-end pe-4" style="width: 100px;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -320,7 +320,7 @@
                                         {% if request.GET.q %}
                                         Nenhum resultado para "<strong>{{ request.GET.q }}</strong>".
                                         {% else %}
-                                        Cadastre o primeiro tipo de curso para comeÃ§ar.
+                                        Cadastre o primeiro tipo de curso para começar.
                                         {% endif %}
                                     </p>
                                     {% if perms.treinamentos.add_tipocurso %}

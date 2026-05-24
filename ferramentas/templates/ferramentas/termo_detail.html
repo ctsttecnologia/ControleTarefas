@@ -1,4 +1,4 @@
-﻿
+
 {# ferramentas/termo_detail.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
 
@@ -21,7 +21,7 @@
     {% endif %}
     {% if pode_reverter %}
     <form action="{% url 'ferramentas:termo_reverter' pk=termo.pk %}" method="post" class="d-inline"
-          onsubmit="return confirm('Tem certeza? Todos os itens serÃ£o devolvidos ao estoque.');">
+          onsubmit="return confirm('Tem certeza? Todos os itens serão devolvidos ao estoque.');">
         {% csrf_token %}
         {% if perms.ferramentas.add_termo_reverter or user.is_superuser %}
         <button type="submit" class="btn btn-danger">
@@ -35,15 +35,15 @@
 {% block ferramentas_content %}
 <div class="row g-4">
 
-    {# InformaÃ§Ãµes do Termo #}
+    {# Informações do Termo #}
     <div class="col-lg-5">
         <div class="card shadow-sm mb-4">
             <div class="card-header fw-bold">
-                <i class="bi bi-info-circle me-2"></i>InformaÃ§Ãµes
+                <i class="bi bi-info-circle me-2"></i>Informações
             </div>
             <ul class="list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">ResponsÃ¡vel</span>
+                    <span class="text-muted">Responsável</span>
                     <strong>{{ termo.responsavel }}</strong>
                 </li>
                 <li class="list-group-item d-flex justify-content-between">
@@ -55,7 +55,7 @@
                     <strong>{{ termo.separado_por|default:"N/A" }}</strong>
                 </li>
                 <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Data de EmissÃ£o</span>
+                    <span class="text-muted">Data de Emissão</span>
                     <strong>{{ termo.data_emissao|date:"d/m/Y" }}</strong>
                 </li>
                 <li class="list-group-item d-flex justify-content-between">

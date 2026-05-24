@@ -1,4 +1,4 @@
-﻿
+
 {% extends 'base.html' %}
 {% load static %}
 
@@ -22,15 +22,15 @@
             <div class="card shadow-sm">
                 <div class="card-body p-4 p-md-5">
 
-                    <!-- InstruÃ§Ãµes para o UsuÃ¡rio -->
+                    <!-- Instruções para o Usuário -->
                     <div class="alert alert-info" role="alert">
                         <h4 class="alert-heading"><i class="bi bi-info-circle-fill"></i> Como funciona?</h4>
-                        <p>Para importar mÃºltiplas ferramentas de uma sÃ³ vez, siga os passos abaixo:</p>
+                        <p>Para importar múltiplas ferramentas de uma só vez, siga os passos abaixo:</p>
                         <hr>
                         <ol class="mb-0">
-                            <li><strong>Baixe o modelo:</strong> Clique no botÃ£o abaixo para baixar a planilha padrÃ£o no formato correto.</li>
-                            <li><strong>Preencha os dados:</strong> Abra o arquivo no Excel ou similar e preencha com as informaÃ§Ãµes das suas ferramentas, seguindo o exemplo das colunas.</li>
-                            <li><strong>FaÃ§a o upload:</strong> Salve o arquivo e selecione-o no campo abaixo para enviar ao sistema.</li>
+                            <li><strong>Baixe o modelo:</strong> Clique no botão abaixo para baixar a planilha padrão no formato correto.</li>
+                            <li><strong>Preencha os dados:</strong> Abra o arquivo no Excel ou similar e preencha com as informações das suas ferramentas, seguindo o exemplo das colunas.</li>
+                            <li><strong>Faça o upload:</strong> Salve o arquivo e selecione-o no campo abaixo para enviar ao sistema.</li>
                         </ol>
                     </div>
 
@@ -40,7 +40,7 @@
                         </a>
                     </div>
 
-                    <!-- FormulÃ¡rio de Upload -->
+                    <!-- Formulário de Upload -->
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         

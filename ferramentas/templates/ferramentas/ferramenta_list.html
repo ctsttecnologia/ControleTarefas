@@ -1,4 +1,4 @@
-﻿
+
 {# ferramentas/ferramenta_list.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
 
@@ -39,7 +39,7 @@
         {% if perms.ferramentas.gerar_qrcodes or user.is_superuser %}
         {% csrf_token %}
         <button type="submit" class="btn btn-warning"
-                onclick="return confirm('A geraÃ§Ã£o pode levar alguns minutos. Continuar?');">
+                onclick="return confirm('A geração pode levar alguns minutos. Continuar?');">
             <i class="bi bi-qr-code-scan me-1"></i>Gerar QR Codes
         </button>
         {% endif %}
@@ -55,7 +55,7 @@
         <form method="get" class="row g-2 align-items-center">
             <div class="col-lg-4 col-md-6">
                 <input type="text" name="q" class="form-control"
-                       placeholder="Buscar nome, cÃ³digo ou patrimÃ´nio..."
+                       placeholder="Buscar nome, código ou patrimônio..."
                        value="{{ query|default:'' }}">
             </div>
             <div class="col-lg-3 col-md-4">
@@ -84,12 +84,12 @@
         <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
                 <tr>
-                    <th class="ps-3">Nome / PatrimÃ´nio</th>
-                    <th>CÃ³digo</th>
+                    <th class="ps-3">Nome / Patrimônio</th>
+                    <th>Código</th>
                     <th>Status</th>
-                    <th>LocalizaÃ§Ã£o</th>
-                    <th>AquisiÃ§Ã£o</th>
-                    <th class="text-center">AÃ§Ãµes</th>
+                    <th>Localização</th>
+                    <th>Aquisição</th>
+                    <th class="text-center">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -111,7 +111,7 @@
                             </span>
                             {% endif %}
                         </div>
-                        <small class="text-muted">{{ ferramenta.patrimonio|default:"Sem patrimÃ´nio" }}</small>
+                        <small class="text-muted">{{ ferramenta.patrimonio|default:"Sem patrimônio" }}</small>
                     </td>
                     <td><code class="small">{{ ferramenta.codigo_identificacao }}</code></td>
                     <td>
@@ -154,7 +154,7 @@
                             </button>
                             {% endif %}
                             {% else %}
-                            <button class="btn btn-outline-danger" disabled title="IndisponÃ­vel neste status">
+                            <button class="btn btn-outline-danger" disabled title="Indisponível neste status">
                                 <i class="bi bi-trash"></i>
                             </button>
                             {% endif %}
@@ -185,20 +185,20 @@
     {% endif %}
 </div>
 
-{# Modal de ConfirmaÃ§Ã£o #}
+{# Modal de Confirmação #}
 <div class="modal fade" id="confirmInativarModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-danger">
                 <h5 class="modal-title text-danger">
-                    <i class="bi bi-exclamation-triangle me-2"></i>Confirmar InativaÃ§Ã£o
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Inativação
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 Tem certeza que deseja marcar <strong id="ferramentaNomeModal" class="text-danger"></strong> como descartada?
                 <div class="alert alert-warning mt-3 mb-0 small">
-                    <i class="bi bi-info-circle me-1"></i>Esta aÃ§Ã£o pode ser revertida apenas por um administrador.
+                    <i class="bi bi-info-circle me-1"></i>Esta ação pode ser revertida apenas por um administrador.
                 </div>
             </div>
             <div class="modal-footer">
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function () {
     [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).forEach(function (el) {
         new bootstrap.Tooltip(el);
     });
-    // Modal de inativaÃ§Ã£o
+    // Modal de inativação
     const modal = document.getElementById('confirmInativarModal');
     if (modal) {
         modal.addEventListener('show.bs.modal', function (e) {

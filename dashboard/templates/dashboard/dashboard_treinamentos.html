@@ -1,4 +1,4 @@
-﻿<!-- Dashboard de Treinamentos - VisÃ£o Geral, PrÃ³ximos e Status -->
+<!-- Dashboard de Treinamentos - Visão Geral, Próximos e Status -->
 {% extends "dashboard/_base_dashboard.html" %}
 
 {% block dashboard_content %}
@@ -8,7 +8,7 @@
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
                 <h1><i class="bi bi-mortarboard-fill me-2"></i>{{ title }}</h1>
-                <p>Acompanhamento de treinamentos, presenÃ§a e vencimentos</p>
+                <p>Acompanhamento de treinamentos, presença e vencimentos</p>
             </div>
             <div class="d-flex gap-2 no-print">
                 {% if not is_cycling %}
@@ -32,7 +32,7 @@
     <div class="dash-alert alert alert-danger shadow-sm">
         <div class="dash-alert-icon text-danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
         <div>
-            <h5>AtenÃ§Ã£o!</h5>
+            <h5>Atenção!</h5>
             <p>Existem <strong>{{ vencidos }}</strong> treinamentos vencidos que precisam de reciclagem.</p>
         </div>
     </div>
@@ -63,7 +63,7 @@
                     </div>
                     <div>
                         <div class="kpi-value text-success">{{ taxa_presenca }}%</div>
-                        <div class="kpi-label">Taxa de PresenÃ§a</div>
+                        <div class="kpi-label">Taxa de Presença</div>
                     </div>
                 </div>
             </div>
@@ -99,11 +99,11 @@
     </div>
 
     <div class="row g-4">
-        <!-- PrÃ³ximos Treinamentos -->
+        <!-- Próximos Treinamentos -->
         <div class="col-lg-6">
             <div class="card dash-card shadow-sm h-100">
                 <div class="card-header">
-                    <h5><i class="bi bi-calendar-event text-primary me-2"></i>PrÃ³ximos Treinamentos</h5>
+                    <h5><i class="bi bi-calendar-event text-primary me-2"></i>Próximos Treinamentos</h5>
                 </div>
                 <div class="p-0">
                     {% for t in proximos_treinamentos %}
@@ -129,7 +129,7 @@
                     <div class="dash-empty">
                         <i class="bi bi-calendar-x"></i>
                         <h6>Nenhum agendamento</h6>
-                        <p>NÃ£o hÃ¡ treinamentos programados no momento.</p>
+                        <p>Não há treinamentos programados no momento.</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -171,7 +171,7 @@
                     <div class="dash-empty">
                         <i class="bi bi-bar-chart"></i>
                         <h6>Sem dados</h6>
-                        <p>Nenhum status de treinamento disponÃ­vel.</p>
+                        <p>Nenhum status de treinamento disponível.</p>
                     </div>
                     {% endfor %}
                 </div>

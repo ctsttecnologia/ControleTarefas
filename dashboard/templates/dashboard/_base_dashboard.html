@@ -1,4 +1,4 @@
-﻿<!-- Template base para dashboards, com estrutura e estilos comuns -->
+<!-- Template base para dashboards, com estrutura e estilos comuns -->
 {% extends "base.html" %}
 {% load static %}
 
@@ -6,11 +6,11 @@
 
 {% block extra_css %}
 <style>
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       DASHBOARD DESIGN SYSTEM â€” Shared Styles
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════
+       DASHBOARD DESIGN SYSTEM — Shared Styles
+       ═══════════════════════════════════════════════ */
 
-    /* â•â•â• HERO â•â•â• */
+    /* ═══ HERO ═══ */
     .dash-hero {
         border-radius: 1rem;
         color: #fff;
@@ -38,7 +38,7 @@
     .dash-hero h1 { font-weight: 700; font-size: 1.65rem; margin-bottom: 0.25rem; position: relative; }
     .dash-hero p  { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; position: relative; }
 
-    /* â•â•â• KPI CARDS â•â•â• */
+    /* ═══ KPI CARDS ═══ */
     .kpi-card {
         border: none;
         border-radius: 0.875rem;
@@ -66,7 +66,7 @@
     }
     .kpi-sub { font-size: 0.72rem; font-weight: 600; margin-top: 0.25rem; }
 
-    /* â•â•â• SECTION CARD â•â•â• */
+    /* ═══ SECTION CARD ═══ */
     .dash-card { border: none; border-radius: 0.875rem; }
     .dash-card .card-header {
         background: transparent;
@@ -96,7 +96,7 @@
     }
 
 
-    /* â•â•â• ALERT BANNER â•â•â• */
+    /* ═══ ALERT BANNER ═══ */
     .dash-alert {
         border-radius: 0.875rem;
         padding: 1.25rem 1.5rem;
@@ -109,7 +109,7 @@
     .dash-alert h5 { font-weight: 700; margin-bottom: 0.25rem; }
     .dash-alert p { margin-bottom: 0; font-size: 0.9rem; }
 
-    /* â•â•â• DATA TABLE â•â•â• */
+    /* ═══ DATA TABLE ═══ */
     .dash-table { border-collapse: separate; border-spacing: 0; }
     .dash-table thead th {
         background: #f8f9fc;
@@ -132,7 +132,7 @@
     }
     .dash-table tbody tr:last-child td { border-bottom: none; }
 
-    /* â•â•â• LIST ITEM â•â•â• */
+    /* ═══ LIST ITEM ═══ */
     .dash-list-item {
         padding: 1rem 1.5rem;
         border-bottom: 1px solid #f5f5f8;
@@ -147,7 +147,7 @@
     .dash-list-item.item-warning { border-left: 4px solid #f6c23e; }
     .dash-list-item.item-success { border-left: 4px solid #1cc88a; }
 
-    /* â•â•â• STOCK ITEM â•â•â• */
+    /* ═══ STOCK ITEM ═══ */
     .stock-item {
         padding: 1rem 1.5rem;
         border-bottom: 1px solid #f5f5f8;
@@ -169,14 +169,14 @@
     .stock-value-num { font-size: 1.1rem; font-weight: 800; color: #e74a3b; }
     .stock-value-label { font-size: 0.6rem; text-transform: uppercase; color: #e74a3b; font-weight: 700; }
 
-    /* â•â•â• FLOW CARD â•â•â• */
+    /* ═══ FLOW CARD ═══ */
     .flow-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
     .flow-col { padding: 2rem; text-align: center; }
     .flow-col:first-child { border-right: 1px solid #f0f2f5; }
     .flow-value { font-size: 2.5rem; font-weight: 800; }
     .flow-label { font-size: 0.78rem; text-transform: uppercase; font-weight: 700; color: #858796; }
 
-    /* â•â•â• STATUS SIDEBAR â•â•â• */
+    /* ═══ STATUS SIDEBAR ═══ */
     .status-row {
         display: flex;
         justify-content: space-between;
@@ -189,7 +189,7 @@
     .status-row-label { font-size: 0.82rem; font-weight: 700; color: #858796; text-transform: uppercase; }
     .status-row-value { font-weight: 800; font-size: 1.1rem; }
 
-    /* â•â•â• NAV CARDS â•â•â• */
+    /* ═══ NAV CARDS ═══ */
     .nav-card {
         display: flex;
         flex-direction: column;
@@ -212,7 +212,7 @@
     .nav-card i { font-size: 2rem; margin-bottom: 0.75rem; }
     .nav-card h5 { font-size: 0.9rem; font-weight: 700; margin: 0; }
 
-    /* â•â•â• PROGRESS BAR TV â•â•â• */
+    /* ═══ PROGRESS BAR TV ═══ */
     .progress-bar-tv {
         position: fixed; top: 0; left: 0;
         height: 4px; z-index: 9999;
@@ -238,13 +238,13 @@
         50% { box-shadow: 0 0 20px rgba(231,74,59,0.7); }
     }
 
-    /* â•â•â• EMPTY STATE â•â•â• */
+    /* ═══ EMPTY STATE ═══ */
     .dash-empty { text-align: center; padding: 3rem 2rem; }
     .dash-empty i { font-size: 2.5rem; color: #d1d5db; margin-bottom: 0.75rem; display: block; }
     .dash-empty h6 { font-weight: 700; color: #858796; }
     .dash-empty p { font-size: 0.85rem; color: #a0aec0; }
 
-    /* â•â•â• DARK MODE â•â•â• */
+    /* ═══ DARK MODE ═══ */
     [data-bs-theme="dark"] .dash-hero.hero-blue { background: linear-gradient(135deg, #224abe, #1a2d6d); }
     [data-bs-theme="dark"] .kpi-card { background: var(--bs-body-bg); }
     [data-bs-theme="dark"] .kpi-value { color: #e2e8f0; }
@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
 {% endblock %}
 
 {% block extra_js %}
-<!-- Chart.js â€” necessÃ¡rio para grÃ¡ficos dos dashboards -->
+<!-- Chart.js — necessário para gráficos dos dashboards -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 {% block dashboard_js %}{% endblock %}
 {% endblock %}

@@ -1,4 +1,4 @@
-﻿<!-- Dashboard de Documentos - VisÃ£o Geral e PendÃªncias -->
+<!-- Dashboard de Documentos - Visão Geral e Pendências -->
 {% extends "dashboard/_base_dashboard.html" %}
 
 {% block dashboard_content %}
@@ -8,7 +8,7 @@
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
                 <h1><i class="bi bi-file-earmark-text me-2"></i>{{ title }}</h1>
-                <p>VisÃ£o geral de documentos, vencimentos e pendÃªncias</p>
+                <p>Visão geral de documentos, vencimentos e pendências</p>
             </div>
             <div class="d-flex gap-2 no-print">
                 {% if not is_cycling %}
@@ -32,8 +32,8 @@
     <div class="dash-alert alert alert-danger shadow-sm">
         <div class="dash-alert-icon text-danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
         <div>
-            <h5>AÃ§Ã£o NecessÃ¡ria!</h5>
-            <p>Existem <strong>{{ documentos_vencidos }}</strong> documentos vencidos que precisam de renovaÃ§Ã£o imediata.</p>
+            <h5>Ação Necessária!</h5>
+            <p>Existem <strong>{{ documentos_vencidos }}</strong> documentos vencidos que precisam de renovação imediata.</p>
         </div>
     </div>
     {% endif %}
@@ -85,11 +85,11 @@
     </div>
 
     <div class="row g-4">
-        <!-- PrÃ³ximos Vencimentos -->
+        <!-- Próximos Vencimentos -->
         <div class="col-lg-8">
             <div class="card dash-card shadow-sm h-100">
                 <div class="card-header">
-                    <h5><i class="bi bi-calendar-event text-danger me-2"></i>PrÃ³ximos Vencimentos</h5>
+                    <h5><i class="bi bi-calendar-event text-danger me-2"></i>Próximos Vencimentos</h5>
                 </div>
                 <div class="p-0">
                     {% for doc in proximos_vencimentos %}
@@ -108,25 +108,25 @@
                         {% if doc.data_vencimento < today %}
                         <span class="badge bg-danger rounded-pill">VENCIDO</span>
                         {% else %}
-                        <span class="badge bg-warning text-dark rounded-pill">ATENÃ‡ÃƒO</span>
+                        <span class="badge bg-warning text-dark rounded-pill">ATENÇÃO</span>
                         {% endif %}
                     </div>
                     {% empty %}
                     <div class="dash-empty">
                         <i class="bi bi-clipboard-check"></i>
                         <h6>Tudo em dia!</h6>
-                        <p>Nenhum documento prÃ³ximo do vencimento.</p>
+                        <p>Nenhum documento próximo do vencimento.</p>
                     </div>
                     {% endfor %}
                 </div>
             </div>
         </div>
 
-        <!-- VisÃ£o Geral -->
+        <!-- Visão Geral -->
         <div class="col-lg-4">
             <div class="card dash-card shadow-sm h-100">
                 <div class="card-header">
-                    <h5><i class="bi bi-pie-chart text-primary me-2"></i>VisÃ£o Geral</h5>
+                    <h5><i class="bi bi-pie-chart text-primary me-2"></i>Visão Geral</h5>
                 </div>
                 <div class="card-body">
                     {% for st in status_data %}

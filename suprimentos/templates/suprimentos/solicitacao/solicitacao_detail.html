@@ -1,21 +1,21 @@
-﻿
+
 {# templates/suprimentos/solicitacao/solicitacao_detail.html #}
 {% extends "suprimentos/suprimentos_base.html" %}
 {% load static %}
 
-{% block title %}{{ sol.numero }} â€” SolicitaÃ§Ã£o de Compra{% endblock %}
+{% block title %}{{ sol.numero }} — Solicitação de Compra{% endblock %}
 
 {% block suprimentos_content %}
 <div class="container-fluid py-4">
 
-    {# â•â•â• CABEÃ‡ALHO â•â•â• #}
+    {# ═══ CABEÇALHO ═══ #}
     <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
             <h3 class="fw-bold mb-1">
                 <i class="bi bi-bag-check-fill text-primary me-2"></i>{{ sol.numero }}
             </h3>
             <p class="text-muted mb-0">
-                {{ sol.contrato }} Â· {{ sol.get_tipo_obra_display }}
+                {{ sol.contrato }} · {{ sol.get_tipo_obra_display }}
                 <span class="badge bg-{{ sol.status_badge_class }} ms-2 px-3">{{ sol.get_status_display }}</span>
             </p>
         </div>
@@ -32,9 +32,9 @@
         </div>
     </div>
 
-    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
-    {#  STEPPER â€” PIPELINE VISUAL                         #}
-    {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+    {# ═══════════════════════════════════════════════════ #}
+    {#  STEPPER — PIPELINE VISUAL                         #}
+    {# ═══════════════════════════════════════════════════ #}
     {% if sol.status != 'CANCELADO' %}
     <div class="card shadow-sm mb-4">
         <div class="card-body p-3">
@@ -42,7 +42,7 @@
                 {% for etapa in etapas %}
                 {% with current=sol.etapa_atual %}
                 <div class="text-center flex-shrink-0" style="min-width: 100px;">
-                    {# Ãcone circular #}
+                    {# Ícone circular #}
                     <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1
                         {% if etapa.num < current %}bg-success text-white
                         {% elif etapa.num == current %}bg-primary text-white shadow
@@ -74,12 +74,12 @@
 
     <div class="row g-4">
 
-        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
-        {#  COLUNA ESQUERDA â€” DADOS + AÃ‡ÃƒO ATUAL          #}
-        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+        {# ═══════════════════════════════════════════════ #}
+        {#  COLUNA ESQUERDA — DADOS + AÇÃO ATUAL          #}
+        {# ═══════════════════════════════════════════════ #}
         <div class="col-lg-8">
 
-            {# â”€â”€ Alerta verba â”€â”€ #}
+            {# ── Alerta verba ── #}
             {% if verba_ok is not None %}
                 {% if not verba_ok %}
                 <div class="alert alert-danger d-flex align-items-center mb-3">
@@ -91,23 +91,23 @@
                 {% endif %}
             {% endif %}
 
-            {# â”€â”€ Dados gerais â”€â”€ #}
+            {# ── Dados gerais ── #}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light fw-semibold">
-                    <i class="bi bi-info-circle me-1"></i> Dados da SolicitaÃ§Ã£o
+                    <i class="bi bi-info-circle me-1"></i> Dados da Solicitação
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-4">
                             <div class="text-muted small">Contrato</div>
-                            <div class="fw-semibold">{{ sol.contrato.cm }} â€” {{ sol.contrato.cliente }}</div>
+                            <div class="fw-semibold">{{ sol.contrato.cm }} — {{ sol.contrato.cliente }}</div>
                         </div>
                         <div class="col-md-4">
                             <div class="text-muted small">Tipo de Obra</div>
                             <div>{{ sol.get_tipo_obra_display }}</div>
                         </div>
                         <div class="col-md-4">
-                            <div class="text-muted small">Data NecessÃ¡ria</div>
+                            <div class="text-muted small">Data Necessária</div>
                             <div>
                                 {% if sol.data_necessaria %}
                                     {{ sol.data_necessaria|date:"d/m/Y" }}
@@ -117,7 +117,7 @@
                                     </span>
                                     {% endwith %}
                                 {% else %}
-                                    <span class="text-muted">NÃ£o informada</span>
+                                    <span class="text-muted">Não informada</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -125,16 +125,16 @@
                     <hr>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <div class="text-muted small">DescriÃ§Ã£o do Material</div>
-                            <div class="border rounded p-2 bg-light" style="white-space:pre-wrap;">{{ sol.descricao_material|default:"â€”" }}</div>
+                            <div class="text-muted small">Descrição do Material</div>
+                            <div class="border rounded p-2 bg-light" style="white-space:pre-wrap;">{{ sol.descricao_material|default:"—" }}</div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-muted small">Quantidade</div>
-                            <div class="fw-semibold">{{ sol.quantidade|default:"â€”" }} {{ sol.get_unidade_medida_display }}</div>
+                            <div class="fw-semibold">{{ sol.quantidade|default:"—" }} {{ sol.get_unidade_medida_display }}</div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-muted small">Tipo de Insumo</div>
-                            <div>{{ sol.get_tipo_insumo_display|default:"â€”" }}</div>
+                            <div>{{ sol.get_tipo_insumo_display|default:"—" }}</div>
                         </div>
                     </div>
 
@@ -144,7 +144,7 @@
                     <div class="row g-3">
                         {% if sol.numero_cotacao %}
                         <div class="col-md-3">
-                            <div class="text-muted small">NÂº CotaÃ§Ã£o</div>
+                            <div class="text-muted small">Nº Cotação</div>
                             <div class="fw-semibold">{{ sol.numero_cotacao }}</div>
                         </div>
                         {% endif %}
@@ -174,13 +174,13 @@
                         {% endif %}
                         {% if sol.numero_pedido_sienge %}
                         <div class="col-md-3">
-                            <div class="text-muted small">NÂº Pedido (Sistema)</div>
+                            <div class="text-muted small">Nº Pedido (Sistema)</div>
                             <div class="fw-semibold">{{ sol.numero_pedido_sienge }}</div>
                         </div>
                         {% endif %}
                         {% if sol.numero_nota_fiscal %}
                         <div class="col-md-3">
-                            <div class="text-muted small">NÂº Nota Fiscal</div>
+                            <div class="text-muted small">Nº Nota Fiscal</div>
                             <div class="fw-semibold text-success">{{ sol.numero_nota_fiscal }}</div>
                         </div>
                         {% endif %}
@@ -199,7 +199,7 @@
                         {% endif %}
                         {% if sol.data_prevista_entrega %}
                         <div class="col-md-4">
-                            <div class="text-muted small">PrevisÃ£o de Entrega</div>
+                            <div class="text-muted small">Previsão de Entrega</div>
                             <div>{{ sol.data_prevista_entrega|date:"d/m/Y" }}</div>
                         </div>
                         {% endif %}
@@ -216,29 +216,29 @@
                 </div>
             </div>
 
-            {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
-            {#  CARD DE AÃ‡ÃƒO â€” FORMULÃRIO DA ETAPA ATUAL  #}
-            {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+            {# ═══════════════════════════════════════════ #}
+            {#  CARD DE AÇÃO — FORMULÁRIO DA ETAPA ATUAL  #}
+            {# ═══════════════════════════════════════════ #}
 
-            {# â”€â”€ ETAPA 1: Fazer CotaÃ§Ã£o (Comprador) â”€â”€ #}
+            {# ── ETAPA 1: Fazer Cotação (Comprador) ── #}
             {% if form_cotacao %}
             <div class="card shadow-sm mb-4 border-info border-2">
                 <div class="card-header bg-info text-white fw-bold">
-                    <i class="bi bi-1-circle me-2"></i> Registrar CotaÃ§Ã£o
+                    <i class="bi bi-1-circle me-2"></i> Registrar Cotação
                 </div>
                 <div class="card-body">
                     <p class="text-muted mb-3">
-                        Preencha os dados da cotaÃ§Ã£o realizada para este material.
+                        Preencha os dados da cotação realizada para este material.
                     </p>
                     <form method="post" action="{% url 'suprimentos:solicitacao_cotacao' sol.pk %}">
                         {% csrf_token %}
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Data da CotaÃ§Ã£o *</label>
+                                <label class="form-label fw-semibold">Data da Cotação *</label>
                                 {{ form_cotacao.data_cotacao }}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">NÂº da CotaÃ§Ã£o *</label>
+                                <label class="form-label fw-semibold">Nº da Cotação *</label>
                                 {{ form_cotacao.numero_cotacao }}
                             </div>
                             <div class="col-md-6">
@@ -252,7 +252,7 @@
                         </div>
                         <div class="mt-3 text-end">
                             <button type="submit" class="btn btn-info text-white">
-                                <i class="bi bi-send me-1"></i> Enviar CotaÃ§Ã£o para ValidaÃ§Ã£o
+                                <i class="bi bi-send me-1"></i> Enviar Cotação para Validação
                             </button>
                         </div>
                     </form>
@@ -260,17 +260,17 @@
             </div>
             {% endif %}
 
-            {# â”€â”€ ETAPA 2: Validar CotaÃ§Ã£o (Aprovador) â”€â”€ #}
+            {# ── ETAPA 2: Validar Cotação (Aprovador) ── #}
             {% if form_validar_cotacao %}
             <div class="card shadow-sm mb-4 border-warning border-2">
                 <div class="card-header bg-warning text-dark fw-bold">
-                    <i class="bi bi-2-circle me-2"></i> Validar CotaÃ§Ã£o
+                    <i class="bi bi-2-circle me-2"></i> Validar Cotação
                 </div>
                 <div class="card-body">
                     <div class="alert alert-light border mb-3">
                         <div class="row">
                             <div class="col-md-3">
-                                <span class="text-muted small">CotaÃ§Ã£o NÂº</span><br>
+                                <span class="text-muted small">Cotação Nº</span><br>
                                 <strong>{{ sol.numero_cotacao }}</strong>
                             </div>
                             <div class="col-md-3">
@@ -291,14 +291,14 @@
                         {% csrf_token %}
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <label class="form-label fw-semibold">Data da ValidaÃ§Ã£o *</label>
+                                <label class="form-label fw-semibold">Data da Validação *</label>
                                 {{ form_validar_cotacao.data_validacao }}
                             </div>
                         </div>
                         <div class="mt-3 text-end">
                             {% if perms.suprimentos.change_solicitacao or user.is.superuser %}
                             <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle me-1"></i> Validar CotaÃ§Ã£o
+                                <i class="bi bi-check-circle me-1"></i> Validar Cotação
                             </button>
                             {% endif %}
                         </div>
@@ -307,7 +307,7 @@
             </div>
             {% endif %}
 
-            {# â”€â”€ ETAPA 3: Criar Pedido/CT (Comprador) â”€â”€ #}
+            {# ── ETAPA 3: Criar Pedido/CT (Comprador) ── #}
             {% if form_criar_pedido %}
             <div class="card shadow-sm mb-4 border-info border-2">
                 <div class="card-header bg-info text-white fw-bold">
@@ -321,11 +321,11 @@
                         {% csrf_token %}
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Data CriaÃ§Ã£o do Pedido *</label>
+                                <label class="form-label fw-semibold">Data Criação do Pedido *</label>
                                 {{ form_criar_pedido.data_criacao_pedido }}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">NÂº do Pedido (Sistema) *</label>
+                                <label class="form-label fw-semibold">Nº do Pedido (Sistema) *</label>
                                 {{ form_criar_pedido.numero_pedido_sienge }}
                             </div>
                             <div class="col-md-6">
@@ -339,7 +339,7 @@
                         </div>
                         <div class="mt-3 text-end">
                             <button type="submit" class="btn btn-info text-white">
-                                <i class="bi bi-box-seam me-1"></i> Registrar Pedido e Enviar para AprovaÃ§Ã£o
+                                <i class="bi bi-box-seam me-1"></i> Registrar Pedido e Enviar para Aprovação
                             </button>
                         </div>
                     </form>
@@ -347,7 +347,7 @@
             </div>
             {% endif %}
 
-            {# â”€â”€ ETAPA 4: Aprovar Pedido (Aprovador) â”€â”€ #}
+            {# ── ETAPA 4: Aprovar Pedido (Aprovador) ── #}
             {% if form_aprovar_pedido %}
             <div class="card shadow-sm mb-4 border-warning border-2">
                 <div class="card-header bg-warning text-dark fw-bold">
@@ -357,7 +357,7 @@
                     <div class="alert alert-light border mb-3">
                         <div class="row">
                             <div class="col-md-3">
-                                <span class="text-muted small">Pedido NÂº</span><br>
+                                <span class="text-muted small">Pedido Nº</span><br>
                                 <strong>{{ sol.numero_pedido_sienge }}</strong>
                             </div>
                             <div class="col-md-3">
@@ -370,7 +370,7 @@
                             </div>
                             <div class="col-md-3">
                                 <span class="text-muted small">Comprador</span><br>
-                                <strong>{{ sol.comprador.get_full_name|default:"â€”" }}</strong>
+                                <strong>{{ sol.comprador.get_full_name|default:"—" }}</strong>
                             </div>
                         </div>
                     </div>
@@ -385,7 +385,7 @@
                         {% csrf_token %}
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <label class="form-label fw-semibold">Data da AprovaÃ§Ã£o *</label>
+                                <label class="form-label fw-semibold">Data da Aprovação *</label>
                                 {{ form_aprovar_pedido.data_aprovacao_pedido }}
                             </div>
                         </div>
@@ -401,7 +401,7 @@
             </div>
             {% endif %}
 
-            {# â”€â”€ ETAPA 5: Enviar ao Fornecedor (Comprador) â”€â”€ #}
+            {# ── ETAPA 5: Enviar ao Fornecedor (Comprador) ── #}
             {% if form_enviar_fornecedor %}
             <div class="card shadow-sm mb-4 border-primary border-2">
                 <div class="card-header bg-primary text-white fw-bold">
@@ -432,7 +432,7 @@
             </div>
             {% endif %}
 
-            {# â”€â”€ ETAPA 6: Registrar Entrega (Comprador) â”€â”€ #}
+            {# ── ETAPA 6: Registrar Entrega (Comprador) ── #}
             {% if form_entrega %}
             <div class="card shadow-sm mb-4 border-success border-2">
                 <div class="card-header bg-success text-white fw-bold">
@@ -442,7 +442,7 @@
                     {% if sol.data_prevista_entrega %}
                     <div class="alert alert-light border mb-3">
                         <i class="bi bi-calendar-event me-1"></i>
-                        PrevisÃ£o: <strong>{{ sol.data_prevista_entrega|date:"d/m/Y" }}</strong>
+                        Previsão: <strong>{{ sol.data_prevista_entrega|date:"d/m/Y" }}</strong>
                     </div>
                     {% endif %}
                     <form method="post" action="{% url 'suprimentos:solicitacao_registrar_entrega' sol.pk %}">
@@ -466,29 +466,29 @@
             {% endif %}
 
 
-            {# Sub-etapa B: Encerrar com NF (apÃ³s entrega registrada) #}
+            {# Sub-etapa B: Encerrar com NF (após entrega registrada) #}
             {% if form_encerrar %}
             <div class="card shadow-sm mb-4 border-success border-2">
                 <div class="card-header bg-success text-white fw-bold">
-                    <i class="bi bi-7-circle me-2"></i> Encerrar SolicitaÃ§Ã£o
+                    <i class="bi bi-7-circle me-2"></i> Encerrar Solicitação
                 </div>
                 <div class="card-body">
                     <div class="alert alert-success mb-3">
                         <i class="bi bi-check-circle-fill me-1"></i>
                         Entrega registrada em <strong>{{ sol.data_entrega_efetiva|date:"d/m/Y" }}</strong>.
-                        Agora informe o NÂº da Nota Fiscal para encerrar.
+                        Agora informe o Nº da Nota Fiscal para encerrar.
                     </div>
                     <form method="post" action="{% url 'suprimentos:solicitacao_encerrar' sol.pk %}">
                         {% csrf_token %}
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">NÂº da Nota Fiscal *</label>
+                                <label class="form-label fw-semibold">Nº da Nota Fiscal *</label>
                                 {{ form_encerrar.numero_nota_fiscal }}
                             </div>
                         </div>
                         <div class="mt-3 text-end">
                             <button type="submit" class="btn btn-success btn-lg">
-                                <i class="bi bi-trophy me-1"></i> Encerrar SolicitaÃ§Ã£o
+                                <i class="bi bi-trophy me-1"></i> Encerrar Solicitação
                             </button>
                         </div>
                     </form>
@@ -497,39 +497,39 @@
             {% endif %}
 
 
-            {# â”€â”€ Status CONCLUÃDO â”€â”€ #}
+            {# ── Status CONCLUÍDO ── #}
             {% if sol.status == 'CONCLUIDO' %}
             <div class="card shadow-sm mb-4 border-success border-2">
                 <div class="card-body text-center py-4">
                     <i class="bi bi-trophy-fill text-success" style="font-size:3rem;"></i>
-                    <h4 class="fw-bold text-success mt-2">SolicitaÃ§Ã£o ConcluÃ­da!</h4>
+                    <h4 class="fw-bold text-success mt-2">Solicitação Concluída!</h4>
                     <p class="text-muted mb-0">
                         NF: <strong>{{ sol.numero_nota_fiscal }}</strong>
                         {% if sol.data_entrega_efetiva %}
-                        Â· Entregue em <strong>{{ sol.data_entrega_efetiva|date:"d/m/Y" }}</strong>
+                        · Entregue em <strong>{{ sol.data_entrega_efetiva|date:"d/m/Y" }}</strong>
                         {% endif %}
                         {% if sol.valor_pedido %}
-                        Â· Valor: <strong>R$ {{ sol.valor_pedido|floatformat:2 }}</strong>
+                        · Valor: <strong>R$ {{ sol.valor_pedido|floatformat:2 }}</strong>
                         {% endif %}
                     </p>
                 </div>
             </div>
             {% endif %}
 
-            {# â”€â”€ Status CANCELADO â”€â”€ #}
+            {# ── Status CANCELADO ── #}
             {% if sol.status == 'CANCELADO' %}
             <div class="card shadow-sm mb-4 border-dark border-2">
                 <div class="card-body text-center py-4">
                     <i class="bi bi-x-octagon-fill text-dark" style="font-size:3rem;"></i>
-                    <h4 class="fw-bold text-dark mt-2">SolicitaÃ§Ã£o Cancelada</h4>
+                    <h4 class="fw-bold text-dark mt-2">Solicitação Cancelada</h4>
                     <p class="text-muted mb-0">
-                        Motivo: <em>{{ sol.motivo_cancelamento|default:"NÃ£o informado" }}</em>
+                        Motivo: <em>{{ sol.motivo_cancelamento|default:"Não informado" }}</em>
                     </p>
                 </div>
             </div>
             {% endif %}
 
-            {# â”€â”€ Pedido de origem â”€â”€ #}
+            {# ── Pedido de origem ── #}
             {% if pedido_origem %}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light fw-semibold">
@@ -540,19 +540,19 @@
                         <i class="bi bi-cart me-1"></i> {{ pedido_origem.numero }}
                     </a>
                     <span class="text-muted ms-2">
-                        â€” {{ pedido_origem.solicitante.get_full_name|default:pedido_origem.solicitante.username }}
-                        Â· {{ pedido_origem.data_pedido|date:"d/m/Y" }}
-                        Â· <span class="badge bg-{{ pedido_origem.status|lower }}">{{ pedido_origem.get_status_display }}</span>
+                        — {{ pedido_origem.solicitante.get_full_name|default:pedido_origem.solicitante.username }}
+                        · {{ pedido_origem.data_pedido|date:"d/m/Y" }}
+                        · <span class="badge bg-{{ pedido_origem.status|lower }}">{{ pedido_origem.get_status_display }}</span>
                     </span>
                 </div>
             </div>
             {% endif %}
 
-            {# â”€â”€ ObservaÃ§Ãµes â”€â”€ #}
+            {# ── Observações ── #}
             {% if sol.observacoes %}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light fw-semibold d-flex justify-content-between">
-                    <span><i class="bi bi-chat-text me-1"></i> ObservaÃ§Ãµes</span>
+                    <span><i class="bi bi-chat-text me-1"></i> Observações</span>
                 </div>
                 <div class="card-body">
                     <pre class="mb-0" style="white-space:pre-wrap;font-family:inherit;font-size:.9rem;">{{ sol.observacoes }}</pre>
@@ -560,10 +560,10 @@
             </div>
             {% endif %}
 
-            {# â”€â”€ Adicionar ObservaÃ§Ã£o â”€â”€ #}
+            {# ── Adicionar Observação ── #}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light fw-semibold">
-                    <i class="bi bi-pencil-square me-1"></i> Adicionar ObservaÃ§Ã£o
+                    <i class="bi bi-pencil-square me-1"></i> Adicionar Observação
                 </div>
                 <div class="card-body">
                     <form method="post" action="{% url 'suprimentos:solicitacao_observacao' sol.pk %}">
@@ -580,15 +580,15 @@
 
         </div>
 
-        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
-        {#  COLUNA DIREITA â€” RESPONSÃVEIS + TIMELINE      #}
-        {# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• #}
+        {# ═══════════════════════════════════════════════ #}
+        {#  COLUNA DIREITA — RESPONSÁVEIS + TIMELINE      #}
+        {# ═══════════════════════════════════════════════ #}
         <div class="col-lg-4">
 
-            {# â”€â”€ ResponsÃ¡veis â”€â”€ #}
+            {# ── Responsáveis ── #}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light fw-semibold">
-                    <i class="bi bi-people me-1"></i> ResponsÃ¡veis
+                    <i class="bi bi-people me-1"></i> Responsáveis
                 </div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
@@ -606,7 +606,7 @@
                                     {% if sol.aprovador_inicial %}
                                         {{ sol.aprovador_inicial.get_full_name|default:sol.aprovador_inicial.username }}
                                     {% else %}
-                                        <span class="text-muted">â€”</span>
+                                        <span class="text-muted">—</span>
                                     {% endif %}
                                 </span>
                             </div>
@@ -619,7 +619,7 @@
                                     {% if sol.comprador %}
                                         {{ sol.comprador.get_full_name|default:sol.comprador.username }}
                                     {% else %}
-                                        <span class="text-muted fst-italic">Aguardando atribuiÃ§Ã£o</span>
+                                        <span class="text-muted fst-italic">Aguardando atribuição</span>
                                     {% endif %}
                                 </span>
                             </div>
@@ -638,7 +638,7 @@
                 </div>
             </div>
 
-            {# â”€â”€ Datas do Workflow â”€â”€ #}
+            {# ── Datas do Workflow ── #}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light fw-semibold">
                     <i class="bi bi-calendar3 me-1"></i> Cronologia
@@ -651,19 +651,19 @@
                         </li>
                         {% if sol.data_aprovacao_inicial %}
                         <li class="list-group-item d-flex justify-content-between">
-                            <span class="text-muted">AprovaÃ§Ã£o Inicial</span>
+                            <span class="text-muted">Aprovação Inicial</span>
                             <span>{{ sol.data_aprovacao_inicial|date:"d/m/Y H:i" }}</span>
                         </li>
                         {% endif %}
                         {% if sol.data_cotacao %}
                         <li class="list-group-item d-flex justify-content-between">
-                            <span class="text-muted">CotaÃ§Ã£o</span>
+                            <span class="text-muted">Cotação</span>
                             <span>{{ sol.data_cotacao|date:"d/m/Y" }}</span>
                         </li>
                         {% endif %}
                         {% if sol.data_validacao_cotacao %}
                         <li class="list-group-item d-flex justify-content-between">
-                            <span class="text-muted">ValidaÃ§Ã£o CotaÃ§Ã£o</span>
+                            <span class="text-muted">Validação Cotação</span>
                             <span>{{ sol.data_validacao_cotacao|date:"d/m/Y" }}</span>
                         </li>
                         {% endif %}
@@ -695,7 +695,7 @@
                 </div>
             </div>
 
-            {# â”€â”€ Anexos â”€â”€ #}
+            {# ── Anexos ── #}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light fw-semibold">
                     <i class="bi bi-paperclip me-1"></i> Anexos
@@ -742,10 +742,10 @@
                 </div>
             </div>
 
-            {# â”€â”€ HistÃ³rico / Timeline â”€â”€ #}
+            {# ── Histórico / Timeline ── #}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light fw-semibold">
-                    <i class="bi bi-clock-history me-1"></i> HistÃ³rico
+                    <i class="bi bi-clock-history me-1"></i> Histórico
                 </div>
                 <div class="card-body p-0" style="max-height:500px;overflow-y:auto;">
                     {% if historico %}
@@ -791,7 +791,7 @@
     </div>
 </div>
 
-{# â•â•â• MODAL: Cancelar SolicitaÃ§Ã£o â•â•â• #}
+{# ═══ MODAL: Cancelar Solicitação ═══ #}
 {% if sol.pode_cancelar %}
 <div class="modal fade" id="modalCancelar" tabindex="-1">
     <div class="modal-dialog">
@@ -800,13 +800,13 @@
                 {% csrf_token %}
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title">
-                        <i class="bi bi-x-octagon me-1"></i> Cancelar SolicitaÃ§Ã£o
+                        <i class="bi bi-x-octagon me-1"></i> Cancelar Solicitação
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <p>Tem certeza que deseja cancelar <strong>{{ sol.numero }}</strong>?</p>
-                    <p class="text-danger small">Esta aÃ§Ã£o nÃ£o pode ser desfeita.</p>
+                    <p class="text-danger small">Esta ação não pode ser desfeita.</p>
                     <label class="form-label fw-semibold">Motivo do Cancelamento *</label>
                     {{ form_cancelar.motivo }}
                 </div>

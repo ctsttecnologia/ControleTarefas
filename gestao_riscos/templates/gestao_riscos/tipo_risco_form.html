@@ -1,4 +1,4 @@
-﻿
+
 <!-- gestao_riscos/templates/gestao_riscos/tipo_risco/tipo_risco_form.html -->
 {% extends 'base.html' %}
 {% load static %}
@@ -31,7 +31,7 @@
     </div>
 
     <div class="row g-4">
-        <!-- FormulÃ¡rio Principal -->
+        <!-- Formulário Principal -->
         <div class="col-lg-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
@@ -97,7 +97,7 @@
                             <div class="form-text">Nome do agente ou fator de risco</div>
                         </div>
 
-                        <!-- NR ReferÃªncia -->
+                        <!-- NR Referência -->
                         <div class="mb-4">
                             <label for="id_nr_referencia" class="form-label fw-semibold">
                                 {{ form.nr_referencia.label }}
@@ -106,13 +106,13 @@
                             <div class="form-text">Ex: NR-15, NR-17, NR-12</div>
                         </div>
 
-                        <!-- DescriÃ§Ã£o -->
+                        <!-- Descrição -->
                         <div class="mb-4">
                             <label for="id_descricao" class="form-label fw-semibold">
                                 {{ form.descricao.label }}
                             </label>
                             {{ form.descricao }}
-                            <div class="form-text">DescriÃ§Ã£o detalhada do risco (opcional)</div>
+                            <div class="form-text">Descrição detalhada do risco (opcional)</div>
                         </div>
 
                         <!-- Ativo -->
@@ -126,7 +126,7 @@
                             <div class="form-text">Desative para ocultar este risco das listagens</div>
                         </div>
 
-                        <!-- BotÃµes -->
+                        <!-- Botões -->
                         <div class="border-top pt-4 mt-4 d-flex justify-content-between">
                             <a href="{% url 'gestao_riscos:tipo_risco_list' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-lg me-1"></i> Cancelar
@@ -140,12 +140,12 @@
             </div>
         </div>
 
-        <!-- Sidebar: ReferÃªncia de Categorias -->
+        <!-- Sidebar: Referência de Categorias -->
         <div class="col-lg-4">
             <div class="card shadow-sm">
                 <div class="card-header bg-info text-white">
                     <h6 class="mb-0">
-                        <i class="bi bi-info-circle me-2"></i>ReferÃªncia de Categorias
+                        <i class="bi bi-info-circle me-2"></i>Referência de Categorias
                     </h6>
                 </div>
                 <div class="card-body p-0">
@@ -160,22 +160,22 @@
                         <tbody>
                             <tr>
                                 <td>I</td>
-                                <td>FÃ­sicos</td>
+                                <td>Físicos</td>
                                 <td><span class="badge" style="background: #00a651;">Verde</span></td>
                             </tr>
                             <tr>
                                 <td>II</td>
-                                <td>QuÃ­micos</td>
+                                <td>Químicos</td>
                                 <td><span class="badge" style="background: #ed1c24;">Vermelho</span></td>
                             </tr>
                             <tr>
                                 <td>III</td>
-                                <td>BiolÃ³gicos</td>
+                                <td>Biológicos</td>
                                 <td><span class="badge" style="background: #8B4513;">Marrom</span></td>
                             </tr>
                             <tr>
                                 <td>IV</td>
-                                <td>ErgonÃ´micos</td>
+                                <td>Ergonômicos</td>
                                 <td><span class="badge" style="background: #f7ec13; color: #000;">Amarelo</span></td>
                             </tr>
                             <tr>
@@ -189,7 +189,7 @@
                 <div class="card-footer bg-light">
                     <small class="text-muted">
                         <i class="bi bi-lightbulb me-1"></i>
-                        A cor Ã© automaticamente preenchida ao selecionar a categoria
+                        A cor é automaticamente preenchida ao selecionar a categoria
                     </small>
                 </div>
             </div>
@@ -209,11 +209,11 @@
                         </li>
                         <li class="mb-2">
                             <i class="bi bi-check-circle text-success me-1"></i>
-                            Sempre informe a NR de referÃªncia
+                            Sempre informe a NR de referência
                         </li>
                         <li>
                             <i class="bi bi-check-circle text-success me-1"></i>
-                            Descreva medidas de controle na descriÃ§Ã£o
+                            Descreva medidas de controle na descrição
                         </li>
                     </ul>
                 </div>

@@ -1,4 +1,4 @@
-﻿
+
 # suprimentos/views.py
 
 import json
@@ -88,18 +88,18 @@ logger = logging.getLogger(__name__)
 _APP = 'suprimentos'
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
 #   HELPERS
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
 
 class SolicitacaoForaDaFilialError(Exception):
-    """SolicitaÃ§Ã£o existe, mas pertence a outra filial."""
+    """Solicitação existe, mas pertence a outra filial."""
     def __init__(self, solicitacao):
         self.solicitacao = solicitacao
         super().__init__()
 
 def _pedido_qs_for_user(user):
-    """Retorna queryset de Pedido jÃ¡ filtrado por filial ativa."""
+    """Retorna queryset de Pedido já filtrado por filial ativa."""
     qs = Pedido.objects.select_related('contrato', 'solicitante', 'aprovador')
     
     return queryset_da_filial(qs, user, campo_filial='contrato__filial')
@@ -128,7 +128,7 @@ def _sol_qs_for_user(user):
 
 def _get_sol_seguro(user, pk):
     """
-    Busca solicitaÃ§Ã£o respeitando filial ativa.
+    Busca solicitação respeitando filial ativa.
     Se existir em outra filial, levanta SolicitacaoForaDaFilialError.
     """
     qs_filtrado = _sol_qs_for_user(user)
@@ -136,7 +136,7 @@ def _get_sol_seguro(user, pk):
     if sol:
         return sol
 
-    # NÃ£o achou no escopo do usuÃ¡rio â€” verifica se existe em outra filial
+    # Não achou no escopo do usuário — verifica se existe em outra filial
     sol_outra_filial = (
         SolicitacaoCompra.objects
         .filter(pk=pk)
@@ -145,11 +145,11 @@ def _get_sol_seguro(user, pk):
     )
 
     if sol_outra_filial:
-        # âœ… CORRIGIDO: superuser/admin jÃ¡ passaram no qs_filtrado acima.
-        # Se chegou aqui, Ã© usuÃ¡rio comum tentando acessar outra filial.
+        # ✅ CORRIGIDO: superuser/admin já passaram no qs_filtrado acima.
+        # Se chegou aqui, é usuário comum tentando acessar outra filial.
         raise SolicitacaoForaDaFilialError(sol_outra_filial)
 
-    raise Http404("SolicitaÃ§Ã£o nÃ£o encontrada.")
+    raise Http404("Solicitação não encontrada.")
 
 def _user_is_comprador(user):
     return (
@@ -171,9 +171,9 @@ def _registrar_hist_sol(sol, descricao, user, status_ant='', status_novo=''):
     )
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#   PARCEIRO â€” ImportaÃ§Ã£o em massa
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
+#   PARCEIRO — Importação em massa
+# ════════════════════════════════════════════════════════════════════
 
 class ImportacaoParceiroError(Exception):
     def __init__(self, message, column_name=None):
@@ -190,10 +190,10 @@ class ImportacaoParceiroError(Exception):
 @login_required
 def parceiro_download_template(request):
     columns = [
-        'Nome da Filial*', 'Nome Fantasia*', 'RazÃ£o Social', 'CNPJ',
-        'InscriÃ§Ã£o Estadual', 'Pessoa de Contato', 'Telefone', 'Celular',
-        'E-mail', 'Site', 'Ã‰ Fabricante? (SIM/NAO)*', 'Ã‰ Fornecedor? (SIM/NAO)*',
-        'CEP do EndereÃ§o', 'ObservaÃ§Ãµes',
+        'Nome da Filial*', 'Nome Fantasia*', 'Razão Social', 'CNPJ',
+        'Inscrição Estadual', 'Pessoa de Contato', 'Telefone', 'Celular',
+        'E-mail', 'Site', 'É Fabricante? (SIM/NAO)*', 'É Fornecedor? (SIM/NAO)*',
+        'CEP do Endereço', 'Observações',
     ]
     df_modelo = pd.DataFrame(columns=columns)
     output = BytesIO()
@@ -211,14 +211,14 @@ def parceiro_download_template(request):
         worksheet.add_data_validation(dv)
         dv.add('K2:L1048576')
 
-        # Filiais: superuser vÃª todas; demais sÃ³ a prÃ³pria
+        # Filiais: superuser vê todas; demais só a própria
         filiais_qs = Filial.objects.all()
         if not request.user.is_superuser:
             filial_ativa = getattr(request.user, 'filial_ativa', None)
             if filial_ativa:
                 filiais_qs = filiais_qs.filter(pk=filial_ativa.pk)
         filiais = list(filiais_qs.values_list('nome',))
-        df_filiais = pd.DataFrame(filiais, columns=['Nomes de Filiais VÃ¡lidas'])
+        df_filiais = pd.DataFrame(filiais, columns=['Nomes de Filiais Válidas'])
         df_filiais.to_excel(writer, index=False, sheet_name='Filiais para Consulta')
         worksheet.freeze_panes = 'A2'
     output.seek(0)
@@ -232,10 +232,10 @@ def parceiro_download_template(request):
 
 class ParceiroBulkUploadView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
     """
-    ImportaÃ§Ã£o em massa de parceiros.
-    âš ï¸ SeguranÃ§a:
-    - UsuÃ¡rios nÃ£o-superuser sÃ³ podem importar para a prÃ³pria filial ativa.
-    - Filial Ã© buscada via __iexact (evita loop N+1 e cross-filial).
+    Importação em massa de parceiros.
+    ⚠️ Segurança:
+    - Usuários não-superuser só podem importar para a própria filial ativa.
+    - Filial é buscada via __iexact (evita loop N+1 e cross-filial).
     """
     app_label_required = _APP
     permission_required = 'suprimentos.add_parceiro'
@@ -261,14 +261,14 @@ class ParceiroBulkUploadView(LoginRequiredMixin, AppPermissionMixin, SSTPermissi
                     raise IntegrityError()
             messages.success(
                 request,
-                f"ImportaÃ§Ã£o concluÃ­da! {sucessos_count} parceiros criados/atualizados.",
+                f"Importação concluída! {sucessos_count} parceiros criados/atualizados.",
             )
             return redirect(reverse('suprimentos:parceiro_upload_massa'))
         except (ValueError, IntegrityError, ImportacaoParceiroError) as e:
-            msg = str(e) if str(e) else "ImportaÃ§Ã£o cancelada devido a erros."
+            msg = str(e) if str(e) else "Importação cancelada devido a erros."
             if linhas_com_erro:
                 request.session['parceiros_upload_erros'] = linhas_com_erro
-                msg = f"ImportaÃ§Ã£o falhou com {len(linhas_com_erro)} erros. Nenhum parceiro salvo."
+                msg = f"Importação falhou com {len(linhas_com_erro)} erros. Nenhum parceiro salvo."
             messages.error(request, msg)
             context = {
                 'form': form,
@@ -281,12 +281,12 @@ class ParceiroBulkUploadView(LoginRequiredMixin, AppPermissionMixin, SSTPermissi
         if not arquivo.name.endswith('.xlsx'):
             raise ValueError('O arquivo deve ser .xlsx')
         if arquivo.size > 5 * 1024 * 1024:  # 5 MB
-            raise ValueError('Arquivo muito grande (mÃ¡x. 5 MB).')
+            raise ValueError('Arquivo muito grande (máx. 5 MB).')
         df = pd.read_excel(arquivo, dtype=str).fillna('')
-        colunas_esperadas = ['Nome da Filial*', 'Nome Fantasia*', 'RazÃ£o Social']
+        colunas_esperadas = ['Nome da Filial*', 'Nome Fantasia*', 'Razão Social']
         if not all(col in df.columns for col in colunas_esperadas):
             faltantes = set(colunas_esperadas) - set(df.columns)
-            raise ValueError(f"Colunas obrigatÃ³rias nÃ£o encontradas: {', '.join(faltantes)}")
+            raise ValueError(f"Colunas obrigatórias não encontradas: {', '.join(faltantes)}")
         return df
 
     def _processar_dataframe(self, df):
@@ -305,19 +305,19 @@ class ParceiroBulkUploadView(LoginRequiredMixin, AppPermissionMixin, SSTPermissi
         user = self.request.user
         nome_filial_raw = row.get('Nome da Filial*', '').strip()
         if not nome_filial_raw:
-            raise ImportacaoParceiroError("Campo obrigatÃ³rio.", column_name='Nome da Filial*')
+            raise ImportacaoParceiroError("Campo obrigatório.", column_name='Nome da Filial*')
 
         # ═════ ISOLAMENTO POR FILIAL (SEGURANÇA) ═════
         filial_ativa = getattr(user, 'filial_ativa', None)
         if not user.is_superuser:
             if not filial_ativa:
                 raise ImportacaoParceiroError(
-                    "VocÃª precisa ter uma filial ativa para importar.",
+                    "Você precisa ter uma filial ativa para importar.",
                     column_name='Nome da Filial*',
                 )
             if filial_ativa.nome.lower() != nome_filial_raw.lower():
                 raise ImportacaoParceiroError(
-                    f"VocÃª sÃ³ pode importar parceiros para '{filial_ativa.nome}'.",
+                    f"Você só pode importar parceiros para '{filial_ativa.nome}'.",
                     column_name='Nome da Filial*',
                 )
             filial_encontrada = filial_ativa
@@ -328,31 +328,31 @@ class ParceiroBulkUploadView(LoginRequiredMixin, AppPermissionMixin, SSTPermissi
             ).first()
             if not filial_encontrada:
                 raise ImportacaoParceiroError(
-                    f"Filial '{nome_filial_raw}' nÃ£o encontrada.",
+                    f"Filial '{nome_filial_raw}' não encontrada.",
                     column_name='Nome da Filial*',
                 )
 
         filial = filial_encontrada
 
-        razao_social = row.get('RazÃ£o Social', '').strip()
+        razao_social = row.get('Razão Social', '').strip()
         if not razao_social:
-            raise ImportacaoParceiroError("Campo obrigatÃ³rio.", column_name='RazÃ£o Social')
+            raise ImportacaoParceiroError("Campo obrigatório.", column_name='Razão Social')
         nome_fantasia = row.get('Nome Fantasia*', '').strip()
         if not nome_fantasia:
-            raise ImportacaoParceiroError("Campo obrigatÃ³rio.", column_name='Nome Fantasia*')
+            raise ImportacaoParceiroError("Campo obrigatório.", column_name='Nome Fantasia*')
 
         endereco = None
-        cep = row.get('CEP do EndereÃ§o', '').strip()
+        cep = row.get('CEP do Endereço', '').strip()
         if cep:
             endereco = Logradouro.objects.filter(cep=cep).first()
             if not endereco:
                 raise ImportacaoParceiroError(
-                    f"CEP '{cep}' nÃ£o encontrado.",
-                    column_name='CEP do EndereÃ§o',
+                    f"CEP '{cep}' não encontrado.",
+                    column_name='CEP do Endereço',
                 )
 
-        eh_fabricante = str(row.get('Ã‰ Fabricante? (SIM/NAO)*', '')).strip().upper() in ['SIM', 'S', 'YES', 'Y', '1']
-        eh_fornecedor = str(row.get('Ã‰ Fornecedor? (SIM/NAO)*', '')).strip().upper() in ['SIM', 'S', 'YES', 'Y', '1']
+        eh_fabricante = str(row.get('É Fabricante? (SIM/NAO)*', '')).strip().upper() in ['SIM', 'S', 'YES', 'Y', '1']
+        eh_fornecedor = str(row.get('É Fornecedor? (SIM/NAO)*', '')).strip().upper() in ['SIM', 'S', 'YES', 'Y', '1']
         cnpj = row.get('CNPJ', '').strip() or None
 
         try:
@@ -363,14 +363,14 @@ class ParceiroBulkUploadView(LoginRequiredMixin, AppPermissionMixin, SSTPermissi
                     'filial': filial,
                     'nome_fantasia': nome_fantasia,
                     'razao_social': razao_social,
-                    'inscricao_estadual': row.get('InscriÃ§Ã£o Estadual', '').strip(),
+                    'inscricao_estadual': row.get('Inscrição Estadual', '').strip(),
                     'contato': row.get('Pessoa de Contato', '').strip(),
                     'telefone': row.get('Telefone', '').strip(),
                     'celular': row.get('Celular', '').strip(),
                     'email': row.get('E-mail', '').strip(),
                     'site': row.get('Site', '').strip(),
                     'endereco': endereco,
-                    'observacoes': row.get('ObservaÃ§Ãµes', '').strip(),
+                    'observacoes': row.get('Observações', '').strip(),
                     'eh_fabricante': eh_fabricante,
                     'eh_fornecedor': eh_fornecedor,
                     'ativo': True,
@@ -384,7 +384,7 @@ class ParceiroBulkUploadView(LoginRequiredMixin, AppPermissionMixin, SSTPermissi
 def parceiro_download_erros(request):
     linhas_com_erro = request.session.pop('parceiros_upload_erros', [])
     if not linhas_com_erro:
-        messages.warning(request, "NÃ£o hÃ¡ relatÃ³rio de erros.")
+        messages.warning(request, "Não há relatório de erros.")
         return redirect(reverse('suprimentos:parceiro_upload_massa'))
     df_erros = pd.DataFrame(linhas_com_erro)
     output = BytesIO()
@@ -399,9 +399,9 @@ def parceiro_download_erros(request):
     return response
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#   PARCEIRO â€” CRUD
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
+#   PARCEIRO — CRUD
+# ════════════════════════════════════════════════════════════════════
 
 class ParceiroListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
     app_label_required = _APP
@@ -468,9 +468,9 @@ class ParceiroDeleteView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMi
     permission_required = 'suprimentos.delete_parceiro'
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
 #   DASHBOARD SUPRIMENTOS
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
 
 class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateView):
     app_label_required = _APP
@@ -540,7 +540,7 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
         }
 
     def _get_contexto_vazio(self, contratos_qs, user, ano, mes, hoje):
-        """Retorna context zerado quando nÃ£o hÃ¡ contratos."""
+        """Retorna context zerado quando não há contratos."""
         zero = Decimal('0')
         ctx = {}
         for key in [
@@ -574,7 +574,7 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
             'ano': ano, 'mes': mes,
             'anos_disponiveis': range(2024, hoje.year + 2),
             'meses': [
-                (1, 'Janeiro'), (2, 'Fevereiro'), (3, 'MarÃ§o'),
+                (1, 'Janeiro'), (2, 'Fevereiro'), (3, 'Março'),
                 (4, 'Abril'), (5, 'Maio'), (6, 'Junho'),
                 (7, 'Julho'), (8, 'Agosto'), (9, 'Setembro'),
                 (10, 'Outubro'), (11, 'Novembro'), (12, 'Dezembro'),
@@ -615,7 +615,7 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
             ctx.update(self._get_contexto_vazio(contratos_qs, user, ano, mes, hoje))
             return ctx
 
-        # Verbas e compras do mÃªs
+        # Verbas e compras do mês
         verbas = self._verbas_mes(contrato_ids, ano, mes)
         ctx['total_verba_epi'] = verbas['epi']
         ctx['total_verba_consumo'] = verbas['consumo']
@@ -653,7 +653,7 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
         ctx['pct_custo_real'] = self._pct(trib['custo_real'], trib['valor_produtos']) if trib['valor_produtos'] > 0 else 0
         ctx['pct_creditos'] = self._pct(trib['total_creditos'], trib['valor_produtos']) if trib['valor_produtos'] > 0 else 0
 
-        # GrÃ¡fico Ãºltimos 6 meses
+        # Gráfico últimos 6 meses
         periodos = []
         for i in range(5, -1, -1):
             m_ = hoje.month - i
@@ -742,7 +742,7 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
             pedidos_qs = pedidos_qs.filter(solicitante_id=funcionario_id)
         ctx['pedidos_pendentes'] = pedidos_qs[:10]
 
-        # Pipeline de solicitaÃ§Ãµes
+        # Pipeline de solicitações
         sol_qs = SolicitacaoCompra.objects.filter(contrato_id__in=contrato_ids)
         if funcionario_id:
             sol_qs = sol_qs.filter(solicitante_id=funcionario_id)
@@ -768,7 +768,7 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
         ctx['mes'] = mes
         ctx['anos_disponiveis'] = range(2024, hoje.year + 2)
         ctx['meses'] = [
-            (1, 'Janeiro'), (2, 'Fevereiro'), (3, 'MarÃ§o'),
+            (1, 'Janeiro'), (2, 'Fevereiro'), (3, 'Março'),
             (4, 'Abril'), (5, 'Maio'), (6, 'Junho'),
             (7, 'Julho'), (8, 'Agosto'), (9, 'Setembro'),
             (10, 'Outubro'), (11, 'Novembro'), (12, 'Dezembro'),
@@ -776,9 +776,9 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
         return ctx
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#   MATERIAL â€” CRUD (refatorado)
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
+#   MATERIAL — CRUD (refatorado)
+# ════════════════════════════════════════════════════════════════════
 
 class MaterialListView(LoginRequiredMixin, AppPermissionMixin, ListView):
     app_label_required = _APP
@@ -818,7 +818,7 @@ class MaterialListView(LoginRequiredMixin, AppPermissionMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         filial_ativa = getattr(self.request.user, 'filial_ativa', None)
-        ctx['titulo_pagina'] = 'CatÃ¡logo de Materiais'
+        ctx['titulo_pagina'] = 'Catálogo de Materiais'
         ctx['classificacoes'] = CategoriaMaterial.choices
         ctx['tipos'] = TipoMaterial.choices
         ctx['filtro_q'] = self.request.GET.get('q', '')
@@ -851,8 +851,8 @@ class MaterialCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
 
     def form_valid(self, form):
         """
-        âš ï¸ CORRIGIDO: chamava super().form_valid() 2x.
-        Agora atribui filial ANTES de salvar, chama super uma vez sÃ³.
+        ⚠️ CORRIGIDO: chamava super().form_valid() 2x.
+        Agora atribui filial ANTES de salvar, chama super uma vez só.
         """
         filial_ativa = getattr(self.request.user, 'filial_ativa', None)
         form.instance.filial = filial_ativa
@@ -871,7 +871,7 @@ class MaterialCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
 
         if msgs:
             detalhes = ' | '.join(msgs)
-            messages.success(self.request, f'Material "{material.descricao}" criado! âœ… {detalhes}')
+            messages.success(self.request, f'Material "{material.descricao}" criado! ✅ {detalhes}')
         else:
             messages.success(self.request, f'Material "{material.descricao}" criado!')
         return response
@@ -888,7 +888,7 @@ class MaterialUpdateView(LoginRequiredMixin, AppPermissionMixin, UpdateView):
     permission_required = 'suprimentos.change_material'
 
     def get_queryset(self):
-        """Garante que o usuÃ¡rio sÃ³ edite materiais da sua filial."""
+        """Garante que o usuário só edite materiais da sua filial."""
         qs = super().get_queryset()
         filial_ativa = getattr(self.request.user, 'filial_ativa', None)
         if filial_ativa and not self.request.user.is_superuser:
@@ -916,7 +916,7 @@ class MaterialUpdateView(LoginRequiredMixin, AppPermissionMixin, UpdateView):
 
         if msgs:
             detalhes = ' | '.join(msgs)
-            messages.success(self.request, f'Material atualizado! âœ… {detalhes}')
+            messages.success(self.request, f'Material atualizado! ✅ {detalhes}')
         else:
             messages.success(self.request, 'Material atualizado!')
         return response
@@ -925,9 +925,9 @@ class MaterialUpdateView(LoginRequiredMixin, AppPermissionMixin, UpdateView):
         return reverse('suprimentos:material_lista')
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#   CONTRATO â€” CRUD + Verbas
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
+#   CONTRATO — CRUD + Verbas
+# ════════════════════════════════════════════════════════════════════
 
 class ContratoListView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, ListView):
     app_label_required = _APP
@@ -998,7 +998,7 @@ class ContratoDetailView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScope
                     'Selecione a filial correta no menu superior.'
                 )
             else:
-                messages.error(self.request, 'Contrato nÃ£o encontrado.')
+                messages.error(self.request, 'Contrato não encontrado.')
             raise
 
     def get_context_data(self, **kwargs):
@@ -1037,7 +1037,7 @@ class ContratoDetailView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScope
         return ctx
 
     def post(self, request, *args, **kwargs):
-        """Salvar/atualizar verba mensal â€” sÃ³ Gerente."""
+        """Salvar/atualizar verba mensal — só Gerente."""
         self.object = self.get_object()
         user = request.user
 
@@ -1064,9 +1064,9 @@ class ContratoDetailView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScope
         )
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#   PEDIDO â€” Workflow (REVISADO)
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
+#   PEDIDO — Workflow (REVISADO)
+# ════════════════════════════════════════════════════════════════════
 
 from django.db import transaction
 
@@ -1087,7 +1087,7 @@ class PedidoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
         ctx = super().get_context_data(**kwargs)
         ctx['titulo_pagina'] = 'Novo Pedido de Material'
         ctx['anexo_form'] = AnexoPedidoForm()
-        ctx['is_create'] = True  # â† FLAG para o template esconder itens
+        ctx['is_create'] = True  # ← FLAG para o template esconder itens
         return ctx
 
     @transaction.atomic
@@ -1095,12 +1095,12 @@ class PedidoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
         user = self.request.user
         form.instance.solicitante = user
 
-        # âœ… FIX 1: tratamento de filial_ativa ausente
+        # ✅ FIX 1: tratamento de filial_ativa ausente
         filial = getattr(user, 'filial_ativa', None)
         if not filial:
             messages.error(
                 self.request,
-                'VocÃª nÃ£o tem uma filial ativa configurada. Contate o administrador.'
+                'Você não tem uma filial ativa configurada. Contate o administrador.'
             )
             return self.form_invalid(form)
         form.instance.filial = filial
@@ -1131,14 +1131,14 @@ class PedidoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
         )
         messages.success(
             self.request,
-            f'Pedido {pedido.numero} criado! Agora adicione os itens. ðŸ“'
+            f'Pedido {pedido.numero} criado! Agora adicione os itens. 📝'
         )
-        # âœ… Redireciona explicitamente para o detail (onde se adiciona itens)
+        # ✅ Redireciona explicitamente para o detail (onde se adiciona itens)
         return redirect('suprimentos:pedido_detail', pk=pedido.pk)
 
 
 class PedidoUpdateView(LoginRequiredMixin, AppPermissionMixin, UpdateView):
-    """âœ… NOVA VIEW: editar cabeÃ§alho de pedido em rascunho/revisÃ£o."""
+    """✅ NOVA VIEW: editar cabeçalho de pedido em rascunho/revisão."""
     app_label_required = _APP
     model = Pedido
     form_class = PedidoForm
@@ -1149,7 +1149,7 @@ class PedidoUpdateView(LoginRequiredMixin, AppPermissionMixin, UpdateView):
         return super().get_queryset().select_related(
             'contrato__filial',
             'solicitacao_gerada',
-            'solicitacao',         # OneToOne reverso â€” funciona com select_related!
+            'solicitacao',         # OneToOne reverso — funciona com select_related!
             'solicitante',
             'aprovador',
         )
@@ -1162,14 +1162,14 @@ class PedidoUpdateView(LoginRequiredMixin, AppPermissionMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         pedido = self.get_object()
         if pedido.status not in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]:
-            messages.error(request, 'SÃ³ Ã© possÃ­vel editar pedidos em rascunho ou revisÃ£o.')
+            messages.error(request, 'Só é possível editar pedidos em rascunho ou revisão.')
             return redirect(pedido.get_absolute_url())
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         
-        # Pega a solicitaÃ§Ã£o vinculada (qualquer um dos caminhos)
+        # Pega a solicitação vinculada (qualquer um dos caminhos)
         solicitacao = None
         if self.object.solicitacao_gerada_id:
             solicitacao = self.object.solicitacao_gerada
@@ -1198,11 +1198,11 @@ class PedidoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
             'aprovador',
         )
 
-    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    # Helpers de permissÃ£o (centralizados)
-    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ───────────────────────────────────────────────────────────
+    # Helpers de permissão (centralizados)
+    # ───────────────────────────────────────────────────────────
     def _eh_aprovador(self, user, pedido):
-        """Retorna True se o usuÃ¡rio pode aprovar este pedido."""
+        """Retorna True se o usuário pode aprovar este pedido."""
         if not user.is_authenticated:
             return False
         if user.is_superuser:
@@ -1223,31 +1223,31 @@ class PedidoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
         """
         Resolve a SolicitacaoCompra vinculada ao pedido, tentando:
           1) FK direta: pedido.solicitacao_gerada
-          2) RelaÃ§Ã£o reversa: pedido.solicitacao  (OneToOne reversa)
+          2) Relação reversa: pedido.solicitacao  (OneToOne reversa)
         Retorna None se nenhuma existir.
         """
-        # 1) FK direta (mais confiÃ¡vel)
+        # 1) FK direta (mais confiável)
         if getattr(pedido, 'solicitacao_gerada_id', None):
             try:
                 return pedido.solicitacao_gerada
             except Exception:
                 pass
 
-        # 2) RelaÃ§Ã£o reversa OneToOne â€” precisa de try/except
+        # 2) Relação reversa OneToOne — precisa de try/except
         #    porque acessar levanta RelatedObjectDoesNotExist
         try:
             return pedido.solicitacao
         except Exception:
             return None
 
-    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ───────────────────────────────────────────────────────────
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         pedido = self.object
         user = self.request.user
         S = Pedido.StatusChoices
 
-        # ===== DADOS BÃSICOS =====
+        # ===== DADOS BÁSICOS =====
         ctx['itens']         = pedido.itens.select_related('material').all()
         ctx['totais']        = pedido.totais_por_classificacao()
         ctx['item_form']     = ItemPedidoForm()
@@ -1257,18 +1257,18 @@ class PedidoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
         ctx['anexo_form']    = AnexoPedidoForm()
         ctx['anexos']        = pedido.anexos.all()
 
-        # ===== HISTÃ“RICO =====
+        # ===== HISTÓRICO =====
         historico_model = pedido.historico.model
         related_user_field = 'responsavel' if hasattr(historico_model, 'responsavel') else 'usuario'
         historico_qs = pedido.historico.select_related(related_user_field).all()
         ctx['historico']        = historico_qs
         ctx['historicopedido']  = historico_qs  # alias p/ compatibilidade
 
-        # ===== SOLICITAÃ‡ÃƒO VINCULADA =====
-        # âœ… Ãšnico ponto de definiÃ§Ã£o â€” sem sobrescrever
+        # ===== SOLICITAÇÃO VINCULADA =====
+        # ✅ Único ponto de definição — sem sobrescrever
         ctx['solicitacao'] = self._get_solicitacao(pedido)
 
-        # ===== FLAGS DE PERMISSÃƒO POR STATUS =====
+        # ===== FLAGS DE PERMISSÃO POR STATUS =====
         eh_solic = self._eh_solicitante(user, pedido)
         eh_aprov = self._eh_aprovador(user, pedido)
 
@@ -1286,7 +1286,7 @@ class PedidoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
         ctx['pode_devolver'] = eh_aprov and pedido.status == S.PENDENTE
         ctx['pode_reprovar'] = eh_aprov and pedido.status == S.PENDENTE
 
-        # ===== COMPARATIVO PEDIDO Ã— VERBA DO CONTRATO =====
+        # ===== COMPARATIVO PEDIDO × VERBA DO CONTRATO =====
         from decimal import Decimal
         data_ref = pedido.data_pedido or timezone.now().date()
         ctx['verba'] = None
@@ -1344,13 +1344,13 @@ class PedidoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
                     )
 
                     if saldo_apos < 0:
-                        status, cor, icone, texto = 'EXCEDE', 'danger', 'ðŸ”´', 'Excede a verba!'
+                        status, cor, icone, texto = 'EXCEDE', 'danger', '🔴', 'Excede a verba!'
                     elif pct_consumo_total >= 90:
-                        status, cor, icone, texto = 'ATENCAO', 'warning', 'âš ï¸', 'Acima de 90% da verba.'
+                        status, cor, icone, texto = 'ATENCAO', 'warning', '⚠️', 'Acima de 90% da verba.'
                     elif pct_consumo_total >= 70:
-                        status, cor, icone, texto = 'MODERADO', 'info', 'ðŸ“Š', 'Consumo moderado.'
+                        status, cor, icone, texto = 'MODERADO', 'info', '📊', 'Consumo moderado.'
                     else:
-                        status, cor, icone, texto = 'OK', 'success', 'âœ…', 'Dentro do orÃ§amento.'
+                        status, cor, icone, texto = 'OK', 'success', '✅', 'Dentro do orçamento.'
 
                     if ordem[status] > ordem[status_geral]:
                         status_geral = status
@@ -1412,7 +1412,7 @@ class PedidoListView(LoginRequiredMixin, AppPermissionMixin, CoordenadorOuSuperi
         if not (user.is_gerente or user.is_coordenador or user.is_administrador):
             qs = qs.filter(solicitante=user)
 
-        # âœ… FIX 5: validar status contra choices vÃ¡lidos
+        # ✅ FIX 5: validar status contra choices válidos
         status = self.request.GET.get('status', '').strip()
         valid_status = {s[0] for s in Pedido.StatusChoices.choices}
         if status and status in valid_status:
@@ -1441,7 +1441,7 @@ class ItemPedidoCreateView(LoginRequiredMixin, AppPermissionMixin, View):
         pedido = _get_pedido_seguro(request.user, pk)
 
         if pedido.status not in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]:
-            messages.error(request, 'SÃ³ Ã© possÃ­vel alterar pedidos em rascunho ou revisÃ£o.')
+            messages.error(request, 'Só é possível alterar pedidos em rascunho ou revisão.')
             return redirect(pedido.get_absolute_url())
 
         form = ItemPedidoForm(request.POST)
@@ -1471,25 +1471,25 @@ class ItemPedidoDeleteView(LoginRequiredMixin, AppPermissionMixin, View):
         item = get_object_or_404(ItemPedido, pk=item_pk, pedido=pedido)
 
         if pedido.status not in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]:
-            messages.error(request, 'SÃ³ Ã© possÃ­vel alterar pedidos em rascunho ou revisÃ£o.')
+            messages.error(request, 'Só é possível alterar pedidos em rascunho ou revisão.')
             return redirect(pedido.get_absolute_url())
 
         nome = str(item.material)
         item.delete()
         _registrar_hist_pedido(pedido, f"Item removido: {nome}", request.user)
-        messages.success(request, f'Item "{nome}" removido. ðŸ—‘ï¸')
+        messages.success(request, f'Item "{nome}" removido. 🗑️')
         return redirect(pedido.get_absolute_url())
 
 
 class PedidoEnviarView(LoginRequiredMixin, AppPermissionMixin, View):
-    """RASCUNHO/REVISAO â†’ PENDENTE."""
+    """RASCUNHO/REVISAO → PENDENTE."""
     app_label_required = _APP
 
     @transaction.atomic
     def post(self, request, pk):
         pedido = _get_pedido_seguro(request.user, pk)
         if pedido.status not in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]:
-            messages.error(request, 'Pedido nÃ£o pode ser enviado neste status.')
+            messages.error(request, 'Pedido não pode ser enviado neste status.')
             return redirect(pedido.get_absolute_url())
         if not pedido.itens.exists():
             messages.error(request, 'Adicione pelo menos um item antes de enviar.')
@@ -1498,7 +1498,7 @@ class PedidoEnviarView(LoginRequiredMixin, AppPermissionMixin, View):
         ok, erros = pedido.verificar_verba()
         if not ok:
             for erro in erros:
-                messages.warning(request, f'âš ï¸ {erro}')
+                messages.warning(request, f'⚠️ {erro}')
             try:
                 notificar_pedido_verba_excedida(pedido, erros)
             except Exception as e:
@@ -1515,19 +1515,19 @@ class PedidoEnviarView(LoginRequiredMixin, AppPermissionMixin, View):
 
         _registrar_hist_pedido(
             pedido,
-            f"Enviado para aprovaÃ§Ã£o por {request.user.get_full_name() or request.user.username}.",
+            f"Enviado para aprovação por {request.user.get_full_name() or request.user.username}.",
             request.user, status_ant, 'PENDENTE',
         )
         try:
             notificar_pedido_pendente(pedido)
         except Exception as e:
             logger.error(f"Erro ao notificar envio do pedido {pedido.numero}: {e}")
-        messages.success(request, f'Pedido {pedido.numero} enviado para aprovaÃ§Ã£o! ðŸ“¤')
+        messages.success(request, f'Pedido {pedido.numero} enviado para aprovação! 📤')
         return redirect(pedido.get_absolute_url())
 
 
 class PedidoAprovarView(LoginRequiredMixin, AppPermissionMixin, View):
-    """PENDENTE â†’ APROVADO + gera SolicitacaoCompra automaticamente."""
+    """PENDENTE → APROVADO + gera SolicitacaoCompra automaticamente."""
     app_label_required = _APP
 
     @transaction.atomic
@@ -1539,30 +1539,30 @@ class PedidoAprovarView(LoginRequiredMixin, AppPermissionMixin, View):
             messages.error(request, 'Apenas Gerentes podem aprovar pedidos.')
             return redirect(pedido.get_absolute_url())
         if pedido.status != Pedido.StatusChoices.PENDENTE:
-            messages.error(request, 'Pedido nÃ£o estÃ¡ pendente.')
+            messages.error(request, 'Pedido não está pendente.')
             return redirect(pedido.get_absolute_url())
 
         ok, erros = pedido.verificar_verba()
         if not ok:
             for erro in erros:
-                messages.warning(request, f'âš ï¸ {erro}')
+                messages.warning(request, f'⚠️ {erro}')
 
-        # âœ… PRIMEIRO gera a solicitaÃ§Ã£o â€” se falhar, rollback total
+        # ✅ PRIMEIRO gera a solicitação — se falhar, rollback total
         try:
-            sol = pedido.gerar_solicitacao_compra(usuario=user)  # â† FIX AQUI
+            sol = pedido.gerar_solicitacao_compra(usuario=user)  # ← FIX AQUI
         except Exception as e:
             logger.exception(
-                f"Falha ao gerar solicitaÃ§Ã£o do pedido {pedido.numero}"
+                f"Falha ao gerar solicitação do pedido {pedido.numero}"
             )
             messages.error(
                 request,
-                f'âŒ NÃ£o foi possÃ­vel aprovar: erro ao gerar solicitaÃ§Ã£o. '
+                f'❌ Não foi possível aprovar: erro ao gerar solicitação. '
                 f'Detalhe: {type(e).__name__}: {e}'
             )
-            # @transaction.atomic faz rollback automÃ¡tico
+            # @transaction.atomic faz rollback automático
             return redirect(pedido.get_absolute_url())
 
-        # SÃ³ atualiza o status DEPOIS de gerar a solicitaÃ§Ã£o com sucesso
+        # Só atualiza o status DEPOIS de gerar a solicitação com sucesso
         status_ant = pedido.status
         pedido.status = Pedido.StatusChoices.APROVADO
         pedido.aprovador = user
@@ -1572,7 +1572,7 @@ class PedidoAprovarView(LoginRequiredMixin, AppPermissionMixin, View):
         _registrar_hist_pedido(
             pedido,
             f"Aprovado por {user.get_full_name() or user.username}. "
-            f"SolicitaÃ§Ã£o {sol.numero} gerada automaticamente.",
+            f"Solicitação {sol.numero} gerada automaticamente.",
             user, status_ant, 'APROVADO',
         )
 
@@ -1580,27 +1580,27 @@ class PedidoAprovarView(LoginRequiredMixin, AppPermissionMixin, View):
 
         messages.success(
             request,
-            f'Pedido {pedido.numero} aprovado! âœ… '
-            f'SolicitaÃ§Ã£o {sol.numero} gerada automaticamente. ðŸ“‹'
+            f'Pedido {pedido.numero} aprovado! ✅ '
+            f'Solicitação {sol.numero} gerada automaticamente. 📋'
         )
         return redirect(pedido.get_absolute_url())
 
 
 def _notificar_aprovacao(pedido, sol):
-    """Helper para disparar notificaÃ§Ãµes apÃ³s commit."""
+    """Helper para disparar notificações após commit."""
     try:
         notificar_pedido_aprovado(pedido)
     except Exception as e:
-        logger.error(f"Erro notificaÃ§Ã£o aprovaÃ§Ã£o {pedido.numero}: {e}")
+        logger.error(f"Erro notificação aprovação {pedido.numero}: {e}")
     if sol:
         try:
             notificar_solicitacao_criada(sol)
         except Exception as e:
-            logger.error(f"Erro notificaÃ§Ã£o solicitaÃ§Ã£o criada: {e}")
+            logger.error(f"Erro notificação solicitação criada: {e}")
 
 
 class PedidoReprovarView(LoginRequiredMixin, AppPermissionMixin, View):
-    """PENDENTE â†’ REPROVADO (sÃ³ Gerente)."""
+    """PENDENTE → REPROVADO (só Gerente)."""
     app_label_required = _APP
 
     @transaction.atomic
@@ -1611,7 +1611,7 @@ class PedidoReprovarView(LoginRequiredMixin, AppPermissionMixin, View):
             messages.error(request, 'Apenas Gerentes podem reprovar pedidos.')
             return redirect(pedido.get_absolute_url())
         if pedido.status != Pedido.StatusChoices.PENDENTE:
-            messages.error(request, 'Pedido nÃ£o estÃ¡ pendente.')
+            messages.error(request, 'Pedido não está pendente.')
             return redirect(pedido.get_absolute_url())
 
         form = ReprovarPedidoForm(request.POST)
@@ -1634,14 +1634,14 @@ class PedidoReprovarView(LoginRequiredMixin, AppPermissionMixin, View):
             transaction.on_commit(
                 lambda: _safe_notify(notificar_pedido_reprovado, pedido)
             )
-            messages.info(request, f'Pedido {pedido.numero} reprovado. âŒ')
+            messages.info(request, f'Pedido {pedido.numero} reprovado. ❌')
         else:
-            messages.error(request, 'Informe o motivo da reprovaÃ§Ã£o.')
+            messages.error(request, 'Informe o motivo da reprovação.')
         return redirect(pedido.get_absolute_url())
 
 
 class PedidoDevolverView(LoginRequiredMixin, AppPermissionMixin, View):
-    """PENDENTE â†’ REVISAO (Gerente devolve para correÃ§Ã£o)."""
+    """PENDENTE → REVISAO (Gerente devolve para correção)."""
     app_label_required = _APP
 
     @transaction.atomic
@@ -1653,7 +1653,7 @@ class PedidoDevolverView(LoginRequiredMixin, AppPermissionMixin, View):
             messages.error(request, 'Apenas Gerentes podem devolver pedidos.')
             return redirect(pedido.get_absolute_url())
         if pedido.status != Pedido.StatusChoices.PENDENTE:
-            messages.error(request, 'Pedido nÃ£o estÃ¡ pendente.')
+            messages.error(request, 'Pedido não está pendente.')
             return redirect(pedido.get_absolute_url())
 
         form = DevolverPedidoForm(request.POST)
@@ -1665,21 +1665,21 @@ class PedidoDevolverView(LoginRequiredMixin, AppPermissionMixin, View):
 
             _registrar_hist_pedido(
                 pedido,
-                f"Devolvido para revisÃ£o por {user.get_full_name() or user.username}. "
+                f"Devolvido para revisão por {user.get_full_name() or user.username}. "
                 f"Motivo: {pedido.motivo_revisao}",
                 user, status_ant, 'REVISAO',
             )
             transaction.on_commit(
                 lambda: _safe_notify(notificar_pedido_revisao, pedido)
             )
-            messages.info(request, f'Pedido {pedido.numero} devolvido para revisÃ£o. ðŸ”„')
+            messages.info(request, f'Pedido {pedido.numero} devolvido para revisão. 🔄')
         else:
-            messages.error(request, 'Informe o motivo da devoluÃ§Ã£o.')
+            messages.error(request, 'Informe o motivo da devolução.')
         return redirect(pedido.get_absolute_url())
 
 
 class PedidoRevisarView(LoginRequiredMixin, AppPermissionMixin, View):
-    """Solicitante corrige e reenvia (REVISAO â†’ PENDENTE)."""
+    """Solicitante corrige e reenvia (REVISAO → PENDENTE)."""
     app_label_required = _APP
 
     @transaction.atomic
@@ -1691,10 +1691,10 @@ class PedidoRevisarView(LoginRequiredMixin, AppPermissionMixin, View):
             messages.error(request, 'Apenas o solicitante pode revisar.')
             return redirect(pedido.get_absolute_url())
         if pedido.status != Pedido.StatusChoices.REVISAO:
-            messages.error(request, 'Pedido nÃ£o estÃ¡ em revisÃ£o.')
+            messages.error(request, 'Pedido não está em revisão.')
             return redirect(pedido.get_absolute_url())
 
-        # âœ… FIX 2: passa instance explicitamente e mantÃ©m referÃªncia
+        # ✅ FIX 2: passa instance explicitamente e mantém referência
         form = RevisaoPedidoForm(request.POST, instance=pedido)
         if form.is_valid():
             status_ant = pedido.status
@@ -1711,7 +1711,7 @@ class PedidoRevisarView(LoginRequiredMixin, AppPermissionMixin, View):
                     )
                 except Exception as e:
                     logger.error(
-                        f"Erro ao anexar '{arq.name}' na revisÃ£o {pedido.numero}: {e}"
+                        f"Erro ao anexar '{arq.name}' na revisão {pedido.numero}: {e}"
                     )
                     messages.warning(request, f'Arquivo "{arq.name}" rejeitado: {e}')
 
@@ -1723,7 +1723,7 @@ class PedidoRevisarView(LoginRequiredMixin, AppPermissionMixin, View):
             transaction.on_commit(
                 lambda: _safe_notify(notificar_pedido_pendente, pedido)
             )
-            messages.success(request, f'Pedido {pedido.numero} reenviado para aprovaÃ§Ã£o! ðŸ“‹')
+            messages.success(request, f'Pedido {pedido.numero} reenviado para aprovação! 📋')
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -1732,7 +1732,7 @@ class PedidoRevisarView(LoginRequiredMixin, AppPermissionMixin, View):
 
 
 class PedidoEntregarView(LoginRequiredMixin, AppPermissionMixin, View):
-    """APROVADO â†’ ENTREGUE (sÃ³ Gerente)."""
+    """APROVADO → ENTREGUE (só Gerente)."""
     app_label_required = _APP
 
     @transaction.atomic
@@ -1743,7 +1743,7 @@ class PedidoEntregarView(LoginRequiredMixin, AppPermissionMixin, View):
             messages.error(request, 'Apenas Gerentes podem marcar entrega.')
             return redirect(pedido.get_absolute_url())
         if pedido.status != Pedido.StatusChoices.APROVADO:
-            messages.error(request, 'Pedido nÃ£o estÃ¡ aprovado.')
+            messages.error(request, 'Pedido não está aprovado.')
             return redirect(pedido.get_absolute_url())
 
         status_ant = pedido.status
@@ -1759,19 +1759,19 @@ class PedidoEntregarView(LoginRequiredMixin, AppPermissionMixin, View):
         transaction.on_commit(
             lambda: _safe_notify(notificar_pedido_entregue, pedido)
         )
-        messages.success(request, f'Pedido {pedido.numero} marcado como entregue! ðŸ“¦')
+        messages.success(request, f'Pedido {pedido.numero} marcado como entregue! 📦')
         return redirect(pedido.get_absolute_url())
 
 
 class PedidoReceberView(LoginRequiredMixin, AppPermissionMixin, View):
-    """ENTREGUE â†’ RECEBIDO."""
+    """ENTREGUE → RECEBIDO."""
     app_label_required = _APP
 
     @transaction.atomic
     def post(self, request, pk):
         pedido = _get_pedido_seguro(request.user, pk)
         if pedido.status != Pedido.StatusChoices.ENTREGUE:
-            messages.error(request, 'Pedido nÃ£o estÃ¡ marcado como entregue.')
+            messages.error(request, 'Pedido não está marcado como entregue.')
             return redirect(pedido.get_absolute_url())
 
         form = ConfirmarRecebimentoForm(request.POST)
@@ -1785,7 +1785,7 @@ class PedidoReceberView(LoginRequiredMixin, AppPermissionMixin, View):
             pedido.recebedor = request.user
             pedido.data_recebimento = timezone.now()
             pedido.status = Pedido.StatusChoices.RECEBIDO
-            # âœ… FIX 3: save() completo aqui Ã© necessÃ¡rio p/ disparar signal de estoque
+            # ✅ FIX 3: save() completo aqui é necessário p/ disparar signal de estoque
             pedido.save()
 
             _registrar_hist_pedido(
@@ -1798,9 +1798,9 @@ class PedidoReceberView(LoginRequiredMixin, AppPermissionMixin, View):
                 lambda: _safe_notify(notificar_pedido_recebido, pedido)
             )
 
-            messages.success(request, f'Pedido {pedido.numero} â€” recebimento confirmado! âœ…')
+            messages.success(request, f'Pedido {pedido.numero} — recebimento confirmado! ✅')
             if getattr(pedido, 'estoque_processado', False):
-                messages.info(request, 'ðŸ“¦ Entrada no estoque gerada automaticamente.')
+                messages.info(request, '📦 Entrada no estoque gerada automaticamente.')
         else:
             messages.error(request, 'Confirme o recebimento marcando a caixa.')
         return redirect(pedido.get_absolute_url())
@@ -1824,12 +1824,12 @@ class PedidoAnexoView(LoginRequiredMixin, AppPermissionMixin, View):
                     f"Anexo adicionado: {anexo.nome_arquivo}",
                     request.user,
                 )
-                messages.success(request, f'Anexo "{anexo.nome_arquivo}" enviado! ðŸ“Ž')
+                messages.success(request, f'Anexo "{anexo.nome_arquivo}" enviado! 📎')
             except Exception as e:
                 logger.error(f"Erro ao salvar anexo {pedido.numero}: {e}")
                 messages.error(request, f'Arquivo rejeitado: {e}')
         else:
-            # âœ… FIX 4: extrair mensagens corretamente
+            # ✅ FIX 4: extrair mensagens corretamente
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f'{field}: {error}')
@@ -1848,32 +1848,32 @@ class PedidoAnexoDeleteView(LoginRequiredMixin, AppPermissionMixin, View):
         try:
             anexo.arquivo.delete(save=False)
         except Exception as e:
-            logger.warning(f"Erro ao deletar arquivo fÃ­sico do anexo {anexo.pk}: {e}")
+            logger.warning(f"Erro ao deletar arquivo físico do anexo {anexo.pk}: {e}")
         anexo.delete()
         _registrar_hist_pedido(pedido, f"Anexo removido: {nome}", request.user)
-        messages.success(request, f'Anexo "{nome}" removido. ðŸ—‘ï¸')
+        messages.success(request, f'Anexo "{nome}" removido. 🗑️')
         return redirect(pedido.get_absolute_url())
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
 #   HELPER auxiliar
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
 
 def _safe_notify(func, *args, **kwargs):
-    """Wrapper para notificaÃ§Ãµes que nÃ£o podem quebrar a request."""
+    """Wrapper para notificações que não podem quebrar a request."""
     try:
         func(*args, **kwargs)
     except Exception as e:
-        logger.error(f"Erro em notificaÃ§Ã£o {func.__name__}: {e}")
+        logger.error(f"Erro em notificação {func.__name__}: {e}")
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
 #   APIs INTERNAS (AJAX)
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
 
 @login_required
 def material_preco_api(request, pk):
-    """Retorna preÃ§o unitÃ¡rio do material (escopo de filial)."""
+    """Retorna preço unitário do material (escopo de filial)."""
     qs = Material.objects.all()
     filial = getattr(request.user, 'filial_ativa', None)
     if filial and not request.user.is_superuser:
@@ -1889,7 +1889,7 @@ def material_preco_api(request, pk):
 
 @login_required
 def contrato_saldos_api(request, pk):
-    """Retorna saldos do contrato no mÃªs atual (escopo de filial)."""
+    """Retorna saldos do contrato no mês atual (escopo de filial)."""
     qs = Contrato.objects.all()
     filial = getattr(request.user, 'filial_ativa', None)
     if filial and not request.user.is_superuser:
@@ -1911,9 +1911,9 @@ def contrato_saldos_api(request, pk):
     })
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#   RELATÃ“RIOS GERENCIAIS
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
+#   RELATÓRIOS GERENCIAIS
+# ════════════════════════════════════════════════════════════════════
 
 class RelatorioForm(forms.Form):
     ano = forms.IntegerField(
@@ -1922,14 +1922,14 @@ class RelatorioForm(forms.Form):
         }),
     )
     mes_ini = forms.IntegerField(
-        label="MÃªs InÃ­cio",
+        label="Mês Início",
         widget=forms.Select(
             attrs={'class': 'form-select'},
             choices=[(i, f'{i:02d}') for i in range(1, 13)],
         ),
     )
     mes_fim = forms.IntegerField(
-        label="MÃªs Fim",
+        label="Mês Fim",
         widget=forms.Select(
             attrs={'class': 'form-select'},
             choices=[(i, f'{i:02d}') for i in range(1, 13)],
@@ -1946,12 +1946,12 @@ class RelatorioForm(forms.Form):
         cleaned = super().clean()
         if cleaned.get('mes_ini') and cleaned.get('mes_fim'):
             if cleaned['mes_ini'] > cleaned['mes_fim']:
-                self.add_error('mes_fim', 'MÃªs fim deve ser >= mÃªs inÃ­cio.')
+                self.add_error('mes_fim', 'Mês fim deve ser >= mês início.')
         return cleaned
 
 
 class _RelatorioFiltraMixin:
-    """Mixin para filtrar contratos por filial nos relatÃ³rios."""
+    """Mixin para filtrar contratos por filial nos relatórios."""
 
     def _get_contrato_ids(self):
         user = self.request.user
@@ -1995,7 +1995,7 @@ class RelatorioSuprimentosView(LoginRequiredMixin, AppPermissionMixin, _Relatori
             'filtro_contratos': self.request.GET.getlist('contrato'),
             'contratos_disponiveis': contratos_qs,
             'meses_choices': [(i, f'{i:02d}') for i in range(1, 13)],
-            'titulo_pagina': 'RelatÃ³rio Gerencial de Suprimentos',
+            'titulo_pagina': 'Relatório Gerencial de Suprimentos',
             'json_quantitativo_meses': json.dumps(
                 relatorio['quantitativo']['por_mes'], default=str
             ),
@@ -2079,10 +2079,10 @@ class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltr
                 cell.alignment = Alignment(horizontal='center')
             return row + 1
 
-        # â•â•â• ABA 1: QUANTITATIVO â•â•â•
+        # ═══ ABA 1: QUANTITATIVO ═══
         ws1 = wb.active
         ws1.title = "Quantitativo"
-        row = add_titulo(ws1, f"RELATÃ“RIO QUANTITATIVO â€” {relatorio['parametros']['periodo_label']}")
+        row = add_titulo(ws1, f"RELATÓRIO QUANTITATIVO — {relatorio['parametros']['periodo_label']}")
 
         headers = ['Categoria', 'Pedidos', 'Linhas', 'Unidades', 'Valor Total (R$)', '% do Total']
         row = add_headers(ws1, headers, row)
@@ -2100,7 +2100,7 @@ class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltr
         row += 2
         ws1.cell(row=row, column=1, value="TOP 15 MATERIAIS MAIS COMPRADOS").font = Font(bold=True, size=12)
         row += 1
-        headers_top = ['Material', 'ClassificaÃ§Ã£o', 'Unidade', 'Qtd Total', 'Valor Total (R$)', 'Pedidos']
+        headers_top = ['Material', 'Classificação', 'Unidade', 'Qtd Total', 'Valor Total (R$)', 'Pedidos']
         row = add_headers(ws1, headers_top, row)
         for m in relatorio['quantitativo']['top_materiais']:
             ws1.cell(row=row, column=1, value=m['material__descricao']).border = border
@@ -2116,9 +2116,9 @@ class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltr
         for col in range(1, 9):
             ws1.column_dimensions[get_column_letter(col)].width = 20
 
-        # â•â•â• ABA 2: QUALITATIVO â•â•â•
+        # ═══ ABA 2: QUALITATIVO ═══
         ws2 = wb.create_sheet("Qualitativo")
-        row = add_titulo(ws2, f"VERBA Ã— GASTO â€” {relatorio['parametros']['periodo_label']}")
+        row = add_titulo(ws2, f"VERBA × GASTO — {relatorio['parametros']['periodo_label']}")
 
         headers_q = ['Categoria', 'Verba (R$)', 'Gasto (R$)', 'Saldo (R$)', '% Uso', 'Status']
         row = add_headers(ws2, headers_q, row)
@@ -2155,9 +2155,9 @@ class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltr
         c.font = Font(bold=True)
 
         row += 3
-        ws2.cell(row=row, column=1, value="EVOLUÃ‡ÃƒO MENSAL").font = Font(bold=True, size=12)
+        ws2.cell(row=row, column=1, value="EVOLUÇÃO MENSAL").font = Font(bold=True, size=12)
         row += 1
-        headers_ev = ['MÃªs', 'Verba EPI', 'Gasto EPI', 'Verba Consumo', 'Gasto Consumo',
+        headers_ev = ['Mês', 'Verba EPI', 'Gasto EPI', 'Verba Consumo', 'Gasto Consumo',
                        'Verba Ferrament.', 'Gasto Ferrament.', 'Saldo Total']
         row = add_headers(ws2, headers_ev, row)
         for ev in relatorio['qualitativo']['evolucao_mensal']:
@@ -2179,12 +2179,12 @@ class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltr
         for col in range(1, 9):
             ws2.column_dimensions[get_column_letter(col)].width = 18
 
-        # â•â•â• ABA 3: ALERTAS â•â•â•
+        # ═══ ABA 3: ALERTAS ═══
         ws3 = wb.create_sheet("Alertas - Acima da Meta")
-        row = add_titulo(ws3, f"GASTOS ACIMA DA META â€” {relatorio['parametros']['periodo_label']}")
+        row = add_titulo(ws3, f"GASTOS ACIMA DA META — {relatorio['parametros']['periodo_label']}")
 
         if relatorio['alertas']['alertas']:
-            headers_a = ['Contrato', 'MÃªs', 'Categoria', 'Verba (R$)', 'Gasto (R$)',
+            headers_a = ['Contrato', 'Mês', 'Categoria', 'Verba (R$)', 'Gasto (R$)',
                          'Excesso (R$)', '% Excesso', 'Severidade']
             row = add_headers(ws3, headers_a, row)
             for al in relatorio['alertas']['alertas']:
@@ -2208,14 +2208,14 @@ class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltr
                     sev.fill = danger_fill
                 row += 1
         else:
-            ws3.cell(row=row, column=1, value="âœ… Nenhum gasto acima da meta no perÃ­odo!").font = Font(size=12, color="198754")
+            ws3.cell(row=row, column=1, value="✅ Nenhum gasto acima da meta no período!").font = Font(size=12, color="198754")
 
         for col in range(1, 9):
             ws3.column_dimensions[get_column_letter(col)].width = 20
 
-        # â•â•â• ABA 4: ECONOMIAS â•â•â•
+        # ═══ ABA 4: ECONOMIAS ═══
         ws4 = wb.create_sheet("Economias")
-        row = add_titulo(ws4, f"ECONOMIAS â€” {relatorio['parametros']['periodo_label']}")
+        row = add_titulo(ws4, f"ECONOMIAS — {relatorio['parametros']['periodo_label']}")
 
         headers_e = ['Categoria', 'Total Economizado (R$)']
         row = add_headers(ws4, headers_e, row)
@@ -2235,7 +2235,7 @@ class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltr
         c.fill = success_fill
 
         row += 3
-        ws4.cell(row=row, column=1, value="RANKING â€” CONTRATOS QUE MAIS ECONOMIZARAM").font = Font(bold=True, size=12)
+        ws4.cell(row=row, column=1, value="RANKING — CONTRATOS QUE MAIS ECONOMIZARAM").font = Font(bold=True, size=12)
         row += 1
         row = add_headers(ws4, ['Contrato', 'Economia (R$)'], row)
         for rk in relatorio['economias']['ranking_contratos']:
@@ -2248,11 +2248,11 @@ class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltr
         for col in range(1, 9):
             ws4.column_dimensions[get_column_letter(col)].width = 22
 
-        # â•â•â• ABA 5: ESTIMATIVAS â•â•â•
+        # ═══ ABA 5: ESTIMATIVAS ═══
         ws5 = wb.create_sheet("Estimativas")
-        row = add_titulo(ws5, "PROJEÃ‡ÃƒO DE GASTOS â€” PRÃ“XIMOS 6 MESES")
+        row = add_titulo(ws5, "PROJEÇÃO DE GASTOS — PRÓXIMOS 6 MESES")
 
-        headers_est = ['MÃªs', 'Verba EPI', 'Gasto Est. EPI', 'Verba Consumo',
+        headers_est = ['Mês', 'Verba EPI', 'Gasto Est. EPI', 'Verba Consumo',
                        'Gasto Est. Consumo', 'Verba Ferrament.', 'Gasto Est. Ferrament.', 'Saldo Estimado']
         row = add_headers(ws5, headers_est, row)
         for pr in relatorio['estimativas']['projecao']:
@@ -2272,9 +2272,9 @@ class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltr
             row += 1
 
         row += 2
-        ws5.cell(row=row, column=1, value="TENDÃŠNCIAS (Ãšltimos 6 meses)").font = Font(bold=True, size=12)
+        ws5.cell(row=row, column=1, value="TENDÊNCIAS (Últimos 6 meses)").font = Font(bold=True, size=12)
         row += 1
-        row = add_headers(ws5, ['Categoria', 'MÃ©dia Mensal (R$)', 'MÃ­n (R$)', 'MÃ¡x (R$)', 'TendÃªncia', 'VariaÃ§Ã£o'], row)
+        row = add_headers(ws5, ['Categoria', 'Média Mensal (R$)', 'Mín (R$)', 'Máx (R$)', 'Tendência', 'Variação'], row)
         for cod, label in [('EPI', 'EPI'), ('CONSUMO', 'Consumo'), ('FERRAMENTA', 'Ferramenta')]:
             m = relatorio['estimativas']['media_por_categoria'][cod]
             ws5.cell(row=row, column=1, value=label).border = border
@@ -2313,12 +2313,12 @@ class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltr
         return response
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#   SOLICITAÃ‡ÃƒO DE COMPRA â€” WORKFLOW PÃ“S-APROVAÃ‡ÃƒO
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ════════════════════════════════════════════════════════════════════
+#   SOLICITAÇÃO DE COMPRA — WORKFLOW PÓS-APROVAÇÃO
+# ════════════════════════════════════════════════════════════════════
 
 class SolicitacaoListView(LoginRequiredMixin, AppPermissionMixin, ListView):
-    """Lista de SolicitaÃ§Ãµes de Compra com formulÃ¡rios inline por etapa."""
+    """Lista de Solicitações de Compra com formulários inline por etapa."""
     app_label_required = _APP
     template_name = 'suprimentos/solicitacao/solicitacao_list.html'
     context_object_name = 'solicitacoes'
@@ -2384,7 +2384,7 @@ class SolicitacaoListView(LoginRequiredMixin, AppPermissionMixin, ListView):
         ctx['status_choices'] = SolicitacaoCompra.StatusChoices.choices
         ctx['tipo_obra_choices'] = SolicitacaoCompra._meta.get_field('tipo_obra').choices
 
-        # Forms inline por solicitaÃ§Ã£o
+        # Forms inline por solicitação
         solicitacoes = ctx['solicitacoes']
         forms_map = {}
         for sol in solicitacoes:
@@ -2441,10 +2441,10 @@ class SolicitacaoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
     def get(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
         
-        # Se nÃ£o encontrou na queryset filtrada por filial...
+        # Se não encontrou na queryset filtrada por filial...
         if not self.get_queryset().filter(pk=pk).exists():
-            # ...e o usuÃ¡rio Ã© superuser, verifica se existe em outra filial
-            # (usuÃ¡rio comum cai direto no 404 padrÃ£o â€” comportamento correto)
+            # ...e o usuário é superuser, verifica se existe em outra filial
+            # (usuário comum cai direto no 404 padrão — comportamento correto)
             if request.user.is_superuser:
                 sol_outra = (
                     SolicitacaoCompra.objects
@@ -2457,10 +2457,10 @@ class SolicitacaoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
                     filial_ativa = getattr(request.user, 'filial_ativa', None)
                     messages.warning(
                         request,
-                        f'A solicitaÃ§Ã£o <strong>{sol_outra.numero}</strong> pertence Ã  filial '
-                        f'<strong>{filial_correta.nome}</strong>, mas sua filial ativa Ã© '
-                        f'<strong>{filial_ativa.nome if filial_ativa else "â€”"}</strong>. '
-                        f'Troque de filial na barra superior para acessÃ¡-la.',
+                        f'A solicitação <strong>{sol_outra.numero}</strong> pertence à filial '
+                        f'<strong>{filial_correta.nome}</strong>, mas sua filial ativa é '
+                        f'<strong>{filial_ativa.nome if filial_ativa else "—"}</strong>. '
+                        f'Troque de filial na barra superior para acessá-la.',
                         extra_tags='safe'
                     )
                     return redirect('suprimentos:solicitacao_list')
@@ -2478,14 +2478,14 @@ class SolicitacaoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
         ctx['is_comprador'] = is_comprador
 
         ctx['etapas'] = [
-            {'num': 1, 'titulo': 'Fazer CotaÃ§Ã£o'},
-            {'num': 2, 'titulo': 'Validar CotaÃ§Ã£o'},
+            {'num': 1, 'titulo': 'Fazer Cotação'},
+            {'num': 2, 'titulo': 'Validar Cotação'},
             {'num': 3, 'titulo': 'Criar Pedido'},
             {'num': 4, 'titulo': 'Aprovar Pedido'},
             {'num': 5, 'titulo': 'Enviar Fornecedor'},
             {'num': 6, 'titulo': 'Entrega'},
             {'num': 7, 'titulo': 'Nota Fiscal'},
-            {'num': 8, 'titulo': 'ConcluÃ­do'},
+            {'num': 8, 'titulo': 'Concluído'},
         ]
 
         if sol.status == 'FAZER_COTACAO' and is_comprador:
@@ -2536,10 +2536,10 @@ class SolicitacaoCotacaoView(LoginRequiredMixin, AppPermissionMixin, View):
         user = request.user
 
         if not _user_is_comprador(user):
-            messages.error(request, 'Apenas compradores podem registrar cotaÃ§Ãµes.')
+            messages.error(request, 'Apenas compradores podem registrar cotações.')
             return redirect(sol.get_absolute_url())
         if sol.status != 'FAZER_COTACAO':
-            messages.error(request, 'Status invÃ¡lido para registrar cotaÃ§Ã£o.')
+            messages.error(request, 'Status inválido para registrar cotação.')
             return redirect(sol.get_absolute_url())
 
         form = CotacaoForm(request.POST, instance=sol)
@@ -2552,16 +2552,16 @@ class SolicitacaoCotacaoView(LoginRequiredMixin, AppPermissionMixin, View):
 
             _registrar_hist_sol(
                 sol,
-                f"CotaÃ§Ã£o registrada por {user.get_full_name() or user.username}. "
-                f"NÂº: {sol.numero_cotacao}. CNPJ: {sol.cnpj_compra}.",
+                f"Cotação registrada por {user.get_full_name() or user.username}. "
+                f"Nº: {sol.numero_cotacao}. CNPJ: {sol.cnpj_compra}.",
                 user, status_ant, 'COTACAO_ENVIADA',
             )
             try:
                 notificar_cotacao_enviada(sol)
             except Exception as e:
-                logger.error(f"Erro notificaÃ§Ã£o cotaÃ§Ã£o enviada: {e}")
+                logger.error(f"Erro notificação cotação enviada: {e}")
 
-            messages.success(request, 'CotaÃ§Ã£o registrada! Aguardando validaÃ§Ã£o. ðŸ“Š')
+            messages.success(request, 'Cotação registrada! Aguardando validação. 📊')
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -2577,10 +2577,10 @@ class SolicitacaoValidarCotacaoView(LoginRequiredMixin, AppPermissionMixin, View
         user = request.user
 
         if not _user_is_aprovador(user):
-            messages.error(request, 'Sem permissÃ£o para validar cotaÃ§Ã£o.')
+            messages.error(request, 'Sem permissão para validar cotação.')
             return redirect(sol.get_absolute_url())
         if sol.status != 'COTACAO_ENVIADA':
-            messages.error(request, 'CotaÃ§Ã£o nÃ£o estÃ¡ aguardando validaÃ§Ã£o.')
+            messages.error(request, 'Cotação não está aguardando validação.')
             return redirect(sol.get_absolute_url())
 
         form = ValidarCotacaoForm(request.POST)
@@ -2595,15 +2595,15 @@ class SolicitacaoValidarCotacaoView(LoginRequiredMixin, AppPermissionMixin, View
             ])
             _registrar_hist_sol(
                 sol,
-                f"CotaÃ§Ã£o validada por {user.get_full_name() or user.username}.",
+                f"Cotação validada por {user.get_full_name() or user.username}.",
                 user, status_ant, 'CRIAR_PEDIDO_CT',
             )
             try:
                 notificar_cotacao_validada(sol)
             except Exception as e:
-                logger.error(f"Erro notificaÃ§Ã£o cotaÃ§Ã£o validada: {e}")
+                logger.error(f"Erro notificação cotação validada: {e}")
 
-            messages.success(request, 'CotaÃ§Ã£o validada! Comprador pode criar o pedido. âœ…')
+            messages.success(request, 'Cotação validada! Comprador pode criar o pedido. ✅')
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -2622,7 +2622,7 @@ class SolicitacaoCriarPedidoView(LoginRequiredMixin, AppPermissionMixin, View):
             messages.error(request, 'Apenas compradores podem criar pedidos.')
             return redirect(sol.get_absolute_url())
         if sol.status != 'CRIAR_PEDIDO_CT':
-            messages.error(request, 'Status invÃ¡lido para criar pedido.')
+            messages.error(request, 'Status inválido para criar pedido.')
             return redirect(sol.get_absolute_url())
 
         form = CriarPedidoForm(request.POST, instance=sol)
@@ -2639,16 +2639,16 @@ class SolicitacaoCriarPedidoView(LoginRequiredMixin, AppPermissionMixin, View):
             _registrar_hist_sol(
                 sol,
                 f"Pedido criado por {user.get_full_name() or user.username}. "
-                f"NÂº: {sol.numero_pedido_sienge}. "
+                f"Nº: {sol.numero_pedido_sienge}. "
                 f"Fornecedor: {sol.fornecedor}. Valor: R$ {sol.valor_pedido:.2f}.",
                 user, status_ant, 'EM_APROVACAO',
             )
             try:
                 notificar_pedido_sienge_criado(sol)
             except Exception as e:
-                logger.error(f"Erro notificaÃ§Ã£o pedido sienge criado: {e}")
+                logger.error(f"Erro notificação pedido sienge criado: {e}")
 
-            messages.success(request, 'Pedido criado! Aguardando aprovaÃ§Ã£o. ðŸ“¦')
+            messages.success(request, 'Pedido criado! Aguardando aprovação. 📦')
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -2664,10 +2664,10 @@ class SolicitacaoAprovarPedidoView(LoginRequiredMixin, AppPermissionMixin, View)
         user = request.user
 
         if not _user_is_aprovador(user):
-            messages.error(request, 'Sem permissÃ£o para aprovar pedido.')
+            messages.error(request, 'Sem permissão para aprovar pedido.')
             return redirect(sol.get_absolute_url())
         if sol.status != 'EM_APROVACAO':
-            messages.error(request, 'Pedido nÃ£o estÃ¡ em aprovaÃ§Ã£o.')
+            messages.error(request, 'Pedido não está em aprovação.')
             return redirect(sol.get_absolute_url())
 
         form = AprovarPedidoForm(request.POST)
@@ -2688,9 +2688,9 @@ class SolicitacaoAprovarPedidoView(LoginRequiredMixin, AppPermissionMixin, View)
             try:
                 notificar_pedido_sienge_aprovado(sol)
             except Exception as e:
-                logger.error(f"Erro notificaÃ§Ã£o pedido aprovado: {e}")
+                logger.error(f"Erro notificação pedido aprovado: {e}")
 
-            messages.success(request, 'Pedido aprovado! Enviar ao fornecedor. âœ…')
+            messages.success(request, 'Pedido aprovado! Enviar ao fornecedor. ✅')
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -2709,7 +2709,7 @@ class SolicitacaoEnviarFornecedorView(LoginRequiredMixin, AppPermissionMixin, Vi
             messages.error(request, 'Apenas compradores podem enviar pedidos.')
             return redirect(sol.get_absolute_url())
         if sol.status != 'ENVIAR_PEDIDO':
-            messages.error(request, 'Status invÃ¡lido.')
+            messages.error(request, 'Status inválido.')
             return redirect(sol.get_absolute_url())
 
         form = EnviarPedidoFornecedorForm(request.POST)
@@ -2725,15 +2725,15 @@ class SolicitacaoEnviarFornecedorView(LoginRequiredMixin, AppPermissionMixin, Vi
             _registrar_hist_sol(
                 sol,
                 f"Enviado ao fornecedor por {user.get_full_name() or user.username}. "
-                f"PrevisÃ£o: {sol.data_prevista_entrega}.",
+                f"Previsão: {sol.data_prevista_entrega}.",
                 user, status_ant, 'ENTREGA_PENDENTE',
             )
             try:
                 notificar_pedido_enviado_fornecedor(sol)
             except Exception as e:
-                logger.error(f"Erro notificaÃ§Ã£o envio fornecedor: {e}")
+                logger.error(f"Erro notificação envio fornecedor: {e}")
 
-            messages.success(request, f'Pedido enviado! PrevisÃ£o: {sol.data_prevista_entrega}. ðŸšš')
+            messages.success(request, f'Pedido enviado! Previsão: {sol.data_prevista_entrega}. 🚚')
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -2752,7 +2752,7 @@ class SolicitacaoRegistrarEntregaView(LoginRequiredMixin, AppPermissionMixin, Vi
             messages.error(request, 'Apenas compradores.')
             return redirect(sol.get_absolute_url())
         if sol.status != 'ENTREGA_PENDENTE':
-            messages.error(request, 'Status invÃ¡lido.')
+            messages.error(request, 'Status inválido.')
             return redirect(sol.get_absolute_url())
 
         form = RegistrarEntregaForm(request.POST)
@@ -2768,9 +2768,9 @@ class SolicitacaoRegistrarEntregaView(LoginRequiredMixin, AppPermissionMixin, Vi
             try:
                 notificar_entrega_registrada(sol)
             except Exception as e:
-                logger.error(f"Erro notificaÃ§Ã£o entrega: {e}")
+                logger.error(f"Erro notificação entrega: {e}")
 
-            messages.success(request, 'Entrega registrada! Agora informe o NÂº da NF para encerrar. ðŸ“¦')
+            messages.success(request, 'Entrega registrada! Agora informe o Nº da NF para encerrar. 📦')
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -2806,9 +2806,9 @@ class SolicitacaoEncerrarView(LoginRequiredMixin, AppPermissionMixin, View):
             try:
                 notificar_solicitacao_concluida(sol)
             except Exception as e:
-                logger.error(f"Erro notificaÃ§Ã£o conclusÃ£o: {e}")
+                logger.error(f"Erro notificação conclusão: {e}")
 
-            messages.success(request, f'SolicitaÃ§Ã£o {sol.numero} CONCLUÃDA! âœ…ðŸŽ‰')
+            messages.success(request, f'Solicitação {sol.numero} CONCLUÍDA! ✅🎉')
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -2824,7 +2824,7 @@ class SolicitacaoCancelarView(LoginRequiredMixin, AppPermissionMixin, View):
         user = request.user
 
         if not sol.pode_cancelar:
-            messages.error(request, 'NÃ£o pode ser cancelada.')
+            messages.error(request, 'Não pode ser cancelada.')
             return redirect(sol.get_absolute_url())
 
         pode = (
@@ -2833,7 +2833,7 @@ class SolicitacaoCancelarView(LoginRequiredMixin, AppPermissionMixin, View):
             or _user_is_comprador(user)
         )
         if not pode:
-            messages.error(request, 'Sem permissÃ£o.')
+            messages.error(request, 'Sem permissão.')
             return redirect(sol.get_absolute_url())
 
         form = CancelarSolicitacaoForm(request.POST)
@@ -2858,9 +2858,9 @@ class SolicitacaoCancelarView(LoginRequiredMixin, AppPermissionMixin, View):
             try:
                 notificar_solicitacao_cancelada(sol)
             except Exception as e:
-                logger.error(f"Erro notificaÃ§Ã£o cancelamento: {e}")
+                logger.error(f"Erro notificação cancelamento: {e}")
 
-            messages.warning(request, f'SolicitaÃ§Ã£o {sol.numero} cancelada.')
+            messages.warning(request, f'Solicitação {sol.numero} cancelada.')
         else:
             messages.error(request, 'Informe o motivo do cancelamento.')
         return redirect(sol.get_absolute_url())
@@ -2879,9 +2879,9 @@ class SolicitacaoAnexoView(LoginRequiredMixin, AppPermissionMixin, View):
                 anexo.enviado_por = request.user
                 anexo.save()
                 _registrar_hist_sol(sol, f"Anexo: {anexo.nome_arquivo}", request.user)
-                messages.success(request, 'Anexo enviado! ðŸ“Ž')
+                messages.success(request, 'Anexo enviado! 📎')
             except Exception as e:
-                logger.error(f"Erro ao salvar anexo da solicitaÃ§Ã£o {sol.numero}: {e}")
+                logger.error(f"Erro ao salvar anexo da solicitação {sol.numero}: {e}")
                 messages.error(request, f'Arquivo rejeitado: {e}')
         else:
             for error in form.errors.values():
@@ -2915,12 +2915,12 @@ class SolicitacaoObservacaoView(LoginRequiredMixin, AppPermissionMixin, View):
             timestamp = timezone.now().strftime('%d/%m/%Y %H:%M')
             nome = user.get_full_name() or user.username
             sol.observacoes = (
-                f"{sol.observacoes}\n[{timestamp} â€” {nome}] {texto}"
+                f"{sol.observacoes}\n[{timestamp} — {nome}] {texto}"
             ).strip()
             sol.save(update_fields=['observacoes', 'atualizado_em'])
-            _registrar_hist_sol(sol, f"ObservaÃ§Ã£o: {texto[:100]}", user)
-            messages.success(request, 'ObservaÃ§Ã£o registrada! ðŸ“')
+            _registrar_hist_sol(sol, f"Observação: {texto[:100]}", user)
+            messages.success(request, 'Observação registrada! 📝')
         else:
-            messages.error(request, 'Texto obrigatÃ³rio.')
+            messages.error(request, 'Texto obrigatório.')
         return redirect(sol.get_absolute_url())
 

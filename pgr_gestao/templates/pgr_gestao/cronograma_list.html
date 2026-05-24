@@ -1,35 +1,35 @@
-﻿{# Cronograma de AÃ§Ãµes - Lista e Gerenciamento #}
+{# Cronograma de Ações - Lista e Gerenciamento #}
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
-{% block title %}Cronograma de AÃ§Ãµes{% endblock %}
+{% block title %}Cronograma de Ações{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item active">Cronograma de AÃ§Ãµes</li>
+<li class="breadcrumb-item active">Cronograma de Ações</li>
 {% endblock %}
 
 {% block pgr_content %}
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h1><i class="bi bi-calendar-event-fill"></i> Cronograma de AÃ§Ãµes</h1>
-            <p class="mb-0">ProgramaÃ§Ã£o de Atividades do PGR</p>
+            <h1><i class="bi bi-calendar-event-fill"></i> Cronograma de Ações</h1>
+            <p class="mb-0">Programação de Atividades do PGR</p>
         </div>
         {% if perms.pgr_gestao.add_cronogramaacaopgr %}
         <a href="{% url 'pgr_gestao:cronograma_create_geral' %}" class="btn btn-light btn-lg">
-            <i class="bi bi-plus-lg"></i> Nova AÃ§Ã£o
+            <i class="bi bi-plus-lg"></i> Nova Ação
         </a>
         {% endif %}
     </div>
 </div>
 
-<!-- EstatÃ­sticas -->
+<!-- Estatísticas -->
 <div class="row mb-4 g-3">
     <div class="col-md-3 col-6">
         <div class="card stats-card text-center h-100">
             <div class="card-body">
                 <h3>{{ total_acoes|default:acoes|length }}</h3>
-                <small class="text-muted">Total de AÃ§Ãµes</small>
+                <small class="text-muted">Total de Ações</small>
             </div>
         </div>
     </div>
@@ -53,7 +53,7 @@
         <div class="card stats-card success text-center h-100">
             <div class="card-body">
                 <h3 class="text-success">{{ acoes_concluidas|default:0 }}</h3>
-                <small class="text-muted">ConcluÃ­das</small>
+                <small class="text-muted">Concluídas</small>
             </div>
         </div>
     </div>
@@ -83,13 +83,13 @@
                     <option value="">Todos</option>
                     <option value="pendente" {% if request.GET.status == 'pendente' %}selected{% endif %}>Pendente</option>
                     <option value="em_andamento" {% if request.GET.status == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
-                    <option value="concluido" {% if request.GET.status == 'concluido' %}selected{% endif %}>ConcluÃ­do</option>
+                    <option value="concluido" {% if request.GET.status == 'concluido' %}selected{% endif %}>Concluído</option>
                     <option value="cancelado" {% if request.GET.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
                 </select>
             </div>
             <div class="col-md-4">
                 <label class="form-label">Buscar</label>
-                <input type="text" name="search" class="form-control" placeholder="AÃ§Ã£o, responsÃ¡vel..."
+                <input type="text" name="search" class="form-control" placeholder="Ação, responsável..."
                        value="{{ request.GET.search }}">
             </div>
             <div class="col-md-1 d-flex align-items-end">
@@ -104,7 +104,7 @@
 <!-- Tabela -->
 <div class="card">
     <div class="card-header">
-        <i class="bi bi-list-ul"></i> Lista de AÃ§Ãµes Programadas
+        <i class="bi bi-list-ul"></i> Lista de Ações Programadas
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -112,13 +112,13 @@
                 <thead class="table-light">
                     <tr>
                         <th class="text-center">#</th>
-                        <th>AÃ§Ã£o NecessÃ¡ria</th>
+                        <th>Ação Necessária</th>
                         <th>PGR</th>
                         <th>Periodicidade</th>
                         <th>Status</th>
-                        <th>ResponsÃ¡vel</th>
-                        <th>PrÃ³xima AvaliaÃ§Ã£o</th>
-                        <th class="text-center">AÃ§Ãµes</th>
+                        <th>Responsável</th>
+                        <th>Próxima Avaliação</th>
+                        <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -139,9 +139,9 @@
                             <span class="badge bg-warning text-dark">{{ acao.get_status_display }}</span>
                             {% endif %}
                         </td>
-                        <td><small>{{ acao.responsavel|default:"â€”"|truncatechars:25 }}</small></td>
+                        <td><small>{{ acao.responsavel|default:"—"|truncatechars:25 }}</small></td>
                         <td>
-                            {{ acao.data_proxima_avaliacao|date:"d/m/Y"|default:"â€”" }}
+                            {{ acao.data_proxima_avaliacao|date:"d/m/Y"|default:"—" }}
                             {% if acao.esta_atrasado %}
                             <br><small class="text-danger">
                                 <i class="bi bi-clock-history"></i> ATRASADO
@@ -173,10 +173,10 @@
                     <tr>
                         <td colspan="8" class="text-center table-empty-state">
                             <i class="bi bi-calendar-x d-block"></i>
-                            <p>Nenhuma aÃ§Ã£o encontrada no cronograma.</p>
+                            <p>Nenhuma ação encontrada no cronograma.</p>
                             {% if perms.pgr_gestao.add_cronogramaacaopgr %}
                             <a href="{% url 'pgr_gestao:cronograma_create_geral' %}" class="btn btn-primary">
-                                <i class="bi bi-plus-lg"></i> Criar Primeira AÃ§Ã£o
+                                <i class="bi bi-plus-lg"></i> Criar Primeira Ação
                             </a>
                             {% endif %}
                         </td>
@@ -186,7 +186,7 @@
             </table>
         </div>
 
-        <!-- PaginaÃ§Ã£o -->
+        <!-- Paginação -->
         {% if is_paginated %}
         <nav class="mt-4">
             <ul class="pagination justify-content-center mb-0">
@@ -200,7 +200,7 @@
 
                 <li class="page-item disabled">
                     <span class="page-link">
-                        PÃ¡gina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
                     </span>
                 </li>
 

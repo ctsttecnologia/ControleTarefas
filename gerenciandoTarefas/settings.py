@@ -277,7 +277,14 @@ TIME_ZONE = 'America/Sao_Paulo'
 
 {
     "files.encoding": "utf8",
-    "files.autoGuessEncoding": False
+    "files.autoGuessEncoding": False,
+    "files.eol": "\n",
+    "[python]": {
+        "files.encoding": "utf8"
+    },
+    "[html]": {
+        "files.encoding": "utf8"
+    }
 }
 
 

@@ -1,10 +1,10 @@
-﻿
+
 {# templates/gestao_riscos/cartao_tag_form.html #}
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 
 {% block title %}
-    {% if object %}Editar CartÃ£o de Bloqueio{% else %}Novo CartÃ£o de Bloqueio{% endif %}
+    {% if object %}Editar Cartão de Bloqueio{% else %}Novo Cartão de Bloqueio{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -17,12 +17,12 @@
                 <div>
                     <h4 class="mb-1">
                         {% if object %}
-                        <i class="bi bi-pencil-square me-2"></i>Editar CartÃ£o de Bloqueio
+                        <i class="bi bi-pencil-square me-2"></i>Editar Cartão de Bloqueio
                         {% else %}
-                        <i class="bi bi-plus-circle me-2"></i>Novo CartÃ£o de Bloqueio
+                        <i class="bi bi-plus-circle me-2"></i>Novo Cartão de Bloqueio
                         {% endif %}
                     </h4>
-                    <small class="opacity-75">Tag de seguranÃ§a para bloqueio de equipamentos</small>
+                    <small class="opacity-75">Tag de segurança para bloqueio de equipamentos</small>
                 </div>
                 <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-outline-light">
                     <i class="bi bi-arrow-left me-1"></i> Voltar
@@ -38,7 +38,7 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">
-                        <i class="bi bi-tag-fill text-primary me-2"></i>Dados do CartÃ£o
+                        <i class="bi bi-tag-fill text-primary me-2"></i>Dados do Cartão
                     </h6>
                 </div>
                 <div class="card-body p-4">
@@ -46,7 +46,7 @@
                         {% csrf_token %}
                         {{ form|crispy }}
                         
-                        <!-- BotÃµes -->
+                        <!-- Botões -->
                         <div class="border-top pt-4 mt-4 d-flex justify-content-between">
                             <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-lg me-1"></i> Cancelar

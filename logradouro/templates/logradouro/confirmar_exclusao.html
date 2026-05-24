@@ -1,10 +1,10 @@
-﻿
+
 
 {# templates/logradouro/confirmar_exclusao.html #}
 {% extends 'base_logradouro/base.html' %}
 {% load i18n %}
 
-{% block title %}{% trans "Excluir EndereÃ§o" %}{% endblock %}
+{% block title %}{% trans "Excluir Endereço" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -14,17 +14,17 @@
             <div class="card shadow-sm border-danger">
                 <div class="card-header bg-danger text-white text-center py-3">
                     <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
-                    <span class="fw-semibold">{% trans "Confirmar ExclusÃ£o" %}</span>
+                    <span class="fw-semibold">{% trans "Confirmar Exclusão" %}</span>
                 </div>
                 <div class="card-body text-center p-4">
                     
-                    <!-- Ãcone -->
+                    <!-- Ícone -->
                     <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-4"
                          style="width: 80px; height: 80px;">
                         <i class="bi bi-trash text-danger fs-1"></i>
                     </div>
                     
-                    <h5 class="mb-3">{% trans "Deseja excluir este endereÃ§o?" %}</h5>
+                    <h5 class="mb-3">{% trans "Deseja excluir este endereço?" %}</h5>
 
                     <!-- Info do item -->
                     <div class="alert alert-warning text-start py-3">
@@ -46,7 +46,7 @@
 
                     <p class="text-muted small">
                         <i class="bi bi-info-circle me-1"></i>
-                        {% trans "Esta aÃ§Ã£o nÃ£o poderÃ¡ ser desfeita. Se este endereÃ§o estiver vinculado a outros registros, a exclusÃ£o serÃ¡ impedida." %}
+                        {% trans "Esta ação não poderá ser desfeita. Se este endereço estiver vinculado a outros registros, a exclusão será impedida." %}
                     </p>
 
                 </div>

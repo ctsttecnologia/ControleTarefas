@@ -1,4 +1,4 @@
-﻿{% extends "departamento_pessoal/_base_dp.html" %}
+{% extends "departamento_pessoal/_base_dp.html" %}
 {% load secure_url %}
 {% load widget_tweaks %}
 {% load static %}
@@ -7,11 +7,11 @@
 
 {% block extra_head %}
 <style>
-    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       FORM FUNCIONÃRIO â€” usa variÃ¡veis do tema global
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+    /* ═══════════════════════════════════════════════════════════
+       FORM FUNCIONÁRIO — usa variáveis do tema global
+       ═══════════════════════════════════════════════════════════ */
 
-    /* Divisor de seÃ§Ã£o */
+    /* Divisor de seção */
     .form-section-title {
         font-size: 0.78rem;
         font-weight: 700;
@@ -29,7 +29,7 @@
         margin-top: 0;
     }
 
-    /* â”€â”€ Upload de foto: avatar + botÃ£o estilizado â”€â”€ */
+    /* ── Upload de foto: avatar + botão estilizado ── */
     .photo-upload-wrapper {
         display: flex;
         align-items: center;
@@ -78,7 +78,7 @@
         margin-top: 0.4rem;
     }
 
-    /* â”€â”€ Inputs de data: Ã­cone do calendÃ¡rio adaptativo â”€â”€ */
+    /* ── Inputs de data: ícone do calendário adaptativo ── */
     input[type="date"].form-control {
         min-height: calc(1.5em + 1rem + 2px);
     }
@@ -97,7 +97,7 @@
         filter: invert(0.85);
     }
 
-    /* â”€â”€ Form labels: tom suave, bem alinhados â”€â”€ */
+    /* ── Form labels: tom suave, bem alinhados ── */
     .form-label {
         font-size: 0.875rem;
         font-weight: 500;
@@ -105,14 +105,14 @@
         color: var(--bs-body-color);
     }
 
-    /* â”€â”€ Asterisco de obrigatÃ³rio padronizado â”€â”€ */
+    /* ── Asterisco de obrigatório padronizado ── */
     .required-mark {
         color: #dc3545;
         font-weight: 700;
         margin-left: 2px;
     }
 
-    /* â”€â”€ RodapÃ© sticky do form â”€â”€ */
+    /* ── Rodapé sticky do form ── */
     .form-footer {
         display: flex;
         justify-content: space-between;
@@ -124,7 +124,7 @@
         border-top: 1px solid var(--bs-border-color);
     }
 
-    /* â”€â”€ Erro de campo: visual mais limpo â”€â”€ */
+    /* ── Erro de campo: visual mais limpo ── */
     .field-error {
         font-size: 0.8rem;
         color: #dc3545;
@@ -134,7 +134,7 @@
         gap: 0.3rem;
     }
 
-    /* â”€â”€ Estado disabled (data demissÃ£o quando ativo) â”€â”€ */
+    /* ── Estado disabled (data demissão quando ativo) ── */
     .form-control:disabled,
     .form-select:disabled {
         background-color: var(--surface-muted);
@@ -151,14 +151,14 @@
     </h1>
     <a href="{% url 'departamento_pessoal:importacao_massa_funcionarios' %}"
         class="btn btn-outline-secundary btn-sm-3">
-        <i class="bi bi-arrow-repeat me-1"></i>ImportaÃ§Ã£o em Massa
+        <i class="bi bi-arrow-repeat me-1"></i>Importação em Massa
     </a>
 </div>
 
 <div class="content-card">
     <div class="content-card-body">
 
-        <!-- â•â•â•â•â•â• ERROS GLOBAIS â•â•â•â•â•â• -->
+        <!-- ══════ ERROS GLOBAIS ══════ -->
         {% if form.non_field_errors %}
         <div class="alert alert-danger">
             <i class="bi bi-exclamation-triangle-fill me-2"></i>
@@ -181,13 +181,13 @@
         <form method="post" enctype="multipart/form-data" novalidate id="form-funcionario">
             {% csrf_token %}
 
-            <!-- SEÃ‡ÃƒO 1: IDENTIFICAÃ‡ÃƒO PESSOAL -->
+            <!-- SEÇÃO 1: IDENTIFICAÇÃO PESSOAL -->
             <div class="form-section-title">
-                <i class="bi bi-person-vcard"></i> IdentificaÃ§Ã£o Pessoal
+                <i class="bi bi-person-vcard"></i> Identificação Pessoal
             </div>
 
             <div class="row g-3">
-                <!-- â”€â”€ Foto 3x4 (com preview) â”€â”€ -->
+                <!-- ── Foto 3x4 (com preview) ── -->
                 <div class="col-12">
                     <label class="form-label" for="{{ form.foto_3x4.id_for_label }}">
                         {{ form.foto_3x4.label }}
@@ -215,7 +215,7 @@
                     {% endif %}
                 </div>
 
-                <!-- â”€â”€ Nome Completo â”€â”€ -->
+                <!-- ── Nome Completo ── -->
                 <div class="col-md-6">
                     <label class="form-label" for="{{ form.nome_completo.id_for_label }}">
                         {{ form.nome_completo.label }}<span class="required-mark">*</span>
@@ -226,7 +226,7 @@
                     {% endif %}
                 </div>
 
-                {# â”€â”€ MatrÃ­cula â”€â”€ #}
+                {# ── Matrícula ── #}
                 <div class="col-md-3">
                     <label class="form-label" for="{{ form.matricula.id_for_label }}">
                         {{ form.matricula.label }}<span class="required-mark">*</span>
@@ -237,7 +237,7 @@
                     {% endif %}
                 </div>
 
-                {# â”€â”€ Data Nascimento â”€â”€ #}
+                {# ── Data Nascimento ── #}
                 <div class="col-md-3">
                     <label class="form-label" for="{{ form.data_nascimento.id_for_label }}">
                         {{ form.data_nascimento.label }}
@@ -248,7 +248,7 @@
                     {% endif %}
                 </div>
 
-                <!-- â”€â”€ Sexo â”€â”€-->
+                <!-- ── Sexo ──-->
                 <div class="col-md-3">
                     <label class="form-label" for="{{ form.sexo.id_for_label }}">
                         {{ form.sexo.label }}
@@ -259,7 +259,7 @@
                     {% endif %}
                 </div>
 
-                <!-- â”€â”€ Email â”€â”€ -->
+                <!-- ── Email ── -->
                 <div class="col-md-5">
                     <label class="form-label" for="{{ form.email_pessoal.id_for_label }}">
                         {{ form.email_pessoal.label }}
@@ -270,7 +270,7 @@
                     {% endif %}
                 </div>
 
-                <!-- â”€â”€ Telefone â”€â”€ -->
+                <!-- ── Telefone ── -->
                 <div class="col-md-4">
                     <label class="form-label" for="{{ form.telefone.id_for_label }}">
                         {{ form.telefone.label }}
@@ -282,9 +282,9 @@
                 </div>
             </div>
 
-            <!-- SEÃ‡ÃƒO 2: VÃNCULO COM O SISTEMA -->
+            <!-- SEÇÃO 2: VÍNCULO COM O SISTEMA -->
             <div class="form-section-title">
-                <i class="bi bi-link-45deg"></i> VÃ­nculo com o Sistema
+                <i class="bi bi-link-45deg"></i> Vínculo com o Sistema
             </div>
 
             <div class="row g-3">
@@ -304,13 +304,13 @@
                 </div>
             </div>
 
-            <!--  SEÃ‡ÃƒO 3: DADOS PROFISSIONAIS-->
+            <!--  SEÇÃO 3: DADOS PROFISSIONAIS-->
             <div class="form-section-title">
                 <i class="bi bi-briefcase"></i> Dados Profissionais
             </div>
 
             <div class="row g-3">
-                <!-- â”€â”€ Departamento â”€â”€ -->
+                <!-- ── Departamento ── -->
                 <div class="col-md-4">
                     <label class="form-label" for="{{ form.departamento.id_for_label }}">
                         {{ form.departamento.label }}<span class="required-mark">*</span>
@@ -321,7 +321,7 @@
                     {% endif %}
                 </div>
 
-                <!-- â”€â”€ Cargo â”€â”€ -->
+                <!-- ── Cargo ── -->
                 <div class="col-md-4">
                     <label class="form-label" for="{{ form.cargo.id_for_label }}">
                         {{ form.cargo.label }}<span class="required-mark">*</span>
@@ -332,7 +332,7 @@
                     {% endif %}
                 </div>
 
-                <!-- â”€â”€ FunÃ§Ã£o SST â”€â”€ -->
+                <!-- ── Função SST ── -->
                 <div class="col-md-4">
                     <label class="form-label" for="{{ form.funcao.id_for_label }}">
                         {{ form.funcao.label }}
@@ -348,7 +348,7 @@
                     {% endif %}
                 </div>
 
-                <!-- â”€â”€ Cliente/Contrato â”€â”€ -->
+                <!-- ── Cliente/Contrato ── -->
                 <div class="col-md-6">
                     <label class="form-label" for="{{ form.cliente.id_for_label }}">
                         {{ form.cliente.label }}
@@ -359,7 +359,7 @@
                     {% endif %}
                 </div>
 
-                <!-- â”€â”€ SalÃ¡rio â”€â”€ -->
+                <!-- ── Salário ── -->
                 <div class="col-md-6">
                     <label class="form-label" for="{{ form.salario.id_for_label }}">
                         {{ form.salario.label }}
@@ -373,13 +373,13 @@
                     {% endif %}
                 </div>
             </div>
-            <!-- SEÃ‡ÃƒO 4: ADMISSÃƒO E STATUS -->
+            <!-- SEÇÃO 4: ADMISSÃO E STATUS -->
             <div class="form-section-title">
-                <i class="bi bi-calendar-check"></i> AdmissÃ£o e Status
+                <i class="bi bi-calendar-check"></i> Admissão e Status
             </div>
 
             <div class="row g-3">
-                <!-- â”€â”€ Status â”€â”€ -->
+                <!-- ── Status ── -->
                 <div class="col-md-4">
                     <label class="form-label" for="{{ form.status.id_for_label }}">
                         {{ form.status.label }}
@@ -390,7 +390,7 @@
                     {% endif %}
                 </div>
 
-                <!-- â”€â”€ Data AdmissÃ£o â”€â”€ -->
+                <!-- ── Data Admissão ── -->
                 <div class="col-md-4">
                     <label class="form-label" for="{{ form.data_admissao.id_for_label }}">
                         {{ form.data_admissao.label }}<span class="required-mark">*</span>
@@ -401,7 +401,7 @@
                     {% endif %}
                 </div>
 
-                <!-- â”€â”€ Data DemissÃ£o â”€â”€ -->
+                <!-- ── Data Demissão ── -->
                 <div class="col-md-4">
                     <label class="form-label" for="{{ form.data_demissao.id_for_label }}">
                         {{ form.data_demissao.label }}
@@ -413,17 +413,17 @@
                 </div>
             </div>
 
-            <!--RODAPÃ‰ DO FORM -->
+            <!--RODAPÉ DO FORM -->
             <div class="form-footer">
                 <small class="text-muted">
-                    <span class="required-mark">*</span> Campos obrigatÃ³rios
+                    <span class="required-mark">*</span> Campos obrigatórios
                 </small>
                 <div class="d-flex gap-2">
                     <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left me-1"></i>Cancelar
                     </a>
                     <button type="submit" class="btn btn-primary px-4">
-                        <i class="bi bi-check-lg me-1"></i>Salvar FuncionÃ¡rio
+                        <i class="bi bi-check-lg me-1"></i>Salvar Funcionário
                     </button>
                 </div>
             </div>
@@ -437,7 +437,7 @@
 (function () {
     'use strict';
 
-    // â”€â”€â”€ Preview da foto ao selecionar arquivo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Preview da foto ao selecionar arquivo ─────────────────
     const fotoInput = document.getElementById('foto-input');
     const preview   = document.getElementById('photo-preview');
 
@@ -447,7 +447,7 @@
             if (!file) return;
 
             if (!file.type.startsWith('image/')) {
-                alert('Por favor, selecione um arquivo de imagem vÃ¡lido.');
+                alert('Por favor, selecione um arquivo de imagem válido.');
                 this.value = '';
                 return;
             }
@@ -460,7 +460,7 @@
         });
     }
 
-    // â”€â”€â”€ Habilita/desabilita data de demissÃ£o conforme status â”€â”€
+    // ─── Habilita/desabilita data de demissão conforme status ──
     const statusSelect = document.getElementById('id_status');
     const dataDemissao = document.getElementById('id_data_demissao');
 
