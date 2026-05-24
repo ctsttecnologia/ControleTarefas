@@ -275,6 +275,12 @@ USE_L10N = True
 USE_TZ = False
 TIME_ZONE = 'America/Sao_Paulo'
 
+{
+    "files.encoding": "utf8",
+    "files.autoGuessEncoding": False
+}
+
+
 # =============================================================================
 # GOOGLE CLOUD STORAGE - CONFIGURAÇÃO
 # =============================================================================
