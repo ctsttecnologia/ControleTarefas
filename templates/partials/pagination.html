@@ -1,16 +1,9 @@
 
-<!-- templates/partials/pagination.html -->
-{% if is_paginated %}
-{% comment %}
-  Este template preserva TODOS os parâmetros GET (filtros, buscas, etc.)
-  ao navegar entre páginas.
-{% endcomment %}
 
-{% with request.GET.urlencode as current_params %}
+{# templates/partials/pagination.html #}
+{% if is_paginated %}
 <nav aria-label="Paginação" class="mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-
-        <!-- Info -->
         <small class="text-muted">
             Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
             <span class="d-none d-sm-inline">
@@ -18,28 +11,20 @@
             </span>
         </small>
 
-        <!-- Paginação -->
         <ul class="pagination pagination-sm mb-0">
-
-            <!-- Primeira -->
             {% if page_obj.has_previous %}
             <li class="page-item">
-                <a class="page-link" href="?page=1{% if current_params %}&{{ current_params }}{% endif %}" title="Primeira">
+                <a class="page-link" href="?page=1{% if query_string %}&{{ query_string }}{% endif %}" title="Primeira">
                     <i class="bi bi-chevron-double-left"></i>
                 </a>
             </li>
-            {% endif %}
-
-            <!-- Anterior -->
-            {% if page_obj.has_previous %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_params %}&{{ current_params }}{% endif %}">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}" title="Anterior">
                     <i class="bi bi-chevron-left"></i>
                 </a>
             </li>
             {% endif %}
 
-            <!-- Números de Página -->
             {% for num in page_obj.paginator.page_range %}
                 {% if page_obj.number == num %}
                 <li class="page-item active" aria-current="page">
@@ -47,13 +32,13 @@
                 </li>
                 {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ num }}{% if current_params %}&{{ current_params }}{% endif %}">
+                    <a class="page-link" href="?page={{ num }}{% if query_string %}&{{ query_string }}{% endif %}">
                         {{ num }}
                     </a>
                 </li>
                 {% elif num == 1 or num == page_obj.paginator.num_pages %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ num }}{% if current_params %}&{{ current_params }}{% endif %}">
+                    <a class="page-link" href="?page={{ num }}{% if query_string %}&{{ query_string }}{% endif %}">
                         {{ num }}
                     </a>
                 </li>
@@ -62,27 +47,21 @@
                 {% endif %}
             {% endfor %}
 
-            <!-- Próxima -->
             {% if page_obj.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_params %}&{{ current_params }}{% endif %}">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}" title="Próxima">
                     <i class="bi bi-chevron-right"></i>
                 </a>
             </li>
-            {% endif %}
-
-            <!-- Última -->
-            {% if page_obj.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_params %}&{{ current_params }}{% endif %}" title="Última">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query_string %}&{{ query_string }}{% endif %}" title="Última">
                     <i class="bi bi-chevron-double-right"></i>
                 </a>
             </li>
             {% endif %}
-
         </ul>
     </div>
 </nav>
-{% endwith %}
 {% endif %}
+
 

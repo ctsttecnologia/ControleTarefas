@@ -1,64 +1,82 @@
 
 # notifications/views.py
 
-from venv import logger
 import logging
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
-from django.views.decorators.http import require_POST
 from django.utils.dateparse import parse_datetime
+from django.views.decorators.http import require_POST
+from datetime import datetime
+from django.utils import timezone
+
 from .models import Notificacao
 
-
 MAX_DROPDOWN = 8
-
 logger = logging.getLogger(__name__)
+
 
 @login_required
 def notificacao_list(request):
     """Página completa com todas as notificações do usuário."""
     qs = Notificacao.objects.filter(usuario=request.user).order_by('-data_criacao')
 
-    # Filtro por status
     filtro = request.GET.get('filtro', 'todas')
     if filtro == 'nao_lidas':
         qs = qs.filter(lida=False)
     elif filtro == 'lidas':
         qs = qs.filter(lida=True)
 
-    # Filtro por categoria
     categoria = request.GET.get('categoria', '')
     if categoria:
         qs = qs.filter(categoria=categoria)
 
     paginator = Paginator(qs, 30)
-    page = request.GET.get('page')
-    notificacoes = paginator.get_page(page)
+    notificacoes = paginator.get_page(request.GET.get('page'))
 
     nao_lidas_count = Notificacao.objects.filter(
         usuario=request.user, lida=False,
     ).count()
 
-    context = {
+    return render(request, 'notifications/notificacao_list.html', {
         'notificacoes': notificacoes,
         'filtro': filtro,
         'categoria': categoria,
         'nao_lidas_count': nao_lidas_count,
         'titulo_pagina': 'Notificações',
-    }
-    return render(request, 'notifications/notificacao_list.html', context)
+    })
 
 
 def _is_ajax(request):
-    """Detecta requisições AJAX/HTMX/Fetch."""
     return (
         request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         or request.headers.get('HX-Request') == 'true'
         or 'application/json' in request.headers.get('Accept', '')
     )
+
+
+def _parse_desde(valor):
+    """
+    Converte string ISO 8601 para datetime timezone-aware.
+    Retorna None se o valor for inválido ou ausente.
+    """
+    if not valor:
+        return None
+
+    # Normaliza: remove 'Z' do final (Python < 3.11 não aceita)
+    valor = str(valor).strip().replace('Z', '+00:00')
+
+    try:
+        dt = datetime.fromisoformat(valor)
+    except (ValueError, TypeError):
+        return None
+
+    # Garante timezone-aware
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+
+    return dt
 
 
 @login_required
@@ -102,26 +120,20 @@ def api_contagem(request):
         total = 0
 
     return JsonResponse({
-        'count': total,             # ✅ chave nova exigida pelos testes
-        'total_nao_lidas': total,   # mantém retrocompatibilidade
+        'count': total,
+        'total_nao_lidas': total,
         'server_time': timezone.now().isoformat(),
     })
 
 
 @login_required
 def dropdown_html(request):
-    """
-    Retorna o HTML parcial do dropdown do sino (apenas a lista de notificações).
-    Usado pelo JS para re-renderizar o dropdown quando chega notificação
-    via WebSocket ou ao voltar para a aba.
-    """
-    # Conta o total de não lidas ANTES de aplicar slice
+    """HTML parcial do dropdown do sino."""
     total_nao_lidas = Notificacao.objects.filter(
         usuario=request.user,
         lida=False,
     ).count()
 
-    # Busca apenas as N mais recentes para exibir no dropdown
     notificacoes = Notificacao.objects.filter(
         usuario=request.user,
         lida=False,
@@ -129,23 +141,21 @@ def dropdown_html(request):
 
     return render(request, 'notifications/_dropdown_items.html', {
         'notification_list': notificacoes,
-        'notification_count': total_nao_lidas,   # total real, não limitado a 8
+        'notification_count': total_nao_lidas,
         'tem_mais': total_nao_lidas > MAX_DROPDOWN,
     })
+
 
 @login_required
 def api_notificacoes_novas(request):
     """Retorna as notificações novas desde o último polling."""
     try:
-        desde = request.GET.get('desde')
+        desde = _parse_desde(request.GET.get('desde'))
         agora = timezone.now()
 
         qs = Notificacao.objects.filter(usuario=request.user)
-
         if desde:
-            timestamp = parse_datetime(desde)
-            if timestamp:
-                qs = qs.filter(data_criacao__gt=timestamp)
+            qs = qs.filter(data_criacao__gt=desde)
 
         notificacoes_qs = qs.order_by('-data_criacao')[:20]
 
@@ -161,7 +171,7 @@ def api_notificacoes_novas(request):
 
         total_nao_lidas = Notificacao.objects.filter(
             usuario=request.user,
-            lida=False
+            lida=False,
         ).count()
 
         return JsonResponse({

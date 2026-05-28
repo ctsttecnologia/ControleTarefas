@@ -1153,3 +1153,115 @@ body.has-submenu {
 .form-control.pe-5 {
   padding-right: 2.75rem !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   28. 🆕 BOTÕES DE AÇÃO — Padronização definitiva
+   Funciona mesmo com <form> dentro do grupo (toggle ativo/inativo)
+═══════════════════════════════════════════════════════════════════ */
+
+/* Container dos botões de ação */
+.action-buttons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;                       /* botões colados como btn-group */
+    flex-wrap: nowrap;
+    vertical-align: middle;
+}
+
+/* Form interno (toggle ativo/inativo) — comporta-se como um botão */
+.action-buttons form {
+    display: inline-flex;
+    margin: 0;
+    padding: 0;
+    line-height: 0;
+}
+
+/* TODOS os botões e links de ação — tamanho e forma idênticos */
+.action-buttons .action-btn {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;             /* zera para o btn-group "manual" */
+    border-width: 1px;
+    border-style: solid;
+    background-color: transparent;
+    line-height: 1;
+    box-shadow: none;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+/* Cantos arredondados apenas nas extremidades do grupo */
+.action-buttons > .action-btn:first-child,
+.action-buttons > form:first-child .action-btn {
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+.action-buttons > .action-btn:last-child,
+.action-buttons > form:last-child .action-btn {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+/* Evita bordas duplicadas entre botões adjacentes */
+.action-buttons > .action-btn + .action-btn,
+.action-buttons > form + .action-btn,
+.action-buttons > .action-btn + form .action-btn,
+.action-buttons > form + form .action-btn {
+    margin-left: -1px;
+}
+
+/* Ícones uniformes */
+.action-buttons .action-btn i {
+    font-size: 0.95rem;
+    line-height: 1;
+    pointer-events: none;
+}
+
+/* Hover sutil — preserva a cor original do outline */
+.action-buttons .action-btn:hover {
+    transform: translateY(-1px);
+    z-index: 2;
+}
+
+/* Foco acessível */
+.action-buttons .action-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    z-index: 3;
+}
+
+/* Garante que botões com cor de hover do Bootstrap funcionem */
+.action-buttons .btn-outline-primary:hover {
+    background-color: var(--bs-primary);
+    color: #fff;
+}
+
+.action-buttons .btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+.action-buttons .btn-outline-warning:hover {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.action-buttons .btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.action-buttons .btn-outline-success:hover {
+    background-color: #198754;
+    color: #fff;
+}
+
+/* Tema escuro — leve realce nas bordas */
+[data-bs-theme="dark"] .action-buttons .action-btn {
+    border-color: var(--bs-border-color);
+}
