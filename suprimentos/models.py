@@ -36,11 +36,11 @@ from usuario.models import Filial
 
 class StatusSolicitacao(models.TextChoices):
     PENDENTE = "PENDENTE", "Pendente"  # antigo
-    AGUARDANDO_COTACAO = "AGUARDANDO_COTACAO", "Aguardando Cotação"  # 🆕
-    EM_COTACAO = "EM_COTACAO", "Em Cotação"  # 🆕
-    COTADO = "COTADO", "Cotado (aguardando aprovação)"  # 🆕
+    AGUARDANDO_COTACAO = "AGUARDANDO_COTACAO", "Aguardando Cotação"  
+    EM_COTACAO = "EM_COTACAO", "Em Cotação"  
+    COTADO = "COTADO", "Cotado (aguardando aprovação)"
     APROVADO = "APROVADO", "Aprovado"
-    PEDIDOS_EMITIDOS = "PEDIDOS_EMITIDOS", "Pedidos de Compra Emitidos"  # 🆕
+    PEDIDOS_EMITIDOS = "PEDIDOS_EMITIDOS", "Pedidos de Compra Emitidos" 
     CONCLUIDO = "CONCLUIDO", "Concluído"
     CANCELADO = "CANCELADO", "Cancelado"
 
@@ -136,13 +136,14 @@ class TipoMaterial(models.TextChoices):
     ESCRITORIO = "ESCRITORIO", "Escritório"
     CREME = "CREME", "Creme"
     EPI = "EPI", "EPI"
-    PRODUTO_QUIMICO = "PRODUTO_QUIMICO", "Produto Químico"
-    AR_CONDICIONADO = "AR_CONDICIONADO", "Ar Condicionado"
+    PRODUTO_QUIMICO = "PRODUTO QUIMICO", "Produto Químico"
+    AR_CONDICIONADO = "AR CONDICIONADO", "Ar Condicionado"
     PISCINA = "PISCINA", "Piscina"
+    INFORMATICA = "INFORMATICA", "Informática"
 
 
 class UnidadeMedida(models.TextChoices):
-    PC = "PC", "Peça"
+    PÇ = "PÇ", "Peça"
     PAR = "PAR", "Par"
     LATA = "LATA", "Lata"
     ROLO = "ROLO", "Rolo"
@@ -154,10 +155,12 @@ class UnidadeMedida(models.TextChoices):
     FRASCO = "FRASCO", "Frasco"
     POTE = "POTE", "Pote"
     KG = "KG", "Kg"
+    METRO = "METRO", "Metro"
     LITRO = "LITRO", "Litro"
     CARTELA = "CARTELA", "Cartela"
     UNID = "UNID", "Unidade"
-
+    TON = "TON", "Tonelada"
+    
 
 class TipoObra(models.TextChoices):
     CM = "CM", "CM - Contrato de Manutenção"
@@ -239,7 +242,7 @@ class Material(models.Model):
     unidade = models.CharField(
         _("Unidade"), max_length=20,
         choices=UnidadeMedida.choices,
-        default=UnidadeMedida.PC,
+        default=UnidadeMedida.PÇ,
     )
     valor_unitario = models.DecimalField(
         _("Valor Unitário (R$)"), max_digits=10, decimal_places=2,
@@ -1116,14 +1119,7 @@ class SolicitacaoCompra(models.Model):
         CONCLUIDO = "CONCLUIDO", "Concluído"
         CANCELADO = "CANCELADO", "Cancelado"
 
-    # ═══════════════════════════════════════════════════════════════════════
-    # CAMPOS DEPRECATED (manter até Fase 5 — migração de dados completa)
-    # ═══════════════════════════════════════════════════════════════════════
-    # NOTA: numero_pedido_sienge será renomeado para numero_pedido.
-    # Por enquanto, ambos coexistem. O método save() sincroniza os dois.
-    # ═══════════════════════════════════════════════════════════════════════
-
-    # 🆕 Novo campo (substitui numero_pedido_sienge)
+    # 🆕 Novo campo (substitui numero_pedido)
     numero_pedido = models.CharField(
         _("Nº do Pedido (Externo)"),
         max_length=50,
@@ -1258,7 +1254,7 @@ class SolicitacaoCompra(models.Model):
     data_criacao_pedido = models.DateField(
         _("Data Criação do Pedido"), null=True, blank=True,
     )
-    numero_pedido_sienge = models.CharField(
+    numero_pedido = models.CharField(
         _("Nº do Pedido"), max_length=50, blank=True, default="",
     )
     fornecedor = models.ForeignKey(
@@ -1345,10 +1341,10 @@ class SolicitacaoCompra(models.Model):
             self.numero = f"{prefix}-{seq:04d}"
         
         # Sincroniza campo antigo ↔ novo durante a transição
-        if self.numero_pedido_sienge and not self.numero_pedido:
-            self.numero_pedido = self.numero_pedido_sienge
-        elif self.numero_pedido and not self.numero_pedido_sienge:
-            self.numero_pedido_sienge = self.numero_pedido
+        if self.numero_pedido and not self.numero_pedido:
+            self.numero_pedido = self.numero_pedido
+        elif self.numero_pedido and not self.numero_pedido:
+            self.numero_pedido = self.numero_pedido
         
         super().save(*args, **kwargs)
 

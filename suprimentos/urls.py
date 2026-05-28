@@ -1,6 +1,9 @@
 
 from django.urls import path
 from . import views
+from suprimentos.views import (
+    MaterialImportView, material_preco_api, material_template_download,
+)
 
 app_name = 'suprimentos'
 
@@ -22,7 +25,8 @@ urlpatterns = [
     path('materiais/', views.MaterialListView.as_view(), name='material_lista'),
     path('materiais/novo/', views.MaterialCreateView.as_view(), name='material_criar'),
     path('materiais/<int:pk>/editar/', views.MaterialUpdateView.as_view(), name='material_editar'),
-
+    path('materiais/importar/', MaterialImportView.as_view(), name='material_importar'),
+    path('materiais/importar/template/', views.material_template_download, name='material_template_download'),
     # ── Contratos ──────────────────────────
     path('contratos/', views.ContratoListView.as_view(), name='contrato_lista'),
     path('contratos/novo/', views.ContratoCreateView.as_view(), name='contrato_criar'),
@@ -32,12 +36,9 @@ urlpatterns = [
     # ── Pedidos (Solicitante → Gerente) ────
     path('pedidos/', views.PedidoListView.as_view(), name='pedido_lista'),
     path('pedidos/novo/', views.PedidoCreateView.as_view(), name='pedido_criar'),
-    path('pedidos/<int:pk>/', views.PedidoDetailView.as_view(), name='pedido_detalhe'),
     # Itens
-    path('pedidos/<int:pk>/item/adicionar/', 
-        views.ItemPedidoCreateView.as_view(), name='item_adicionar'),
-    path('pedidos/<int:pk>/item/<int:item_pk>/remover/', 
-        views.ItemPedidoDeleteView.as_view(), name='item_remover'),
+    path('pedidos/<int:pk>/item/adicionar/', views.ItemPedidoCreateView.as_view(), name='item_adicionar'),
+    path('pedidos/<int:pk>/item/<int:item_pk>/remover/', views.ItemPedidoDeleteView.as_view(), name='item_remover'),
     # Workflow
     path('pedidos/<int:pk>/enviar/', views.PedidoEnviarView.as_view(), name='pedido_enviar'),
     path('pedidos/<int:pk>/aprovar/', views.PedidoAprovarView.as_view(), name='pedido_aprovar'),
@@ -46,13 +47,10 @@ urlpatterns = [
     path('pedidos/<int:pk>/revisar/', views.PedidoRevisarView.as_view(), name='pedido_revisar'),
     path('pedidos/<int:pk>/entregar/', views.PedidoEntregarView.as_view(), name='pedido_entregar'),
     path('pedidos/<int:pk>/receber/', views.PedidoReceberView.as_view(), name='pedido_receber'),
-
+    path('pedidos/<int:pk>/', views.PedidoDetailView.as_view(), name='pedido_detalhe'),
     # Anexos do Pedido (renomeado!)
-    path('pedidos/<int:pk>/anexo/', 
-        views.PedidoAnexoView.as_view(), name='pedido_anexo'),
-    path('pedidos/<int:pk>/anexo/<int:anexo_pk>/remover/', 
-        views.PedidoAnexoDeleteView.as_view(),   # ← ajuste para a view correta
-        name='pedido_anexo_remover'),            # ← nome correto e único
+    path('pedidos/<int:pk>/anexo/', views.PedidoAnexoView.as_view(), name='pedido_anexo'),
+    path('pedidos/<int:pk>/anexo/<int:anexo_pk>/remover/', views.PedidoAnexoDeleteView.as_view(), name='pedido_anexo_remover'),            # ← nome correto e único
 
     # ── Solicitações de Compra (pós-aprovação) ──
     path('solicitacoes/', views.SolicitacaoListView.as_view(), name='solicitacao_lista'),
@@ -68,6 +66,9 @@ urlpatterns = [
     path('solicitacoes/<int:pk>/anexo/', views.SolicitacaoAnexoView.as_view(), name='solicitacao_anexo'),
     path('solicitacoes/<int:pk>/anexo/<int:anexo_pk>/remover/', views.SolicitacaoAnexoDeleteView.as_view(), name='solicitacao_anexo_remover'),
     path('solicitacoes/<int:pk>/observacao/', views.SolicitacaoObservacaoView.as_view(), name='solicitacao_observacao'),
+    path('solicitacoes/<int:pk>/montar-pedidos/',views.SolicitacaoMontarPedidosView.as_view(),name='solicitacao_montar_pedidos'),
+    path('solicitacoes/<int:pk>/itens/<int:item_pk>/cotacao/', views.SolicitacaoRegistrarCotacaoItemView.as_view(), name='solicitacao_registrar_cotacao_item'),
+    path('solicitacoes/<int:pk>/itens/<int:item_pk>/cotacoes/<int:cot_pk>/escolher/', views.SolicitacaoEscolherCotacaoView.as_view(), name='solicitacao_escolher_cotacao'),
 
     # ── Relatórios Gerenciais ──────────────
     path('relatorios/', views.RelatorioSuprimentosView.as_view(), name='relatorio'),
@@ -75,8 +76,10 @@ urlpatterns = [
     path('relatorios/excel/', views.RelatorioExcelView.as_view(), name='relatorio_excel'),
 
     # ── API interna (AJAX) ─────────────────
-    path('api/material/<int:pk>/preco/', views.material_preco_api, name='material_preco'),
+    path('api/material/<int:pk>/preco/', views.material_preco_api, name='material_preco_api'),
     path('api/contrato/<int:pk>/saldos/', views.contrato_saldos_api, name='contrato_saldos'),
+
+    
 ]
 
 

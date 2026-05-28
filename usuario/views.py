@@ -44,6 +44,8 @@ from usuario.mixins import (
 )
 from usuario.models import Filial, Group, GroupCardPermissions, Usuario
 from usuario.services.excel_export import gerar_excel_usuarios
+from django.views.generic import ListView
+from urllib.parse import urlencode
 
 
 # Logger de auditoria
@@ -271,6 +273,13 @@ class UserListView(AppPermissionMixin,
                 Q(email__icontains=search)
             )
         return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        context['query_string'] = params.urlencode()
+        return context
 
 
 @method_decorator(never_cache, name='dispatch')

@@ -172,10 +172,10 @@
                             <div class="fw-bold text-primary fs-5">R$ {{ sol.valor_pedido|floatformat:2 }}</div>
                         </div>
                         {% endif %}
-                        {% if sol.numero_pedido_sienge %}
+                        {% if sol.numero_pedido %}
                         <div class="col-md-3">
                             <div class="text-muted small">Nº Pedido (Sistema)</div>
-                            <div class="fw-semibold">{{ sol.numero_pedido_sienge }}</div>
+                            <div class="fw-semibold">{{ sol.numero_pedido }}</div>
                         </div>
                         {% endif %}
                         {% if sol.numero_nota_fiscal %}
@@ -307,8 +307,8 @@
             </div>
             {% endif %}
 
-            {# ── ETAPA 3: Criar Pedido/CT (Comprador) ── #}
-            {% if form_criar_pedido %}
+            <!-- ETAPA 3: Criar Pedido/CT (Comprador) -->
+            {% if form_criar_pedido and not sol.usa_novo_fluxo %}
             <div class="card shadow-sm mb-4 border-info border-2">
                 <div class="card-header bg-info text-white fw-bold">
                     <i class="bi bi-3-circle me-2"></i> Criar Pedido / CT
@@ -323,26 +323,74 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Data Criação do Pedido *</label>
                                 {{ form_criar_pedido.data_criacao_pedido }}
+                                {% if form_criar_pedido.data_criacao_pedido.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form_criar_pedido.data_criacao_pedido.errors.0 }}
+                                    </div>
+                                {% endif %}
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Nº do Pedido (Sistema) *</label>
-                                {{ form_criar_pedido.numero_pedido_sienge }}
+                                <!-- ✅ CORRIGIDO: era numero_pedido -->
+                                {{ form_criar_pedido.numero_pedido }}
+                                {% if form_criar_pedido.numero_pedido.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form_criar_pedido.numero_pedido.errors.0 }}
+                                    </div>
+                                {% endif %}
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Fornecedor *</label>
                                 {{ form_criar_pedido.fornecedor }}
+                                {% if form_criar_pedido.fornecedor.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form_criar_pedido.fornecedor.errors.0 }}
+                                    </div>
+                                {% endif %}
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Valor do Pedido (R$) *</label>
                                 {{ form_criar_pedido.valor_pedido }}
+                                {% if form_criar_pedido.valor_pedido.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form_criar_pedido.valor_pedido.errors.0 }}
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
+
+                        {% if form_criar_pedido.non_field_errors %}
+                            <div class="alert alert-danger mt-3">
+                                {{ form_criar_pedido.non_field_errors }}
+                            </div>
+                        {% endif %}
+
                         <div class="mt-3 text-end">
                             <button type="submit" class="btn btn-info text-white">
-                                <i class="bi bi-box-seam me-1"></i> Registrar Pedido e Enviar para Aprovação
+                                <i class="bi bi-box-seam me-1"></i>
+                                Registrar Pedido e Enviar para Aprovação
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ETAPA 3: Montar Pedidos N×N (Comprador) — NOVO FLUXO -->
+            {% if sol.usa_novo_fluxo and sol.status == 'CRIAR_PEDIDO_CT' and is_comprador %}
+            <div class="card shadow-sm mb-4 border-info border-2">
+                <div class="card-header bg-info text-white fw-bold">
+                    <i class="bi bi-3-circle me-2"></i> Criar Pedidos de Compra (N×N)
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Distribua os <strong>{{ sol.itens.count }}</strong> item(ns) em
+                        pedidos por fornecedor. Cotações já aprovadas pelo gerente.
+                    </p>
+                    <a href="{% url 'suprimentos:solicitacao_montar_pedidos' sol.pk %}"
+                    class="btn btn-info text-white">
+                        <i class="bi bi-boxes me-1"></i> Montar Pedidos por Fornecedor
+                    </a>
                 </div>
             </div>
             {% endif %}
@@ -358,7 +406,7 @@
                         <div class="row">
                             <div class="col-md-3">
                                 <span class="text-muted small">Pedido Nº</span><br>
-                                <strong>{{ sol.numero_pedido_sienge }}</strong>
+                                <strong>{{ sol.numero_pedido }}</strong>
                             </div>
                             <div class="col-md-3">
                                 <span class="text-muted small">Fornecedor</span><br>
@@ -730,13 +778,28 @@
                     <p class="text-muted small mb-2">Nenhum anexo.</p>
                     {% endif %}
 
-                    <form method="post" action="{% url 'suprimentos:solicitacao_anexo' sol.pk %}"
-                          enctype="multipart/form-data">
+                    <form method="post" action="{% url 'suprimentos:solicitacao_anexo' sol.pk %}" 
+                        enctype="multipart/form-data">
                         {% csrf_token %}
-                        <div class="mb-2">{{ form_anexo.arquivo }}</div>
-                        <div class="mb-2">{{ form_anexo.descricao }}</div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Arquivo *</label>
+                            {{ form_anexo.arquivo }}
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Descrição</label>
+                            {{ form_anexo.descricao }}
+                        </div>
+                        {# ✅ ADICIONAR ESTES DOIS CAMPOS #}
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Tipo de Documento *</label>
+                            {{ form_anexo.tipo_documento }}
+                        </div>
+                        <div class="form-check mb-2">
+                            {{ form_anexo.confidencial }}
+                            <label class="form-check-label small">Documento confidencial</label>
+                        </div>
                         <button type="submit" class="btn btn-sm btn-outline-primary w-100">
-                            <i class="bi bi-upload me-1"></i> Enviar Anexo
+                            <i class="bi bi-paperclip"></i> Enviar Anexo
                         </button>
                     </form>
                 </div>

@@ -272,7 +272,7 @@ LOGOUT_REDIRECT_URL = 'usuario:login'
 LANGUAGE_CODE = 'pt-br'
 USE_I18N = True
 USE_L10N = True
-USE_TZ = False
+USE_TZ = True
 TIME_ZONE = 'America/Sao_Paulo'
 
 {
@@ -517,7 +517,7 @@ else:
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                "hosts": [("127.0.0.1", 6379)],
+                "hosts": [("127.0.0.1", 6380)],
                 "capacity": 1500,
                 "expiry": 10,
             },

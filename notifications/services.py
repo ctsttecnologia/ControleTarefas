@@ -345,7 +345,7 @@ def notificar_pedido_revisao(pedido):
     )
 
 
-def notificar_pedido_aprovado(pedido):
+def notificar_pedido_inicial_aprovado(pedido):
     """Notifica solicitante que o pedido foi aprovado."""
     aprovador = pedido.aprovador.get_full_name() if pedido.aprovador else 'Gerente'
 
@@ -585,7 +585,7 @@ def notificar_cotacao_validada(solicitacao):
             prioridade='media',
             mensagem=(
                 f'Cotação validada por {validador}.\n'
-                f'Prossiga criando o Pedido no Sienge.'
+                f'Prossiga criando o Pedido.'
             ),
             url_destino=solicitacao.get_absolute_url(),
             icone='bi-check-circle',
@@ -603,47 +603,47 @@ def notificar_cotacao_validada(solicitacao):
             destinatarios=[solicitacao.comprador.email],
         )
 
+# TODO: implementar notificação de criação de pedido no fluxo novo
+# def notificar_pedido_criado(solicitacao):
+#    """Notifica gerentes que o pedido foi criado."""
+#    gerentes = _get_gerentes(solicitacao.filial)
+#    comprador = solicitacao.comprador.get_full_name() if solicitacao.comprador else 'Comprador'
+#    valor = f"R$ {solicitacao.valor_pedido:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') if solicitacao.valor_pedido else 'N/D'
 
-def notificar_pedido_sienge_criado(solicitacao):
-    """Notifica gerentes que o pedido Sienge foi criado."""
-    gerentes = _get_gerentes(solicitacao.filial)
-    comprador = solicitacao.comprador.get_full_name() if solicitacao.comprador else 'Comprador'
-    valor = f"R$ {solicitacao.valor_pedido:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') if solicitacao.valor_pedido else 'N/D'
+#    for gerente in gerentes:
+#        criar_notificacao(
+#            usuario=gerente,
+#            titulo=f'📦 Pedido criado — {solicitacao.numero}',
+#            tipo='sistema',
+#            categoria='suprimentos',
+#            prioridade='alta',
+#            mensagem=(
+#                f'{comprador} criou o pedido Nº {solicitacao.numero_pedido}.\n'
+#                f'Fornecedor: {solicitacao.fornecedor}\n'
+#                f'Valor: {valor}\n\n'
+#                f'Aprove o pedido para prosseguir.'
+#            ),
+#            url_destino=solicitacao.get_absolute_url(),
+#            icone='bi-box-seam',
+#        )
 
-    for gerente in gerentes:
-        criar_notificacao(
-            usuario=gerente,
-            titulo=f'📦 Pedido Sienge criado — {solicitacao.numero}',
-            tipo='sistema',
-            categoria='suprimentos',
-            prioridade='alta',
-            mensagem=(
-                f'{comprador} criou o pedido Nº {solicitacao.numero_pedido_sienge}.\n'
-                f'Fornecedor: {solicitacao.fornecedor}\n'
-                f'Valor: {valor}\n\n'
-                f'Aprove o pedido para prosseguir.'
-            ),
-            url_destino=solicitacao.get_absolute_url(),
-            icone='bi-box-seam',
-        )
-
-        enviar_email_notificacao(
-            assunto=f'[Suprimentos] Pedido Sienge {solicitacao.numero_pedido_sienge} — Aprovação Necessária',
-            template_texto='notifications/emails/pedido_sienge_criado.txt',
-            template_html='notifications/emails/pedido_sienge_criado.html',
-            contexto={
-                'solicitacao': solicitacao,
-                'comprador': comprador,
-                'valor': valor,
-                'gerente': gerente,
-                'url': solicitacao.get_absolute_url(),
-            },
-            destinatarios=[gerente.email],
-        )
+#        enviar_email_notificacao(
+#            assunto=f'[Suprimentos] Pedido {solicitacao.numero_pedido} — Aprovação Necessária',
+#            template_texto='notifications/emails/pedido_criado.txt',
+#            template_html='notifications/emails/pedido_criado.html',
+#            contexto={
+#                'solicitacao': solicitacao,
+#               'comprador': comprador,
+#                'valor': valor,
+#                'gerente': gerente,
+#                'url': solicitacao.get_absolute_url(),
+#            },
+#            destinatarios=[gerente.email],
+#        )
 
 
-def notificar_pedido_sienge_aprovado(solicitacao):
-    """Notifica comprador que o pedido Sienge foi aprovado."""
+def notificar_pedido_aprovado(solicitacao):
+    """Notifica comprador que o pedido foi aprovado."""
     if solicitacao.comprador:
         aprovador = (
             solicitacao.aprovador_pedido.get_full_name()
@@ -657,7 +657,7 @@ def notificar_pedido_sienge_aprovado(solicitacao):
             categoria='suprimentos',
             prioridade='media',
             mensagem=(
-                f'Pedido Sienge Nº {solicitacao.numero_pedido_sienge} aprovado por {aprovador}.\n'
+                f'Pedido Nº {solicitacao.numero_pedido} aprovado por {aprovador}.\n'
                 f'Envie o pedido ao fornecedor.'
             ),
             url_destino=solicitacao.get_absolute_url(),
@@ -666,8 +666,8 @@ def notificar_pedido_sienge_aprovado(solicitacao):
 
         enviar_email_notificacao(
             assunto=f'[Suprimentos] {solicitacao.numero} — Pedido Aprovado, Enviar ao Fornecedor',
-            template_texto='notifications/emails/pedido_sienge_aprovado.txt',
-            template_html='notifications/emails/pedido_sienge_aprovado.html',
+            template_texto='notifications/emails/pedido_aprovado.txt',
+            template_html='notifications/emails/pedido_aprovado.html',
             contexto={
                 'solicitacao': solicitacao,
                 'aprovador': aprovador,

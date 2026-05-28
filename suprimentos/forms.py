@@ -13,6 +13,7 @@ from .models import (
     CategoriaMaterial,
     AnexoPedido,
     SolicitacaoCompra, AnexoSolicitacao,
+    Cotacao, ItemSolicitacao, PedidoCompra, ItemPedidoCompra
 )
 
 
@@ -284,6 +285,28 @@ class MaterialForm(forms.ModelForm):
 
         return cleaned_data
 
+class MaterialImportForm(forms.Form):
+    arquivo = forms.FileField(
+        label="Arquivo (.xlsx ou .csv)",
+        help_text="Baixe o template para garantir o formato correto.",
+        widget=forms.ClearableFileInput(attrs={
+            'class': 'form-control',
+            'accept': '.xlsx,.csv',
+        }),
+    )
+    confirmar = forms.BooleanField(
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+
+    def clean_arquivo(self):
+        arq = self.cleaned_data['arquivo']
+        nome = arq.name.lower()
+        if not (nome.endswith('.xlsx') or nome.endswith('.csv')):
+            raise forms.ValidationError("Apenas arquivos .xlsx ou .csv.")
+        if arq.size > 5 * 1024 * 1024:  # 5MB
+            raise forms.ValidationError("Arquivo muito grande (máx. 5MB).")
+        return arq
 
 # ═══════════════════════════════════════════════════
 # CONTRATO
@@ -511,9 +534,14 @@ class SaidaConsumoForm(forms.Form):
 
 
 # ═══════════════════════════════════════════════════
-# SOLICITAÇÃO DE COMPRA
+# SOLICITAÇÃO DE COMPRA — FLUXO ANTIGO (manter durante transição)
 # ═══════════════════════════════════════════════════
-class CotacaoForm(forms.ModelForm):
+
+class RegistrarCotacaoForm(forms.ModelForm):
+    """
+    [FLUXO ANTIGO] Comprador registra dados gerais da cotação direto na SolicitacaoCompra.
+    Mantido para compatibilidade com solicitações que NÃO usam o novo fluxo (usa_novo_fluxo=False).
+    """
     class Meta:
         model = SolicitacaoCompra
         fields = ['data_cotacao', 'numero_cotacao', 'cnpj_compra', 'tipo_nota_fiscal']
@@ -528,12 +556,26 @@ class CotacaoForm(forms.ModelForm):
             'tipo_nota_fiscal': forms.Select(attrs={'class': 'form-select'}),
         }
 
-    def clean(self):
-        cleaned = super().clean()
-        for campo in ['data_cotacao', 'numero_cotacao', 'cnpj_compra', 'tipo_nota_fiscal']:
-            if not cleaned.get(campo):
-                self.add_error(campo, 'Campo obrigatório para registrar a cotação.')
-        return cleaned
+    def __init__(self, *args, **kwargs):
+        # Remove 'user' dos kwargs ANTES de chamar super()
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        if self.user and hasattr(self.user, 'filial'):
+            self.fields['fornecedor'].queryset = Parceiro.objects.filter(
+                filial=self.user.filial
+            )
+        # Marca todos como obrigatórios na instância (não na Meta, para não afetar o model)
+        for nome in self.fields:
+            self.fields[nome].required = True
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if self.user:
+            obj.criado_por = self.user
+        if commit:
+            obj.save()
+        return obj
 
 
 class ValidarCotacaoForm(forms.Form):
@@ -544,13 +586,21 @@ class ValidarCotacaoForm(forms.Form):
 
 
 class CriarPedidoForm(forms.ModelForm):
+    """
+    [FLUXO ANTIGO] Cria pedido único direto na SolicitacaoCompra.
+    Use apenas quando solicitacao.usa_novo_fluxo == False.
+    """
     class Meta:
         model = SolicitacaoCompra
+        
         fields = ['data_criacao_pedido', 'numero_pedido', 'fornecedor', 'valor_pedido']
         widgets = {
-            'data_criacao_pedido': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_criacao_pedido': forms.DateInput(attrs={
+                'class': 'form-control', 'type': 'date',
+            }),
             'numero_pedido': forms.TextInput(attrs={
-                'class': 'form-control', 'placeholder': 'Nº do pedido',
+                'class': 'form-control',
+                'placeholder': 'Nº do pedido (Sienge/ERP)',
             }),
             'fornecedor': forms.Select(attrs={'class': 'form-select'}),
             'valor_pedido': forms.NumberInput(attrs={
@@ -559,17 +609,26 @@ class CriarPedidoForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        self.fields['fornecedor'].queryset = Parceiro.objects.filter(
-            eh_fornecedor=True, ativo=True
-        )
 
-    def clean(self):
-        cleaned = super().clean()
-        for campo in ['data_criacao_pedido', 'numero_pedido', 'fornecedor', 'valor_pedido']:
-            if not cleaned.get(campo):
-                self.add_error(campo, 'Campo obrigatório.')
-        return cleaned
+        # Filtro por filial
+        qs = Parceiro.objects.filter(eh_fornecedor=True, ativo=True)
+        if self.user and not self.user.is_superuser:
+            filial = getattr(self.user, 'filial_ativa', None)
+            if filial:
+                qs = qs.filter(filial=filial)
+        self.fields['fornecedor'].queryset = qs.order_by('nome_fantasia')
+
+        # Marca todos como obrigatórios
+        for nome in self.fields:
+            self.fields[nome].required = True
+
+    def clean_valor_pedido(self):
+        valor = self.cleaned_data.get('valor_pedido')
+        if valor is not None and valor <= 0:
+            raise ValidationError("Valor do pedido deve ser maior que zero.")
+        return valor
 
 
 class AprovarPedidoForm(forms.Form):
@@ -589,12 +648,27 @@ class EnviarPedidoFornecedorForm(forms.Form):
         label="Data Prevista para Entrega",
     )
 
+    def clean(self):
+        cleaned = super().clean()
+        envio = cleaned.get('data_envio')
+        prevista = cleaned.get('data_prevista')
+        if envio and prevista and prevista < envio:
+            self.add_error('data_prevista',
+                "A data prevista de entrega não pode ser anterior à data de envio.")
+        return cleaned
+
 
 class RegistrarEntregaForm(forms.Form):
     data_entrega = forms.DateField(
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         label="Data de Entrega Efetiva",
     )
+
+    def clean_data_entrega(self):
+        data = self.cleaned_data.get('data_entrega')
+        if data and data > date.today():
+            raise ValidationError("A data de entrega não pode ser no futuro.")
+        return data
 
 
 class EncerrarSolicitacaoForm(forms.Form):
@@ -620,7 +694,7 @@ class CancelarSolicitacaoForm(forms.Form):
 class AnexoSolicitacaoForm(forms.ModelForm):
     class Meta:
         model = AnexoSolicitacao
-        fields = ['arquivo', 'descricao']
+        fields = ['arquivo', 'descricao', 'tipo_documento', 'confidencial']
         widgets = {
             'arquivo': forms.ClearableFileInput(attrs={
                 'class': 'form-control',
@@ -629,7 +703,18 @@ class AnexoSolicitacaoForm(forms.ModelForm):
             'descricao': forms.TextInput(attrs={
                 'class': 'form-control', 'placeholder': 'Descrição (opcional)',
             }),
+            'tipo_documento': forms.Select(attrs={'class': 'form-select'}),
+            'confidencial': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+    
+    # NOVO: Garante defaults sensatos
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['descricao'].required = False
+        self.fields['confidencial'].required = False
+        # Se não houver tipo selecionado, assume COTACAO como padrão
+        if not self.fields['tipo_documento'].initial:
+            self.fields['tipo_documento'].initial = 'COTACAO'
 
     def clean_arquivo(self):
         arquivo = self.cleaned_data.get('arquivo')
@@ -653,3 +738,162 @@ class ObservacaoSolicitacaoForm(forms.Form):
         label="Observação",
     )
 
+
+# ═══════════════════════════════════════════════════
+# 🆕 NOVO FLUXO N×N — Cotação / PedidoCompra / ItemPedidoCompra
+# ═══════════════════════════════════════════════════
+
+# ⚠️ IMPORTANTE: adicionar ao import no topo do arquivo:
+# from .models import Cotacao, ItemSolicitacao, PedidoCompra, ItemPedidoCompra
+
+class CotacaoItemForm(forms.ModelForm):
+    """
+    🆕 Comprador registra UMA cotação (fornecedor + preço) para UM ItemSolicitacao.
+    Múltiplas cotações por item são permitidas (1 por fornecedor).
+    """
+    class Meta:
+        model = None  # definido em __init__ via lazy import abaixo
+        fields = [
+            'fornecedor', 'valor_unitario', 'prazo_entrega_dias',
+            'condicoes_pagamento', 'validade_cotacao', 'observacoes',
+        ]
+        widgets = {
+            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
+            'valor_unitario': forms.NumberInput(attrs={
+                'class': 'form-control', 'step': '0.01', 'min': '0.01',
+            }),
+            'prazo_entrega_dias': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': '0',
+                'placeholder': 'Dias corridos',
+            }),
+            'condicoes_pagamento': forms.TextInput(attrs={
+                'class': 'form-control', 'placeholder': 'Ex.: 28/35/42 dias',
+            }),
+            'validade_cotacao': forms.DateInput(attrs={
+                'class': 'form-control', 'type': 'date',
+            }),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 2,
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        from .models import Cotacao  # lazy import
+        self._meta.model = Cotacao
+        self.user = kwargs.pop('user', None)
+        self.item_solicitacao = kwargs.pop('item_solicitacao', None)
+        super().__init__(*args, **kwargs)
+
+        qs = Parceiro.objects.filter(eh_fornecedor=True, ativo=True)
+        if self.user and not self.user.is_superuser:
+            filial = getattr(self.user, 'filial_ativa', None)
+            if filial:
+                qs = qs.filter(filial=filial)
+        self.fields['fornecedor'].queryset = qs.order_by('nome_fantasia')
+
+    def clean(self):
+        cleaned = super().clean()
+        fornecedor = cleaned.get('fornecedor')
+
+        # Previne duplicidade (validação amigável antes do IntegrityError)
+        if self.item_solicitacao and fornecedor:
+            from .models import Cotacao
+            existe = Cotacao.objects.filter(
+                item_solicitacao=self.item_solicitacao,
+                fornecedor=fornecedor,
+            ).exclude(pk=self.instance.pk if self.instance.pk else None).exists()
+            if existe:
+                raise ValidationError(
+                    f"Já existe uma cotação de {fornecedor} para este item. "
+                    "Edite a cotação existente em vez de criar nova."
+                )
+        return cleaned
+
+    def clean_validade_cotacao(self):
+        validade = self.cleaned_data.get('validade_cotacao')
+        if validade and validade < date.today():
+            raise ValidationError("A validade da cotação não pode ser no passado.")
+        return validade
+
+
+class PedidoCompraForm(forms.ModelForm):
+    """
+    🆕 Cabeçalho do PedidoCompra (1 fornecedor por pedido).
+    Os ITENS são adicionados depois, vinculados às cotações aprovadas.
+    """
+    class Meta:
+        model = None
+        fields = [
+            'fornecedor', 'numero_pedido', 'data_emissao',
+            'data_entrega_prevista', 'tipo_nota_fiscal', 'observacoes',
+        ]
+        widgets = {
+            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
+            'numero_pedido': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nº do PC no Sienge/ERP',
+            }),
+            'data_emissao': forms.DateInput(attrs={
+                'class': 'form-control', 'type': 'date',
+            }),
+            'data_entrega_prevista': forms.DateInput(attrs={
+                'class': 'form-control', 'type': 'date',
+            }),
+            'tipo_nota_fiscal': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 2,
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        from .models import PedidoCompra, Cotacao
+        self._meta.model = PedidoCompra
+        self.user = kwargs.pop('user', None)
+        self.solicitacao = kwargs.pop('solicitacao', None)
+        super().__init__(*args, **kwargs)
+
+        qs = Parceiro.objects.filter(eh_fornecedor=True, ativo=True)
+
+        # Restringe a fornecedores que TÊM cotação ESCOLHIDA nesta solicitação
+        if self.solicitacao:
+            fornecedores_aprovados = Cotacao.objects.filter(
+                item_solicitacao__solicitacao=self.solicitacao,
+                itens_que_escolheram__isnull=False,
+            ).values_list('fornecedor_id', flat=True).distinct()
+
+            if fornecedores_aprovados:
+                qs = qs.filter(id__in=list(fornecedores_aprovados))
+
+        if self.user and not self.user.is_superuser:
+            filial = getattr(self.user, 'filial_ativa', None)
+            if filial:
+                qs = qs.filter(filial=filial)
+
+        self.fields['fornecedor'].queryset = qs.order_by('nome_fantasia')
+        self.fields['fornecedor'].required = True
+        self.fields['numero_pedido'].required = True
+        self.fields['data_emissao'].required = True
+
+    def clean(self):
+        cleaned = super().clean()
+        emissao = cleaned.get('data_emissao')
+        prevista = cleaned.get('data_entrega_prevista')
+        if emissao and prevista and prevista < emissao:
+            self.add_error('data_entrega_prevista',
+                "A previsão de entrega não pode ser anterior à emissão.")
+        return cleaned
+
+
+class EscolherCotacaoForm(forms.Form):
+    """
+    🆕 Gerente escolhe qual Cotacao será a vencedora de um ItemSolicitacao.
+    """
+    cotacao_id = forms.IntegerField(widget=forms.HiddenInput())
+    justificativa = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 'rows': 2,
+            'placeholder': 'Justificativa da escolha (opcional)...',
+        }),
+        label="Justificativa",
+    )

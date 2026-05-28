@@ -180,6 +180,7 @@
                                     {% elif p.status == 'REPROVADO' %}bg-danger
                                     {% elif p.status == 'RECEBIDO' %}bg-primary
                                     {% elif p.status == 'ENTREGUE' %}bg-info
+                                    {% elif p.status == 'CANCELADO' %}bg-secondary
                                     {% else %}bg-secondary{% endif %}">
                                     {{ p.get_status_display }}
                                 </span>

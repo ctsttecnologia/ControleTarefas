@@ -148,7 +148,7 @@ class SolicitacaoCompraAdmin(admin.ModelAdmin):
     search_fields = [
         'numero', 'descricao_material',
         'contrato__cm', 'contrato__cliente',
-        'numero_pedido_sienge', 'numero_nota_fiscal',
+        'numero_pedido', 'numero_nota_fiscal',
     ]
     readonly_fields = ['numero', 'criado_em', 'atualizado_em']
     inlines = [AnexoSolicitacaoInline, HistoricoSolicitacaoInline]

@@ -15,22 +15,21 @@
         <!-- Botão para exportar Excel — coloque junto aos controles da lista -->
            
             <!-- Formulário de Busca existente -->
-            <form method="get" class="d-flex gap-4 flex-grow-1 me-6">
+            <form method="get" class="d-flex gap-2 align-items-center flex-grow-4 me-6">
                 <input type="text" name="q" value="{{ request.GET.q }}" 
                     class="form-control" placeholder="Buscar usuário...">
-                <button type="submit" class="btn btn-outline-primary">
-                    <i class="bi bi-search me-3"></i> Buscar
+                <button type="submit" class="btn btn-outline-secondary make_list_filter" title="Buscar">
+                    <i class="bi bi-search me-1"></i> 
                 </button>
             </form>
 
             <!-- Botão de Exportação Excel -->
             <a href="{% url 'usuario:usuario_exportar_excel' %}{% if request.GET.q %}?q={{ request.GET.q }}{% endif %}" 
-            class="btn btn-success" 
-            title="Exportar para Excel (formatado para impressão)">
+            class="btn btn-outline-success align-self-start" title="Exportar para Excel">
                 <i class="bi bi-file-earmark-spreadsheet me-3"></i> Exportar Excel
             </a>    
-        {% if user.is_superuser or user.is_gerente or user.is_administrador %}
-            <a href="{% url 'usuario:usuario_criar' %}" class="btn btn-primary btn-sm">
+            {% if user.is_superuser or user.is_gerente or user.is_administrador %}
+            <a href="{% url 'usuario:usuario_criar' %}" class="btn btn-outline-primary align-self-start" title="Criar novo usuário">
                 <i class="bi bi-person-plus me-3"></i>Novo Usuário
             </a>
             {% endif %}
@@ -55,7 +54,7 @@
                     <tr>
                         <td>
                             <div class="fw-semibold">{{ usuario.get_full_name|default:"—" }}</div>
-                            <small class="text-muted">@{{ usuario.username }}</small>
+                            <small class="text-muted">{{ usuario.username }}</small>
                         </td>
                         <td>
                             <small>{{ usuario.email }}</small>
@@ -86,35 +85,40 @@
                             {% endif %}
                         </td>
                         <td class="text-center">
-                            <div class="btn-group btn-group-sm">
+                            <div class="action-buttons" role="group" aria-label="Ações do usuário">
                                 {% if perms.usuario.change_usuario or user.is_superuser %}
                                 <a href="{% url 'usuario:usuario_editar' usuario.pk %}"
-                                   class="btn btn-outline-primary" title="Editar">
+                                class="btn btn-outline-primary action-btn"
+                                title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 {% endif %}
+
                                 {% if perms.usuario.view_usuario or user.is_superuser %}
                                 <a href="{% url 'usuario:usuario_gerenciar_grupos' usuario.pk %}"
-                                   class="btn btn-outline-secondary" title="Grupos">
+                                class="btn btn-outline-secondary action-btn"
+                                title="Grupos">
                                     <i class="bi bi-people"></i>
                                 </a>
                                 {% endif %}
+
                                 {% if perms.usuario.change_usuario or user.is_superuser %}
                                 <a href="{% url 'usuario:usuario_definir_senha' usuario.pk %}"
-                                   class="btn btn-outline-warning" title="Redefinir Senha">
+                                class="btn btn-outline-warning action-btn"
+                                title="Redefinir senha">
                                     <i class="bi bi-key"></i>
                                 </a>
                                 {% endif %}
+
                                 {% if usuario.pk != user.pk %}
                                 <form method="post"
-                                      action="{% url 'usuario:usuario_toggle_active' usuario.pk %}"
-                                      class="d-inline"
-                                      onsubmit="return confirm('{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %} o usuário {{ usuario.username }}?');">
+                                    action="{% url 'usuario:usuario_toggle_active' usuario.pk %}"
+                                    onsubmit="return confirm('{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %} o usuário {{ usuario.username }}?');">
                                     {% csrf_token %}
                                     <button type="submit"
-                                            class="btn btn-outline-{{ usuario.is_active|yesno:'danger,success' }}"
-                                            title="{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %}">
-                                        <i class="bi bi-{{ usuario.is_active|yesno:'person-dash,person-check' }}"></i>
+                                            class="btn btn-outline-{% if usuario.is_active %}danger{% else %}success{% endif %} action-btn"
+                                            title="{% if usuario.is_active %}Desativar usuário{% else %}Ativar usuário{% endif %}">
+                                        <i class="bi bi-{% if usuario.is_active %}person-dash{% else %}person-check{% endif %}"></i>
                                     </button>
                                 </form>
                                 {% endif %}
@@ -134,6 +138,7 @@
         </div>
 
         {% include 'partials/pagination.html' %}
+
     </div>
 </div>
 {% endblock %}
