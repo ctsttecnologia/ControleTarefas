@@ -183,10 +183,10 @@ class MaterialImportService:
 
         limpo['marca'] = (str(dados.get('marca') or '')).strip()[:100]
 
-        unidade = (str(dados.get('unidade') or 'PC')).strip().upper()
+        unidade = (str(dados.get('unidade') or 'PÇ')).strip().upper()
         if unidade not in dict(UnidadeMedida.choices):
             erros.append(f"Unidade inválida '{unidade}'")
-            unidade = 'PC'
+            unidade = 'PÇ'
         limpo['unidade'] = unidade
 
         valor_bruto = dados.get('valor_unitario')
@@ -333,11 +333,11 @@ def gerar_template_excel():
     # Exemplos
     exemplos = [
         ['Fita Isolante 3M Scotch 33+', 'CONSUMO', 'ELETRICA',
-         '3M', 'PC', '12.50', '8546.90.00', 'GT-CONSUMO', 'S'],
+         '3M', 'PÇ', '12.50', '8546.90.00', 'GT-CONSUMO', 'S'],
         ['Capacete de Segurança Branco', 'EPI', 'EPI',
-         '3M', 'PC', '45.00', '6506.10.00', 'GT-EPI', 'S'],
+         '3M', 'PÇ', '45.00', '6506.10.00', 'GT-EPI', 'S'],
         ['Chave de Fenda Phillips 1/4"', 'FERRAMENTA', 'CIVIL',
-         'GEDORE', 'PC', '28.90', '', '', 'S'],
+         'GEDORE', 'PÇ', '28.90', '', '', 'S'],
         ['Detergente Neutro 5L', 'CONSUMO', 'LIMPEZA',
          'YPÊ', 'GALAO', '24.90', '', '', 'S'],
     ]
@@ -454,7 +454,7 @@ def gerar_template_excel():
         ("Classificação", "✅ SIM", "Use o código da aba 'Referências'. Ex: EPI, CONSUMO, FERRAMENTA"),
         ("Tipo", "✅ SIM", "Use o código da aba 'Referências'. Ex: ELETRICA, LIMPEZA, EPI"),
         ("Marca", "—",     "Texto livre até 100 caracteres."),
-        ("Unidade", "—",   "Use o código da aba 'Referências'. Padrão: PC (Peça)."),
+        ("Unidade", "—", "Use o código da aba 'Referências'. Padrão: PÇ (Peça)."),
         ("Valor Unitário", "—", "Decimal. Aceita '12.50' ou '12,50'. Padrão: 0,00."),
         ("NCM (código)", "—", "Código NCM já cadastrado e ativo no sistema."),
         ("Grupo Tributário", "—", "Código do grupo já cadastrado e ativo."),
