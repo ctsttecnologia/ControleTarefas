@@ -19,11 +19,11 @@ os.environ['DEBUG'] = 'True'
 from .settings import *  # noqa: F401, F403, E402
 
 # =============================================================================
-# 🗄️ BANCO DE DADOS 
+# 🗄️ BANCO DE DADOS — SQLite em memória (rápido e isolado)
 # =============================================================================
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django.db.backends.sqlite3',   # ✅ correto
         'NAME': ':memory:',
     }
 }
@@ -140,3 +140,8 @@ DEBUG = True
 if 'TEMPLATES' in globals() and TEMPLATES:
     TEMPLATES[0].setdefault('OPTIONS', {})
     TEMPLATES[0]['OPTIONS']['debug'] = True
+
+
+
+
+# python manage.py test suprimentos.tests.test_pc_entrega --settings=gerenciandoTarefas.settings_test -v 2

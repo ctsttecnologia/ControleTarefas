@@ -23,6 +23,7 @@ from django.urls import reverse, NoReverseMatch
 from django.contrib.auth.mixins import UserPassesTestMixin
 
 
+
 class RequireActiveFilialMixin:
     """
     Garante que o usuário tenha uma filial ativa antes de acessar a view.
@@ -843,3 +844,50 @@ class MonitoramentoAccessMixin(UserPassesTestMixin):
         if user.is_superuser:
             return True
         return user.groups.filter(name='Administrador').exists()
+
+
+
+class SolicitacaoFilialGuardMixin:
+    """
+    Captura SolicitacaoForaDaFilialError levantada por _get_sol_seguro()
+    e redireciona o usuário com uma mensagem amigável, em vez de
+    estourar erro 500.
+
+    ⚠️ Importante:
+    - Deve vir ANTES de View na ordem de herança (MRO), para que o
+      dispatch deste mixin envolva o dispatch real da view.
+    - Funciona tanto para GET quanto POST, pois envolve o dispatch().
+
+    Uso:
+        class SolicitacaoCotacaoView(
+            LoginRequiredMixin, AppPermissionMixin,
+            SolicitacaoFilialGuardMixin, View,
+        ):
+            ...
+    """
+
+    # URL de fallback caso a solicitação esteja fora da filial ativa
+    redirect_url_name = 'suprimentos:solicitacao_list'
+
+    def dispatch(self, request, *args, **kwargs):
+        # import local evita import circular (suprimentos importa core)
+        from suprimentos.views import SolicitacaoForaDaFilialError
+        try:
+            return super().dispatch(request, *args, **kwargs)
+        except SolicitacaoForaDaFilialError as exc:
+            sol = exc.solicitacao
+            filial_correta = getattr(
+                getattr(sol, 'contrato', None), 'filial', None
+            )
+            filial_ativa = getattr(request.user, 'filial_ativa', None)
+
+            messages.warning(
+                request,
+                f'A solicitação <strong>{sol.numero}</strong> pertence à filial '
+                f'<strong>{filial_correta.nome if filial_correta else "—"}</strong>, '
+                f'mas sua filial ativa é '
+                f'<strong>{filial_ativa.nome if filial_ativa else "—"}</strong>. '
+                f'Troque de filial na barra superior para acessá-la.',
+                extra_tags='safe',
+            )
+            return redirect(self.redirect_url_name)

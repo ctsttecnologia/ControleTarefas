@@ -1,0 +1,68 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/suprimentos/suprimentos.css' %}">
+<style>
+  :root {
+    --sup-primary: #2563eb;
+    --sup-success: #16a34a;
+    --sup-warning: #d97706;
+    --sup-danger: #dc2626;
+  }
+  .sup-card {
+    border: none; border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .sup-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.1); }
+  .sup-header {
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    color: #fff; border-radius: 14px; padding: 1.5rem 2rem; margin-bottom: 1.5rem;
+  }
+  .sup-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
+
+  /* ── STEPPER ── */
+  .stepper { display: flex; justify-content: space-between; position: relative; margin: 2rem 0; }
+  .stepper::before {
+    content: ""; position: absolute; top: 18px; left: 0; right: 0;
+    height: 3px; background: #e5e7eb; z-index: 0;
+  }
+  .step { position: relative; z-index: 1; text-align: center; flex: 1; }
+  .step .dot {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: #e5e7eb; color: #6b7280; display: flex;
+    align-items: center; justify-content: center; margin: 0 auto 8px;
+    font-weight: 700; border: 3px solid #fff; box-shadow: 0 0 0 2px #e5e7eb;
+  }
+  .step.done .dot { background: var(--sup-success); color: #fff; box-shadow: 0 0 0 2px var(--sup-success); }
+  .step.active .dot { background: var(--sup-primary); color: #fff; box-shadow: 0 0 0 2px var(--sup-primary); animation: pulse 1.5s infinite; }
+  .step .label { font-size: .72rem; color: #6b7280; font-weight: 600; }
+  .step.active .label, .step.done .label { color: #111827; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 2px var(--sup-primary);} 50%{box-shadow:0 0 0 6px rgba(37,99,235,.3);} }
+
+  .badge-status { font-size: .78rem; padding: .4em .7em; border-radius: 8px; }
+  .table-sup thead th { background:#f8fafc; font-size:.78rem; text-transform:uppercase; letter-spacing:.4px; color:#64748b; }
+  .empty-state { text-align:center; padding:3rem 1rem; color:#94a3b8; }
+  .empty-state i { font-size:3rem; opacity:.4; }
+
+  .linha-nenhum td {
+  background: #fafafa;
+  }
+.linha-nenhum:hover td {
+  background: #f0f0f0;
+  }
+.min-w-0 { min-width: 0; }
+
+
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% block sup_content %}{% endblock %}
+</div>
+{% endblock %}

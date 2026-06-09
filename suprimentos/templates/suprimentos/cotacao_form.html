@@ -1,0 +1,115 @@
+
+{% extends "suprimentos/base_suprimentos.html" %}
+
+{% block sup_content %}
+<div class="sup-header">
+  <h1><i class="bi bi-search-dollar me-2"></i>Lançar Cotação · {{ solicitacao.numero }}</h1>
+  <small class="opacity-75">{{ solicitacao.pedido.contrato }}</small>
+</div>
+
+{% if pode_cotar %}
+  <a href="{% url 'suprimentos:cotacao_adicionar' solicitacao.pk %}" class="btn btn-primary">
+    <i class="bi bi-plus-circle"></i> Nova Cotação
+  </a>
+{% endif %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- ═══ CABEÇALHO: Dados do Fornecedor (SEM valor unitário!) ═══ -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="mb-3">Dados do Fornecedor</h5>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Fornecedor</label>
+            {{ cab_form.fornecedor }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Prazo de Entrega (dias)</label>
+            {{ cab_form.prazo_entrega_dias }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Condições de Pagamento</label>
+            {{ cab_form.condicoes_pagamento }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Validade da Cotação</label>
+            {{ cab_form.validade_cotacao }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Observações</label>
+            {{ cab_form.observacoes }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Anexo (PDF da cotação)</label>
+            {{ cab_form.anexo_cotacao }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ ITENS: Valor por item (AQUI vão os inputs!) ═══ -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="mb-3">Valores por Item</h5>
+        {{ formset.management_form }}
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th class="text-center">QTD</th>
+              <th style="width: 180px;">V. Unitário</th>
+              <th class="text-end">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for subform, item in linhas %}
+            <tr data-qtd="{{ item.quantidade }}">
+              <td>
+                {{ item.material.descricao }}
+                {{ subform.item_id }}
+              </td>
+              <td class="text-center">{{ item.quantidade }} {{ item.material.get_unidade_display }}</td>
+              <td>{{ subform.valor_unitario }}</td>
+              <td class="text-end subtotal">R$ 0,00</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colspan="3" class="text-end">TOTAL</th>
+              <th class="text-end" id="total-geral">R$ 0,00</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-download"></i> Salvar Cotação
+    </button>
+    <a href="{% url 'suprimentos:solicitacao_detalhe' solicitacao.pk %}" class="btn btn-light">Cancelar</a>
+  </form>
+
+  <script>
+  function brl(v) {
+    return "R$ " + v.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }
+  function recalcular() {
+    let total = 0;
+    document.querySelectorAll("tbody tr").forEach(tr => {
+      const qtd = parseFloat(tr.dataset.qtd) || 0;
+      const input = tr.querySelector(".valor-item");
+      const valor = parseFloat((input?.value || "0").replace(",", ".")) || 0;
+      const subtotal = qtd * valor;
+      tr.querySelector(".subtotal").textContent = brl(subtotal);
+      total += subtotal;
+    });
+    document.getElementById("total-geral").textContent = brl(total);
+  }
+  document.querySelectorAll(".valor-item").forEach(i => i.addEventListener("input", recalcular));
+  recalcular();
+  </script>
+
+{% endblock %}

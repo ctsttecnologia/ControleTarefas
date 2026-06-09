@@ -54,7 +54,7 @@ class CoordenadorOuSuperiorMixin(_SuperuserBypassMixin):
         u = self.request.user
         return (
             perms.is_coordenador(u)
-            or perms.is_comprador(u)
+            or perms.is_suprimentos(u)
             or perms.is_gerente(u)
         )
 

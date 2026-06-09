@@ -93,7 +93,12 @@
             erro:    { bg: '#dc3545', icone: '🚨' },
         };
         const estilo = cores[notif.tipo] || cores.info;
-        const icone = notif.icone || estilo.icone;
+        const rawIcone = notif.icone || estilo.icone;
+        // Se vier uma classe do Bootstrap Icons (ex: "bi-clipboard-check"),
+        // monta a tag <i>. Senão, usa o emoji direto.
+        const iconeHtml = rawIcone.startsWith('bi-')
+            ? `<i class="bi ${rawIcone}"></i>`
+            : rawIcone;
 
         const toast = document.createElement('div');
         toast.className = 'cetest-toast';
@@ -113,7 +118,7 @@
         `;
 
         toast.innerHTML = `
-            <div style="font-size: 24px; line-height: 1;">${icone}</div>
+            <div style="font-size: 24px; line-height: 1;">${iconeHtml}</div>
             <div style="flex: 1; min-width: 0;">
                 <div style="font-weight: 600; color: #212529; margin-bottom: 4px;">
                     ${escapeHtml(notif.titulo)}

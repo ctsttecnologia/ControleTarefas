@@ -1,899 +1,343 @@
 
 # suprimentos/forms.py
-
 from django import forms
-from django.core.exceptions import ValidationError
-from django.utils.translation import gettext_lazy as _
-from datetime import date
+from django.forms import inlineformset_factory
 
-from tributacao.models import NCM, GrupoTributario
 from .models import (
-    Parceiro, Material, Contrato, VerbaContrato,
+    Parceiro, Material, Contrato,
     Pedido, ItemPedido,
-    CategoriaMaterial,
-    AnexoPedido,
-    SolicitacaoCompra, AnexoSolicitacao,
-    Cotacao, ItemSolicitacao, PedidoCompra, ItemPedidoCompra
+    SolicitacaoCompra, ItemSolicitacao, Cotacao,
+    PedidoCompra, ItemPedidoCompra,
 )
+from decimal import Decimal
+from django.forms import formset_factory, inlineformset_factory
 
 
-# ═══════════════════════════════════════════════════
-# PARCEIRO
-# ═══════════════════════════════════════════════════
-class ParceiroForm(forms.ModelForm):
+
+# ═════════════════════════════════════════════════════════════
+# MIXIN — aplica classes Bootstrap automaticamente
+# ═════════════════════════════════════════════════════════════
+class BootstrapMixin:
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            widget = field.widget
+            if isinstance(widget, (forms.CheckboxInput, forms.RadioSelect)):
+                widget.attrs.setdefault("class", "form-check-input")
+            elif isinstance(widget, forms.Select):
+                widget.attrs.setdefault("class", "form-select")
+            else:
+                widget.attrs.setdefault("class", "form-control")
+
+
+# ═════════════════════════════════════════════════════════════
+# CADASTROS AUXILIARES
+# ═════════════════════════════════════════════════════════════
+class ParceiroForm(BootstrapMixin, forms.ModelForm):
     class Meta:
         model = Parceiro
         fields = [
-            'nome_fantasia', 'razao_social', 'cnpj', 'inscricao_estadual',
-            'endereco', 'email', 'telefone', 'celular', 'contato', 'site',
-            'observacoes', 'eh_fabricante', 'eh_fornecedor', 'ativo', 'filial',
+            "razao_social", "nome_fantasia", "cnpj", "inscricao_estadual",
+            "contato", "telefone", "celular", "email", "site",
+            "endereco", "observacoes",
+            "eh_fabricante", "eh_fornecedor", "ativo", "filial",
         ]
         widgets = {
-            'filial': forms.Select(attrs={'class': 'form-select'}),
-            'nome_fantasia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome Fantasia ou Nome do Fabricante'}),
-            'razao_social': forms.TextInput(attrs={'class': 'form-control'}),
-            'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
-            'inscricao_estadual': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco': forms.Select(attrs={'class': 'form-select'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 0000-0000'}),
-            'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
-            'contato': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Pessoa de contato'}),
-            'site': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://www.exemplo.com'}),
-            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'eh_fabricante': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'eh_fornecedor': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            "endereco": forms.Textarea(attrs={"rows": 2}),
+            "observacoes": forms.Textarea(attrs={"rows": 3}),
         }
 
 
-class UploadFileForm(forms.Form):
-    file = forms.FileField(
-        label=_("Selecione a planilha (.xlsx)"),
-        help_text=_("Apenas arquivos no formato .xlsx são aceitos."),
-    )
-
-    def clean_file(self):
-        file = self.cleaned_data.get('file')
-        if file and not file.name.endswith('.xlsx'):
-            raise ValidationError(_("Arquivo inválido. Por favor, envie uma planilha no formato .xlsx."))
-        return file
-
-
-# ═══════════════════════════════════════════════════
-# MATERIAL (com criação automática de EPI e Ferramenta)
-# ═══════════════════════════════════════════════════
-class MaterialForm(forms.ModelForm):
-
-    # ── Campos extras: Criar Equipamento EPI (SST) ──
-    criar_equipamento_epi = forms.BooleanField(
-        required=False,
-        label="Criar Equipamento no SST automaticamente",
-        help_text="Marque para criar o Equipamento de EPI no módulo de Segurança do Trabalho.",
-        widget=forms.CheckboxInput(attrs={
-            'class': 'form-check-input',
-            'id': 'id_criar_equipamento_epi',
-        }),
-    )
-    epi_fabricante = forms.ModelChoiceField(
-        queryset=Parceiro.objects.filter(eh_fabricante=True, ativo=True),
-        required=False,
-        label="Fabricante",
-        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_epi_fabricante'}),
-    )
-    epi_modelo = forms.CharField(
-        max_length=100, required=False, label="Modelo",
-        widget=forms.TextInput(attrs={
-            'class': 'form-control', 'placeholder': 'Ex: Steel Pro Lente',
-            'id': 'id_epi_modelo',
-        }),
-    )
-    epi_ca = forms.CharField(
-        max_length=50, required=False, label="Certificado de Aprovação (CA)",
-        widget=forms.TextInput(attrs={
-            'class': 'form-control', 'placeholder': 'Ex: 20716',
-            'id': 'id_epi_ca',
-        }),
-    )
-    epi_vida_util_dias = forms.IntegerField(
-        required=False, label="Vida Útil (dias)",
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control', 'min': '1',
-            'placeholder': 'Ex: 365', 'id': 'id_epi_vida_util_dias',
-        }),
-    )
-
-    # ── Campos extras: Criar Ferramenta ──
-    criar_ferramenta = forms.BooleanField(
-        required=False,
-        label="Criar Ferramenta no módulo de Ferramentas automaticamente",
-        help_text="Marque para criar o registro de Ferramenta com controle de movimentação e QR Code.",
-        widget=forms.CheckboxInput(attrs={
-            'class': 'form-check-input', 'id': 'id_criar_ferramenta',
-        }),
-    )
-    ferr_codigo = forms.CharField(
-        max_length=50, required=False, label="Código de Identificação",
-        help_text="Código único da ferramenta (Série/Patrimônio). Gerado automaticamente se vazio.",
-        widget=forms.TextInput(attrs={
-            'class': 'form-control', 'placeholder': 'Ex: CHAVE-GRIFO-001',
-            'id': 'id_ferr_codigo',
-        }),
-    )
-    ferr_patrimonio = forms.CharField(
-        max_length=50, required=False, label="Nº de Patrimônio",
-        widget=forms.TextInput(attrs={
-            'class': 'form-control', 'placeholder': 'Ex: PAT-00452',
-            'id': 'id_ferr_patrimonio',
-        }),
-    )
-    ferr_localizacao = forms.CharField(
-        max_length=100, required=False, label="Localização Padrão",
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ex: Almoxarifado, Armário A, Gaveta 3',
-            'id': 'id_ferr_localizacao',
-        }),
-    )
-    ferr_data_aquisicao = forms.DateField(
-        required=False, label="Data de Aquisição",
-        widget=forms.DateInput(attrs={
-            'class': 'form-control', 'type': 'date',
-            'id': 'id_ferr_data_aquisicao',
-        }),
-    )
-    ferr_fornecedor = forms.ModelChoiceField(
-        queryset=Parceiro.objects.filter(eh_fornecedor=True, ativo=True),
-        required=False, label="Fornecedor",
-        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_ferr_fornecedor'}),
-    )
-    ferr_quantidade = forms.IntegerField(
-        required=False, label="Quantidade Inicial",
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control', 'min': '0', 'value': '0',
-            'id': 'id_ferr_quantidade',
-        }),
-    )
-
+class MaterialForm(BootstrapMixin, forms.ModelForm):
     class Meta:
         model = Material
-        # ⚠️ APENAS campos do MODEL. Os "extras" (criar_*, epi_*, ferr_*)
-        # são incluídos automaticamente por serem atributos de classe.
         fields = [
-            'descricao', 'classificacao', 'tipo', 'marca',
-            'unidade', 'valor_unitario',
-            'equipamento_epi', 'ferramenta_ref',
-            'ncm', 'grupo_tributario',
-            'ativo',
+            "codigo", "descricao", "classificacao", "tipo", "marca",
+            "unidade", "valor_unitario", "equipamento_epi", "ferramenta_ref",
+            "ncm", "grupo_tributario", "filial", "ativo",
         ]
-        widgets = {
-            'descricao': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ex: Fita Isolante 3M Scotch 33+',
-            }),
-            'classificacao': forms.Select(attrs={
-                'class': 'form-select', 'id': 'id_classificacao',
-            }),
-            'tipo': forms.Select(attrs={'class': 'form-select'}),
-            'marca': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ex: 3M, GEDORE, MAVARO',
-            }),
-            'unidade': forms.Select(attrs={'class': 'form-select'}),
-            'valor_unitario': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.01', 'min': '0',
-            }),
-            'equipamento_epi': forms.Select(attrs={
-                'class': 'form-select', 'id': 'id_equipamento_epi',
-            }),
-            'ferramenta_ref': forms.Select(attrs={
-                'class': 'form-select', 'id': 'id_ferramenta_ref',
-            }),
-            'ncm': forms.Select(attrs={'class': 'form-select'}),
-            'grupo_tributario': forms.Select(attrs={'class': 'form-select'}),
-            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
-        # NCM e Grupo Tributário — apenas ativos, opcionais
-        self.fields['ncm'].queryset = NCM.objects.filter(ativo=True)
-        self.fields['ncm'].empty_label = '— Selecione o NCM (opcional) —'
-        self.fields['ncm'].required = False
-        self.fields['ncm'].help_text = "Classificação fiscal do material"
-
-        self.fields['grupo_tributario'].queryset = GrupoTributario.objects.filter(ativo=True)
-        self.fields['grupo_tributario'].empty_label = '— Selecione o Grupo Tributário (opcional) —'
-        self.fields['grupo_tributario'].required = False
-        self.fields['grupo_tributario'].help_text = "Perfil fiscal para cálculo de impostos na compra"
-
-        # Labels mais claros
-        self.fields['equipamento_epi'].label = "🛡️ Vincular ao Equipamento (SST)"
-        self.fields['equipamento_epi'].help_text = (
-            "Apenas para EPI. Ao receber pedido, dá entrada automática no estoque de SST."
-        )
-        self.fields['equipamento_epi'].required = False
-
-        self.fields['ferramenta_ref'].label = "🔧 Vincular à Ferramenta"
-        self.fields['ferramenta_ref'].help_text = (
-            "Apenas para Ferramenta. Ao receber pedido, incrementa a quantidade."
-        )
-        self.fields['ferramenta_ref'].required = False
-
-        # Já vinculado? Desabilita checkbox de criação automática
-        if self.instance and self.instance.pk:
-            if self.instance.equipamento_epi:
-                self.fields['criar_equipamento_epi'].widget.attrs['disabled'] = True
-                self.fields['criar_equipamento_epi'].help_text = "Já vinculado a um equipamento."
-            if self.instance.ferramenta_ref:
-                self.fields['criar_ferramenta'].widget.attrs['disabled'] = True
-                self.fields['criar_ferramenta'].help_text = "Já vinculado a uma ferramenta."
-
-    def clean(self):
-        cleaned_data = super().clean()
-        classificacao = cleaned_data.get('classificacao')
-        equipamento_epi = cleaned_data.get('equipamento_epi')
-        ferramenta_ref = cleaned_data.get('ferramenta_ref')
-        criar_epi = cleaned_data.get('criar_equipamento_epi')
-        criar_ferr = cleaned_data.get('criar_ferramenta')
-
-        # ── Validação cruzada: classificação × vínculo ──
-        if classificacao == CategoriaMaterial.EPI and ferramenta_ref:
-            self.add_error('ferramenta_ref',
-                'Material EPI não deve ser vinculado a uma Ferramenta.')
-
-        if classificacao == CategoriaMaterial.FERRAMENTA and equipamento_epi:
-            self.add_error('equipamento_epi',
-                'Material Ferramenta não deve ser vinculado a um Equipamento EPI.')
-
-        if classificacao == CategoriaMaterial.CONSUMO:
-            if equipamento_epi:
-                self.add_error('equipamento_epi',
-                    'Material de Consumo usa estoque próprio. Não vincule a Equipamento.')
-            if ferramenta_ref:
-                self.add_error('ferramenta_ref',
-                    'Material de Consumo usa estoque próprio. Não vincule a Ferramenta.')
-
-        # ── Validação: Criar Equipamento EPI ──
-        if criar_epi:
-            if classificacao != CategoriaMaterial.EPI:
-                self.add_error('criar_equipamento_epi',
-                    'Criação automática de equipamento só funciona para materiais EPI.')
-            if equipamento_epi:
-                self.add_error('criar_equipamento_epi',
-                    'Não marque esta opção se já selecionou um equipamento existente.')
-            if not cleaned_data.get('epi_fabricante'):
-                self.add_error('epi_fabricante', 'Informe o fabricante para criar o equipamento.')
-            if not cleaned_data.get('epi_ca'):
-                self.add_error('epi_ca', 'Informe o CA para criar o equipamento.')
-            if not cleaned_data.get('epi_vida_util_dias'):
-                self.add_error('epi_vida_util_dias', 'Informe a vida útil para criar o equipamento.')
-
-        # ── Validação: Criar Ferramenta ──
-        if criar_ferr:
-            if classificacao != CategoriaMaterial.FERRAMENTA:
-                self.add_error('criar_ferramenta',
-                    'Criação automática de ferramenta só funciona para materiais FERRAMENTA.')
-            if ferramenta_ref:
-                self.add_error('criar_ferramenta',
-                    'Não marque esta opção se já selecionou uma ferramenta existente.')
-            if not cleaned_data.get('ferr_localizacao'):
-                self.add_error('ferr_localizacao', 'Informe a localização padrão da ferramenta.')
-            if not cleaned_data.get('ferr_data_aquisicao'):
-                self.add_error('ferr_data_aquisicao', 'Informe a data de aquisição.')
-
-        return cleaned_data
-
-class MaterialImportForm(forms.Form):
-    arquivo = forms.FileField(
-        label="Arquivo (.xlsx ou .csv)",
-        help_text="Baixe o template para garantir o formato correto.",
-        widget=forms.ClearableFileInput(attrs={
-            'class': 'form-control',
-            'accept': '.xlsx,.csv',
-        }),
-    )
-    confirmar = forms.BooleanField(
-        required=False,
-        widget=forms.HiddenInput(),
-    )
-
-    def clean_arquivo(self):
-        arq = self.cleaned_data['arquivo']
-        nome = arq.name.lower()
-        if not (nome.endswith('.xlsx') or nome.endswith('.csv')):
-            raise forms.ValidationError("Apenas arquivos .xlsx ou .csv.")
-        if arq.size > 5 * 1024 * 1024:  # 5MB
-            raise forms.ValidationError("Arquivo muito grande (máx. 5MB).")
-        return arq
-
-# ═══════════════════════════════════════════════════
-# CONTRATO
-# ═══════════════════════════════════════════════════
-class ContratoForm(forms.ModelForm):
+class ContratoForm(BootstrapMixin, forms.ModelForm):
     class Meta:
         model = Contrato
-        fields = ['cm', 'cliente', 'filial', 'ativo']
-        widgets = {
-            'cm': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 776'}),
-            'cliente': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: SERASA QUINIMURAS'}),
-            'filial': forms.Select(attrs={'class': 'form-select'}),
-            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
+        fields = ["cm", "cliente", "filial", "ativo"]
 
 
-# ═══════════════════════════════════════════════════
-# VERBA MENSAL
-# ═══════════════════════════════════════════════════
-MES_CHOICES = [(i, f'{i:02d}') for i in range(1, 13)]
-
-
-class VerbaContratoForm(forms.ModelForm):
-    class Meta:
-        model = VerbaContrato
-        fields = ['ano', 'mes', 'verba_epi', 'verba_consumo', 'verba_ferramenta']
-        widgets = {
-            'ano': forms.NumberInput(attrs={'class': 'form-control', 'min': '2024', 'max': '2030'}),
-            'mes': forms.Select(attrs={'class': 'form-select'}, choices=MES_CHOICES),
-            'verba_epi': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
-            'verba_consumo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
-            'verba_ferramenta': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
-        }
-
-
-# ═══════════════════════════════════════════════════
-# PEDIDO — CABEÇALHO + ITENS
-# ═══════════════════════════════════════════════════
-class PedidoForm(forms.ModelForm):
-    """Form do CABEÇALHO do pedido (sem material/quantidade/unidade)."""
+# ═════════════════════════════════════════════════════════════
+# 1. PEDIDO + ITENS
+# ═════════════════════════════════════════════════════════════
+class PedidoForm(BootstrapMixin, forms.ModelForm):
     class Meta:
         model = Pedido
         fields = [
-            'tipo_obra',
-            'contrato',
-            'data_necessaria',
-            'observacao',
+            "contrato", "filial", "tipo_obra",
+            "data_necessaria", "observacao",
         ]
         widgets = {
-            'tipo_obra': forms.Select(attrs={'class': 'form-select'}),
-            'contrato': forms.Select(attrs={'class': 'form-select'}),
-            'data_necessaria': forms.DateInput(
-                attrs={'class': 'form-control', 'type': 'date'}
-            ),
-            'observacao': forms.Textarea(
-                attrs={'class': 'form-control', 'rows': 3,
-                       'placeholder': 'Observações gerais do pedido'}
-            ),
+            "data_necessaria": forms.DateInput(attrs={"type": "date"}),
+            "observacao": forms.Textarea(attrs={"rows": 3}),
         }
 
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        qs = Contrato.objects.filter(ativo=True)
-        if self.user and not self.user.is_superuser:
-            filial_ativa = getattr(self.user, 'filial_ativa', None)
-            if filial_ativa:
-                qs = qs.filter(filial=filial_ativa)
-        self.fields['contrato'].queryset = qs
 
-    def clean_data_necessaria(self):
-        data = self.cleaned_data.get('data_necessaria')
-        if data and data < date.today():
-            raise ValidationError("A data necessária não pode ser no passado.")
-        return data
-
-
-class ItemPedidoForm(forms.ModelForm):
-    """Form de cada ITEM do pedido."""
+class ItemPedidoForm(BootstrapMixin, forms.ModelForm):
     class Meta:
         model = ItemPedido
         fields = [
-            'material',
-            'quantidade',
-            'unidade_medida',
-            'valor_unitario',
-            'observacao',
+            "material", "quantidade", "unidade_medida",
+            "valor_unitario", "observacao",
         ]
         widgets = {
-            'material': forms.Select(attrs={'class': 'form-select'}),
-            'quantidade': forms.NumberInput(
-                attrs={'class': 'form-control', 'min': '1', 'step': '1'}
-            ),
-            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
-            'valor_unitario': forms.NumberInput(
-                attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}
-            ),
-            'observacao': forms.TextInput(
-                attrs={'class': 'form-control form-control-sm',
-                       'placeholder': 'Obs. do item (opcional)'}
-            ),
+            "observacao": forms.Textarea(attrs={"rows": 1}),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['material'].queryset = Material.objects.filter(ativo=True)
+
+ItemPedidoFormSet = inlineformset_factory(
+    Pedido, ItemPedido,
+    form=ItemPedidoForm,
+    extra=1,
+    can_delete=True,
+)
 
 
-class RevisaoPedidoForm(forms.ModelForm):
-    """Solicitante corrige o pedido devolvido pelo gerente."""
-    class Meta:
-        model = Pedido
-        fields = [
-            'tipo_obra',
-            'contrato',
-            'data_necessaria',
-            'observacao',
-        ]
-        widgets = {
-            'tipo_obra': forms.Select(attrs={'class': 'form-select'}),
-            'contrato': forms.Select(attrs={'class': 'form-select'}),
-            'data_necessaria': forms.DateInput(
-                attrs={'class': 'form-control', 'type': 'date'}
-            ),
-            'observacao': forms.Textarea(
-                attrs={'class': 'form-control', 'rows': 3}
-            ),
-        }
-
-    def clean_data_necessaria(self):
-        data = self.cleaned_data.get('data_necessaria')
-        if data and data < date.today():
-            raise ValidationError("A data necessária não pode ser no passado.")
-        return data
-
-
-class ReprovarPedidoForm(forms.Form):
-    motivo = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'class': 'form-control', 'rows': 3,
-            'placeholder': 'Informe o motivo da reprovação...',
-        }),
-        label="Motivo da Reprovação",
-    )
-
-
-class DevolverPedidoForm(forms.Form):
-    """Gerente devolve para revisão."""
-    motivo = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'class': 'form-control', 'rows': 3,
-            'placeholder': 'Informe o que precisa ser corrigido...',
-        }),
-        label="Motivo da Devolução",
-    )
-
-
-class ConfirmarRecebimentoForm(forms.Form):
-    observacao_recebimento = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'class': 'form-control', 'rows': 3,
-            'placeholder': 'Observações sobre o recebimento (opcional)...',
-        }),
-        label="Observação do Recebimento",
-        required=False,
-    )
-    confirmar = forms.BooleanField(
-        label="Confirmo que recebi todos os itens deste pedido",
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-    )
-
-
-class AnexoPedidoForm(forms.ModelForm):
-    class Meta:
-        model = AnexoPedido
-        fields = ['arquivo', 'descricao']
-        widgets = {
-            'arquivo': forms.ClearableFileInput(attrs={
-                'class': 'form-control',
-                'accept': '.pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx',
-            }),
-            'descricao': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Descrição do arquivo (opcional)',
-            }),
-        }
-
-    def clean_arquivo(self):
-        arquivo = self.cleaned_data.get('arquivo')
-        if arquivo:
-            if arquivo.size > 10 * 1024 * 1024:
-                raise ValidationError("Arquivo muito grande. Máximo: 10MB.")
-            ext = arquivo.name.rsplit('.', 1)[-1].lower()
-            permitidas = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp',
-                          'doc', 'docx', 'xls', 'xlsx', 'bmp']
-            if ext not in permitidas:
-                raise ValidationError(f"Extensão .{ext} não permitida.")
-        return arquivo
-
-
-# ═══════════════════════════════════════════════════
-# ESTOQUE CONSUMO (Saída manual)
-# ═══════════════════════════════════════════════════
-class SaidaConsumoForm(forms.Form):
-    material = forms.ModelChoiceField(
-        queryset=Material.objects.filter(
-            ativo=True, classificacao=CategoriaMaterial.CONSUMO
-        ),
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Material",
-    )
-    quantidade = forms.IntegerField(
-        min_value=1,
-        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
-        label="Quantidade",
-    )
-    justificativa = forms.CharField(
-        max_length=255,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ex: Entregue para limpeza do bloco A',
-        }),
-        label="Justificativa",
-    )
-
-
-# ═══════════════════════════════════════════════════
-# SOLICITAÇÃO DE COMPRA — FLUXO ANTIGO (manter durante transição)
-# ═══════════════════════════════════════════════════
-
-class RegistrarCotacaoForm(forms.ModelForm):
-    """
-    [FLUXO ANTIGO] Comprador registra dados gerais da cotação direto na SolicitacaoCompra.
-    Mantido para compatibilidade com solicitações que NÃO usam o novo fluxo (usa_novo_fluxo=False).
-    """
-    class Meta:
-        model = SolicitacaoCompra
-        fields = ['data_cotacao', 'numero_cotacao', 'cnpj_compra', 'tipo_nota_fiscal']
-        widgets = {
-            'data_cotacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'numero_cotacao': forms.TextInput(attrs={
-                'class': 'form-control', 'placeholder': 'Nº da cotação',
-            }),
-            'cnpj_compra': forms.TextInput(attrs={
-                'class': 'form-control', 'placeholder': '00.000.000/0000-00',
-            }),
-            'tipo_nota_fiscal': forms.Select(attrs={'class': 'form-select'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        # Remove 'user' dos kwargs ANTES de chamar super()
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-
-        if self.user and hasattr(self.user, 'filial'):
-            self.fields['fornecedor'].queryset = Parceiro.objects.filter(
-                filial=self.user.filial
-            )
-        # Marca todos como obrigatórios na instância (não na Meta, para não afetar o model)
-        for nome in self.fields:
-            self.fields[nome].required = True
-
-    def save(self, commit=True):
-        obj = super().save(commit=False)
-        if self.user:
-            obj.criado_por = self.user
-        if commit:
-            obj.save()
-        return obj
-
-
-class ValidarCotacaoForm(forms.Form):
-    data_validacao = forms.DateField(
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-        label="Data da Validação",
-    )
-
-
-class CriarPedidoForm(forms.ModelForm):
-    """
-    [FLUXO ANTIGO] Cria pedido único direto na SolicitacaoCompra.
-    Use apenas quando solicitacao.usa_novo_fluxo == False.
-    """
-    class Meta:
-        model = SolicitacaoCompra
-        
-        fields = ['data_criacao_pedido', 'numero_pedido', 'fornecedor', 'valor_pedido']
-        widgets = {
-            'data_criacao_pedido': forms.DateInput(attrs={
-                'class': 'form-control', 'type': 'date',
-            }),
-            'numero_pedido': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Nº do pedido (Sienge/ERP)',
-            }),
-            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
-            'valor_pedido': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.01', 'min': '0',
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-
-        # Filtro por filial
-        qs = Parceiro.objects.filter(eh_fornecedor=True, ativo=True)
-        if self.user and not self.user.is_superuser:
-            filial = getattr(self.user, 'filial_ativa', None)
-            if filial:
-                qs = qs.filter(filial=filial)
-        self.fields['fornecedor'].queryset = qs.order_by('nome_fantasia')
-
-        # Marca todos como obrigatórios
-        for nome in self.fields:
-            self.fields[nome].required = True
-
-    def clean_valor_pedido(self):
-        valor = self.cleaned_data.get('valor_pedido')
-        if valor is not None and valor <= 0:
-            raise ValidationError("Valor do pedido deve ser maior que zero.")
-        return valor
-
-
+# ═════════════════════════════════════════════════════════════
+# 2. APROVAR PEDIDO (não-ModelForm — decisão livre)
+# ═════════════════════════════════════════════════════════════
 class AprovarPedidoForm(forms.Form):
-    data_aprovacao_pedido = forms.DateField(
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-        label="Data da Aprovação do Pedido",
+    DECISOES = [
+        ("APROVAR", "Aprovar"),
+        ("REVISAR", "Devolver para revisão"),
+        ("REPROVAR", "Reprovar"),
+    ]
+    decisao = forms.ChoiceField(
+        choices=DECISOES,
+        widget=forms.RadioSelect,
+        label="Decisão",
     )
-
-
-class EnviarPedidoFornecedorForm(forms.Form):
-    data_envio = forms.DateField(
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-        label="Data de Envio ao Fornecedor",
-    )
-    data_prevista = forms.DateField(
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-        label="Data Prevista para Entrega",
+    motivo = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+        label="Motivo (obrigatório se revisar/reprovar)",
     )
 
     def clean(self):
         cleaned = super().clean()
-        envio = cleaned.get('data_envio')
-        prevista = cleaned.get('data_prevista')
-        if envio and prevista and prevista < envio:
-            self.add_error('data_prevista',
-                "A data prevista de entrega não pode ser anterior à data de envio.")
+        decisao = cleaned.get("decisao")
+        motivo = cleaned.get("motivo")
+        if decisao in ("REVISAR", "REPROVAR") and not motivo:
+            self.add_error("motivo", "Informe o motivo para revisar ou reprovar.")
         return cleaned
 
 
-class RegistrarEntregaForm(forms.Form):
-    data_entrega = forms.DateField(
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-        label="Data de Entrega Efetiva",
+# ═════════════════════════════════════════════════════════════
+# 3. COTAÇÃO (NxN por item)
+# ═════════════════════════════════════════════════════════════
+
+class CotacaoCabecalhoForm(forms.Form):
+    """Dados COMUNS do fornecedor — aplicados a todos os itens cotados."""
+    fornecedor = forms.ModelChoiceField(
+        queryset=Parceiro.objects.filter(eh_fornecedor=True, ativo=True),
+        label="Fornecedor",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    condicoes_pagamento = forms.CharField(
+        label="Condições de Pagamento", required=False,
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    prazo_entrega_dias = forms.IntegerField(
+        label="Prazo de Entrega (dias)", required=False, min_value=0,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    validade_cotacao = forms.DateField(
+        label="Validade da Cotação", required=False,
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+    )
+    observacoes = forms.CharField(
+        label="Observações", required=False,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+    )
+    anexo_cotacao = forms.FileField(
+        label="Anexo (PDF da cotação)", required=False,
+        widget=forms.ClearableFileInput(attrs={"class": "form-control"}),
     )
 
-    def clean_data_entrega(self):
-        data = self.cleaned_data.get('data_entrega')
-        if data and data > date.today():
-            raise ValidationError("A data de entrega não pode ser no futuro.")
-        return data
 
-
-class EncerrarSolicitacaoForm(forms.Form):
-    numero_nota_fiscal = forms.CharField(
-        max_length=50,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control', 'placeholder': 'Nº da Nota Fiscal',
+class CotacaoItemValorForm(forms.Form):
+    """Uma linha: o valor unitário que o fornecedor deu para CADA item."""
+    item_id = forms.IntegerField(widget=forms.HiddenInput())
+    valor_unitario = forms.DecimalField(
+        label="Valor Unitário", required=False,
+        max_digits=12, decimal_places=2, min_value=Decimal("0.00"),
+        widget=forms.NumberInput(attrs={
+            "class": "form-control valor-item",
+            "step": "0.01", "placeholder": "0,00",
         }),
-        label="Nº da Nota Fiscal",
     )
 
 
-class CancelarSolicitacaoForm(forms.Form):
-    motivo = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'class': 'form-control', 'rows': 3,
-            'placeholder': 'Justifique o motivo do cancelamento...',
-        }),
-        label="Motivo do Cancelamento",
-    )
+CotacaoItemValorFormSet = formset_factory(CotacaoItemValorForm, extra=0)
 
-
-class AnexoSolicitacaoForm(forms.ModelForm):
+class CotacaoForm(BootstrapMixin, forms.ModelForm):
     class Meta:
-        model = AnexoSolicitacao
-        fields = ['arquivo', 'descricao', 'tipo_documento', 'confidencial']
-        widgets = {
-            'arquivo': forms.ClearableFileInput(attrs={
-                'class': 'form-control',
-                'accept': '.pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx',
-            }),
-            'descricao': forms.TextInput(attrs={
-                'class': 'form-control', 'placeholder': 'Descrição (opcional)',
-            }),
-            'tipo_documento': forms.Select(attrs={'class': 'form-select'}),
-            'confidencial': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
-    
-    # NOVO: Garante defaults sensatos
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['descricao'].required = False
-        self.fields['confidencial'].required = False
-        # Se não houver tipo selecionado, assume COTACAO como padrão
-        if not self.fields['tipo_documento'].initial:
-            self.fields['tipo_documento'].initial = 'COTACAO'
-
-    def clean_arquivo(self):
-        arquivo = self.cleaned_data.get('arquivo')
-        if arquivo:
-            if arquivo.size > 10 * 1024 * 1024:
-                raise ValidationError("Máximo: 10MB.")
-            ext = arquivo.name.rsplit('.', 1)[-1].lower()
-            permitidas = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp',
-                          'doc', 'docx', 'xls', 'xlsx', 'bmp']
-            if ext not in permitidas:
-                raise ValidationError(f"Extensão .{ext} não permitida.")
-        return arquivo
-
-
-class ObservacaoSolicitacaoForm(forms.Form):
-    texto = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'class': 'form-control', 'rows': 3,
-            'placeholder': 'Registre informações relevantes...',
-        }),
-        label="Observação",
-    )
-
-
-# ═══════════════════════════════════════════════════
-# 🆕 NOVO FLUXO N×N — Cotação / PedidoCompra / ItemPedidoCompra
-# ═══════════════════════════════════════════════════
-
-# ⚠️ IMPORTANTE: adicionar ao import no topo do arquivo:
-# from .models import Cotacao, ItemSolicitacao, PedidoCompra, ItemPedidoCompra
-
-class CotacaoItemForm(forms.ModelForm):
-    """
-    🆕 Comprador registra UMA cotação (fornecedor + preço) para UM ItemSolicitacao.
-    Múltiplas cotações por item são permitidas (1 por fornecedor).
-    """
-    class Meta:
-        model = None  # definido em __init__ via lazy import abaixo
+        model = Cotacao
         fields = [
-            'fornecedor', 'valor_unitario', 'prazo_entrega_dias',
-            'condicoes_pagamento', 'validade_cotacao', 'observacoes',
+            "fornecedor", "valor_unitario", "prazo_entrega_dias",
+            "condicoes_pagamento", "validade_cotacao",
+            "observacoes", "anexo_cotacao",
         ]
         widgets = {
-            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
-            'valor_unitario': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.01', 'min': '0.01',
-            }),
-            'prazo_entrega_dias': forms.NumberInput(attrs={
-                'class': 'form-control', 'min': '0',
-                'placeholder': 'Dias corridos',
-            }),
-            'condicoes_pagamento': forms.TextInput(attrs={
-                'class': 'form-control', 'placeholder': 'Ex.: 28/35/42 dias',
-            }),
-            'validade_cotacao': forms.DateInput(attrs={
-                'class': 'form-control', 'type': 'date',
-            }),
-            'observacoes': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 2,
+            "validade_cotacao": forms.DateInput(attrs={"type": "date"}),
+            "observacoes": forms.Textarea(attrs={"rows": 2}),
+            "anexo_cotacao": forms.ClearableFileInput(attrs={
+                "class": "form-control",
+                "accept": "application/pdf",
             }),
         }
 
-    def __init__(self, *args, **kwargs):
-        from .models import Cotacao  # lazy import
-        self._meta.model = Cotacao
-        self.user = kwargs.pop('user', None)
-        self.item_solicitacao = kwargs.pop('item_solicitacao', None)
+    def __init__(self, *args, solicitacao=None, item=None, **kwargs):
+        self.solicitacao = solicitacao
+        self.item = item
         super().__init__(*args, **kwargs)
-
-        qs = Parceiro.objects.filter(eh_fornecedor=True, ativo=True)
-        if self.user and not self.user.is_superuser:
-            filial = getattr(self.user, 'filial_ativa', None)
-            if filial:
-                qs = qs.filter(filial=filial)
-        self.fields['fornecedor'].queryset = qs.order_by('nome_fantasia')
+        # Só fornecedores ativos
+        self.fields["fornecedor"].queryset = Parceiro.objects.filter(
+            eh_fornecedor=True, ativo=True
+        )
 
     def clean(self):
         cleaned = super().clean()
-        fornecedor = cleaned.get('fornecedor')
-
-        # Previne duplicidade (validação amigável antes do IntegrityError)
-        if self.item_solicitacao and fornecedor:
-            from .models import Cotacao
-            existe = Cotacao.objects.filter(
-                item_solicitacao=self.item_solicitacao,
-                fornecedor=fornecedor,
-            ).exclude(pk=self.instance.pk if self.instance.pk else None).exists()
-            if existe:
-                raise ValidationError(
-                    f"Já existe uma cotação de {fornecedor} para este item. "
-                    "Edite a cotação existente em vez de criar nova."
+        fornecedor = cleaned.get("fornecedor")
+        if self.item and fornecedor:
+            if Cotacao.objects.filter(item_solicitacao=self.item, fornecedor=fornecedor).exists():
+                self.add_error(
+                    "fornecedor",
+                    "Este fornecedor já cotou este item. Edite a cotação existente."
                 )
         return cleaned
 
-    def clean_validade_cotacao(self):
-        validade = self.cleaned_data.get('validade_cotacao')
-        if validade and validade < date.today():
-            raise ValidationError("A validade da cotação não pode ser no passado.")
-        return validade
+class AprovarItemCotacaoForm(forms.Form):
+    """Placeholder — a escolha por item é tratada na view via POST manual."""
+    pass
+
+# ═════════════════════════════════════════════════════════════
+# WIDGET / FIELD PARA MÚLTIPLOS ARQUIVOS (Django < 5.0 compatível)
+# ═════════════════════════════════════════════════════════════
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
 
 
-class PedidoCompraForm(forms.ModelForm):
-    """
-    🆕 Cabeçalho do PedidoCompra (1 fornecedor por pedido).
-    Os ITENS são adicionados depois, vinculados às cotações aprovadas.
-    """
-    class Meta:
-        model = None
-        fields = [
-            'fornecedor', 'numero_pedido', 'data_emissao',
-            'data_entrega_prevista', 'tipo_nota_fiscal', 'observacoes',
-        ]
-        widgets = {
-            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
-            'numero_pedido': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Nº do PC no Sienge/ERP',
-            }),
-            'data_emissao': forms.DateInput(attrs={
-                'class': 'form-control', 'type': 'date',
-            }),
-            'data_entrega_prevista': forms.DateInput(attrs={
-                'class': 'form-control', 'type': 'date',
-            }),
-            'tipo_nota_fiscal': forms.Select(attrs={'class': 'form-select'}),
-            'observacoes': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 2,
-            }),
-        }
-
+class MultipleFileField(forms.FileField):
     def __init__(self, *args, **kwargs):
-        from .models import PedidoCompra, Cotacao
-        self._meta.model = PedidoCompra
-        self.user = kwargs.pop('user', None)
-        self.solicitacao = kwargs.pop('solicitacao', None)
+        kwargs.setdefault("widget", MultipleFileInput(attrs={"class": "form-control"}))
         super().__init__(*args, **kwargs)
 
-        qs = Parceiro.objects.filter(eh_fornecedor=True, ativo=True)
+    def clean(self, data, initial=None):
+        single = super().clean
+        if isinstance(data, (list, tuple)):
+            return [single(d, initial) for d in data if d]
+        return single(data, initial)
 
-        # Restringe a fornecedores que TÊM cotação ESCOLHIDA nesta solicitação
-        if self.solicitacao:
-            fornecedores_aprovados = Cotacao.objects.filter(
-                item_solicitacao__solicitacao=self.solicitacao,
-                itens_que_escolheram__isnull=False,
-            ).values_list('fornecedor_id', flat=True).distinct()
 
-            if fornecedores_aprovados:
-                qs = qs.filter(id__in=list(fornecedores_aprovados))
-
-        if self.user and not self.user.is_superuser:
-            filial = getattr(self.user, 'filial_ativa', None)
-            if filial:
-                qs = qs.filter(filial=filial)
-
-        self.fields['fornecedor'].queryset = qs.order_by('nome_fantasia')
-        self.fields['fornecedor'].required = True
-        self.fields['numero_pedido'].required = True
-        self.fields['data_emissao'].required = True
+# ═════════════════════════════════════════════════════════════
+# 4. PEDIDO DE COMPRA + ITENS + ENTREGA
+# ═════════════════════════════════════════════════════════════
+class PedidoCompraForm(BootstrapMixin, forms.ModelForm):
+    class Meta:
+        model = PedidoCompra
+        fields = [
+            "fornecedor", "filial", "data_emissao",
+            "data_entrega_prevista", "observacoes",
+        ]
+        widgets = {
+            "data_emissao": forms.DateInput(attrs={"type": "date"}),
+            "data_entrega_prevista": forms.DateInput(attrs={"type": "date"}),
+            "observacoes": forms.Textarea(attrs={"rows": 2}),
+        }
 
     def clean(self):
         cleaned = super().clean()
-        emissao = cleaned.get('data_emissao')
-        prevista = cleaned.get('data_entrega_prevista')
-        if emissao and prevista and prevista < emissao:
-            self.add_error('data_entrega_prevista',
-                "A previsão de entrega não pode ser anterior à emissão.")
+        emissao = cleaned.get("data_emissao")
+        entrega = cleaned.get("data_entrega_prevista")
+        if emissao and entrega and entrega < emissao:
+            self.add_error(
+                "data_entrega_prevista",
+                "A data de entrega prevista não pode ser anterior à emissão.",
+            )
         return cleaned
 
 
-class EscolherCotacaoForm(forms.Form):
-    """
-    🆕 Gerente escolhe qual Cotacao será a vencedora de um ItemSolicitacao.
-    """
-    cotacao_id = forms.IntegerField(widget=forms.HiddenInput())
-    justificativa = forms.CharField(
+class ItemPedidoCompraForm(BootstrapMixin, forms.ModelForm):
+    class Meta:
+        model = ItemPedidoCompra
+        fields = ["material", "quantidade", "valor_unitario", "observacao"]
+
+    def clean_quantidade(self):
+        qtd = self.cleaned_data.get("quantidade")
+        if qtd is not None and qtd <= 0:
+            raise forms.ValidationError("A quantidade deve ser maior que zero.")
+        return qtd
+
+    def clean_valor_unitario(self):
+        valor = self.cleaned_data.get("valor_unitario")
+        if valor is not None and valor < 0:
+            raise forms.ValidationError("O valor unitário não pode ser negativo.")
+        return valor
+
+
+# Formset inline para os itens do pedido
+ItemPedidoCompraFormSet = inlineformset_factory(
+    PedidoCompra,
+    ItemPedidoCompra,
+    form=ItemPedidoCompraForm,
+    extra=1,
+    can_delete=True,
+)
+
+
+class EntregaPedidoCompraForm(BootstrapMixin, forms.ModelForm):
+    """Acompanhamento de entrega / NF do Pedido de Compra."""
+    anexos = MultipleFileField(
         required=False,
-        widget=forms.Textarea(attrs={
-            'class': 'form-control', 'rows': 2,
-            'placeholder': 'Justificativa da escolha (opcional)...',
-        }),
-        label="Justificativa",
+        label="Anexos / Notas Fiscais",
+    )
+
+    class Meta:
+        model = PedidoCompra
+        fields = [
+            "data_entrega_prevista", "data_entrega_efetiva",
+            "numero_nota_fiscal", "data_nota_fiscal", "tipo_nota_fiscal",
+            "observacoes",
+        ]
+        widgets = {
+            "data_entrega_prevista": forms.DateInput(attrs={"type": "date"}),
+            "data_entrega_efetiva": forms.DateInput(attrs={"type": "date"}),
+            "data_nota_fiscal": forms.DateInput(attrs={"type": "date"}),
+            "observacoes": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        prevista = cleaned.get("data_entrega_prevista")
+        efetiva = cleaned.get("data_entrega_efetiva")
+        if prevista and efetiva and efetiva < prevista:
+            # Apenas aviso lógico — não bloqueia (entrega pode adiantar)
+            pass
+        return cleaned
+
+
+# ═════════════════════════════════════════════════════════════
+# 5. ANEXOS (genéricos)
+# ═════════════════════════════════════════════════════════════
+class AnexoPedidoForm(forms.Form):
+    arquivos = MultipleFileField(required=False, label="Anexos")
+    descricao = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+
+
+class AnexoSolicitacaoForm(forms.Form):
+    arquivos = MultipleFileField(required=False, label="Anexos")
+    descricao = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control"}),
     )

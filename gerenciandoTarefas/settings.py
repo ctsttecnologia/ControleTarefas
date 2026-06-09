@@ -21,13 +21,22 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # =============================================================================
-# DETECÇÃO AUTOMÁTICA DE AMBIENTE - CORRIGIDO
+# DETECÇÃO DE AMBIENTE — fonte da verdade: variável ENVIRONMENT
 # =============================================================================
 IS_WINDOWS = sys.platform == 'win32'
-IS_RUNSERVER = 'runserver' in sys.argv or any('uvicorn' in arg for arg in sys.argv)
-IS_UVICORN = any('uvicorn' in arg for arg in sys.argv)
-IS_DEVELOPMENT = IS_WINDOWS and (IS_RUNSERVER or IS_UVICORN)
+
+_env_name = config('ENVIRONMENT', default='').lower()
+
+if _env_name:
+    # Fonte explícita e confiável
+    IS_DEVELOPMENT = _env_name in ('dev', 'development', 'local')
+else:
+    # Fallback: detecção antiga por sys.argv
+    IS_RUNSERVER = 'runserver' in sys.argv or any('uvicorn' in a for a in sys.argv)
+    IS_DEVELOPMENT = IS_WINDOWS and IS_RUNSERVER
+
 IS_PRE_PRODUCTION = not IS_DEVELOPMENT
+
 
 # =============================================================================
 # SEGURANÇA
@@ -38,6 +47,7 @@ FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 DEBUG = config('DEBUG', default=IS_DEVELOPMENT, cast=bool)
 
+#ALLOWED_HOSTS = ["127.0.0.1", "localhost", "testserver"]
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
 
 # CSRF Origins - adaptativo por ambiente
@@ -82,7 +92,19 @@ SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 
+# =============================================================================
+# TRAVA DE SEGURANÇA — em DEBUG, nunca forçar HTTPS (evita travar dev local)
+# =============================================================================
+if DEBUG:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+    SECURE_PROXY_SSL_HEADER = None
 
+# INSTALLED APPS - ADAPTATIVO POR AMBIENTE (adiciona 'storages' apenas se GCS for selecionado)
 INSTALLED_APPS = [
     'daphne',
     'channels',

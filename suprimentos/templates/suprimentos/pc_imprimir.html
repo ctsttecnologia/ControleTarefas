@@ -1,0 +1,251 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>Pedido de Compra {{ pc.numero }}</title>
+  <style>
+    /* ───────── Reset / base ───────── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 12px;
+      color: #1a1a1a;
+      background: #f3f4f6;
+      line-height: 1.45;
+    }
+    .folha {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 12px auto;
+      padding: 16mm 14mm;
+      background: #fff;
+      box-shadow: 0 2px 12px rgba(0,0,0,.12);
+    }
+
+    /* ───────── Cabeçalho ───────── */
+    .cab {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 3px solid #0d6efd;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .cab .empresa h1 { font-size: 18px; color: #0d6efd; margin-bottom: 2px; }
+    .cab .empresa p { font-size: 10px; color: #555; }
+    .cab .doc { text-align: right; }
+    .cab .doc .titulo {
+      font-size: 16px; font-weight: 700; color: #1a1a1a;
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    .cab .doc .numero {
+      font-size: 22px; font-weight: 800; color: #0d6efd;
+    }
+    .cab .doc .status {
+      display: inline-block; margin-top: 4px; padding: 2px 10px;
+      border-radius: 12px; font-size: 10px; font-weight: 700;
+      background: #e7f1ff; color: #0d6efd;
+    }
+
+    /* ───────── Blocos de dados ───────── */
+    .grid2 { display: flex; gap: 14px; margin-bottom: 16px; }
+    .box {
+      flex: 1; border: 1px solid #dee2e6; border-radius: 6px;
+      padding: 10px 12px;
+    }
+    .box h3 {
+      font-size: 10px; text-transform: uppercase; color: #6c757d;
+      letter-spacing: .5px; margin-bottom: 6px;
+      border-bottom: 1px solid #eee; padding-bottom: 3px;
+    }
+    .box .linha { display: flex; margin-bottom: 2px; font-size: 11px; }
+    .box .linha .rotulo { width: 90px; color: #6c757d; }
+    .box .linha .valor { font-weight: 600; color: #1a1a1a; }
+
+    /* ───────── Tabela de itens ───────── */
+    table.itens {
+      width: 100%; border-collapse: collapse; margin-bottom: 14px;
+    }
+    table.itens thead th {
+      background: #0d6efd; color: #fff; font-size: 10px;
+      text-transform: uppercase; letter-spacing: .3px;
+      padding: 7px 8px; text-align: left;
+    }
+    table.itens tbody td {
+      padding: 6px 8px; border-bottom: 1px solid #e9ecef; font-size: 11px;
+    }
+    table.itens tbody tr:nth-child(even) { background: #f8f9fa; }
+    .text-end { text-align: right; }
+    .text-center { text-align: center; }
+    .cod { font-size: 9px; color: #888; }
+    table.itens tfoot td {
+      padding: 8px; font-weight: 700; font-size: 13px;
+      border-top: 2px solid #0d6efd;
+    }
+    table.itens tfoot .total-valor { color: #0d6efd; }
+
+    /* ───────── Observações ───────── */
+    .obs {
+      border: 1px solid #dee2e6; border-radius: 6px;
+      padding: 10px 12px; margin-bottom: 18px; font-size: 11px;
+    }
+    .obs h3 {
+      font-size: 10px; text-transform: uppercase; color: #6c757d;
+      margin-bottom: 4px;
+    }
+
+    /* ───────── Assinaturas ───────── */
+    .assinaturas {
+      display: flex; gap: 24px; margin-top: 42px;
+    }
+    .assinaturas .ass { flex: 1; text-align: center; }
+    .assinaturas .ass .linha-ass {
+      border-top: 1px solid #1a1a1a; margin-bottom: 4px; padding-top: 4px;
+    }
+    .assinaturas .ass small { font-size: 10px; color: #555; }
+
+    /* ───────── Rodapé ───────── */
+    .rodape {
+      margin-top: 30px; padding-top: 8px; border-top: 1px solid #eee;
+      font-size: 9px; color: #999; text-align: center;
+    }
+
+    /* ───────── Botão imprimir (some na impressão) ───────── */
+    .barra-print {
+      position: fixed; top: 16px; right: 16px; z-index: 999;
+    }
+    .barra-print button, .barra-print a {
+      border: none; border-radius: 6px; padding: 9px 16px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      text-decoration: none; display: inline-block; margin-left: 6px;
+    }
+    .barra-print .btn-print { background: #0d6efd; color: #fff; }
+    .barra-print .btn-volta { background: #e9ecef; color: #333; }
+
+    /* ───────── Print rules ───────── */
+    @media print {
+      body { background: #fff; }
+      .folha { margin: 0; box-shadow: none; width: auto; min-height: auto; }
+      .barra-print { display: none !important; }
+      @page { size: A4; margin: 12mm; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra de ações (oculta na impressão) -->
+  <div class="barra-print">
+    <a href="{% url 'suprimentos:pedido_compra_detalhe' pc.pk %}" class="btn-volta">← Voltar</a>
+    <button class="btn-print" onclick="window.print()">🖨️ Imprimir / PDF</button>
+  </div>
+
+  <div class="folha">
+
+    <!-- CABEÇALHO -->
+    <div class="cab">
+      <div class="empresa">
+        <h1>Cetest Minas</h1>
+        <p>Gestão de Suprimentos · Departamento de Compras</p>
+      </div>
+      <div class="doc">
+        <div class="titulo">Pedido de Compra</div>
+        <div class="numero">{{ pc.numero }}</div>
+        <span class="status">{{ pc.get_status_display }}</span>
+      </div>
+    </div>
+
+    <!-- DADOS: FORNECEDOR + PEDIDO -->
+    <div class="grid2">
+      <div class="box">
+        <h3>Fornecedor</h3>
+        <div class="linha"><span class="rotulo">Razão Social</span><span class="valor">{{ pc.fornecedor.razao_social|default:"—" }}</span></div>
+        <div class="linha"><span class="rotulo">Nome Fantasia</span><span class="valor">{{ pc.fornecedor.nome_fantasia|default:"—" }}</span></div>
+        <div class="linha"><span class="rotulo">CNPJ</span><span class="valor">{{ pc.fornecedor.cnpj|default:"—" }}</span></div>
+        <div class="linha"><span class="rotulo">Telefone</span><span class="valor">{{ pc.fornecedor.telefone|default:"—" }}</span></div>
+        <div class="linha"><span class="rotulo">E-mail</span><span class="valor">{{ pc.fornecedor.email|default:"—" }}</span></div>
+      </div>
+      <div class="box">
+        <h3>Dados do Pedido</h3>
+        <div class="linha"><span class="rotulo">Solicitação</span><span class="valor">{{ pc.solicitacao.numero|default:"—" }}</span></div>
+        <div class="linha"><span class="rotulo">Emissão</span><span class="valor">{{ pc.data_emissao|date:"d/m/Y"|default:"—" }}</span></div>
+        <div class="linha"><span class="rotulo">Envio</span><span class="valor">{{ pc.data_envio|date:"d/m/Y"|default:"—" }}</span></div>
+        <div class="linha"><span class="rotulo">Filial</span><span class="valor">{{ pc.filial|default:"—" }}</span></div>
+      </div>
+    </div>
+
+    <!-- TABELA DE ITENS -->
+    <table class="itens">
+      <thead>
+        <tr>
+          <th style="width:32px">#</th>
+          <th>Material</th>
+          <th class="text-center" style="width:80px">Qtd.</th>
+          <th class="text-end" style="width:90px">V. Unit.</th>
+          <th class="text-end" style="width:100px">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in itens %}
+        <tr>
+          <td class="text-center">{{ forloop.counter }}</td>
+          <td>
+            {{ item.material.descricao }}
+            {% if item.material.codigo %}<div class="cod">Cód.: {{ item.material.codigo }}</div>{% endif %}
+          </td>
+          <td class="text-center">{{ item.quantidade|floatformat:"-2" }}</td>
+          <td class="text-end">R$ {{ item.valor_unitario|floatformat:2 }}</td>
+          <td class="text-end">R$ {{ item.valor_total|default_if_none:0|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center" style="padding:18px;color:#999">Nenhum item no pedido.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" class="text-end">TOTAL GERAL</td>
+          <td class="text-end total-valor">R$ {{ valor_total|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- OBSERVAÇÕES -->
+    {% if pc.observacoes %}
+    <div class="obs">
+      <h3>Observações</h3>
+      <p>{{ pc.observacoes|linebreaksbr }}</p>
+    </div>
+    {% endif %}
+
+    <!-- ASSINATURAS -->
+    <div class="assinaturas">
+      <div class="ass">
+        <div class="linha-ass"></div>
+        <small>Comprador Responsável</small>
+      </div>
+      <div class="ass">
+        <div class="linha-ass"></div>
+        <small>Gerente / Aprovador</small>
+      </div>
+      <div class="ass">
+        <div class="linha-ass"></div>
+        <small>Fornecedor (ciência)</small>
+      </div>
+    </div>
+
+    <!-- RODAPÉ -->
+    <div class="rodape">
+      Documento gerado em {{ emitido_em|date:"d/m/Y H:i" }} · Sistema de Suprimentos · Cetest Minas
+    </div>
+
+  </div>
+
+  <script>
+    // Atalho opcional: Ctrl+P já funciona nativamente.
+    // Descomente abaixo para abrir o diálogo de impressão automaticamente:
+    // window.addEventListener('load', () => setTimeout(() => window.print(), 400));
+  </script>
+
+</body>
+</html>

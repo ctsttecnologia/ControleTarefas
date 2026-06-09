@@ -12,10 +12,11 @@ Inclui:
 """
 
 import os
+
 import uuid
 from decimal import Decimal
 from pathlib import Path
-
+from django.db.models import Sum, F
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
@@ -33,16 +34,6 @@ from usuario.models import Filial
 # ═════════════════════════════════════════════════════════════════════════════
 # MODELOS ABSTRATOS 
 # ═════════════════════════════════════════════════════════════════════════════
-
-class StatusSolicitacao(models.TextChoices):
-    PENDENTE = "PENDENTE", "Pendente"  # antigo
-    AGUARDANDO_COTACAO = "AGUARDANDO_COTACAO", "Aguardando Cotação"  
-    EM_COTACAO = "EM_COTACAO", "Em Cotação"  
-    COTADO = "COTADO", "Cotado (aguardando aprovação)"
-    APROVADO = "APROVADO", "Aprovado"
-    PEDIDOS_EMITIDOS = "PEDIDOS_EMITIDOS", "Pedidos de Compra Emitidos" 
-    CONCLUIDO = "CONCLUIDO", "Concluído"
-    CANCELADO = "CANCELADO", "Cancelado"
 
 class TimestampedModel(models.Model):
     """Adiciona criado_em / atualizado_em automáticos."""
@@ -1102,24 +1093,29 @@ class ItemPedido(models.Model):
 # 6. SOLICITAÇÃO DE COMPRA — WORKFLOW PÓS-APROVAÇÃO
 # ═════════════════════════════════════════════════════════════════════════════
 
-class SolicitacaoCompra(models.Model):
+class SolicitacaoCompra(TimestampedModel):
     """
-    Solicitação de compra — gerada automaticamente quando um Pedido é APROVADO.
-    Workflow: Fazer Cotação → Cotação Enviada → Criar Pedido/CT →
-              Em Aprovação → Enviar Pedido → Entrega Pendente → Concluído
+    Fluxo:
+      APROVAR PEDIDO → SOLICITAÇÃO DE COTAÇÃO → APROVAR COTAÇÃO →
+      MONTAR PEDIDO DE COMPRA → ACOMPANHAR ENTREGA → FINALIZAR
     """
 
     class StatusChoices(models.TextChoices):
-        FAZER_COTACAO = "FAZER_COTACAO", "Fazer Cotação"
+        # 1) Cotação (NxN) — supr. lança preços por fornecedor
+        FAZER_COTACAO   = "FAZER_COTACAO",   "Fazer Cotação"
         COTACAO_ENVIADA = "COTACAO_ENVIADA", "Cotação Enviada"
-        CRIAR_PEDIDO_CT = "CRIAR_PEDIDO_CT", "Criar Pedido/CT"
-        EM_APROVACAO = "EM_APROVACAO", "Em Aprovação"
-        ENVIAR_PEDIDO = "ENVIAR_PEDIDO", "Enviar Pedido"
-        ENTREGA_PENDENTE = "ENTREGA_PENDENTE", "Entrega Pendente"
-        CONCLUIDO = "CONCLUIDO", "Concluído"
-        CANCELADO = "CANCELADO", "Cancelado"
+        # 2) Aprovação da cotação (gerente + verba)
+        EM_APROVACAO    = "EM_APROVACAO",    "Em Aprovação"
+        APROVADO        = "APROVADO",        "Aprovado"
+        # 3) Montar Pedido de Compra
+        ENVIAR_PEDIDO   = "ENVIAR_PEDIDO",   "Pronto p/ Pedido de Compra"
+        PEDIDO_GERADO   = "PEDIDO_GERADO",   "Pedido de Compra Gerado"
+        # 4) Pós-compra
+        EM_ENTREGA      = "EM_ENTREGA",      "Acompanhar Entrega"
+        FINALIZADO      = "FINALIZADO",      "Finalizado"
+        CANCELADO       = "CANCELADO",       "Cancelado"
 
-    # 🆕 Novo campo (substitui numero_pedido)
+    # Novo campo (substitui numero_pedido)
     numero_pedido = models.CharField(
         _("Nº do Pedido (Externo)"),
         max_length=50,
@@ -1131,7 +1127,7 @@ class SolicitacaoCompra(models.Model):
         ),
     )
 
-    # 🆕 Flag para indicar que esta solicitação já usa o novo fluxo
+    # Flag para indicar que esta solicitação já usa o novo fluxo
     usa_novo_fluxo = models.BooleanField(
         _("Usa novo fluxo (v2)"),
         default=False,
@@ -1315,7 +1311,13 @@ class SolicitacaoCompra(models.Model):
         verbose_name_plural = _("Solicitações de Compra")
         ordering = ["-criado_em"]
         permissions = [
-            ("pode_executar_cotacao", "Pode executar cotações (Comprador)"),
+            ("pode_executar_cotacao", "Pode executar cotações de compra"),
+            ("pode_montar_pc", "Pode montar pedido de compra"),
+            ("pode_enviar_pc", "Pode enviar pedido de compra"),
+            ("pode_aprovar_pc", "Pode aprovar pedido de compra"),
+            ("pode_entregar_pc", "Pode entregar pedido de compra"),
+            ("pode_concluir_pc", "Pode concluir pedido de compra"),
+            ("pode_cancelar_pc", "Pode cancelar pedido de compra"),
         ]
 
     def __str__(self):
@@ -1331,21 +1333,12 @@ class SolicitacaoCompra(models.Model):
             hoje = timezone.now()
             prefix = f"SOL-{hoje.strftime('%Y%m')}"
             ultimo = (
-                SolicitacaoCompra.objects.filter(
-                    numero__startswith=prefix
-                )
+                SolicitacaoCompra.objects.filter(numero__startswith=prefix)
                 .order_by("-numero")
                 .first()
             )
             seq = int(ultimo.numero.split("-")[-1]) + 1 if ultimo else 1
             self.numero = f"{prefix}-{seq:04d}"
-        
-        # Sincroniza campo antigo ↔ novo durante a transição
-        if self.numero_pedido and not self.numero_pedido:
-            self.numero_pedido = self.numero_pedido
-        elif self.numero_pedido and not self.numero_pedido:
-            self.numero_pedido = self.numero_pedido
-        
         super().save(*args, **kwargs)
 
     # ── Verificação de Verba ─────────────────────────────────────────────────
@@ -1392,50 +1385,86 @@ class SolicitacaoCompra(models.Model):
 
     @property
     def status_badge_class(self):
-        """Classe CSS do badge conforme status."""
+        S = self.StatusChoices
         mapa = {
-            "FAZER_COTACAO": "info",
-            "COTACAO_ENVIADA": "warning text-dark",
-            "CRIAR_PEDIDO_CT": "primary",
-            "EM_APROVACAO": "warning text-dark",
-            "ENVIAR_PEDIDO": "info",
-            "ENTREGA_PENDENTE": "secondary",
-            "CONCLUIDO": "success",
-            "CANCELADO": "dark",
+            S.FAZER_COTACAO:   "info",
+            S.COTACAO_ENVIADA: "warning text-dark",
+            S.EM_APROVACAO:    "warning text-dark",
+            S.APROVADO:        "primary",
+            S.ENVIAR_PEDIDO:   "primary",
+            S.PEDIDO_GERADO:   "primary",
+            S.EM_ENTREGA:      "secondary",
+            S.FINALIZADO:      "success",
+            S.CANCELADO:       "dark",
         }
         return mapa.get(self.status, "secondary")
 
     @property
     def etapa_atual(self):
-        """Retorna número da etapa atual (1 a 8) baseado no status."""
+        S = self.StatusChoices
         mapa = {
-            "FAZER_COTACAO": 1,
-            "COTACAO_ENVIADA": 2,
-            "CRIAR_PEDIDO_CT": 3,
-            "EM_APROVACAO": 4,
-            "ENVIAR_PEDIDO": 5,
-            "ENTREGA_PENDENTE": 6,
-            "CONCLUIDO": 8,
-            "CANCELADO": 0,
+            S.FAZER_COTACAO:   1,
+            S.COTACAO_ENVIADA: 2,
+            S.EM_APROVACAO:    3,
+            S.APROVADO:        4,
+            S.PEDIDO_GERADO:   4,
+            S.ENVIAR_PEDIDO:   5,
+            S.EM_ENTREGA:      7,
+            S.FINALIZADO:      8,
+            S.CANCELADO:       0,
         }
         etapa = mapa.get(self.status, 1)
-        if self.status == "ENTREGA_PENDENTE" and self.data_entrega_efetiva:
+        if self.status == S.EM_ENTREGA and self.data_entrega_efetiva:
             etapa = 7
         return etapa
 
+
     @property
     def dias_em_aberto(self):
-        """Dias desde a criação."""
-        if self.status in ("CONCLUIDO", "CANCELADO"):
+        if self.status in (self.StatusChoices.FINALIZADO, self.StatusChoices.CANCELADO):
             return 0
         delta = timezone.now().date() - self.criado_em.date()
         return delta.days
 
     @property
     def pode_cancelar(self):
-        """Pode cancelar se não estiver concluído ou já cancelado."""
-        return self.status not in ("CONCLUIDO", "CANCELADO")
+        return self.status not in (
+            self.StatusChoices.FINALIZADO,
+            self.StatusChoices.CANCELADO,
+        )
+    
+    @property
+    def todos_itens_cotados(self) -> bool:
+        """True se todos os itens têm ao menos 1 cotação."""
+        itens = self.itens.all()
+        if not itens:
+            return False
+        return all(item.tem_cotacoes for item in itens)
 
+    @property
+    def valor_cotado(self):
+        """Soma do menor total de cada item (menor preço cotado)."""
+        return sum(
+            (it.menor_cotacao.valor_total
+             for it in self.itens.all() if it.menor_cotacao),
+            Decimal("0.00"),
+        )
+
+    @property
+    def valor_estimado(self):
+        """
+        Soma do valor estimado dos itens.
+        Se o item não tiver valor_estimado próprio, usa a menor cotação
+        como referência (fallback), para nunca zerar à toa.
+        """
+        total = Decimal("0.00")
+        for it in self.itens.all():
+            est = getattr(it, "valor_estimado", None)
+            if est:
+                total += est
+            elif it.menor_cotacao:
+                total += it.menor_cotacao.valor_total
+        return total
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 6b. ANEXOS DA SOLICITAÇÃO
@@ -1507,6 +1536,32 @@ class AnexoSolicitacao(BaseAnexo):
         from core.upload import safe_delete_file
         safe_delete_file(self, "arquivo")
         super().delete(*args, **kwargs)
+
+
+class EntregaAnexo(models.Model):
+    """Anexos (notas fiscais / comprovantes) de cada recebimento do PC."""
+    pedido_compra = models.ForeignKey(
+        "PedidoCompra",
+        on_delete=models.CASCADE,
+        related_name="anexos_entrega",   # usado nas views: pc.anexos_entrega.all()
+    )
+    arquivo = models.FileField(upload_to="entregas/%Y/%m/")
+    nota_fiscal = models.CharField("Nota Fiscal", max_length=60, blank=True)
+    enviado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="anexos_entrega_enviados",
+    )
+    enviado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-enviado_em"]
+        verbose_name = "Anexo de Entrega"
+        verbose_name_plural = "Anexos de Entrega"
+
+    def __str__(self):
+        return f"Anexo PC {self.pedido_compra_id} — NF {self.nota_fiscal or 's/ NF'}"
 
 
 class HistoricoSolicitacao(BaseHistorico):
@@ -1753,6 +1808,10 @@ class ItemSolicitacao(TimestampedModel):
     @property
     def tem_cotacoes(self) -> bool:
         return self.cotacoes.exists()
+    
+    @property
+    def tem_cotacao(self):
+        return self.cotacoes.exists()
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1801,11 +1860,9 @@ class Cotacao(TimestampedModel):
         _("Observações"),
         blank=True, default="",
     )
-    anexo_cotacao = models.ForeignKey(
-        "AnexoSolicitacao",
-        on_delete=models.SET_NULL,
+    anexo_cotacao = models.FileField(
+        upload_to="cotacoes/%Y/%m/",
         null=True, blank=True,
-        related_name="cotacoes_vinculadas",
         verbose_name=_("Anexo (PDF da cotação)"),
     )
     criado_por = models.ForeignKey(
@@ -1832,6 +1889,11 @@ class Cotacao(TimestampedModel):
             models.Index(fields=["item_solicitacao", "valor_unitario"]),
             models.Index(fields=["fornecedor"]),
         ]
+        permissions = [
+            ("pode_cotar", "Pode lançar cotações"),
+            ("pode_aprovar_cotacao", "Pode aprovar cotações"),
+        ]
+
 
     def __str__(self):
         return (
@@ -1855,8 +1917,8 @@ class Cotacao(TimestampedModel):
 
     @property
     def is_escolhida(self) -> bool:
-        """Retorna True se esta foi a cotação aprovada pelo gerente."""
-        return self.item_solicitacao.cotacao_escolhida_id == self.pk
+        """DEPRECATED na Interpretação 2 — sempre False."""
+        return False
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1873,6 +1935,7 @@ class PedidoCompra(TimestampedModel):
         RASCUNHO = "RASCUNHO", "Rascunho"
         EMITIDO = "EMITIDO", "Emitido"
         ENVIADO_FORNECEDOR = "ENVIADO_FORNECEDOR", "Enviado ao Fornecedor"
+        ENTREGA_PARCIAL    = "ENTREGA_PARCIAL", "Entrega Parcial"
         ENTREGUE = "ENTREGUE", "Entregue"
         RECEBIDO = "RECEBIDO", "Recebido"
         CANCELADO = "CANCELADO", "Cancelado"
@@ -1988,6 +2051,8 @@ class PedidoCompra(TimestampedModel):
         permissions = [
             ("pode_emitir_pedido_compra", "Pode emitir Pedido de Compra"),
             ("pode_receber_pedido_compra", "Pode dar entrada em Pedido de Compra"),
+            ("pode_cancelar_pedido_compra", "Pode cancelar Pedido de Compra"),
+            ("pode_visualizar_pedido_compra", "Pode visualizar Pedido de Compra"),
         ]
 
     def __str__(self):
@@ -2020,7 +2085,32 @@ class PedidoCompra(TimestampedModel):
         self.valor_total = total
         self.save(update_fields=["valor_total", "atualizado_em"])
         return total
+    
+    def atualizar_status_entrega(self):
+        """Atualiza o status com base no total recebido vs. pedido."""
+        # 🔑 ItemPedidoCompra direto, ignorando qualquer cache de prefetch
+        agg = ItemPedidoCompra.objects.filter(pedido_compra=self).aggregate(
+            total_pedido=Sum("quantidade"),
+            total_receb=Sum("quantidade_recebida"),
+        )
+        total_pedido = agg["total_pedido"] or Decimal("0")
+        total_receb = agg["total_receb"] or Decimal("0")
 
+        if total_pedido <= 0:
+            return
+
+        if total_receb <= 0:
+            self.status = self.StatusPC.ENVIADO_FORNECEDOR
+        elif total_receb < total_pedido:
+            self.status = self.StatusPC.ENTREGA_PARCIAL
+        else:
+            self.status = self.StatusPC.ENTREGUE
+            if not self.data_entrega_efetiva:
+                self.data_entrega_efetiva = timezone.now().date()
+
+        self.save(update_fields=["status", "data_entrega_efetiva", "atualizado_em"])
+
+    # ✅ AGORA com 4 espaços — métodos REAIS da classe
     @property
     def total_itens(self) -> int:
         return self.itens.count()
@@ -2034,7 +2124,11 @@ class PedidoCompra(TimestampedModel):
         """True se a data prevista já passou e ainda não foi entregue."""
         if not self.data_entrega_prevista:
             return False
-        if self.status in (self.StatusPC.ENTREGUE, self.StatusPC.RECEBIDO, self.StatusPC.CANCELADO):
+        if self.status in (
+            self.StatusPC.ENTREGUE,
+            self.StatusPC.RECEBIDO,
+            self.StatusPC.CANCELADO,
+        ):
             return False
         return timezone.now().date() > self.data_entrega_prevista
 
@@ -2049,7 +2143,6 @@ class ItemPedidoCompra(TimestampedModel):
     Os valores são SNAPSHOT da cotação no momento da emissão do PC
     (não muda mesmo se a cotação original for editada depois).
     """
-
     pedido_compra = models.ForeignKey(
         PedidoCompra,
         on_delete=models.CASCADE,
@@ -2136,3 +2229,24 @@ class ItemPedidoCompra(TimestampedModel):
     @property
     def recebimento_completo(self) -> bool:
         return self.quantidade_recebida >= self.quantidade
+    
+    
+    @property
+    def qtd_entregue(self):
+        """Quantidade já recebida deste item."""
+        return self.quantidade_recebida or Decimal("0")
+
+    @property
+    def saldo(self):
+        """Quantidade ainda pendente de recebimento."""
+        return (self.quantidade or Decimal("0")) - (self.quantidade_recebida or Decimal("0"))
+
+    @property
+    def progresso_pct(self):
+        if not self.quantidade:
+            return Decimal("0")
+        recebida = self.quantidade_recebida or Decimal("0")
+        return (recebida / self.quantidade * 100).quantize(Decimal("0.1"))
+
+    
+    

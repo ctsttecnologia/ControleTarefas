@@ -1,0 +1,115 @@
+
+{% extends "suprimentos/base_suprimentos.html" %}
+{% load static %}
+{% block sup_content %}
+
+<div class="container py-4">
+  <h4 class="mb-3">Receber Entrega — Pedido #{{ pc.pk }}</h4>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    {# ─── Dados da entrega / NF ─── #}
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        {{ form.data_entrega_prevista.label_tag }}
+        {{ form.data_entrega_prevista }}
+      </div>
+      <div class="col-md-3">
+        {{ form.data_entrega_efetiva.label_tag }}
+        {{ form.data_entrega_efetiva }}
+      </div>
+      <div class="col-md-3">
+        {{ form.numero_nota_fiscal.label_tag }}
+        {{ form.numero_nota_fiscal }}
+      </div>
+      <div class="col-md-3">
+        {{ form.data_nota_fiscal.label_tag }}
+        {{ form.data_nota_fiscal }}
+      </div>
+      <div class="col-md-3">
+        {{ form.tipo_nota_fiscal.label_tag }}
+        {{ form.tipo_nota_fiscal }}
+      </div>
+      <div class="col-md-9">
+        {{ form.observacoes.label_tag }}
+        {{ form.observacoes }}
+      </div>
+    </div>
+
+    {# ─── Itens a receber ─── #}
+    <div class="table-responsive mb-4">
+      <table class="table table-sm table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Material</th>
+            <th>Qtd. Pedida</th>
+            <th>Já Entregue</th>
+            <th>Saldo</th>
+            <th style="width:160px">Receber Agora</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tbody>
+          {% for item in itens %}
+          <tr class="{% if item.saldo <= 0 %}table-success{% endif %}">
+            <td>
+              {{ item.material.descricao }}<br>
+              <small class="text-muted">{{ item.material.codigo }}</small>
+            </td>
+            <td>{{ item.quantidade }}</td>
+            <td>{{ item.qtd_entregue|default:0 }}</td>
+            <td class="fw-semibold saldo" data-saldo="{{ item.saldo }}"></td>
+            <td>
+              <input
+                type="number"
+                name="recebido_{{ item.pk }}"
+                class="form-control form-control-sm"
+                min="0"
+                step="0.01"
+                max="{{ item.saldo }}"
+                placeholder="0,00"
+                value="0"
+              >
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-muted py-3">
+              Nenhum item neste pedido.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {# ─── Anexos (múltiplos) ─── #}
+    <div class="mb-4">
+      {{ form.anexos.label_tag }}
+      {{ form.anexos }}
+      <small class="text-muted">Você pode selecionar vários arquivos.</small>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Registrar Recebimento</button>
+      <a href="{% url 'suprimentos:pc_detalhe' pc.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+{# ─── Validação client-side opcional do saldo ─── #}
+<script>
+document.querySelectorAll('input[name^="recebido_"]').forEach(function (input) {
+  input.addEventListener('input', function () {
+    const max = parseFloat(this.max || 0);
+    const val = parseFloat(this.value || 0);
+    if (val > max) {
+      this.classList.add('is-invalid');
+    } else {
+      this.classList.remove('is-invalid');
+    }
+  });
+});
+</script>
+{% endblock %}

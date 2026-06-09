@@ -1,0 +1,139 @@
+
+{% extends "suprimentos/base_suprimentos.html" %}
+
+{% block sup_content %}
+<div class="sup-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1><i class="bi bi-receipt me-2"></i>Pedido de Compra {{ pc.numero }}</h1>
+    <small class="opacity-75">{{ pc.fornecedor.nome }} · Solicitação {{ pc.solicitacao.numero }}</small>
+  </div>
+  <span class="badge bg-light text-dark badge-status fs-6">{{ pc.get_status_display }}</span>
+</div>
+
+<!-- STEPPER de entrega -->
+<div class="card sup-card mb-4"><div class="card-body">
+  {% with s=pc.status %}
+  <div class="stepper">
+    <div class="step done"><div class="dot"><i class="bi bi-check"></i></div><div class="label">Emitido</div></div>
+    <div class="step {% if s == 'ENTREGA_PARCIAL' or s == 'ENTREGUE' %}done{% elif s == 'AGUARDANDO_ENTREGA' %}active{% endif %}">
+      <div class="dot">2</div><div class="label">Aguardando</div>
+    </div>
+    <div class="step {% if s == 'ENTREGUE' %}done{% elif s == 'ENTREGA_PARCIAL' %}active{% endif %}">
+      <div class="dot">3</div><div class="label">Entrega Parcial</div>
+    </div>
+    <div class="step {% if s == 'ENTREGUE' %}done active{% endif %}">
+      <div class="dot"><i class="bi bi-flag"></i></div><div class="label">Entregue</div>
+    </div>
+  </div>
+  {% endwith %}
+</div></div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <!-- Itens com progresso de entrega -->
+    <div class="card sup-card mb-4">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-box-seam me-1"></i> Itens do Pedido</div>
+      <div class="table-responsive">
+        <table class="table table-sup mb-0 align-middle">
+          <thead><tr><th>Material</th><th>Pedido</th><th>Entregue</th><th style="width:160px">Progresso</th><th class="text-end">Subtotal</th></tr></thead>
+          <tbody>
+            {% for item in itens %}
+            <tr>
+              <td>{{ item.material.descricao }}<br><small class="text-muted">{{ item.material.codigo }}</small></td>
+              <td>{{ item.quantidade }} {{ item.get_unidade_medida_display }}</td>
+              <td>{{ item.qtd_entregue|default:0 }} {{ item.get_unidade_medida_display }}</td>
+              <td>
+                {% widthratio item.qtd_entregue|default:0 item.quantidade 100 as pct %}
+                <div class="progress" style="height:18px">
+                  <div class="progress-bar {% if pct >= 100 %}bg-success{% else %}bg-info{% endif %}"
+                       role="progressbar" style="width:{{ pct }}%">{{ pct }}%</div>
+                </div>
+              </td>
+              <td class="text-end fw-semibold">R$ {{ item.subtotal|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot><tr class="table-light"><td colspan="4" class="text-end fw-bold">TOTAL</td>
+          <td class="text-end fw-bold text-primary">R$ {{ pc.valor_total|floatformat:2 }}</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Entregas registradas -->
+    <div class="card sup-card mb-4">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-truck me-1"></i> Entregas Registradas</div>
+      <ul class="list-group list-group-flush">
+        {% for e in entregas %}
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between">
+            <span class="fw-semibold"><i class="bi bi-box me-1"></i>{{ e.tipo_display|default:e.get_tipo_display }}</span>
+            <small class="text-muted">{{ e.recebido_em|date:"d/m/Y H:i" }} · {{ e.recebido_por }}</small>
+          </div>
+          {% if e.nota_fiscal %}<small class="text-muted">NF: {{ e.nota_fiscal }}</small>{% endif %}
+          {% if e.observacoes %}<p class="small mb-0 mt-1">{{ e.observacoes }}</p>{% endif %}
+        </li>
+        {% empty %}<li class="list-group-item text-muted small">Nenhuma entrega registrada ainda.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="col-lg-4">
+    <div class="card sup-card mb-4"><div class="card-body">
+      <h6 class="fw-bold text-uppercase text-muted small mb-3">Dados do Processo de Compra</h6>
+      <dl class="row mb-0 small">
+        <dt class="col-5">Fornecedor</dt><dd class="col-7">{{ pc.fornecedor.nome }}</dd>
+        <dt class="col-5">CNPJ</dt><dd class="col-7">{{ pc.fornecedor.cnpj }}</dd>
+        <dt class="col-5">Emitido em</dt><dd class="col-7">{{ pc.criado_em|date:"d/m/Y" }}</dd>
+        <dt class="col-5">Prazo</dt><dd class="col-7">{{ pc.prazo_entrega }} dias</dd>
+        <dt class="col-5">Pgto.</dt><dd class="col-7">{{ pc.condicao_pagamento }}</dd>
+        <dt class="col-5">Total</dt><dd class="col-7 fw-bold text-primary">R$ {{ pc.valor_total|floatformat:2 }}</dd>
+      </dl>
+    </div></div>
+
+    <div class="card sup-card mb-4">
+      <div class="card-body d-grid gap-2">
+
+        {% if pc.status == 'ENTREGUE' or pc.status == 'RECEBIDO' %}
+          <button type="button" class="btn btn-success" disabled>
+            <i class="bi bi-check-circle-fill"></i> Pedido Entregue
+          </button>
+          <div class="alert alert-success py-2 mb-0 small text-center">
+            <i class="bi bi-info-circle me-1"></i>
+            Entrega concluída
+            {% if pc.data_entrega_efetiva %}em {{ pc.data_entrega_efetiva|date:"d/m/Y" }}{% endif %}
+            {% if pc.recebido_por %}por {{ pc.recebido_por.get_full_name|default:pc.recebido_por }}{% endif %}.
+          </div>
+
+        {% elif pc.status == 'CANCELADO' %}
+          <button type="button" class="btn btn-secondary" disabled>
+            <i class="bi bi-x-circle"></i> Pedido Cancelado
+          </button>
+
+        {% elif perms.suprimentos.pode_receber_pedido_compra %}
+          <a href="{% url 'suprimentos:pc_entrega' pc.pk %}" class="btn btn-success">
+            <i class="bi bi-truck"></i> Registrar Entrega
+            {% if pc.status == 'ENTREGA_PARCIAL' %}
+              <span class="badge bg-light text-dark ms-1">Parcial</span>
+            {% endif %}
+          </a>
+        {% endif %}
+
+        <a href="{% url 'suprimentos:pedido_compra_imprimir' pc.pk %}" target="_blank" class="btn btn-outline-secondary">
+          <i class="bi bi-printer"></i> Imprimir
+        </a>
+        <a href="{{ pc.solicitacao.get_absolute_url }}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left-circle"></i> Ver Solicitação
+        </a>
+      </div>
+    </div>
+    {% if pc.observacoes %}
+    <div class="card sup-card"><div class="card-body">
+      <h6 class="fw-bold text-uppercase text-muted small mb-2">Observações</h6>
+      <p class="small mb-0">{{ pc.observacoes }}</p>
+    </div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

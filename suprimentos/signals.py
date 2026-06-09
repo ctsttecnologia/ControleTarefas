@@ -23,12 +23,12 @@ def _gerar_solicitacao_do_pedido(pedido):
 
     # Idempotência: já existe solicitação para esse pedido?
     if SolicitacaoCompra.objects.filter(pedido=pedido).exists():
-        logger.info(f"⏭️ Pedido {pedido.numero} já tem solicitação. Pulando.")
+        logger.info(f"⏭️ Pedido {pedido.numero} já tem solicitação.")
         return
 
     itens_pedido = pedido.itens.select_related('material').all()
     if not itens_pedido.exists():
-        logger.warning(f"⚠️ Pedido {pedido.numero} sem itens. Abortando.")
+        logger.warning(f"⚠️ Pedido {pedido.numero} sem itens.")
         return
 
     logger.info(f"🛒 Gerando solicitação de cotação para pedido {pedido.numero}...")
@@ -58,7 +58,7 @@ def _gerar_solicitacao_do_pedido(pedido):
                     quantidade=item_ped.quantidade,
                     valor_unitario_estimado=item_ped.valor_unitario or 0,
                     observacao=item_ped.observacao or '',
-                    status='AGUARDANDO_COTACAO',    # ⚠️ ajuste se o choice for outro
+                    status='AGUARDANDO_COTACAO', 
                 )
                 itens_criados.append(item_sol)
 

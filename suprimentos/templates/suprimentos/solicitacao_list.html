@@ -1,0 +1,76 @@
+{% extends "suprimentos/base_suprimentos.html" %}
+
+{% block sup_content %}
+<div class="sup-header">
+  <h1><i class="bi bi-clipboard-check me-2"></i>Solicitações de Compra</h1>
+  <small class="opacity-75">Cotação, aprovação e montagem de pedidos</small>
+</div>
+
+<div class="card sup-card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Status</label>
+        <select name="status" class="form-select" onchange="this.form.submit()">
+          <option value="">Todos</option>
+          {% for val, lbl in status_choices %}
+          <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Buscar</label>
+        <input type="text" name="q" value="{{ request.GET.q }}" class="form-control" placeholder="Nº ou contrato...">
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary w-100"><i class="bi bi-search"></i> Filtrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card sup-card">
+  <div class="table-responsive">
+    <table class="table table-hover table-sup mb-0">
+      <thead><tr>
+        <th>Nº</th><th>Pedido</th><th>Contrato</th><th>Data</th>
+        <th>Status</th><th class="text-end">Valor Est.</th><th></th>
+      </tr></thead>
+      <tbody>
+        {% for s in solicitacoes %}
+        <tr>
+          <td class="fw-semibold">{{ s.numero }}</td>
+          <td><small class="text-muted">{{ s.pedido.numero }}</small></td>
+          <td>{{ s.pedido.contrato.cliente|truncatechars:28 }}</td>
+          <td>{{ s.criado_em|date:"d/m/Y" }}</td>
+          <td>
+            {% if s.status == 'FAZER_COTACAO' %}<span class="badge bg-info text-dark badge-status">{{ s.get_status_display }}</span>
+            {% elif s.status == 'EM_APROVACAO' %}<span class="badge bg-warning text-dark badge-status">{{ s.get_status_display }}</span>
+            {% elif s.status == 'APROVADA' %}<span class="badge bg-success badge-status">{{ s.get_status_display }}</span>
+            {% elif s.status == 'REPROVADA' %}<span class="badge bg-danger badge-status">{{ s.get_status_display }}</span>
+            {% else %}<span class="badge bg-secondary badge-status">{{ s.get_status_display }}</span>{% endif %}
+          </td>
+          <td class="text-end">R$ {{ s.valor_estimado|floatformat:2 }}</td>
+          <td><a href="{{ s.get_absolute_url }}" class="btn btn-sm btn-outline-primary">Ver</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="empty-state"><i class="bi bi-inbox d-block"></i>Nenhuma solicitação encontrada</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if is_paginated %}
+<nav class="mt-3"><ul class="pagination justify-content-center">
+  {% if page_obj.has_previous %}
+  <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">«</a></li>
+  {% endif %}
+  <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+  {% if page_obj.has_next %}
+  <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">»</a></li>
+  {% endif %}
+</ul></nav>
+{% endif %}
+{% endblock %}
+

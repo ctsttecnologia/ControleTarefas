@@ -1,224 +1,155 @@
 
 # suprimentos/admin.py
 from django.contrib import admin
+from django.utils.html import format_html
 
 from .models import (
     Parceiro, Material, Contrato, VerbaContrato,
     Pedido, ItemPedido, AnexoPedido, HistoricoPedido,
     SolicitacaoCompra, AnexoSolicitacao, HistoricoSolicitacao,
+    ItemSolicitacao, Cotacao, PedidoCompra, ItemPedidoCompra,
+    EstoqueConsumo,
 )
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-# PARCEIRO
-# ═════════════════════════════════════════════════════════════════════════════
-
-@admin.register(Parceiro)
-class ParceiroAdmin(admin.ModelAdmin):
-    list_display = (
-        'nome_fantasia', 'razao_social', 'cnpj',
-        'eh_fabricante', 'eh_fornecedor', 'ativo',
-    )
-    list_filter = ('filial', 'eh_fabricante', 'eh_fornecedor', 'ativo')
-    search_fields = ('nome_fantasia', 'razao_social', 'cnpj')
-    autocomplete_fields = ['endereco']
-    readonly_fields = ('filial',)
-
-
-# ═════════════════════════════════════════════════════════════════════════════
-# MATERIAL
-# ═════════════════════════════════════════════════════════════════════════════
-
-@admin.register(Material)
-class MaterialAdmin(admin.ModelAdmin):
-    list_display = [
-        'codigo', 'descricao', 'classificacao', 'tipo',
-        'marca', 'unidade', 'valor_unitario', 'ativo',
-    ]
-    list_filter = ['classificacao', 'tipo', 'ativo']
-    search_fields = ['descricao', 'marca', 'codigo']
-    list_editable = ['valor_unitario', 'ativo']
-    list_per_page = 50
-    readonly_fields = ['codigo', 'criado_em', 'atualizado_em']
-
-
-# ═════════════════════════════════════════════════════════════════════════════
-# CONTRATO  +  VERBA
-# ═════════════════════════════════════════════════════════════════════════════
-
-class VerbaInline(admin.TabularInline):
-    model = VerbaContrato
-    extra = 1
-    fields = ['ano', 'mes', 'verba_epi', 'verba_consumo', 'verba_ferramenta']
-
-
-@admin.register(Contrato)
-class ContratoAdmin(admin.ModelAdmin):
-    list_display = ['cm', 'cliente', 'filial', 'ativo']
-    list_filter = ['ativo', 'filial']
-    search_fields = ['cm', 'cliente']
-    inlines = [VerbaInline]
-
-
-# ═════════════════════════════════════════════════════════════════════════════
-# PEDIDO
-# ═════════════════════════════════════════════════════════════════════════════
-
+# ── Inlines ───────────────────────────────────────────────────
 class ItemPedidoInline(admin.TabularInline):
     model = ItemPedido
-    extra = 0
-    fields = ['material', 'quantidade', 'valor_unitario', 'valor_total', 'observacao']
-    readonly_fields = ['valor_total']
-    autocomplete_fields = ['material']
+    extra = 1
+    readonly_fields = ("valor_total", "custo_real", "total_creditos", "total_impostos")
 
 
 class AnexoPedidoInline(admin.TabularInline):
     model = AnexoPedido
     extra = 0
-    fields = ['arquivo', 'descricao', 'enviado_por', 'criado_em']
-    readonly_fields = ['enviado_por', 'criado_em']
+    readonly_fields = ("criado_em",)
 
 
 class HistoricoPedidoInline(admin.TabularInline):
     model = HistoricoPedido
     extra = 0
+    readonly_fields = ("versao", "descricao", "responsavel", "status_anterior", "status_novo", "criado_em")
     can_delete = False
-    fields = ['versao', 'descricao', 'responsavel',
-              'status_anterior', 'status_novo', 'criado_em']
-    readonly_fields = ['versao', 'descricao', 'responsavel',
-                       'status_anterior', 'status_novo', 'criado_em']
-    ordering = ['-versao']
-
-    def has_add_permission(self, request, obj=None):
-        return False
 
 
+class ItemSolicitacaoInline(admin.TabularInline):
+    model = ItemSolicitacao
+    extra = 0
+    readonly_fields = ("valor_total_estimado",)
+
+
+class CotacaoInline(admin.TabularInline):
+    model = Cotacao
+    extra = 0
+    readonly_fields = ("valor_total", "is_menor_preco")
+
+
+class ItemPedidoCompraInline(admin.TabularInline):
+    model = ItemPedidoCompra
+    extra = 0
+    readonly_fields = ("valor_total", "saldo_receber")
+
+
+# ── Parceiro ──────────────────────────────────────────────────
+@admin.register(Parceiro)
+class ParceiroAdmin(admin.ModelAdmin):
+    list_display = ("nome_fantasia", "razao_social", "cnpj", "eh_fornecedor", "eh_fabricante", "ativo")
+    list_filter = ("eh_fornecedor", "eh_fabricante", "ativo", "filial")
+    search_fields = ("nome_fantasia", "razao_social", "cnpj")
+    list_per_page = 30
+
+
+# ── Material ──────────────────────────────────────────────────
+@admin.register(Material)
+class MaterialAdmin(admin.ModelAdmin):
+    list_display = ("codigo", "descricao", "classificacao", "tipo", "unidade", "valor_unitario", "ativo")
+    list_filter = ("classificacao", "tipo", "ativo", "filial")
+    search_fields = ("codigo", "descricao", "marca")
+    readonly_fields = ("codigo",)
+    list_per_page = 40
+
+
+# ── Contrato + Verba ──────────────────────────────────────────
+class VerbaContratoInline(admin.TabularInline):
+    model = VerbaContrato
+    extra = 0
+
+
+@admin.register(Contrato)
+class ContratoAdmin(admin.ModelAdmin):
+    list_display = ("cm", "cliente", "filial", "ativo")
+    list_filter = ("ativo", "filial")
+    search_fields = ("cm", "cliente")
+    inlines = [VerbaContratoInline]
+
+
+@admin.register(VerbaContrato)
+class VerbaContratoAdmin(admin.ModelAdmin):
+    list_display = ("contrato", "ano", "mes", "verba_total", "compra_total", "saldo_total")
+    list_filter = ("ano", "mes", "contrato")
+
+
+# ── Pedido ────────────────────────────────────────────────────
 @admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):
-    list_display = [
-        'numero', 'tipo_obra', 'contrato', 'solicitante',
-        'status', 'data_pedido', 'aprovador', 'solicitacao_gerada',
-    ]
-    list_filter = ['status', 'tipo_obra', 'data_pedido', 'contrato__filial']
-    search_fields = [
-        'numero', 'contrato__cliente', 'contrato__cm', 'descricao_material',
-    ]
-    readonly_fields = [
-        'numero', 'data_pedido', 'solicitacao_gerada',
-        'criado_em', 'atualizado_em', 'estoque_processado',
-    ]
+    list_display = ("numero", "contrato", "status_badge", "solicitante", "valor_total", "data_pedido")
+    list_filter = ("status", "tipo_obra", "filial")
+    search_fields = ("numero", "contrato__cm", "contrato__cliente")
+    readonly_fields = ("numero", "data_pedido", "valor_total", "estoque_processado")
     inlines = [ItemPedidoInline, AnexoPedidoInline, HistoricoPedidoInline]
-    date_hierarchy = 'data_pedido'
-    autocomplete_fields = ['contrato', 'solicitante', 'aprovador', 'recebedor']
+    date_hierarchy = "data_pedido"
+
+    @admin.display(description="Status")
+    def status_badge(self, obj):
+        cores = {
+            "RASCUNHO": "secondary", "PENDENTE": "warning", "REVISAO": "info",
+            "APROVADO": "success", "REPROVADO": "danger",
+            "SOLICITACAO_GERADA": "primary", "CANCELADO": "dark",
+        }
+        cor = cores.get(obj.status, "secondary")
+        return format_html('<span class="badge bg-{}">{}</span>', cor, obj.get_status_display())
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-# SOLICITAÇÃO DE COMPRA
-# ═════════════════════════════════════════════════════════════════════════════
-
-class AnexoSolicitacaoInline(admin.TabularInline):
-    model = AnexoSolicitacao
-    extra = 0
-    fields = ['arquivo', 'tipo_documento', 'descricao',
-              'confidencial', 'enviado_por', 'criado_em']
-    readonly_fields = ['enviado_por', 'criado_em']
-
-
-class HistoricoSolicitacaoInline(admin.TabularInline):
-    model = HistoricoSolicitacao
-    extra = 0
-    can_delete = False
-    fields = ['versao', 'descricao', 'responsavel',
-              'status_anterior', 'status_novo', 'criado_em']
-    readonly_fields = ['versao', 'descricao', 'responsavel',
-                       'status_anterior', 'status_novo', 'criado_em']
-    ordering = ['-versao']
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-
+# ── Solicitação de Compra ─────────────────────────────────────
 @admin.register(SolicitacaoCompra)
 class SolicitacaoCompraAdmin(admin.ModelAdmin):
-    list_display = [
-        'numero', 'tipo_obra', 'contrato', 'solicitante',
-        'comprador', 'status', 'criado_em',
-    ]
-    list_filter = ['status', 'tipo_obra', 'filial', 'tipo_insumo']
-    search_fields = [
-        'numero', 'descricao_material',
-        'contrato__cm', 'contrato__cliente',
-        'numero_pedido', 'numero_nota_fiscal',
-    ]
-    readonly_fields = ['numero', 'criado_em', 'atualizado_em']
-    inlines = [AnexoSolicitacaoInline, HistoricoSolicitacaoInline]
-    date_hierarchy = 'criado_em'
-    list_per_page = 30
-    autocomplete_fields = [
-        'contrato', 'solicitante', 'aprovador_inicial',
-        'comprador', 'aprovador_cotacao', 'aprovador_pedido',
-        'fornecedor',
-    ]
-
-    fieldsets = (
-        ('Identificação', {
-            'fields': ('numero', 'filial', 'status', 'tipo_obra', 'contrato', 'pedido'),
-        }),
-        ('Material Solicitado', {
-            'fields': ('descricao_material', 'quantidade', 'unidade_medida',
-                       'tipo_insumo', 'data_necessaria'),
-        }),
-        ('Responsáveis', {
-            'fields': ('solicitante', 'aprovador_inicial', 'comprador',
-                       'aprovador_cotacao', 'aprovador_pedido'),
-        }),
-        ('Cotação', {
-            'fields': ('data_cotacao', 'numero_cotacao', 'cnpj_compra', 'tipo_nota_fiscal'),
-            'classes': ('collapse',),
-        }),
-        ('Validação', {
-            'fields': ('data_validacao_cotacao',),
-            'classes': ('collapse',),
-        }),
-        ('Pedido', {
-            'fields': ('data_criacao_pedido', 'numero_pedido',
-                       'fornecedor', 'valor_pedido', 'data_aprovacao_pedido'),
-            'classes': ('collapse',),
-        }),
-        ('Entrega', {
-            'fields': ('data_envio_fornecedor', 'data_prevista_entrega',
-                       'data_entrega_efetiva', 'numero_nota_fiscal'),
-            'classes': ('collapse',),
-        }),
-        ('Observações', {
-            'fields': ('observacoes', 'motivo_cancelamento'),
-        }),
-        ('Datas do Sistema', {
-            'fields': ('criado_em', 'atualizado_em'),
-            'classes': ('collapse',),
-        }),
-    )
+    list_display = ("numero", "contrato", "status", "comprador", "valor_pedido", "criado_em")
+    list_filter = ("status", "tipo_obra", "filial", "usa_novo_fluxo")
+    search_fields = ("numero", "descricao_material", "contrato__cm")
+    readonly_fields = ("numero", "criado_em", "atualizado_em")
+    inlines = [ItemSolicitacaoInline]
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-# HISTÓRICO DA SOLICITAÇÃO (admin standalone)
-# ═════════════════════════════════════════════════════════════════════════════
+@admin.register(ItemSolicitacao)
+class ItemSolicitacaoAdmin(admin.ModelAdmin):
+    list_display = ("material", "quantidade", "solicitacao", "status", "total_cotacoes")
+    list_filter = ("status",)
+    search_fields = ("material__descricao", "solicitacao__numero")
+    inlines = [CotacaoInline]
 
-@admin.register(HistoricoSolicitacao)
-class HistoricoSolicitacaoAdmin(admin.ModelAdmin):
-    list_display = ['solicitacao', 'versao', 'descricao', 'responsavel', 'criado_em']
-    list_filter = ['solicitacao__status']
-    search_fields = ['solicitacao__numero', 'descricao']
-    readonly_fields = [
-        'solicitacao', 'versao', 'descricao', 'responsavel',
-        'status_anterior', 'status_novo', 'criado_em',
-    ]
 
-    def has_add_permission(self, request):
-        return False
+@admin.register(Cotacao)
+class CotacaoAdmin(admin.ModelAdmin):
+    list_display = ("fornecedor", "valor_unitario", "valor_total", "prazo_entrega_dias", "is_menor_preco")
+    list_filter = ("fornecedor",)
+    search_fields = ("fornecedor__nome_fantasia", "item_solicitacao__material__descricao")
 
-    def has_change_permission(self, request, obj=None):
-        return False
 
-    def has_delete_permission(self, request, obj=None):
-        return False
+# ── Pedido de Compra ──────────────────────────────────────────
+@admin.register(PedidoCompra)
+class PedidoCompraAdmin(admin.ModelAdmin):
+    list_display = ("numero", "numero_pedido", "fornecedor", "status", "valor_total", "data_emissao")
+    list_filter = ("status", "filial", "tipo_nota_fiscal")
+    search_fields = ("numero", "numero_pedido", "fornecedor__nome_fantasia")
+    readonly_fields = ("numero", "valor_total")
+    inlines = [ItemPedidoCompraInline]
+
+
+@admin.register(EstoqueConsumo)
+class EstoqueConsumoAdmin(admin.ModelAdmin):
+    list_display = ("material", "contrato", "tipo", "quantidade", "responsavel", "criado_em")
+    list_filter = ("tipo", "filial", "contrato")
+    search_fields = ("material__descricao",)
+
+
+admin.site.register([AnexoPedido, AnexoSolicitacao, HistoricoPedido, HistoricoSolicitacao, ItemPedidoCompra])

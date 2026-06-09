@@ -1,401 +1,83 @@
 
+{% extends "suprimentos/base_suprimentos.html" %}
 
-{% extends "suprimentos/suprimentos_base.html" %}
-{% load static %}
-
-{% block title %}{{ titulo_pagina }} — Suprimentos{% endblock %}
-
-{% block content %}
-<div class="container-fluid py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-
-            <!-- ═══════════════════ HEADER ═══════════════════ -->
-            <div class="d-flex justify-content-between align-items-start mb-4">
-                <div>
-                    <h2 class="mb-0">{{ titulo_pagina }}</h2>
-                    <small class="text-muted">
-                        Preencha os dados do pedido e adicione um ou mais itens. Seja detalhado para evitar retrabalho.
-                    </small>
-                </div>
-                <div>
-                    <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Voltar
-                    </a>
-                </div>
-            </div>
-
-            <!-- ═══════════════════ FORM ═══════════════════ -->
-
-            <form method="post" enctype="multipart/form-data" id="form-pedido" novalidate>
-                {% csrf_token %}
-
-                <!-- ─────────── Erros gerais ─────────── -->
-                {% if form.errors or itens_formset.non_form_errors %}
-                <div class="alert alert-danger">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>Corrija os erros abaixo:</strong>
-                    <ul class="mb-0 mt-2">
-                        {% for field, errors in form.errors.items %}
-                            {% for error in errors %}<li>{{ field }}: {{ error }}</li>{% endfor %}
-                        {% endfor %}
-                        {% for error in itens_formset.non_form_errors %}
-                            <li>{{ error }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endif %}
-
-                <!-- ═══════════════════ CARD: DADOS DO PEDIDO ═══════════════════ -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-clipboard-list me-2"></i>Dados do Pedido</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">
-                                    Tipo de Obra <span class="text-danger">*</span>
-                                </label>
-                                {{ form.tipo_obra }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">
-                                    Contrato (CM) <span class="text-danger">*</span>
-                                </label>
-                                {{ form.contrato }}
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">
-                                    Data Necessária <span class="text-danger">*</span>
-                                </label>
-                                {{ form.data_necessaria }}
-                            </div>
-                            <div class="col-md-8">
-                                <label class="form-label fw-bold">Observações Gerais</label>
-                                {{ form.observacao }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ═══════════════════ CARD: ITENS DO PEDIDO ═══════════════════ -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Itens do Pedido</h5>
-                        <button type="button" class="btn btn-light btn-sm" id="btn-add-item">
-                            <i class="bi bi-plus-circle me-1"></i> Adicionar Item
-                        </button>
-                    </div>
-
-                    <div class="card-body">
-                        {{ itens_formset.management_form }}
-
-                        <div id="itens-container">
-                            {% for item_form in itens_formset %}
-                            <div class="item-pedido bg-adaptive p-3 mb-3" data-form-index="{{ forloop.counter0 }}">
-                                <!-- Cabeçalho do item -->
-                                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                                    <h6 class="mb-0 text-strong">
-                                        <i class="bi bi-box-seam me-2 text-primary"></i>
-                                        Item <span class="item-numero">{{ forloop.counter }}</span>
-                                    </h6>
-                                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-item">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-
-                                <!-- Hidden fields (id + DELETE) -->
-                                {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
-
-                                <!-- Campos visíveis -->
-                                <div class="row g-3">
-                                    <div class="col-12">
-                                        <label class="form-label fw-bold">
-                                            Material <span class="text-danger">*</span>
-                                        </label>
-                                        {{ item_form.material }}
-                                        {% if item_form.material.errors %}
-                                            <div class="text-danger small mt-1">{{ item_form.material.errors|join:", " }}</div>
-                                        {% endif %}
-                                    </div>
-
-                                    <div class="col-md-3">
-                                        <label class="form-label fw-bold">
-                                            Quantidade <span class="text-danger">*</span>
-                                        </label>
-                                        {{ item_form.quantidade }}
-                                    </div>
-
-                                    <div class="col-md-3">
-                                        <label class="form-label fw-bold">
-                                            Valor Unitário (R$) <span class="text-danger">*</span>
-                                        </label>
-                                        {{ item_form.valor_unitario }}
-                                    </div>
-
-                                    <div class="col-md-3">
-                                        <label class="form-label fw-bold">Valor Total (R$)</label>
-                                        <input type="text"
-                                               class="form-control text-end fw-bold item-total"
-                                               readonly value="0,00"
-                                               tabindex="-1">
-                                    </div>
-
-                                    <div class="col-md-3">
-                                        <label class="form-label fw-bold">Observação</label>
-                                        {{ item_form.observacao }}
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        <!-- Total geral -->
-                        <div class="alert alert-info d-flex justify-content-between align-items-center mb-0 mt-3">
-                            <span>
-                                <i class="bi bi-calculator me-2"></i>
-                                <strong>Total Geral do Pedido:</strong>
-                            </span>
-                            <h4 class="mb-0 text-strong" id="total-geral">R$ 0,00</h4>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ═══════════════════ CARD: ANEXOS ═══════════════════ -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Anexos (opcional)</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted small mb-3">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Adicione PDFs, fotos, catálogos ou especificações técnicas. Máximo 10MB por arquivo.
-                        </p>
-                        <div id="anexos-container">
-                            <div class="input-group mb-2">
-                                <input type="file" name="anexos" class="form-control"
-                                       accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx">
-                            </div>
-                        </div>
-                        <button type="button" id="btn-add-anexo" class="btn btn-sm btn-outline-secondary mt-2">
-                            <i class="bi bi-plus me-1"></i>Mais um arquivo
-                        </button>
-                    </div>
-                </div>
-
-                <!-- ═══════════════════ AÇÕES ═══════════════════ -->
-                <div class="d-flex justify-content-between">
-                    <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-light">
-                        <i class="bi bi-arrow-left me-1"></i> CANCELAR
-                    </a>
-                    {% if perms.suprimentos.add_pedido or user.is_superuser %}
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="bi bi-save me-2"></i>Criar Pedido (Rascunho)
-                    </button>
-                    {% endif %}
-                </div>
-            </form>
-        </div>
-    </div>
+{% block sup_content %}
+<div class="sup-header">
+  <h1><i class="bi bi-pencil-square me-2"></i>{% if object %}Editar{% else %}Novo{% endif %} Pedido</h1>
 </div>
 
-<!-- ═══════════════════ TEMPLATE EMPTY-FORM (clonável via JS) ═══════════════════ -->
-<template id="empty-form-template">
-    <div class="item-pedido bg-adaptive p-3 mb-3" data-form-index="__prefix__">
-        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-            <h6 class="mb-0 text-strong">
-                <i class="bi bi-box-seam me-2 text-primary"></i>
-                Item <span class="item-numero"></span>
-            </h6>
-            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-item">
-                <i class="bi bi-trash"></i>
-            </button>
-        </div>
-
-        {% for hidden in itens_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
-
-        <div class="row g-3">
-            <div class="col-12">
-                <label class="form-label fw-bold">
-                    Material <span class="text-danger">*</span>
-                </label>
-                {{ itens_formset.empty_form.material }}
-            </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold">
-                    Quantidade <span class="text-danger">*</span>
-                </label>
-                {{ itens_formset.empty_form.quantidade }}
-            </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold">
-                    Valor Unitário (R$) <span class="text-danger">*</span>
-                </label>
-                {{ itens_formset.empty_form.valor_unitario }}
-            </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold">Valor Total (R$)</label>
-                <input type="text" class="form-control text-end fw-bold item-total"
-                       readonly value="0,00" tabindex="-1">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold">Observação</label>
-                {{ itens_formset.empty_form.observacao }}
-            </div>
-        </div>
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="card sup-card mb-4">
+    <div class="card-header bg-white fw-semibold">Dados do Pedido</div>
+    <div class="card-body row g-3">
+      {% for field in form %}
+      <div class="col-md-6">
+        <label class="form-label small fw-semibold">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="text-danger small">{{ field.errors|striptags }}</div>{% endif %}
+      </div>
+      {% endfor %}
     </div>
+  </div>
+
+  <div class="card sup-card mb-4">
+    <div class="card-header bg-white fw-semibold d-flex justify-content-between">
+      <span><i class="bi bi-list-ul me-1"></i> Itens</span>
+      <button type="button" id="add-item" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus"></i> Adicionar item</button>
+    </div>
+    <div class="card-body">
+      {{ formset.management_form }}
+      <div id="formset-container">
+        {% for f in formset %}
+        <div class="formset-row row g-2 align-items-end mb-2 pb-2 border-bottom">
+          {{ f.id }}
+          <div class="col-md-4">
+            <label class="form-label small">Material</label>{{ f.material }}
+          </div>
+          <div class="col-md-2"><label class="form-label small">Qtd</label>{{ f.quantidade }}</div>
+          <div class="col-md-2"><label class="form-label small">Unidade</label>{{ f.unidade_medida }}</div>
+          <div class="col-md-2"><label class="form-label small">V. Unit.</label>{{ f.valor_unitario }}</div>
+          <div class="col-md-2 d-flex gap-1">
+            <div class="flex-grow-1"><label class="form-label small">Obs</label>{{ f.observacao }}</div>
+            {% if f.DELETE %}<div class="form-check pt-4">{{ f.DELETE }}</div>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Salvar</button>
+    <a href="{% url 'suprimentos:pedido_list' %}" class="btn btn-light">Cancelar</a>
+  </div>
+</form>
+
+<!-- Template oculto para clonagem -->
+<template id="empty-form">
+  <div class="formset-row row g-2 align-items-end mb-2 pb-2 border-bottom">
+    {{ formset.empty_form.id }}
+    <div class="col-md-4"><label class="form-label small">Material</label>{{ formset.empty_form.material }}</div>
+    <div class="col-md-2"><label class="form-label small">Qtd</label>{{ formset.empty_form.quantidade }}</div>
+    <div class="col-md-2"><label class="form-label small">Unidade</label>{{ formset.empty_form.unidade_medida }}</div>
+    <div class="col-md-2"><label class="form-label small">V. Unit.</label>{{ formset.empty_form.valor_unitario }}</div>
+    <div class="col-md-2"><label class="form-label small">Obs</label>{{ formset.empty_form.observacao }}</div>
+  </div>
 </template>
 {% endblock %}
 
-
 {% block extra_js %}
 <script>
-(function () {
-    'use strict';
-
-    // ═══════════════════════════════════════════════════
-    // FORMSET — Itens do Pedido
-    // ═══════════════════════════════════════════════════
-    const $totalForms = document.querySelector('[name$="-TOTAL_FORMS"]');
-    if (!$totalForms) return;
-
-    const $container  = document.getElementById('itens-container');
-    const $template   = document.getElementById('empty-form-template');
-    const $btnAdd     = document.getElementById('btn-add-item');
-    const $totalGeral = document.getElementById('total-geral');
-
-    // Formatar BRL
-    const formatBRL = (v) => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', {
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-    });
-    const formatNum = (v) => Number(v || 0).toLocaleString('pt-BR', {
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-    });
-
-    // Recalcular totais
-    function recalcular() {
-        let totalGeral = 0;
-        document.querySelectorAll('.item-pedido').forEach((item) => {
-            const $delete = item.querySelector('input[name$="-DELETE"]');
-            if ($delete && $delete.checked) return;
-
-            const qtd   = parseFloat(item.querySelector('[name$="-quantidade"]')?.value) || 0;
-            const valor = parseFloat(item.querySelector('[name$="-valor_unitario"]')?.value) || 0;
-            const total = qtd * valor;
-
-            const $total = item.querySelector('.item-total');
-            if ($total) $total.value = formatNum(total);
-
-            totalGeral += total;
-        });
-        $totalGeral.textContent = formatBRL(totalGeral);
-    }
-
-    // Renumerar visualmente
-    function renumerar() {
-        let visibleIdx = 0;
-        document.querySelectorAll('#itens-container .item-pedido').forEach((item) => {
-            if (item.style.display === 'none') return;
-            visibleIdx++;
-            const $num = item.querySelector('.item-numero');
-            if ($num) $num.textContent = visibleIdx;
-        });
-    }
-
-    // Inicializa Select2 num elemento (se disponível)
-    function initSelect2(scope) {
-        if (typeof jQuery === 'undefined' || !jQuery.fn.select2) return;
-        jQuery(scope).find('.select2-material').each(function () {
-            if (!jQuery(this).hasClass('select2-hidden-accessible')) {
-                jQuery(this).select2({
-                    width: '100%',
-                    placeholder: '— Selecione um material —',
-                    allowClear: true,
-                });
-            }
-        });
-    }
-
-    // ─── Adicionar item ───
-    if ($btnAdd) {
-        $btnAdd.addEventListener('click', () => {
-            const formIdx = parseInt($totalForms.value, 10);
-            const html = $template.innerHTML.replace(/__prefix__/g, formIdx);
-            const wrapper = document.createElement('div');
-            wrapper.innerHTML = html.trim();
-            const newItem = wrapper.firstElementChild;
-            $container.appendChild(newItem);
-            $totalForms.value = formIdx + 1;
-
-            initSelect2(newItem);
-            renumerar();
-            recalcular();
-        });
-    }
-
-    // ─── Remover item (delegação) ───
-    $container.addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-remove-item');
-        if (!btn) return;
-
-        const item = btn.closest('.item-pedido');
-        const $delete = item.querySelector('input[name$="-DELETE"]');
-        const $id     = item.querySelector('input[name$="-id"]');
-
-        // Confirmação
-        if (!confirm('Remover este item do pedido?')) return;
-
-        if ($id && $id.value && $delete) {
-            // Item já salvo → marca DELETE e esconde
-            $delete.checked = true;
-            item.style.display = 'none';
-        } else {
-            // Item novo → remove do DOM
-            item.remove();
-        }
-        renumerar();
-        recalcular();
-    });
-
-    // ─── Recalcular ao digitar ───
-    document.addEventListener('input', (e) => {
-        if (e.target.matches('[name$="-quantidade"], [name$="-valor_unitario"]')) {
-            recalcular();
-        }
-    });
-
-    // ─── Inicialização ───
-    initSelect2(document);
-    renumerar();
-    recalcular();
-
-
-    // ═══════════════════════════════════════════════════
-    // ANEXOS — múltiplos arquivos
-    // ═══════════════════════════════════════════════════
-    const $btnAddAnexo = document.getElementById('btn-add-anexo');
-    if ($btnAddAnexo) {
-        $btnAddAnexo.addEventListener('click', function () {
-            const container = document.getElementById('anexos-container');
-            const div = document.createElement('div');
-            div.className = 'input-group mb-2';
-            div.innerHTML = `
-                <input type="file" name="anexos" class="form-control"
-                       accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx">
-                <button type="button" class="btn btn-outline-danger btn-remove-anexo">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            `;
-            container.appendChild(div);
-            div.querySelector('.btn-remove-anexo').addEventListener('click', () => div.remove());
-        });
-    }
-})();
+document.getElementById('add-item').addEventListener('click', function () {
+  const container = document.getElementById('formset-container');
+  const totalForms = document.getElementById('id_itens-TOTAL_FORMS');
+  const idx = parseInt(totalForms.value);
+  const tpl = document.getElementById('empty-form').innerHTML.replace(/__prefix__/g, idx);
+  const div = document.createElement('div');
+  div.innerHTML = tpl;
+  container.appendChild(div.firstElementChild);
+  totalForms.value = idx + 1;
+});
 </script>
 {% endblock %}
-
-
-
-
-
