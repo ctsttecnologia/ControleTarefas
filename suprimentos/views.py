@@ -1,3290 +1,1336 @@
 ﻿
 # suprimentos/views.py
+"""
+Views do app Suprimentos — implementam o fluxo completo:
+PEDIDO → APROVAR → SOLICITAÇÃO/COTAÇÃO (NxN) → APROVAR COTAÇÃO →
+MONTAR PEDIDO DE COMPRA → ACOMPANHAR ENTREGA → FINALIZAR
+"""
 
-import json
-import logging
-import operator
-from decimal import Decimal
-from functools import reduce
-from io import BytesIO
-from decimal import Decimal
-from .models import Material, ItemPedido, Pedido
-from requests import request
-from core.utils import usuario_ve_todas_filiais, queryset_da_filial
-import pandas as pd
-from django import forms
+from decimal import Decimal, InvalidOperation
 from django.contrib import messages
-from django.contrib.auth import get_user_model
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import IntegrityError, transaction
-from django.db.models import Q, Sum, Count, F, DecimalField, Value
-from django.db.models.functions import Coalesce
-from django.http import HttpResponse, JsonResponse
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.db.models import Count, Sum, Q
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.views import View
 from django.views.generic import (
-    CreateView, DeleteView, DetailView, ListView,
-    TemplateView, UpdateView,
+    CreateView, DetailView, ListView, UpdateView, DeleteView, View, TemplateView,
 )
-from openpyxl import Workbook
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.datavalidation import DataValidation
-from weasyprint import HTML
-
-from cliente.models import Cliente
-from core.mixins import (
-    AppPermissionMixin, FilialCreateMixin, SSTPermissionMixin,
-    ViewFilialScopedMixin,
-)
-from logradouro.models import Logradouro
-from notifications.services import (
-    notificar_cotacao_enviada,
-    notificar_cotacao_validada,
-    notificar_entrega_registrada,
-    notificar_pedido_inicial_aprovado,
-    notificar_pedido_enviado_fornecedor,
-    notificar_pedido_entregue,
-    notificar_pedido_pendente,
-    notificar_pedido_recebido,
-    notificar_pedido_reprovado,
-    notificar_pedido_revisao,
-    notificar_pedido_aprovado,
-    notificar_pedido_verba_excedida,
-    notificar_solicitacao_cancelada,
-    notificar_solicitacao_concluida,
-    notificar_solicitacao_criada,
-)
-from suprimentos.mixins import CoordenadorOuSuperiorMixin
-from tributacao.views import _filtrar_grupos_por_filial
-from usuario.models import Filial
-
 from .forms import (
-    AnexoPedidoForm, AnexoSolicitacaoForm, AprovarPedidoForm,
-    CancelarSolicitacaoForm, ConfirmarRecebimentoForm, ContratoForm,
-    RegistrarCotacaoForm, CriarPedidoForm, DevolverPedidoForm,
-    EncerrarSolicitacaoForm, EnviarPedidoFornecedorForm, ItemPedidoForm,
-    MaterialForm, ObservacaoSolicitacaoForm, ParceiroForm, PedidoForm,
-    RegistrarEntregaForm, ReprovarPedidoForm, RevisaoPedidoForm,
-    UploadFileForm, ValidarCotacaoForm, VerbaContratoForm, 
+    CotacaoCabecalhoForm, CotacaoItemValorFormSet, PedidoForm, ItemPedidoFormSet,  AprovarPedidoForm,
+    EntregaPedidoCompraForm, ParceiroForm, MaterialForm
+   
 )
 from .models import (
-    AnexoPedido, AnexoSolicitacao, CategoriaMaterial, Contrato, Cotacao,
-    HistoricoPedido, HistoricoSolicitacao, ItemPedido, ItemPedidoCompra, ItemSolicitacao, Material, Parceiro,
-    Pedido, PedidoCompra, SolicitacaoCompra, TipoMaterial, VerbaContrato,
+    CategoriaMaterial, HistoricoSolicitacao, Parceiro, Material, Contrato,
+    Pedido, HistoricoPedido, SolicitacaoCompra, ItemSolicitacao, Cotacao,
+    PedidoCompra, ItemPedidoCompra, EntregaAnexo,
 )
-from .relatorios import gerar_relatorio_completo
-from .services import criar_equipamento_epi_from_form, criar_ferramenta_from_form
-from django.shortcuts import redirect
-from django.contrib import messages
-from django.urls import reverse
-from django.http import Http404
-from django.views.decorators.http import require_GET
-from django.views.generic import FormView
-from suprimentos.services import (
-    MaterialImportService, gerar_template_excel,
-)
-from suprimentos.forms import MaterialImportForm
+from collections import defaultdict
+from django.db import IntegrityError
+import logging
 
 
-User = get_user_model()
 logger = logging.getLogger(__name__)
 
-_APP = 'suprimentos'
 
+# Constantes de módulo (não recriam a cada request)
+CAMPOS_VERBA = {
+    CategoriaMaterial.EPI:        ("verba_epi", "saldo_epi"),
+    CategoriaMaterial.CONSUMO:    ("verba_consumo", "saldo_consumo"),
+    CategoriaMaterial.FERRAMENTA: ("verba_ferramenta", "saldo_ferramenta"),
+}
+SALDO_POR_CLASSIF = {cat: campos[1] for cat, campos in CAMPOS_VERBA.items()}
 
-# ════════════════════════════════════════════════════════════════════
-#   HELPERS
-# ════════════════════════════════════════════════════════════════════
-
-class SolicitacaoForaDaFilialError(Exception):
-    """Solicitação existe, mas pertence a outra filial."""
-    def __init__(self, solicitacao):
-        self.solicitacao = solicitacao
-        super().__init__()
-
-def _pedido_qs_for_user(user):
-    """Retorna queryset de Pedido já filtrado por filial ativa."""
-    qs = Pedido.objects.select_related('contrato', 'solicitante', 'aprovador')
-    
-    return queryset_da_filial(qs, user, campo_filial='contrato__filial')
-
-
-def _get_pedido_seguro(user, pk):
-    """Busca pedido garantindo escopo de filial."""
-    return get_object_or_404(_pedido_qs_for_user(user), pk=pk)
-
-
-def _registrar_hist_pedido(pedido, descricao, user, status_ant='', status_novo=''):
-    HistoricoPedido.registrar(
-        pedido=pedido,
-        descricao=descricao,
-        responsavel=user,
-        status_anterior=status_ant,
-        status_novo=status_novo,
-    )
-
-def _sol_qs_for_user(user):
-    qs = SolicitacaoCompra.objects.select_related(
-        'contrato', 'solicitante', 'aprovador_inicial',
-        'comprador', 'fornecedor',
-    )
-    return queryset_da_filial(qs, user, campo_filial='contrato__filial')
-
-def _get_sol_seguro(user, pk):
+# ─────────────────────────────────────────────────────────────
+# Helpers
+# ─────────────────────────────────────────────────────────────
+def _obter_verba_do_mes(sol):
     """
-    Busca solicitação respeitando filial ativa.
-    Se existir em outra filial, levanta SolicitacaoForaDaFilialError.
+    Resolve a verba do mês de referência da solicitação (defensivo).
+    Retorna (verba_ou_None, erro_ou_None).
     """
-    qs_filtrado = _sol_qs_for_user(user)
-    sol = qs_filtrado.filter(pk=pk).first()
-    if sol:
-        return sol
-
-    # Não achou no escopo do usuário — verifica se existe em outra filial
-    sol_outra_filial = (
-        SolicitacaoCompra.objects
-        .filter(pk=pk)
-        .select_related('contrato__filial')
-        .first()
-    )
-
-    if sol_outra_filial:
-        # ✅ CORRIGIDO: superuser/admin já passaram no qs_filtrado acima.
-        # Se chegou aqui, é usuário comum tentando acessar outra filial.
-        raise SolicitacaoForaDaFilialError(sol_outra_filial)
-
-    raise Http404("Solicitação não encontrada.")
-
-def _user_is_comprador(user):
-    return (
-        user.is_superuser
-        or user.groups.filter(name='Comprador').exists()
-        or user.groups.filter(name='Administrador').exists()
-    )
+    ref = sol.data_necessaria or timezone.now().date()
+    try:
+        verba = sol.contrato.verba_do_mes(ref.year, ref.month)
+    except Exception:
+        logger.exception("Falha ao obter verba do mês (contrato=%s)", sol.contrato_id)
+        return None, "Não foi possível consultar a verba do contrato."
+    return verba, None
 
 
-def _user_is_aprovador(user):
-    return user.is_gerente or user.is_superuser or user.is_administrador
+def _registrar_historico(func, **kwargs):
+    """Wrapper seguro para registro de histórico — nunca quebra o fluxo."""
+    try:
+        func(**kwargs)
+    except Exception:
+        logger.exception("Falha ao registrar histórico (%s)", func.__qualname__)
 
-
-def _registrar_hist_sol(sol, descricao, user, status_ant='', status_novo=''):
-    HistoricoSolicitacao.registrar(
-        solicitacao=sol, descricao=descricao,
-        responsavel=user, status_anterior=status_ant,
-        status_novo=status_novo,
-    )
-
-
-# ════════════════════════════════════════════════════════════════════
-#   PARCEIRO — Importação em massa
-# ════════════════════════════════════════════════════════════════════
-
-class ImportacaoParceiroError(Exception):
-    def __init__(self, message, column_name=None):
-        self.message = message
-        self.column_name = column_name
-        super().__init__(self.message)
-
-    def __str__(self):
-        if self.column_name:
-            return f"Coluna '{self.column_name}': {self.message}"
-        return self.message
-
-
-@login_required
-def parceiro_download_template(request):
-    columns = [
-        'Nome da Filial*', 'Nome Fantasia*', 'Razão Social', 'CNPJ',
-        'Inscrição Estadual', 'Pessoa de Contato', 'Telefone', 'Celular',
-        'E-mail', 'Site', 'É Fabricante? (SIM/NAO)*', 'É Fornecedor? (SIM/NAO)*',
-        'CEP do Endereço', 'Observações',
-    ]
-    df_modelo = pd.DataFrame(columns=columns)
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df_modelo.to_excel(writer, index=False, sheet_name='Parceiros')
-        worksheet = writer.sheets['Parceiros']
-        header_font = Font(bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="4F81BD", fill_type="solid")
-        for i, col_title in enumerate(columns, 1):
-            cell = worksheet.cell(row=1, column=i)
-            cell.font = header_font
-            cell.fill = header_fill
-            worksheet.column_dimensions[cell.column_letter].width = len(col_title) + 5
-        dv = DataValidation(type="list", formula1='"SIM,NAO"', allow_blank=True)
-        worksheet.add_data_validation(dv)
-        dv.add('K2:L1048576')
-
-        # Filiais: superuser vê todas; demais só a própria
-        filiais_qs = Filial.objects.all()
-        if not request.user.is_superuser:
-            filial_ativa = getattr(request.user, 'filial_ativa', None)
-            if filial_ativa:
-                filiais_qs = filiais_qs.filter(pk=filial_ativa.pk)
-        filiais = list(filiais_qs.values_list('nome',))
-        df_filiais = pd.DataFrame(filiais, columns=['Nomes de Filiais Válidas'])
-        df_filiais.to_excel(writer, index=False, sheet_name='Filiais para Consulta')
-        worksheet.freeze_panes = 'A2'
-    output.seek(0)
-    response = HttpResponse(
-        output,
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    )
-    response['Content-Disposition'] = 'attachment; filename="modelo_importacao_parceiros.xlsx"'
-    return response
-
-
-class ParceiroBulkUploadView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
-    """
-    Importação em massa de parceiros.
-    ⚠️ Segurança:
-    - Usuários não-superuser só podem importar para a própria filial ativa.
-    - Filial é buscada via __iexact (evita loop N+1 e cross-filial).
-    """
-    app_label_required = _APP
-    permission_required = 'suprimentos.add_parceiro'
-    template_name = 'suprimentos/upload_parceiros.html'
-    form_class = UploadFileForm
-
-    def get(self, request, *args, **kwargs):
-        form = self.form_class()
-        request.session.pop('parceiros_upload_erros', None)
-        return render(request, self.template_name, {'form': form})
-
-    def post(self, request, *args, **kwargs):
-        form = self.form_class(request.POST, request.FILES)
-        if not form.is_valid():
-            return render(request, self.template_name, {'form': form})
-
-        linhas_com_erro = []
-        try:
-            df = self._ler_e_validar_planilha(request.FILES['file'])
-            with transaction.atomic():
-                sucessos_count, linhas_com_erro = self._processar_dataframe(df)
-                if linhas_com_erro:
-                    raise IntegrityError()
-            messages.success(
-                request,
-                f"Importação concluída! {sucessos_count} parceiros criados/atualizados.",
-            )
-            return redirect(reverse('suprimentos:parceiro_upload_massa'))
-        except (ValueError, IntegrityError, ImportacaoParceiroError) as e:
-            msg = str(e) if str(e) else "Importação cancelada devido a erros."
-            if linhas_com_erro:
-                request.session['parceiros_upload_erros'] = linhas_com_erro
-                msg = f"Importação falhou com {len(linhas_com_erro)} erros. Nenhum parceiro salvo."
-            messages.error(request, msg)
-            context = {
-                'form': form,
-                'errors': [e_row['Erro'] for e_row in linhas_com_erro],
-                'error_report_available': bool(linhas_com_erro),
-            }
-            return render(request, self.template_name, context)
-
-    def _ler_e_validar_planilha(self, arquivo):
-        if not arquivo.name.endswith('.xlsx'):
-            raise ValueError('O arquivo deve ser .xlsx')
-        if arquivo.size > 5 * 1024 * 1024:  # 5 MB
-            raise ValueError('Arquivo muito grande (máx. 5 MB).')
-        df = pd.read_excel(arquivo, dtype=str).fillna('')
-        colunas_esperadas = ['Nome da Filial*', 'Nome Fantasia*', 'Razão Social']
-        if not all(col in df.columns for col in colunas_esperadas):
-            faltantes = set(colunas_esperadas) - set(df.columns)
-            raise ValueError(f"Colunas obrigatórias não encontradas: {', '.join(faltantes)}")
-        return df
-
-    def _processar_dataframe(self, df):
-        linhas_com_erro, sucessos_count = [], 0
-        for index, row in df.iterrows():
-            try:
-                self._processar_linha(row)
-                sucessos_count += 1
-            except ImportacaoParceiroError as e:
-                linha_erro = row.to_dict()
-                linha_erro['Erro'] = f"Linha {index + 2}, {e}"
-                linhas_com_erro.append(linha_erro)
-        return sucessos_count, linhas_com_erro
-
-    def _processar_linha(self, row):
-        user = self.request.user
-        nome_filial_raw = row.get('Nome da Filial*', '').strip()
-        if not nome_filial_raw:
-            raise ImportacaoParceiroError("Campo obrigatório.", column_name='Nome da Filial*')
-
-        # ═════ ISOLAMENTO POR FILIAL (SEGURANÇA) ═════
-        filial_ativa = getattr(user, 'filial_ativa', None)
-        if not user.is_superuser:
-            if not filial_ativa:
-                raise ImportacaoParceiroError(
-                    "Você precisa ter uma filial ativa para importar.",
-                    column_name='Nome da Filial*',
-                )
-            if filial_ativa.nome.lower() != nome_filial_raw.lower():
-                raise ImportacaoParceiroError(
-                    f"Você só pode importar parceiros para '{filial_ativa.nome}'.",
-                    column_name='Nome da Filial*',
-                )
-            filial_encontrada = filial_ativa
-        else:
-            # Superuser pode importar para qualquer filial (case-insensitive)
-            filial_encontrada = Filial.objects.filter(
-                nome__iexact=nome_filial_raw
-            ).first()
-            if not filial_encontrada:
-                raise ImportacaoParceiroError(
-                    f"Filial '{nome_filial_raw}' não encontrada.",
-                    column_name='Nome da Filial*',
-                )
-
-        filial = filial_encontrada
-
-        razao_social = row.get('Razão Social', '').strip()
-        if not razao_social:
-            raise ImportacaoParceiroError("Campo obrigatório.", column_name='Razão Social')
-        nome_fantasia = row.get('Nome Fantasia*', '').strip()
-        if not nome_fantasia:
-            raise ImportacaoParceiroError("Campo obrigatório.", column_name='Nome Fantasia*')
-
-        endereco = None
-        cep = row.get('CEP do Endereço', '').strip()
-        if cep:
-            endereco = Logradouro.objects.filter(cep=cep).first()
-            if not endereco:
-                raise ImportacaoParceiroError(
-                    f"CEP '{cep}' não encontrado.",
-                    column_name='CEP do Endereço',
-                )
-
-        eh_fabricante = str(row.get('É Fabricante? (SIM/NAO)*', '')).strip().upper() in ['SIM', 'S', 'YES', 'Y', '1']
-        eh_fornecedor = str(row.get('É Fornecedor? (SIM/NAO)*', '')).strip().upper() in ['SIM', 'S', 'YES', 'Y', '1']
-        cnpj = row.get('CNPJ', '').strip() or None
-
-        try:
-            identificador = {'cnpj': cnpj} if cnpj else {'razao_social': razao_social, 'filial': filial}
-            Parceiro.objects.update_or_create(
-                **identificador,
-                defaults={
-                    'filial': filial,
-                    'nome_fantasia': nome_fantasia,
-                    'razao_social': razao_social,
-                    'inscricao_estadual': row.get('Inscrição Estadual', '').strip(),
-                    'contato': row.get('Pessoa de Contato', '').strip(),
-                    'telefone': row.get('Telefone', '').strip(),
-                    'celular': row.get('Celular', '').strip(),
-                    'email': row.get('E-mail', '').strip(),
-                    'site': row.get('Site', '').strip(),
-                    'endereco': endereco,
-                    'observacoes': row.get('Observações', '').strip(),
-                    'eh_fabricante': eh_fabricante,
-                    'eh_fornecedor': eh_fornecedor,
-                    'ativo': True,
-                }
-            )
-        except Exception as e:
-            raise ImportacaoParceiroError(f"Erro ao salvar: {str(e)}")
-
-
-@login_required
-def parceiro_download_erros(request):
-    linhas_com_erro = request.session.pop('parceiros_upload_erros', [])
-    if not linhas_com_erro:
-        messages.warning(request, "Não há relatório de erros.")
-        return redirect(reverse('suprimentos:parceiro_upload_massa'))
-    df_erros = pd.DataFrame(linhas_com_erro)
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df_erros.to_excel(writer, index=False, sheet_name='Parceiros_Com_Erros')
-    output.seek(0)
-    response = HttpResponse(
-        output,
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    )
-    response['Content-Disposition'] = 'attachment; filename="relatorio_erros_parceiros.xlsx"'
-    return response
-
-
-# ════════════════════════════════════════════════════════════════════
-#   PARCEIRO — CRUD
-# ════════════════════════════════════════════════════════════════════
-
-class ParceiroListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = _APP
-    model = Parceiro
-    template_name = 'suprimentos/parceiro_list.html'
-    context_object_name = 'parceiros'
-    paginate_by = 20
-    permission_required = 'suprimentos.view_parceiro'
-
-    def get_queryset(self):
-        qs = super().get_queryset().order_by('nome_fantasia')
-        query = self.request.GET.get('q')
-        if query:
-            qs = qs.filter(
-                Q(nome_fantasia__icontains=query) |
-                Q(razao_social__icontains=query) |
-                Q(cnpj__icontains=query)
-            ).distinct()
-        return qs
-
-
-class ParceiroDetailView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DetailView):
-    app_label_required = _APP
-    model = Parceiro
-    template_name = 'suprimentos/parceiro_detail.html'
-    context_object_name = 'parceiro'
-    permission_required = 'suprimentos.view_parceiro'
-
-
-class ParceiroCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, FilialCreateMixin, CreateView):
-    app_label_required = _APP
-    model = Parceiro
-    form_class = ParceiroForm
-    template_name = 'suprimentos/parceiro_form.html'
-    success_url = reverse_lazy('suprimentos:parceiro_list')
-    permission_required = 'suprimentos.add_parceiro'
+# ═════════════════════════════════════════════════════════════
+# DASHBOARD
+# ═════════════════════════════════════════════════════════════
+class SuprimentosDashboard(LoginRequiredMixin, TemplateView):
+    template_name = "suprimentos/dashboard.html"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['titulo_pagina'] = 'Cadastrar Novo Fornecedor'
-        return ctx
-
-
-class ParceiroUpdateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, UpdateView):
-    app_label_required = _APP
-    model = Parceiro
-    form_class = ParceiroForm
-    template_name = 'suprimentos/parceiro_form.html'
-    success_url = reverse_lazy('suprimentos:parceiro_list')
-    permission_required = 'suprimentos.change_parceiro'
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['titulo_pagina'] = 'Editar Fornecedor'
-        return ctx
-
-
-class ParceiroDeleteView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DeleteView):
-    app_label_required = _APP
-    model = Parceiro
-    template_name = 'suprimentos/parceiro_confirm_delete.html'
-    success_url = reverse_lazy('suprimentos:parceiro_list')
-    context_object_name = 'object'
-    permission_required = 'suprimentos.delete_parceiro'
-
-
-# ════════════════════════════════════════════════════════════════════
-#   DASHBOARD SUPRIMENTOS
-# ════════════════════════════════════════════════════════════════════
-
-class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateView):
-    app_label_required = _APP
-    template_name = 'suprimentos/dashboard.html'
-
-    @staticmethod
-    def _dec(val):
-        return val or Decimal('0')
-
-    @staticmethod
-    def _pct(parte, total):
-        if not total or total == 0:
-            return 0
-        return min(int((parte / total) * 100), 100)
-
-    def _contrato_ids(self, user, cliente_id=None):
-        qs = Contrato.objects.filter(ativo=True)
-        if not user.is_superuser:
-            filial_ativa = getattr(user, 'filial_ativa', None)
-            if filial_ativa:
-                qs = qs.filter(filial=filial_ativa)
-        if cliente_id:
-            qs = qs.filter(cliente=cliente_id)
-        contrato_ids = list(qs.values_list('id', flat=True))
-        return qs, contrato_ids
-
-    def _verbas_mes(self, contrato_ids, ano, mes):
-        agg = VerbaContrato.objects.filter(
-            contrato_id__in=contrato_ids, ano=ano, mes=mes,
-        ).aggregate(
-            epi=Coalesce(Sum('verba_epi'), Decimal('0')),
-            consumo=Coalesce(Sum('verba_consumo'), Decimal('0')),
-            ferramenta=Coalesce(Sum('verba_ferramenta'), Decimal('0')),
-        )
-        agg['total'] = agg['epi'] + agg['consumo'] + agg['ferramenta']
-        return agg
-
-    def _compras_mes(self, contrato_ids, ano, mes, status_list, funcionario_id=None):
-        base = ItemPedido.objects.filter(
-            pedido__contrato_id__in=contrato_ids,
-            pedido__status__in=status_list,
-            pedido__data_pedido__year=ano,
-            pedido__data_pedido__month=mes,
-        )
-        if funcionario_id:
-            base = base.filter(pedido__solicitante_id=funcionario_id)
-
-        compras = base.values('material__classificacao').annotate(
-            total=Coalesce(Sum('valor_total'), Decimal('0')),
-        )
-        por_class = {r['material__classificacao']: r['total'] for r in compras}
-        epi = self._dec(por_class.get('EPI'))
-        consumo = self._dec(por_class.get('CONSUMO'))
-        ferramenta = self._dec(por_class.get('FERRAMENTA'))
-
-        trib = base.filter(material__grupo_tributario__isnull=False).aggregate(
-            valor_produtos=Coalesce(Sum('valor_total'), Decimal('0')),
-            custo_real=Coalesce(Sum('custo_real'), Decimal('0')),
-            total_creditos=Coalesce(Sum('total_creditos'), Decimal('0')),
-            total_impostos=Coalesce(Sum('total_impostos'), Decimal('0')),
-        )
-
-        return {
-            'epi': epi, 'consumo': consumo, 'ferramenta': ferramenta,
-            'total': epi + consumo + ferramenta,
-            'trib': trib,
-        }
-
-    def _get_contexto_vazio(self, contratos_qs, user, ano, mes, hoje):
-        """Retorna context zerado quando não há contratos."""
-        zero = Decimal('0')
-        ctx = {}
-        for key in [
-            'total_verba_epi', 'total_verba_consumo', 'total_verba_ferramenta', 'total_verba',
-            'total_compra_epi', 'total_compra_consumo', 'total_compra_ferramenta', 'total_compra',
-            'saldo_epi', 'saldo_consumo', 'saldo_ferramenta', 'saldo_geral',
-            'pct_epi', 'pct_consumo', 'pct_ferramenta', 'pct_geral',
-            'pct_custo_real', 'pct_creditos',
-        ]:
-            ctx[key] = zero
-        ctx.update({
-            'custos_tributarios': {
-                'valor_produtos': zero, 'custo_real': zero,
-                'total_creditos': zero, 'total_impostos': zero,
-            },
-            'pedidos_pendentes': [],
-            'grafico_meses': json.dumps([]),
-            'saldo_anual': [],
-            'contratos': contratos_qs,
-            'materiais_total': 0,
-            'materiais_sem_grupo': 0,
-            'sol_fazer_cotacao': 0,
-            'sol_validar_cotacao': 0,
-            'sol_criar_pedido': 0,
-            'sol_aprovar_pedido': 0,
-            'sol_enviar_pedido': 0,
-            'sol_entrega_pendente': 0,
-            'sol_concluidas_mes': 0,
-            'solicitacoes_urgentes': [],
-            'is_comprador': _user_is_comprador(user),
-            'ano': ano, 'mes': mes,
-            'anos_disponiveis': range(2024, hoje.year + 2),
-            'meses': [
-                (1, 'Janeiro'), (2, 'Fevereiro'), (3, 'Março'),
-                (4, 'Abril'), (5, 'Maio'), (6, 'Junho'),
-                (7, 'Julho'), (8, 'Agosto'), (9, 'Setembro'),
-                (10, 'Outubro'), (11, 'Novembro'), (12, 'Dezembro'),
-            ],
-        })
-        return ctx
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        hoje = timezone.now()
-        ano = int(self.request.GET.get('ano', hoje.year))
-        mes = int(self.request.GET.get('mes', hoje.month))
-        user = self.request.user
-        STATUS_COMPRA = ['APROVADO', 'ENTREGUE', 'RECEBIDO']
-
-        funcionario_id = self.request.GET.get('funcionario', '').strip()
-        cliente_id = self.request.GET.get('cliente', '').strip()
-        filial_ativa = getattr(user, 'filial_ativa', None)
-
-        # Selects de filtros
-        funcionarios_qs = User.objects.filter(is_active=True)
-        if not user.is_superuser and filial_ativa:
-            funcionarios_qs = funcionarios_qs.filter(filial_ativa=filial_ativa)
-        ctx['funcionarios_filter'] = funcionarios_qs.order_by('first_name', 'last_name')
-
-        clientes_qs = Cliente.objects.filter(estatus=True)
-        if not user.is_superuser and filial_ativa:
-            clientes_qs = clientes_qs.filter(filial=filial_ativa)
-        ctx['clientes_filter'] = clientes_qs.order_by('nome')
-
-        ctx['funcionario_selecionado'] = funcionario_id
-        ctx['cliente_selecionado'] = cliente_id
-
-        contratos_qs, contrato_ids = self._contrato_ids(user, cliente_id=cliente_id or None)
-
-        ctx['sem_dados'] = len(contrato_ids) == 0
-        if ctx['sem_dados']:
-            ctx.update(self._get_contexto_vazio(contratos_qs, user, ano, mes, hoje))
-            return ctx
-
-        # Verbas e compras do mês
-        verbas = self._verbas_mes(contrato_ids, ano, mes)
-        ctx['total_verba_epi'] = verbas['epi']
-        ctx['total_verba_consumo'] = verbas['consumo']
-        ctx['total_verba_ferramenta'] = verbas['ferramenta']
-        ctx['total_verba'] = verbas['total']
-
-        compras = self._compras_mes(
-            contrato_ids, ano, mes, STATUS_COMPRA,
-            funcionario_id=funcionario_id or None,
-        )
-        ctx['total_compra_epi'] = compras['epi']
-        ctx['total_compra_consumo'] = compras['consumo']
-        ctx['total_compra_ferramenta'] = compras['ferramenta']
-        ctx['total_compra'] = compras['total']
-
-        ctx['saldo_epi'] = verbas['epi'] - compras['epi']
-        ctx['saldo_consumo'] = verbas['consumo'] - compras['consumo']
-        ctx['saldo_ferramenta'] = verbas['ferramenta'] - compras['ferramenta']
-        ctx['saldo_geral'] = verbas['total'] - compras['total']
-
-        ctx['pct_epi'] = self._pct(compras['epi'], verbas['epi'])
-        ctx['pct_consumo'] = self._pct(compras['consumo'], verbas['consumo'])
-        ctx['pct_ferramenta'] = self._pct(compras['ferramenta'], verbas['ferramenta'])
-        ctx['pct_geral'] = self._pct(compras['total'], verbas['total'])
-
-        ctx['custos_tributarios'] = compras['trib']
-
-        mat_qs = Material.objects.filter(ativo=True)
-        if filial_ativa and not user.is_superuser:
-            mat_qs = mat_qs.filter(filial=filial_ativa)
-        ctx['materiais_total'] = mat_qs.count()
-        ctx['materiais_sem_grupo'] = mat_qs.filter(grupo_tributario__isnull=True).count()
-
-        trib = compras['trib']
-        ctx['pct_custo_real'] = self._pct(trib['custo_real'], trib['valor_produtos']) if trib['valor_produtos'] > 0 else 0
-        ctx['pct_creditos'] = self._pct(trib['total_creditos'], trib['valor_produtos']) if trib['valor_produtos'] > 0 else 0
-
-        # Gráfico últimos 6 meses
-        periodos = []
-        for i in range(5, -1, -1):
-            m_ = hoje.month - i
-            a_ = hoje.year
-            while m_ <= 0:
-                m_ += 12
-                a_ -= 1
-            periodos.append((a_, m_))
-
-        periodo_q = reduce(operator.or_, [Q(ano=a_, mes=m_) for a_, m_ in periodos])
-        verbas_bulk = VerbaContrato.objects.filter(
-            contrato_id__in=contrato_ids,
-        ).filter(periodo_q).values('ano', 'mes').annotate(
-            epi=Coalesce(Sum('verba_epi'), Decimal('0')),
-            consumo=Coalesce(Sum('verba_consumo'), Decimal('0')),
-            ferramenta=Coalesce(Sum('verba_ferramenta'), Decimal('0')),
-        )
-        verbas_map = {(v['ano'], v['mes']): v for v in verbas_bulk}
-
-        compras_periodo_q = reduce(
-            operator.or_,
-            [Q(pedido__data_pedido__year=a_, pedido__data_pedido__month=m_) for a_, m_ in periodos]
-        )
-        compras_bulk_qs = ItemPedido.objects.filter(
-            pedido__contrato_id__in=contrato_ids,
-            pedido__status__in=STATUS_COMPRA,
-        ).filter(compras_periodo_q)
-        if funcionario_id:
-            compras_bulk_qs = compras_bulk_qs.filter(pedido__solicitante_id=funcionario_id)
-
-        compras_bulk = compras_bulk_qs.values(
-            'pedido__data_pedido__year',
-            'pedido__data_pedido__month',
-            'material__classificacao',
-        ).annotate(total=Coalesce(Sum('valor_total'), Decimal('0')))
-
-        compras_trib_bulk_qs = compras_bulk_qs.filter(
-            material__grupo_tributario__isnull=False,
-        ).values(
-            'pedido__data_pedido__year',
-            'pedido__data_pedido__month',
-        ).annotate(
-            custo_real=Coalesce(Sum('custo_real'), Decimal('0')),
-            creditos=Coalesce(Sum('total_creditos'), Decimal('0')),
-        )
-        trib_map = {
-            (t['pedido__data_pedido__year'], t['pedido__data_pedido__month']): t
-            for t in compras_trib_bulk_qs
-        }
-
-        compras_map = {}
-        for c in compras_bulk:
-            key = (c['pedido__data_pedido__year'], c['pedido__data_pedido__month'])
-            compras_map.setdefault(key, {})[c['material__classificacao']] = float(c['total'])
-
-        grafico_meses = []
-        for a_, m_ in periodos:
-            v = verbas_map.get((a_, m_), {})
-            c = compras_map.get((a_, m_), {})
-            t = trib_map.get((a_, m_), {})
-            v_epi = float(v.get('epi', 0))
-            v_con = float(v.get('consumo', 0))
-            v_fer = float(v.get('ferramenta', 0))
-            c_epi = c.get('EPI', 0)
-            c_con = c.get('CONSUMO', 0)
-            c_fer = c.get('FERRAMENTA', 0)
-            grafico_meses.append({
-                'label': f"{m_:02d}/{a_}",
-                'verba_total': v_epi + v_con + v_fer,
-                'compra_total': c_epi + c_con + c_fer,
-                'custo_real': float(t.get('custo_real', 0)),
-                'creditos': float(t.get('creditos', 0)),
-                'verba_epi': v_epi, 'verba_consumo': v_con, 'verba_ferramenta': v_fer,
-                'compra_epi': c_epi, 'compra_consumo': c_con, 'compra_ferramenta': c_fer,
-            })
-        ctx['grafico_meses'] = json.dumps(grafico_meses)
-
-        # Pedidos pendentes
-        pedidos_qs = Pedido.objects.filter(
-            status=Pedido.StatusChoices.PENDENTE,
-            contrato_id__in=contrato_ids,
-        ).select_related('contrato', 'solicitante').annotate(
-            valor_total_pedido=Coalesce(Sum('itens__valor_total'), Decimal('0')),
-        )
-        if funcionario_id:
-            pedidos_qs = pedidos_qs.filter(solicitante_id=funcionario_id)
-        ctx['pedidos_pendentes'] = pedidos_qs[:10]
-
-        # Pipeline de solicitações
-        sol_qs = SolicitacaoCompra.objects.filter(contrato_id__in=contrato_ids)
-        if funcionario_id:
-            sol_qs = sol_qs.filter(solicitante_id=funcionario_id)
-
-        ctx['sol_fazer_cotacao'] = sol_qs.filter(status='FAZER_COTACAO').count()
-        ctx['sol_validar_cotacao'] = sol_qs.filter(status='COTACAO_ENVIADA').count()
-        ctx['sol_criar_pedido'] = sol_qs.filter(status='CRIAR_PEDIDO_CT').count()
-        ctx['sol_aprovar_pedido'] = sol_qs.filter(status='EM_APROVACAO').count()
-        ctx['sol_enviar_pedido'] = sol_qs.filter(status='ENVIAR_PEDIDO').count()
-        ctx['sol_entrega_pendente'] = sol_qs.filter(status='ENTREGA_PENDENTE').count()
-        ctx['sol_concluidas_mes'] = sol_qs.filter(
-            status='CONCLUIDO',
-            atualizado_em__year=ano,
-            atualizado_em__month=mes,
+        ctx["pedidos_pendentes"] = Pedido.objects.filter(
+            status=Pedido.StatusChoices.PENDENTE
         ).count()
-        ctx['solicitacoes_urgentes'] = sol_qs.exclude(
-            status__in=['CONCLUIDO', 'CANCELADO']
-        ).order_by('criado_em')[:10]
+        ctx["solicitacoes_cotacao"] = SolicitacaoCompra.objects.filter(
+            status=SolicitacaoCompra.StatusChoices.FAZER_COTACAO
+        ).count()
+        ctx["solicitacoes_aprovacao"] = SolicitacaoCompra.objects.filter(
+            status=SolicitacaoCompra.StatusChoices.EM_APROVACAO
+        ).count()
+        ctx["pcs_pendentes_entrega"] = PedidoCompra.objects.filter(
+            status__in=[
+                PedidoCompra.StatusPC.ENVIADO_FORNECEDOR,
+                PedidoCompra.StatusPC.EMITIDO,
+                PedidoCompra.StatusPC.ENTREGA_PARCIAL,   # ← novo
+            ]
+        ).count()
+        ctx["ultimos_pedidos"] = Pedido.objects.select_related("contrato").order_by("-data_pedido")[:10]
 
-        ctx['is_comprador'] = _user_is_comprador(user)
-        ctx['contratos'] = contratos_qs
-        ctx['ano'] = ano
-        ctx['mes'] = mes
-        ctx['anos_disponiveis'] = range(2024, hoje.year + 2)
-        ctx['meses'] = [
-            (1, 'Janeiro'), (2, 'Fevereiro'), (3, 'Março'),
-            (4, 'Abril'), (5, 'Maio'), (6, 'Junho'),
-            (7, 'Julho'), (8, 'Agosto'), (9, 'Setembro'),
-            (10, 'Outubro'), (11, 'Novembro'), (12, 'Dezembro'),
-        ]
         return ctx
 
 
-# ════════════════════════════════════════════════════════════════════
-#   MATERIAL — CRUD (refatorado)
-# ════════════════════════════════════════════════════════════════════
-
-class MaterialListView(LoginRequiredMixin, AppPermissionMixin, ListView):
-    app_label_required = _APP
-    model = Material
-    template_name = 'suprimentos/material_list.html'
-    context_object_name = 'materiais'
-    paginate_by = 30
-    permission_required = 'suprimentos.view_material'
-
-    def get_queryset(self):
-        filial_ativa = getattr(self.request.user, 'filial_ativa', None)
-        qs = Material.objects.select_related('ncm', 'grupo_tributario').all()
-
-        if filial_ativa and not self.request.user.is_superuser:
-            qs = qs.filter(filial=filial_ativa)
-
-        q = self.request.GET.get('q', '')
-        classificacao = self.request.GET.get('classificacao', '')
-        tipo = self.request.GET.get('tipo', '')
-        sem_grupo = self.request.GET.get('sem_grupo', '')
-
-        if q:
-            qs = qs.filter(
-                Q(descricao__icontains=q) | Q(marca__icontains=q) | Q(codigo__icontains=q)
-            )
-        if classificacao:
-            qs = qs.filter(classificacao=classificacao)
-        if tipo:
-            qs = qs.filter(tipo=tipo)
-        if sem_grupo == '1':
-            qs = qs.filter(grupo_tributario__isnull=True, ativo=True)
-        elif sem_grupo == '0':
-            qs = qs.filter(grupo_tributario__isnull=False, ativo=True)
-
-        return qs
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        filial_ativa = getattr(self.request.user, 'filial_ativa', None)
-        ctx['titulo_pagina'] = 'Catálogo de Materiais'
-        ctx['classificacoes'] = CategoriaMaterial.choices
-        ctx['tipos'] = TipoMaterial.choices
-        ctx['filtro_q'] = self.request.GET.get('q', '')
-        ctx['filtro_classificacao'] = self.request.GET.get('classificacao', '')
-        ctx['filtro_tipo'] = self.request.GET.get('tipo', '')
-        ctx['filtro_sem_grupo'] = self.request.GET.get('sem_grupo', '')
-
-        qs = Material.objects.filter(ativo=True)
-        if filial_ativa and not self.request.user.is_superuser:
-            qs = qs.filter(filial=filial_ativa)
-
-        ctx['total_materiais'] = qs.count()
-        ctx['com_grupo_tributario'] = qs.filter(grupo_tributario__isnull=False).count()
-        ctx['sem_grupo_tributario'] = qs.filter(grupo_tributario__isnull=True).count()
-        ctx['com_ncm'] = qs.filter(ncm__isnull=False).count()
-        return ctx
-
-
-class MaterialCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
-    app_label_required = _APP
-    model = Material
-    form_class = MaterialForm
-    template_name = 'suprimentos/material_form.html'
-    permission_required = 'suprimentos.add_material'
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['titulo_pagina'] = 'Novo Material'
-        return ctx
-
-    def form_valid(self, form):
-        """
-        ⚠️ CORRIGIDO: chamava super().form_valid() 2x.
-        Agora atribui filial ANTES de salvar, chama super uma vez só.
-        """
-        filial_ativa = getattr(self.request.user, 'filial_ativa', None)
-        form.instance.filial = filial_ativa
-
-        response = super().form_valid(form)
-        material = self.object
-        msgs = []
-
-        if form.cleaned_data.get('criar_equipamento_epi'):
-            eq = criar_equipamento_epi_from_form(material, form, filial_ativa)
-            msgs.append(f'Equipamento EPI (CA: {eq.certificado_aprovacao}) criado no SST')
-
-        if form.cleaned_data.get('criar_ferramenta'):
-            fer = criar_ferramenta_from_form(material, form, filial_ativa)
-            msgs.append(f'Ferramenta "{fer.nome}" ({fer.codigo_identificacao}) criada')
-
-        if msgs:
-            detalhes = ' | '.join(msgs)
-            messages.success(self.request, f'Material "{material.descricao}" criado! ✅ {detalhes}')
-        else:
-            messages.success(self.request, f'Material "{material.descricao}" criado!')
-        return response
-
-    def get_success_url(self):
-        return reverse('suprimentos:material_lista')
-
-
-class MaterialUpdateView(LoginRequiredMixin, AppPermissionMixin, UpdateView):
-    app_label_required = _APP
-    model = Material
-    form_class = MaterialForm
-    template_name = 'suprimentos/material_form.html'
-    permission_required = 'suprimentos.change_material'
-
-    def get_queryset(self):
-        """Garante que o usuário só edite materiais da sua filial."""
-        qs = super().get_queryset()
-        filial_ativa = getattr(self.request.user, 'filial_ativa', None)
-        if filial_ativa and not self.request.user.is_superuser:
-            qs = qs.filter(filial=filial_ativa)
-        return qs
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['titulo_pagina'] = f'Editar: {self.object.descricao}'
-        return ctx
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        material = self.object
-        filial_ativa = getattr(self.request.user, 'filial_ativa', None)
-        msgs = []
-
-        if form.cleaned_data.get('criar_equipamento_epi') and not material.equipamento_epi:
-            eq = criar_equipamento_epi_from_form(material, form, filial_ativa)
-            msgs.append(f'Equipamento EPI (CA: {eq.certificado_aprovacao}) criado no SST')
-
-        if form.cleaned_data.get('criar_ferramenta') and not material.ferramenta_ref:
-            fer = criar_ferramenta_from_form(material, form, filial_ativa)
-            msgs.append(f'Ferramenta "{fer.nome}" ({fer.codigo_identificacao}) criada')
-
-        if msgs:
-            detalhes = ' | '.join(msgs)
-            messages.success(self.request, f'Material atualizado! ✅ {detalhes}')
-        else:
-            messages.success(self.request, 'Material atualizado!')
-        return response
-
-    def get_success_url(self):
-        return reverse('suprimentos:material_lista')
-
-class MaterialImportView(LoginRequiredMixin, AppPermissionMixin, FormView):
-    app_label_required = _APP
-    template_name = 'suprimentos/material_import.html'
-    form_class = MaterialImportForm
-    permission_required = 'suprimentos.add_material'
-
-    def get_success_url(self):
-        return reverse('suprimentos:material_lista')
-
-    def form_valid(self, form):
-        filial = getattr(self.request.user, 'filial_ativa', None)
-        if not filial and not self.request.user.is_superuser:
-            messages.error(self.request, "Selecione uma filial ativa antes de importar.")
-            return self.form_invalid(form)
-
-        arquivo = form.cleaned_data['arquivo']
-        confirmar = form.cleaned_data.get('confirmar')
-
-        try:
-            service = MaterialImportService(
-                arquivo=arquivo,
-                filial=filial,
-                commit=bool(confirmar),
-            )
-            resultado = service.executar()
-        except Exception as e:
-            logger.exception("Falha na importação de materiais")
-            messages.error(self.request, f"Erro ao processar arquivo: {e}")
-            return self.form_invalid(form)
-
-        # 1ª submissão: preview
-        if not confirmar:
-            ctx = self.get_context_data(form=form)
-            ctx['resultado'] = resultado
-            ctx['preview'] = True
-            # Reanexar arquivo via base64 (truque para reusar) — alternativa abaixo
-            return self.render_to_response(ctx)
-
-        # 2ª submissão: confirmado
-        if resultado.tem_erros:
-            messages.error(
-                self.request,
-                f"Importação abortada: {resultado.total_erros} linha(s) com erro."
-            )
-            ctx = self.get_context_data(form=form)
-            ctx['resultado'] = resultado
-            ctx['preview'] = True
-            return self.render_to_response(ctx)
-
-        messages.success(
-            self.request,
-            f"✅ {resultado.total_criados} material(is) importado(s) com sucesso!"
-        )
-        return super().form_valid(form)
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['titulo_pagina'] = 'Importar Materiais em Massa'
-        return ctx
-
-
-def material_template_download(request):
-    """Download do template Excel."""
-    conteudo = gerar_template_excel()
-    response = HttpResponse(
-        conteudo,
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename="template_materiais.xlsx"'
-    return response
-
-# ════════════════════════════════════════════════════════════════════
-#   CONTRATO — CRUD + Verbas
-# ════════════════════════════════════════════════════════════════════
-
-class ContratoListView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = _APP
-    model = Contrato
-    template_name = 'suprimentos/contrato_list.html'
-    context_object_name = 'contratos'
+# ═════════════════════════════════════════════════════════════
+# 1. PEDIDO — CRUD + Submissão
+# ═════════════════════════════════════════════════════════════
+class PedidoListView(LoginRequiredMixin, ListView):
+    model = Pedido
+    template_name = "suprimentos/pedido_list.html"
+    context_object_name = "pedidos"
     paginate_by = 20
-    permission_required = 'suprimentos.view_contrato'
 
     def get_queryset(self):
-        qs = super().get_queryset().filter(ativo=True)
-        q = self.request.GET.get('q', '')
-        if q:
-            qs = qs.filter(Q(cm__icontains=q) | Q(cliente__icontains=q))
-        return qs
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['titulo_pagina'] = 'Contratos'
-        return ctx
-
-
-class ContratoCreateView(LoginRequiredMixin, AppPermissionMixin, FilialCreateMixin, CreateView):
-    app_label_required = _APP
-    model = Contrato
-    form_class = ContratoForm
-    template_name = 'suprimentos/contrato_form.html'
-    permission_required = 'suprimentos.add_contrato'
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['titulo_pagina'] = 'Novo Contrato'
-        return ctx
-
-
-class ContratoUpdateView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, UpdateView):
-    app_label_required = _APP
-    model = Contrato
-    form_class = ContratoForm
-    template_name = 'suprimentos/contrato_form.html'
-    permission_required = 'suprimentos.change_contrato'
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['titulo_pagina'] = f'Editar CM {self.object.cm}'
-        return ctx
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Contrato atualizado!')
-        return super().form_valid(form)
-
-
-class ContratoDetailView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, DetailView):
-    app_label_required = _APP
-    model = Contrato
-    template_name = 'suprimentos/contrato_detail.html'
-    context_object_name = 'contrato'
-    permission_required = 'suprimentos.view_contrato'
-
-    def get_object(self, queryset=None):
-        try:
-            return super().get_object(queryset)
-        except self.model.DoesNotExist:
-            if Contrato.objects.filter(pk=self.kwargs['pk']).exists():
-                messages.warning(
-                    self.request,
-                    'Este contrato pertence a outra filial. '
-                    'Selecione a filial correta no menu superior.'
-                )
-            else:
-                messages.error(self.request, 'Contrato não encontrado.')
-            raise
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        hoje = timezone.now()
-        ano = int(self.request.GET.get('ano', hoje.year))
-        mes = int(self.request.GET.get('mes', hoje.month))
-
-        verba = self.object.verba_do_mes(ano, mes)
-        ctx['verba'] = verba
-        ctx['ano'] = ano
-        ctx['mes'] = mes
-
-        ctx['historico'] = VerbaContrato.objects.filter(
-            contrato=self.object
-        ).order_by('-ano', '-mes')[:12]
-
-        ctx['pedidos'] = Pedido.objects.filter(
-            contrato=self.object
-        ).select_related('solicitante').order_by('-data_pedido')[:20]
-
-        ctx['verba_form'] = VerbaContratoForm(initial={
-            'ano': ano, 'mes': mes,
-            'verba_epi': verba.verba_epi,
-            'verba_consumo': verba.verba_consumo,
-            'verba_ferramenta': verba.verba_ferramenta,
-        })
-
-        ctx['meses'] = [
-            (1, 'Jan'), (2, 'Fev'), (3, 'Mar'), (4, 'Abr'),
-            (5, 'Mai'), (6, 'Jun'), (7, 'Jul'), (8, 'Ago'),
-            (9, 'Set'), (10, 'Out'), (11, 'Nov'), (12, 'Dez'),
-        ]
-        ctx['anos_disponiveis'] = range(2024, hoje.year + 2)
-        ctx['is_gerente'] = self.request.user.is_gerente or self.request.user.is_superuser
-        return ctx
-
-    def post(self, request, *args, **kwargs):
-        """Salvar/atualizar verba mensal — só Gerente."""
-        self.object = self.get_object()
-        user = request.user
-
-        if not (user.is_gerente or user.is_superuser):
-            messages.error(request, 'Apenas Gerentes podem alterar verbas.')
-            return redirect(self.object.get_absolute_url())
-
-        form = VerbaContratoForm(request.POST)
-        if form.is_valid():
-            ano = form.cleaned_data['ano']
-            mes = form.cleaned_data['mes']
-            verba, _ = VerbaContrato.objects.get_or_create(
-                contrato=self.object, ano=ano, mes=mes,
-            )
-            verba.verba_epi = form.cleaned_data['verba_epi']
-            verba.verba_consumo = form.cleaned_data['verba_consumo']
-            verba.verba_ferramenta = form.cleaned_data['verba_ferramenta']
-            verba.save()
-            messages.success(request, f'Verba de {mes:02d}/{ano} atualizada!')
-        else:
-            messages.error(request, 'Erro ao salvar verba.')
-        return redirect(
-            f"{self.object.get_absolute_url()}?ano={form.cleaned_data.get('ano', '')}&mes={form.cleaned_data.get('mes', '')}"
-        )
-
-
-# ════════════════════════════════════════════════════════════════════
-#   PEDIDO — Workflow
-# ════════════════════════════════════════════════════════════════════
-
-from django.db import transaction
-
-
-class PedidoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
-    app_label_required = _APP
-    model = Pedido
-    form_class = PedidoForm
-    template_name = 'suprimentos/pedido_form.html'
-    permission_required = 'suprimentos.add_pedido'
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['titulo_pagina'] = 'Novo Pedido de Material'
-        ctx['anexo_form'] = AnexoPedidoForm()
-        ctx['is_create'] = True  # ← FLAG para o template esconder itens
-        return ctx
-
-    @transaction.atomic
-    def form_valid(self, form):
-        user = self.request.user
-        form.instance.solicitante = user
-
-        # ✅ FIX 1: tratamento de filial_ativa ausente
-        filial = getattr(user, 'filial_ativa', None)
-        if not filial:
-            messages.error(
-                self.request,
-                'Você não tem uma filial ativa configurada. Contate o administrador.'
-            )
-            return self.form_invalid(form)
-        form.instance.filial = filial
-
-        response = super().form_valid(form)
-        pedido = self.object
-
-        # Upload de anexos
-        arquivos = self.request.FILES.getlist('anexos')
-        for arq in arquivos:
-            try:
-                AnexoPedido.objects.create(
-                    pedido=pedido, arquivo=arq, enviado_por=user,
-                )
-            except Exception as e:
-                logger.error(
-                    f"Erro ao anexar '{arq.name}' ao pedido {pedido.numero}: {e}"
-                )
-                messages.warning(
-                    self.request,
-                    f'Arquivo "{arq.name}" foi rejeitado: {e}'
-                )
-
-        _registrar_hist_pedido(
-            pedido,
-            f"Pedido criado por {user.get_full_name() or user.username}.",
-            user, status_novo='RASCUNHO',
-        )
-        messages.success(
-            self.request,
-            f'Pedido {pedido.numero} criado! Agora adicione os itens. 📝'
-        )
-        # ✅ Redireciona explicitamente para o detail (onde se adiciona itens)
-        return redirect('suprimentos:pedido_detalhe', pk=pedido.pk)
-
-
-class PedidoUpdateView(LoginRequiredMixin, AppPermissionMixin, UpdateView):
-    """✅ NOVA VIEW: editar cabeçalho de pedido em rascunho/revisão."""
-    app_label_required = _APP
-    model = Pedido
-    form_class = PedidoForm
-    template_name = 'suprimentos/pedido_form.html'
-    permission_required = 'suprimentos.change_pedido'
-
-    def get_queryset(self):
-        return super().get_queryset().select_related(
-            'contrato__filial',
-            'solicitacao_gerada',
-            'solicitacao',         # OneToOne reverso — funciona com select_related!
-            'solicitante',
-            'aprovador',
-        )
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-
-    def dispatch(self, request, *args, **kwargs):
-        pedido = self.get_object()
-        if pedido.status not in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]:
-            messages.error(request, 'Só é possível editar pedidos em rascunho ou revisão.')
-            return redirect(pedido.get_absolute_url())
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        
-        # Pega a solicitação vinculada (qualquer um dos caminhos)
-        solicitacao = None
-        if self.object.solicitacao_gerada_id:
-            solicitacao = self.object.solicitacao_gerada
-        else:
-            try:
-                solicitacao = self.object.solicitacao
-            except SolicitacaoCompra.DoesNotExist:
-                solicitacao = None
-        
-        ctx['solicitacao_vinculada'] = solicitacao
-        return ctx
-
-
-class PedidoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
-    app_label_required = _APP
-    model = Pedido
-    template_name = 'suprimentos/pedido_detalhe.html'
-    context_object_name = 'pedido'
-    permission_required = 'suprimentos.view_pedido'
-
-    def get_queryset(self):
-        return super().get_queryset().select_related(
-            'contrato__filial',
-            'solicitacao_gerada',
-            'solicitante',
-            'aprovador',
-        )
-
-    # ───────────────────────────────────────────────────────────
-    # Helpers de permissão (centralizados)
-    # ───────────────────────────────────────────────────────────
-    def _eh_aprovador(self, user, pedido):
-        """Retorna True se o usuário pode aprovar este pedido."""
-        if not user.is_authenticated:
-            return False
-        if user.is_superuser:
-            return True
-        if user.has_perm('suprimentos.aprovar_pedido'):
-            return True
-        nomes_grupos = set(user.groups.values_list('name', flat=True))
-        if nomes_grupos & {'Gerente', 'Aprovador Suprimentos', 'Diretoria'}:
-            return True
-        return False
-
-    def _eh_solicitante(self, user, pedido):
-        return user.is_authenticated and (
-            user == pedido.solicitante or user.is_superuser
-        )
-
-    def _get_solicitacao(self, pedido):
-        """
-        Resolve a SolicitacaoCompra vinculada ao pedido, tentando:
-          1) FK direta: pedido.solicitacao_gerada
-          2) Relação reversa: pedido.solicitacao  (OneToOne reversa)
-        Retorna None se nenhuma existir.
-        """
-        # 1) FK direta (mais confiável)
-        if getattr(pedido, 'solicitacao_gerada_id', None):
-            try:
-                return pedido.solicitacao_gerada
-            except Exception:
-                pass
-
-        # 2) Relação reversa OneToOne — precisa de try/except
-        #    porque acessar levanta RelatedObjectDoesNotExist
-        try:
-            return pedido.solicitacao
-        except Exception:
-            return None
-
-    # ───────────────────────────────────────────────────────────
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        pedido = self.object
-        user = self.request.user
-        S = Pedido.StatusChoices
-
-        # ===== DADOS BÁSICOS =====
-        ctx['itens']         = pedido.itens.select_related('material').all()
-        ctx['totais']        = pedido.totais_por_classificacao()
-        ctx['item_form']     = ItemPedidoForm()
-        ctx['reprovar_form'] = ReprovarPedidoForm()
-        ctx['receber_form']  = ConfirmarRecebimentoForm()
-        ctx['devolver_form'] = DevolverPedidoForm()
-        ctx['anexo_form']    = AnexoPedidoForm()
-        ctx['anexos']        = pedido.anexos.all()
-
-        # ===== HISTÓRICO =====
-        historico_model = pedido.historico.model
-        related_user_field = 'responsavel' if hasattr(historico_model, 'responsavel') else 'usuario'
-        historico_qs = pedido.historico.select_related(related_user_field).all()
-        ctx['historico']        = historico_qs
-        ctx['historicopedido']  = historico_qs  # alias p/ compatibilidade
-
-        # ===== SOLICITAÇÃO VINCULADA =====
-        # ✅ Único ponto de definição — sem sobrescrever
-        ctx['solicitacao'] = self._get_solicitacao(pedido)
-
-        # ===== FLAGS DE PERMISSÃO POR STATUS =====
-        eh_solic = self._eh_solicitante(user, pedido)
-        eh_aprov = self._eh_aprovador(user, pedido)
-
-        ctx['pode_editar']   = eh_solic and pedido.status in (S.RASCUNHO, S.REVISAO)
-        ctx['pode_enviar']   = (
-            eh_solic
-            and pedido.status in (S.RASCUNHO, S.REVISAO)
-            and pedido.itens.exists()
-        )
-        ctx['pode_cancelar'] = eh_solic and pedido.status in (
-            S.RASCUNHO, S.PENDENTE, S.REVISAO
-        )
-
-        ctx['pode_aprovar']  = eh_aprov and pedido.status == S.PENDENTE
-        ctx['pode_devolver'] = eh_aprov and pedido.status == S.PENDENTE
-        ctx['pode_reprovar'] = eh_aprov and pedido.status == S.PENDENTE
-
-        # ===== COMPARATIVO PEDIDO × VERBA DO CONTRATO =====
-        from decimal import Decimal
-        data_ref = pedido.data_pedido or timezone.now().date()
-        ctx['verba'] = None
-        ctx['comparativo_verba'] = None
-
-        try:
-            verba = (
-                pedido.contrato.verba_do_mes(data_ref.year, data_ref.month)
-                if pedido.contrato else None
-            )
-            ctx['verba'] = verba
-
-            if verba:
-                MAPA_VERBAS = {
-                    'EPI':        Decimal(verba.verba_epi or 0),
-                    'CONSUMO':    Decimal(verba.verba_consumo or 0),
-                    'FERRAMENTA': Decimal(verba.verba_ferramenta or 0),
-                }
-                totais_pedido = pedido.totais_por_classificacao() or {}
-
-                consumido_qs = Pedido._base_manager.filter(
-                    contrato=pedido.contrato,
-                    data_pedido__year=data_ref.year,
-                    data_pedido__month=data_ref.month,
-                    status__in=[S.APROVADO, S.ENTREGUE, S.RECEBIDO],
-                ).exclude(pk=pedido.pk)
-
-                consumido_por_class = (
-                    consumido_qs
-                    .values('itens__material__classificacao')
-                    .annotate(total=Sum('itens__valor_total'))
-                )
-                consumido_map = {
-                    row['itens__material__classificacao']: Decimal(row['total'] or 0)
-                    for row in consumido_por_class
-                }
-
-                linhas = []
-                status_geral = 'OK'
-                ordem = {'OK': 0, 'MODERADO': 1, 'ATENCAO': 2, 'EXCEDE': 3}
-
-                for classificacao, valor_verba in MAPA_VERBAS.items():
-                    valor_pedido_class = Decimal(totais_pedido.get(classificacao) or 0)
-                    consumido = consumido_map.get(classificacao, Decimal('0'))
-                    saldo_atual = valor_verba - consumido
-                    saldo_apos  = saldo_atual - valor_pedido_class
-
-                    pct_consumo_total = (
-                        ((consumido + valor_pedido_class) / valor_verba * 100)
-                        if valor_verba > 0 else Decimal('0')
-                    )
-                    pct_consumido_atual = (
-                        (consumido / valor_verba * 100)
-                        if valor_verba > 0 else Decimal('0')
-                    )
-
-                    if saldo_apos < 0:
-                        status, cor, icone, texto = 'EXCEDE', 'danger', '🔴', 'Excede a verba!'
-                    elif pct_consumo_total >= 90:
-                        status, cor, icone, texto = 'ATENCAO', 'warning', '⚠️', 'Acima de 90% da verba.'
-                    elif pct_consumo_total >= 70:
-                        status, cor, icone, texto = 'MODERADO', 'info', '📊', 'Consumo moderado.'
-                    else:
-                        status, cor, icone, texto = 'OK', 'success', '✅', 'Dentro do orçamento.'
-
-                    if ordem[status] > ordem[status_geral]:
-                        status_geral = status
-
-                    linhas.append({
-                        'classificacao': classificacao,
-                        'valor_verba': valor_verba,
-                        'consumido': consumido,
-                        'saldo_atual': saldo_atual,
-                        'valor_pedido': valor_pedido_class,
-                        'saldo_apos': saldo_apos,
-                        'pct_consumo_total': pct_consumo_total,
-                        'pct_consumido_atual': pct_consumido_atual,
-                        'status': status,
-                        'cor': cor,
-                        'icone': icone,
-                        'texto': texto,
-                    })
-
-                total_verba     = sum((l['valor_verba']  for l in linhas), Decimal('0'))
-                total_consumido = sum((l['consumido']    for l in linhas), Decimal('0'))
-                total_pedido    = sum((l['valor_pedido'] for l in linhas), Decimal('0'))
-                total_saldo     = total_verba - total_consumido - total_pedido
-
-                ctx['comparativo_verba'] = {
-                    'verba': verba,
-                    'mes_ref': data_ref,
-                    'linhas': linhas,
-                    'total_verba': total_verba,
-                    'total_consumido': total_consumido,
-                    'total_pedido': total_pedido,
-                    'total_saldo': total_saldo,
-                    'status_geral': status_geral,
-                    'qtd_pedidos_mes': consumido_qs.count(),
-                }
-        except Exception as e:
-            logger.warning(
-                f"Erro ao buscar verba do pedido {pedido.numero}: {e}",
-                exc_info=True,
-            )
-
-        return ctx
-
-
-class PedidoListView(LoginRequiredMixin, AppPermissionMixin, CoordenadorOuSuperiorMixin, ListView):
-    app_label_required = _APP
-    model = Pedido
-    template_name = 'suprimentos/pedido_list.html'
-    context_object_name = 'pedidos'
-    paginate_by = 20
-    permission_required = 'suprimentos.view_pedido'
-
-    def get_queryset(self):
-        user = self.request.user
-        qs = _pedido_qs_for_user(user).annotate(
-            qtd_itens=Count('itens'),
-        ).select_related('contrato', 'solicitante').prefetch_related('itens')
-
-        if not (user.is_gerente or user.is_coordenador or user.is_administrador):
-            qs = qs.filter(solicitante=user)
-
-        # ✅ FIX 5: validar status contra choices válidos
-        status = self.request.GET.get('status', '').strip()
-        valid_status = {s[0] for s in Pedido.StatusChoices.choices}
-        if status and status in valid_status:
-            qs = qs.filter(status=status)
-
-        q = self.request.GET.get('q', '').strip()
-        if q:
-            qs = qs.filter(
-                Q(numero__icontains=q) | Q(contrato__cliente__icontains=q)
-            )
-        return qs.order_by('-data_pedido', '-id')
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['titulo_pagina'] = 'Pedidos de Material'
-        ctx['status_choices'] = Pedido.StatusChoices.choices
-        ctx['filtro_status'] = self.request.GET.get('status', '')
-        ctx['filtro_q'] = self.request.GET.get('q', '')
-        return ctx
-
-
-class ItemPedidoCreateView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
-
-    def post(self, request, pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-
-        if pedido.status not in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]:
-            messages.error(request, 'Só é possível alterar pedidos em rascunho ou revisão.')
-            return redirect(pedido.get_absolute_url())
-
-        form = ItemPedidoForm(request.POST)
-        if form.is_valid():
-            item = form.save(commit=False)
-            item.pedido = pedido
-            item.save()
-            _registrar_hist_pedido(
-                pedido,
-                f"Item adicionado: {item.material} (qtd: {item.quantidade})",
-                request.user,
-            )
-            messages.success(request, f'Item "{item.material}" adicionado! âž•')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    label = form.fields[field].label if field in form.fields else field
-                    messages.error(request, f'{label}: {error}')
-        return redirect(pedido.get_absolute_url())
-
-
-class ItemPedidoDeleteView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
-
-    def post(self, request, pk, item_pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-        item = get_object_or_404(ItemPedido, pk=item_pk, pedido=pedido)
-
-        if pedido.status not in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]:
-            messages.error(request, 'Só é possível alterar pedidos em rascunho ou revisão.')
-            return redirect(pedido.get_absolute_url())
-
-        nome = str(item.material)
-        item.delete()
-        _registrar_hist_pedido(pedido, f"Item removido: {nome}", request.user)
-        messages.success(request, f'Item "{nome}" removido. 🗑️')
-        return redirect(pedido.get_absolute_url())
-
-
-class PedidoEnviarView(LoginRequiredMixin, AppPermissionMixin, View):
-    """RASCUNHO/REVISAO → PENDENTE."""
-    app_label_required = _APP
-
-    @transaction.atomic
-    def post(self, request, pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-        if pedido.status not in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]:
-            messages.error(request, 'Pedido não pode ser enviado neste status.')
-            return redirect(pedido.get_absolute_url())
-        if not pedido.itens.exists():
-            messages.error(request, 'Adicione pelo menos um item antes de enviar.')
-            return redirect(pedido.get_absolute_url())
-
-        ok, erros = pedido.verificar_verba()
-        if not ok:
-            for erro in erros:
-                messages.warning(request, f'⚠️ {erro}')
-            try:
-                notificar_pedido_verba_excedida(pedido, erros)
-            except Exception as e:
-                logger.error(f"Erro ao notificar verba excedida {pedido.numero}: {e}")
-
-        status_ant = pedido.status
-        pedido.status = Pedido.StatusChoices.PENDENTE
-        pedido.motivo_revisao = ''
-        if not pedido.data_pedido:
-            pedido.data_pedido = timezone.now().date()
-            pedido.save(update_fields=['status', 'motivo_revisao', 'data_pedido'])
-        else:
-            pedido.save(update_fields=['status', 'motivo_revisao'])
-
-        _registrar_hist_pedido(
-            pedido,
-            f"Enviado para aprovação por {request.user.get_full_name() or request.user.username}.",
-            request.user, status_ant, 'PENDENTE',
-        )
-        try:
-            notificar_pedido_pendente(pedido)
-        except Exception as e:
-            logger.error(f"Erro ao notificar envio do pedido {pedido.numero}: {e}")
-        messages.success(request, f'Pedido {pedido.numero} enviado para aprovação! 📤')
-        return redirect(pedido.get_absolute_url())
-
-
-class PedidoAprovarView(LoginRequiredMixin, AppPermissionMixin, View):
-    """PENDENTE → APROVADO + gera SolicitacaoCompra automaticamente."""
-    app_label_required = _APP
-
-    @transaction.atomic
-    def post(self, request, pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-        user = request.user
-
-        if not (user.is_gerente or user.is_superuser):
-            messages.error(request, 'Apenas Gerentes podem aprovar pedidos.')
-            return redirect(pedido.get_absolute_url())
-        if pedido.status != Pedido.StatusChoices.PENDENTE:
-            messages.error(request, 'Pedido não está pendente.')
-            return redirect(pedido.get_absolute_url())
-
-        ok, erros = pedido.verificar_verba()
-        if not ok:
-            for erro in erros:
-                messages.warning(request, f'⚠️ {erro}')
-
-        # ✅ PRIMEIRO gera a solicitação — se falhar, rollback total
-        try:
-            sol = pedido.gerar_solicitacao_compra(usuario=user)  # ← FIX AQUI
-        except Exception as e:
-            logger.exception(
-                f"Falha ao gerar solicitação do pedido {pedido.numero}"
-            )
-            messages.error(
-                request,
-                f'❌ Não foi possível aprovar: erro ao gerar solicitação. '
-                f'Detalhe: {type(e).__name__}: {e}'
-            )
-            # @transaction.atomic faz rollback automático
-            return redirect(pedido.get_absolute_url())
-
-        # Só atualiza o status DEPOIS de gerar a solicitação com sucesso
-        status_ant = pedido.status
-        pedido.status = Pedido.StatusChoices.APROVADO
-        pedido.aprovador = user
-        pedido.data_aprovacao = timezone.now()
-        pedido.save(update_fields=['status', 'aprovador', 'data_aprovacao'])
-
-        _registrar_hist_pedido(
-            pedido,
-            f"Aprovado por {user.get_full_name() or user.username}. "
-            f"Solicitação {sol.numero} gerada automaticamente.",
-            user, status_ant, 'APROVADO',
-        )
-
-        transaction.on_commit(lambda: _notificar_aprovacao(pedido, sol))
-
-        messages.success(
-            request,
-            f'Pedido {pedido.numero} aprovado! ✅ '
-            f'Solicitação {sol.numero} gerada automaticamente. 📋'
-        )
-        return redirect(pedido.get_absolute_url())
-
-
-def _notificar_aprovacao(pedido, sol):
-    """Helper para disparar notificações após commit."""
-    try:
-        notificar_pedido_inicial_aprovado(pedido)
-    except Exception as e:
-        logger.error(f"Erro notificação aprovação {pedido.numero}: {e}")
-    if sol:
-        try:
-            notificar_solicitacao_criada(sol)
-        except Exception as e:
-            logger.error(f"Erro notificação solicitação criada: {e}")
-
-
-class PedidoReprovarView(LoginRequiredMixin, AppPermissionMixin, View):
-    """PENDENTE → REPROVADO (só Gerente)."""
-    app_label_required = _APP
-
-    @transaction.atomic
-    def post(self, request, pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-        user = request.user
-        if not (user.is_gerente or user.is_superuser):
-            messages.error(request, 'Apenas Gerentes podem reprovar pedidos.')
-            return redirect(pedido.get_absolute_url())
-        if pedido.status != Pedido.StatusChoices.PENDENTE:
-            messages.error(request, 'Pedido não está pendente.')
-            return redirect(pedido.get_absolute_url())
-
-        form = ReprovarPedidoForm(request.POST)
-        if form.is_valid():
-            status_ant = pedido.status
-            pedido.status = Pedido.StatusChoices.REPROVADO
-            pedido.aprovador = user
-            pedido.motivo_reprovacao = form.cleaned_data['motivo']
-            pedido.data_aprovacao = timezone.now()
-            pedido.save(update_fields=[
-                'status', 'aprovador', 'motivo_reprovacao', 'data_aprovacao'
-            ])
-
-            _registrar_hist_pedido(
-                pedido,
-                f"Reprovado por {user.get_full_name() or user.username}. "
-                f"Motivo: {pedido.motivo_reprovacao}",
-                user, status_ant, 'REPROVADO',
-            )
-            transaction.on_commit(
-                lambda: _safe_notify(notificar_pedido_reprovado, pedido)
-            )
-            messages.info(request, f'Pedido {pedido.numero} reprovado. ❌')
-        else:
-            messages.error(request, 'Informe o motivo da reprovação.')
-        return redirect(pedido.get_absolute_url())
-
-
-class PedidoDevolverView(LoginRequiredMixin, AppPermissionMixin, View):
-    """PENDENTE → REVISAO (Gerente devolve para correção)."""
-    app_label_required = _APP
-
-    @transaction.atomic
-    def post(self, request, pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-        user = request.user
-
-        if not (user.is_gerente or user.is_superuser):
-            messages.error(request, 'Apenas Gerentes podem devolver pedidos.')
-            return redirect(pedido.get_absolute_url())
-        if pedido.status != Pedido.StatusChoices.PENDENTE:
-            messages.error(request, 'Pedido não está pendente.')
-            return redirect(pedido.get_absolute_url())
-
-        form = DevolverPedidoForm(request.POST)
-        if form.is_valid():
-            status_ant = pedido.status
-            pedido.status = Pedido.StatusChoices.REVISAO
-            pedido.motivo_revisao = form.cleaned_data['motivo']
-            pedido.save(update_fields=['status', 'motivo_revisao'])
-
-            _registrar_hist_pedido(
-                pedido,
-                f"Devolvido para revisão por {user.get_full_name() or user.username}. "
-                f"Motivo: {pedido.motivo_revisao}",
-                user, status_ant, 'REVISAO',
-            )
-            transaction.on_commit(
-                lambda: _safe_notify(notificar_pedido_revisao, pedido)
-            )
-            messages.info(request, f'Pedido {pedido.numero} devolvido para revisão. 🔄')
-        else:
-            messages.error(request, 'Informe o motivo da devolução.')
-        return redirect(pedido.get_absolute_url())
-
-
-class PedidoRevisarView(LoginRequiredMixin, AppPermissionMixin, View):
-    """Solicitante corrige e reenvia (REVISAO → PENDENTE)."""
-    app_label_required = _APP
-
-    @transaction.atomic
-    def post(self, request, pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-        user = request.user
-
-        if user != pedido.solicitante and not user.is_superuser:
-            messages.error(request, 'Apenas o solicitante pode revisar.')
-            return redirect(pedido.get_absolute_url())
-        if pedido.status != Pedido.StatusChoices.REVISAO:
-            messages.error(request, 'Pedido não está em revisão.')
-            return redirect(pedido.get_absolute_url())
-
-        # ✅ FIX 2: passa instance explicitamente e mantém referência
-        form = RevisaoPedidoForm(request.POST, instance=pedido)
-        if form.is_valid():
-            status_ant = pedido.status
-            pedido = form.save(commit=False)
-            pedido.status = Pedido.StatusChoices.PENDENTE
-            pedido.motivo_revisao = ''
-            pedido.save()
-
-            arquivos = request.FILES.getlist('anexos')
-            for arq in arquivos:
-                try:
-                    AnexoPedido.objects.create(
-                        pedido=pedido, arquivo=arq, enviado_por=user,
-                    )
-                except Exception as e:
-                    logger.error(
-                        f"Erro ao anexar '{arq.name}' na revisão {pedido.numero}: {e}"
-                    )
-                    messages.warning(request, f'Arquivo "{arq.name}" rejeitado: {e}')
-
-            _registrar_hist_pedido(
-                pedido,
-                f"Revisado e reenviado por {user.get_full_name() or user.username}.",
-                user, status_ant, 'PENDENTE',
-            )
-            transaction.on_commit(
-                lambda: _safe_notify(notificar_pedido_pendente, pedido)
-            )
-            messages.success(request, f'Pedido {pedido.numero} reenviado para aprovação! 📋')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{field}: {error}')
-        return redirect(pedido.get_absolute_url())
-
-
-class PedidoEntregarView(LoginRequiredMixin, AppPermissionMixin, View):
-    """APROVADO → ENTREGUE (só Gerente)."""
-    app_label_required = _APP
-
-    @transaction.atomic
-    def post(self, request, pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-        user = request.user
-        if not (user.is_gerente or user.is_superuser):
-            messages.error(request, 'Apenas Gerentes podem marcar entrega.')
-            return redirect(pedido.get_absolute_url())
-        if pedido.status != Pedido.StatusChoices.APROVADO:
-            messages.error(request, 'Pedido não está aprovado.')
-            return redirect(pedido.get_absolute_url())
-
-        status_ant = pedido.status
-        pedido.status = Pedido.StatusChoices.ENTREGUE
-        pedido.data_entrega = timezone.now().date()
-        pedido.save(update_fields=['status', 'data_entrega'])
-
-        _registrar_hist_pedido(
-            pedido,
-            f"Marcado como entregue por {user.get_full_name() or user.username}.",
-            user, status_ant, 'ENTREGUE',
-        )
-        transaction.on_commit(
-            lambda: _safe_notify(notificar_pedido_entregue, pedido)
-        )
-        messages.success(request, f'Pedido {pedido.numero} marcado como entregue! 📦')
-        return redirect(pedido.get_absolute_url())
-
-
-class PedidoReceberView(LoginRequiredMixin, AppPermissionMixin, View):
-    """ENTREGUE → RECEBIDO."""
-    app_label_required = _APP
-
-    @transaction.atomic
-    def post(self, request, pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-        if pedido.status != Pedido.StatusChoices.ENTREGUE:
-            messages.error(request, 'Pedido não está marcado como entregue.')
-            return redirect(pedido.get_absolute_url())
-
-        form = ConfirmarRecebimentoForm(request.POST)
-        if form.is_valid():
-            obs = form.cleaned_data.get('observacao_recebimento', '')
-            if obs:
-                base = pedido.observacao or ''
-                pedido.observacao = f"{base}\n[Recebimento] {obs}".strip()
-
-            status_ant = pedido.status
-            pedido.recebedor = request.user
-            pedido.data_recebimento = timezone.now()
-            pedido.status = Pedido.StatusChoices.RECEBIDO
-            # ✅ FIX 3: save() completo aqui é necessário p/ disparar signal de estoque
-            pedido.save()
-
-            _registrar_hist_pedido(
-                pedido,
-                f"Recebimento confirmado por "
-                f"{request.user.get_full_name() or request.user.username}.",
-                request.user, status_ant, 'RECEBIDO',
-            )
-            transaction.on_commit(
-                lambda: _safe_notify(notificar_pedido_recebido, pedido)
-            )
-
-            messages.success(request, f'Pedido {pedido.numero} — recebimento confirmado! ✅')
-            if getattr(pedido, 'estoque_processado', False):
-                messages.info(request, '📦 Entrada no estoque gerada automaticamente.')
-        else:
-            messages.error(request, 'Confirme o recebimento marcando a caixa.')
-        return redirect(pedido.get_absolute_url())
-
-
-class PedidoAnexoView(LoginRequiredMixin, AppPermissionMixin, View):
-    """Upload de anexo no pedido."""
-    app_label_required = _APP
-
-    def post(self, request, pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-        form = AnexoPedidoForm(request.POST, request.FILES)
-        if form.is_valid():
-            try:
-                anexo = form.save(commit=False)
-                anexo.pedido = pedido
-                anexo.enviado_por = request.user
-                anexo.save()
-                _registrar_hist_pedido(
-                    pedido,
-                    f"Anexo adicionado: {anexo.nome_arquivo}",
-                    request.user,
-                )
-                messages.success(request, f'Anexo "{anexo.nome_arquivo}" enviado! 📎')
-            except Exception as e:
-                logger.error(f"Erro ao salvar anexo {pedido.numero}: {e}")
-                messages.error(request, f'Arquivo rejeitado: {e}')
-        else:
-            # ✅ FIX 4: extrair mensagens corretamente
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{field}: {error}')
-        return redirect(pedido.get_absolute_url())
-
-
-class PedidoAnexoDeleteView(LoginRequiredMixin, AppPermissionMixin, View):
-    """Remove anexo do pedido."""
-    app_label_required = _APP
-
-    @transaction.atomic
-    def post(self, request, pk, anexo_pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-        anexo = get_object_or_404(AnexoPedido, pk=anexo_pk, pedido=pedido)
-        nome = anexo.nome_arquivo
-        try:
-            anexo.arquivo.delete(save=False)
-        except Exception as e:
-            logger.warning(f"Erro ao deletar arquivo físico do anexo {anexo.pk}: {e}")
-        anexo.delete()
-        _registrar_hist_pedido(pedido, f"Anexo removido: {nome}", request.user)
-        messages.success(request, f'Anexo "{nome}" removido. 🗑️')
-        return redirect(pedido.get_absolute_url())
-
-
-# ════════════════════════════════════════════════════════════════════
-#   HELPER auxiliar
-# ════════════════════════════════════════════════════════════════════
-
-def _safe_notify(func, *args, **kwargs):
-    """Wrapper para notificações que não podem quebrar a request."""
-    try:
-        func(*args, **kwargs)
-    except Exception as e:
-        logger.error(f"Erro em notificação {func.__name__}: {e}")
-
-
-# ════════════════════════════════════════════════════════════════════
-#   APIs INTERNAS (AJAX)
-# ════════════════════════════════════════════════════════════════════
-
-@login_required
-@require_GET
-def material_preco_api(request, pk):
-    """Retorna preço unitário do material (escopo de filial)."""
-    qs = Material.objects.all()
-    filial = getattr(request.user, 'filial_ativa', None)
-    if filial and not request.user.is_superuser:
-        qs = qs.filter(filial=filial)
-    material = get_object_or_404(qs, pk=pk)
-
-    """
-    Retorna o último preço de compra do material para autopreenchimento.
-    Considera pedidos já aprovados/entregues/recebidos/com solicitação gerada.
-    """
-    try:
-        material = Material.objects.get(pk=pk, ativo=True)
-    except Material.DoesNotExist:
-        return JsonResponse({'erro': 'Material não encontrado'}, status=404)
-
-    preco = material.valor_unitario or Decimal('0.00')
-
-    return JsonResponse({
-        'preco_unitario': float(preco),
-        'unidade_padrao': material.unidade or '',
-        'material_id': material.pk,
-        'material_nome': str(material),
-        'tem_preco': preco > 0,
-    })
-
-@login_required
-def contrato_saldos_api(request, pk):
-    """Retorna saldos do contrato no mês atual (escopo de filial)."""
-    qs = Contrato.objects.all()
-    filial = getattr(request.user, 'filial_ativa', None)
-    if filial and not request.user.is_superuser:
-        qs = qs.filter(filial=filial)
-
-    contrato = get_object_or_404(qs, pk=pk)
-    verba = contrato.verba_do_mes()
-    return JsonResponse({
-        'verba_epi': str(verba.verba_epi),
-        'verba_consumo': str(verba.verba_consumo),
-        'verba_ferramenta': str(verba.verba_ferramenta),
-        'compra_epi': str(verba.compra_epi),
-        'compra_consumo': str(verba.compra_consumo),
-        'compra_ferramenta': str(verba.compra_ferramenta),
-        'saldo_epi': str(verba.saldo_epi),
-        'saldo_consumo': str(verba.saldo_consumo),
-        'saldo_ferramenta': str(verba.saldo_ferramenta),
-        'saldo_total': str(verba.saldo_total),
-    })
-
-
-# ════════════════════════════════════════════════════════════════════
-#   RELATÓRIOS GERENCIAIS
-# ════════════════════════════════════════════════════════════════════
-
-class RelatorioForm(forms.Form):
-    ano = forms.IntegerField(
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control', 'min': '2024', 'max': '2030',
-        }),
-    )
-    mes_ini = forms.IntegerField(
-        label="Mês Início",
-        widget=forms.Select(
-            attrs={'class': 'form-select'},
-            choices=[(i, f'{i:02d}') for i in range(1, 13)],
-        ),
-    )
-    mes_fim = forms.IntegerField(
-        label="Mês Fim",
-        widget=forms.Select(
-            attrs={'class': 'form-select'},
-            choices=[(i, f'{i:02d}') for i in range(1, 13)],
-        ),
-    )
-    contrato = forms.ModelMultipleChoiceField(
-        queryset=Contrato.objects.filter(ativo=True),
-        required=False,
-        label="Contratos (vazio = todos)",
-        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': '5'}),
-    )
-
-    def clean(self):
-        cleaned = super().clean()
-        if cleaned.get('mes_ini') and cleaned.get('mes_fim'):
-            if cleaned['mes_ini'] > cleaned['mes_fim']:
-                self.add_error('mes_fim', 'Mês fim deve ser >= mês início.')
-        return cleaned
-
-
-class _RelatorioFiltraMixin:
-    """Mixin para filtrar contratos por filial nos relatórios."""
-
-    def _get_contrato_ids(self):
-        user = self.request.user
-        contratos_qs = Contrato.objects.filter(ativo=True)
-        if not user.is_superuser:
-            filial_ativa = getattr(user, 'filial_ativa', None)
-            if filial_ativa:
-                contratos_qs = contratos_qs.filter(filial=filial_ativa)
-
-        contrato_ids_param = self.request.GET.getlist('contrato')
-        if contrato_ids_param:
-            return contratos_qs, list(
-                contratos_qs.filter(id__in=contrato_ids_param).values_list('id', flat=True)
-            )
-        return contratos_qs, list(contratos_qs.values_list('id', flat=True))
-
-    def _get_periodo(self):
-        hoje = timezone.now()
-        ano = int(self.request.GET.get('ano', hoje.year))
-        mes_ini = int(self.request.GET.get('mes_ini', 1))
-        mes_fim = int(self.request.GET.get('mes_fim', hoje.month))
-        return ano, mes_ini, mes_fim
-
-
-class RelatorioSuprimentosView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltraMixin, TemplateView):
-    app_label_required = _APP
-    template_name = 'suprimentos/relatorio.html'
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        contratos_qs, contrato_ids = self._get_contrato_ids()
-        ano, mes_ini, mes_fim = self._get_periodo()
-
-        relatorio = gerar_relatorio_completo(contrato_ids, ano, mes_ini, mes_fim)
-
-        ctx.update({
-            'relatorio': relatorio,
-            'filtro_ano': ano,
-            'filtro_mes_ini': mes_ini,
-            'filtro_mes_fim': mes_fim,
-            'filtro_contratos': self.request.GET.getlist('contrato'),
-            'contratos_disponiveis': contratos_qs,
-            'meses_choices': [(i, f'{i:02d}') for i in range(1, 13)],
-            'titulo_pagina': 'Relatório Gerencial de Suprimentos',
-            'json_quantitativo_meses': json.dumps(
-                relatorio['quantitativo']['por_mes'], default=str
-            ),
-            'json_evolucao': json.dumps(
-                relatorio['qualitativo']['evolucao_mensal'], default=str
-            ),
-            'json_estimativas_hist': json.dumps(
-                relatorio['estimativas']['historico_mensal'], default=str
-            ),
-            'json_estimativas_proj': json.dumps(
-                relatorio['estimativas']['projecao'], default=str
-            ),
-        })
-        return ctx
-
-
-class RelatorioPDFView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltraMixin, View):
-    app_label_required = _APP
-
-    def get(self, request):
-        hoje = timezone.now()
-        _, contrato_ids = self._get_contrato_ids()
-        ano, mes_ini, mes_fim = self._get_periodo()
-
-        relatorio = gerar_relatorio_completo(contrato_ids, ano, mes_ini, mes_fim)
-
-        html_string = render_to_string(
-            'suprimentos/relatorio_pdf.html',
-            {
-                'relatorio': relatorio,
-                'usuario': request.user.get_full_name() or request.user.username,
-                'gerado_em': hoje,
-            },
-        )
-
-        pdf = HTML(string=html_string).write_pdf()
-
-        response = HttpResponse(pdf, content_type='application/pdf')
-        response['Content-Disposition'] = (
-            f'inline; filename="relatorio_suprimentos_{ano}_{mes_ini:02d}-{mes_fim:02d}.pdf"'
-        )
-        return response
-
-
-class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltraMixin, View):
-    app_label_required = _APP
-
-    def get(self, request):
-        _, contrato_ids = self._get_contrato_ids()
-        ano, mes_ini, mes_fim = self._get_periodo()
-        relatorio = gerar_relatorio_completo(contrato_ids, ano, mes_ini, mes_fim)
-
-        wb = Workbook()
-
-        titulo_font = Font(bold=True, size=14, color="FFFFFF")
-        header_font = Font(bold=True, size=11, color="FFFFFF")
-        titulo_fill = PatternFill(start_color="0D6EFD", end_color="0D6EFD", fill_type="solid")
-        header_fill = PatternFill(start_color="495057", end_color="495057", fill_type="solid")
-        danger_fill = PatternFill(start_color="F8D7DA", end_color="F8D7DA", fill_type="solid")
-        success_fill = PatternFill(start_color="D1E7DD", end_color="D1E7DD", fill_type="solid")
-        border = Border(
-            left=Side(style='thin'), right=Side(style='thin'),
-            top=Side(style='thin'), bottom=Side(style='thin'),
-        )
-        money_fmt = '#,##0.00'
-
-        def add_titulo(ws, titulo, row=1):
-            ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
-            cell = ws.cell(row=row, column=1, value=titulo)
-            cell.font = titulo_font
-            cell.fill = titulo_fill
-            cell.alignment = Alignment(horizontal='center')
-            return row + 2
-
-        def add_headers(ws, headers, row):
-            for col, h in enumerate(headers, 1):
-                cell = ws.cell(row=row, column=col, value=h)
-                cell.font = header_font
-                cell.fill = header_fill
-                cell.border = border
-                cell.alignment = Alignment(horizontal='center')
-            return row + 1
-
-        # ═══ ABA 1: QUANTITATIVO ═══
-        ws1 = wb.active
-        ws1.title = "Quantitativo"
-        row = add_titulo(ws1, f"RELATÓRIO QUANTITATIVO — {relatorio['parametros']['periodo_label']}")
-
-        headers = ['Categoria', 'Pedidos', 'Linhas', 'Unidades', 'Valor Total (R$)', '% do Total']
-        row = add_headers(ws1, headers, row)
-        for r in relatorio['quantitativo']['resumo_geral']:
-            ws1.cell(row=row, column=1, value=r['categoria_label']).border = border
-            ws1.cell(row=row, column=2, value=r['qtd_pedidos']).border = border
-            ws1.cell(row=row, column=3, value=r['qtd_itens_linha']).border = border
-            ws1.cell(row=row, column=4, value=r['qtd_unidades']).border = border
-            c = ws1.cell(row=row, column=5, value=float(r['valor_total']))
-            c.number_format = money_fmt
-            c.border = border
-            ws1.cell(row=row, column=6, value=f"{r['pct_valor']}%").border = border
-            row += 1
-
-        row += 2
-        ws1.cell(row=row, column=1, value="TOP 15 MATERIAIS MAIS COMPRADOS").font = Font(bold=True, size=12)
-        row += 1
-        headers_top = ['Material', 'Classificação', 'Unidade', 'Qtd Total', 'Valor Total (R$)', 'Pedidos']
-        row = add_headers(ws1, headers_top, row)
-        for m in relatorio['quantitativo']['top_materiais']:
-            ws1.cell(row=row, column=1, value=m['material__descricao']).border = border
-            ws1.cell(row=row, column=2, value=m['material__classificacao']).border = border
-            ws1.cell(row=row, column=3, value=m['material__unidade']).border = border
-            ws1.cell(row=row, column=4, value=m['qtd_total']).border = border
-            c = ws1.cell(row=row, column=5, value=float(m['valor_total']))
-            c.number_format = money_fmt
-            c.border = border
-            ws1.cell(row=row, column=6, value=m['vezes_pedido']).border = border
-            row += 1
-
-        for col in range(1, 9):
-            ws1.column_dimensions[get_column_letter(col)].width = 20
-
-        # ═══ ABA 2: QUALITATIVO ═══
-        ws2 = wb.create_sheet("Qualitativo")
-        row = add_titulo(ws2, f"VERBA × GASTO — {relatorio['parametros']['periodo_label']}")
-
-        headers_q = ['Categoria', 'Verba (R$)', 'Gasto (R$)', 'Saldo (R$)', '% Uso', 'Status']
-        row = add_headers(ws2, headers_q, row)
-        for r in relatorio['qualitativo']['resumo_categorias']:
-            ws2.cell(row=row, column=1, value=r['categoria_label']).border = border
-            c1 = ws2.cell(row=row, column=2, value=float(r['verba']))
-            c1.number_format = money_fmt
-            c1.border = border
-            c2 = ws2.cell(row=row, column=3, value=float(r['gasto']))
-            c2.number_format = money_fmt
-            c2.border = border
-            c3 = ws2.cell(row=row, column=4, value=float(r['saldo']))
-            c3.number_format = money_fmt
-            c3.border = border
-            ws2.cell(row=row, column=5, value=f"{r['pct_uso']}%").border = border
-            status_cell = ws2.cell(row=row, column=6, value=r['status'].upper())
-            status_cell.border = border
-            if r['status'] == 'acima':
-                status_cell.fill = danger_fill
-            elif r['status'] == 'ok':
-                status_cell.fill = success_fill
-            row += 1
-
-        row += 1
-        ws2.cell(row=row, column=1, value="TOTAL GERAL").font = Font(bold=True)
-        c = ws2.cell(row=row, column=2, value=float(relatorio['qualitativo']['total_verba_geral']))
-        c.number_format = money_fmt
-        c.font = Font(bold=True)
-        c = ws2.cell(row=row, column=3, value=float(relatorio['qualitativo']['total_gasto_geral']))
-        c.number_format = money_fmt
-        c.font = Font(bold=True)
-        c = ws2.cell(row=row, column=4, value=float(relatorio['qualitativo']['saldo_geral']))
-        c.number_format = money_fmt
-        c.font = Font(bold=True)
-
-        row += 3
-        ws2.cell(row=row, column=1, value="EVOLUÇÃO MENSAL").font = Font(bold=True, size=12)
-        row += 1
-        headers_ev = ['Mês', 'Verba EPI', 'Gasto EPI', 'Verba Consumo', 'Gasto Consumo',
-                       'Verba Ferrament.', 'Gasto Ferrament.', 'Saldo Total']
-        row = add_headers(ws2, headers_ev, row)
-        for ev in relatorio['qualitativo']['evolucao_mensal']:
-            ws2.cell(row=row, column=1, value=ev['label']).border = border
-            for i, cod in enumerate(['epi', 'consumo', 'ferramenta']):
-                c1 = ws2.cell(row=row, column=2 + i * 2, value=float(ev[f'verba_{cod}']))
-                c1.number_format = money_fmt
-                c1.border = border
-                c2 = ws2.cell(row=row, column=3 + i * 2, value=float(ev[f'gasto_{cod}']))
-                c2.number_format = money_fmt
-                c2.border = border
-            c = ws2.cell(row=row, column=8, value=float(ev['saldo_total']))
-            c.number_format = money_fmt
-            c.border = border
-            if ev['saldo_total'] < 0:
-                c.fill = danger_fill
-            row += 1
-
-        for col in range(1, 9):
-            ws2.column_dimensions[get_column_letter(col)].width = 18
-
-        # ═══ ABA 3: ALERTAS ═══
-        ws3 = wb.create_sheet("Alertas - Acima da Meta")
-        row = add_titulo(ws3, f"GASTOS ACIMA DA META — {relatorio['parametros']['periodo_label']}")
-
-        if relatorio['alertas']['alertas']:
-            headers_a = ['Contrato', 'Mês', 'Categoria', 'Verba (R$)', 'Gasto (R$)',
-                         'Excesso (R$)', '% Excesso', 'Severidade']
-            row = add_headers(ws3, headers_a, row)
-            for al in relatorio['alertas']['alertas']:
-                ws3.cell(row=row, column=1, value=al['contrato']).border = border
-                ws3.cell(row=row, column=2, value=al['mes_label']).border = border
-                ws3.cell(row=row, column=3, value=al['categoria_label']).border = border
-                c1 = ws3.cell(row=row, column=4, value=float(al['verba']))
-                c1.number_format = money_fmt
-                c1.border = border
-                c2 = ws3.cell(row=row, column=5, value=float(al['gasto']))
-                c2.number_format = money_fmt
-                c2.border = border
-                c3 = ws3.cell(row=row, column=6, value=float(al['excesso']))
-                c3.number_format = money_fmt
-                c3.border = border
-                c3.fill = danger_fill
-                ws3.cell(row=row, column=7, value=f"{al['pct_excesso']}%").border = border
-                sev = ws3.cell(row=row, column=8, value=al['severidade'].upper())
-                sev.border = border
-                if al['severidade'] == 'critico':
-                    sev.fill = danger_fill
-                row += 1
-        else:
-            ws3.cell(row=row, column=1, value="✅ Nenhum gasto acima da meta no período!").font = Font(size=12, color="198754")
-
-        for col in range(1, 9):
-            ws3.column_dimensions[get_column_letter(col)].width = 20
-
-        # ═══ ABA 4: ECONOMIAS ═══
-        ws4 = wb.create_sheet("Economias")
-        row = add_titulo(ws4, f"ECONOMIAS — {relatorio['parametros']['periodo_label']}")
-
-        headers_e = ['Categoria', 'Total Economizado (R$)']
-        row = add_headers(ws4, headers_e, row)
-        for ec in relatorio['economias']['resumo_economia']:
-            ws4.cell(row=row, column=1, value=ec['categoria_label']).border = border
-            c = ws4.cell(row=row, column=2, value=float(ec['total_economia']))
-            c.number_format = money_fmt
-            c.border = border
-            c.fill = success_fill
-            row += 1
-
-        row += 1
-        ws4.cell(row=row, column=1, value="TOTAL GERAL ECONOMIZADO").font = Font(bold=True)
-        c = ws4.cell(row=row, column=2, value=float(relatorio['economias']['total_economia_geral']))
-        c.number_format = money_fmt
-        c.font = Font(bold=True)
-        c.fill = success_fill
-
-        row += 3
-        ws4.cell(row=row, column=1, value="RANKING — CONTRATOS QUE MAIS ECONOMIZARAM").font = Font(bold=True, size=12)
-        row += 1
-        row = add_headers(ws4, ['Contrato', 'Economia (R$)'], row)
-        for rk in relatorio['economias']['ranking_contratos']:
-            ws4.cell(row=row, column=1, value=rk['contrato']).border = border
-            c = ws4.cell(row=row, column=2, value=float(rk['economia']))
-            c.number_format = money_fmt
-            c.border = border
-            row += 1
-
-        for col in range(1, 9):
-            ws4.column_dimensions[get_column_letter(col)].width = 22
-
-        # ═══ ABA 5: ESTIMATIVAS ═══
-        ws5 = wb.create_sheet("Estimativas")
-        row = add_titulo(ws5, "PROJEÇÃO DE GASTOS — PRÓXIMOS 6 MESES")
-
-        headers_est = ['Mês', 'Verba EPI', 'Gasto Est. EPI', 'Verba Consumo',
-                       'Gasto Est. Consumo', 'Verba Ferrament.', 'Gasto Est. Ferrament.', 'Saldo Estimado']
-        row = add_headers(ws5, headers_est, row)
-        for pr in relatorio['estimativas']['projecao']:
-            ws5.cell(row=row, column=1, value=pr['label']).border = border
-            for i, cod in enumerate(['epi', 'consumo', 'ferramenta']):
-                c1 = ws5.cell(row=row, column=2 + i * 2, value=float(pr[f'verba_{cod}']))
-                c1.number_format = money_fmt
-                c1.border = border
-                c2 = ws5.cell(row=row, column=3 + i * 2, value=float(pr[f'gasto_{cod}']))
-                c2.number_format = money_fmt
-                c2.border = border
-            c = ws5.cell(row=row, column=8, value=float(pr['saldo_total']))
-            c.number_format = money_fmt
-            c.border = border
-            if pr['saldo_total'] < 0:
-                c.fill = danger_fill
-            row += 1
-
-        row += 2
-        ws5.cell(row=row, column=1, value="TENDÊNCIAS (Últimos 6 meses)").font = Font(bold=True, size=12)
-        row += 1
-        row = add_headers(ws5, ['Categoria', 'Média Mensal (R$)', 'Mín (R$)', 'Máx (R$)', 'Tendência', 'Variação'], row)
-        for cod, label in [('EPI', 'EPI'), ('CONSUMO', 'Consumo'), ('FERRAMENTA', 'Ferramenta')]:
-            m = relatorio['estimativas']['media_por_categoria'][cod]
-            ws5.cell(row=row, column=1, value=label).border = border
-            c1 = ws5.cell(row=row, column=2, value=float(m['media']))
-            c1.number_format = money_fmt
-            c1.border = border
-            c2 = ws5.cell(row=row, column=3, value=float(m['min']))
-            c2.number_format = money_fmt
-            c2.border = border
-            c3 = ws5.cell(row=row, column=4, value=float(m['max']))
-            c3.number_format = money_fmt
-            c3.border = border
-            tend = ws5.cell(row=row, column=5, value=m['tendencia'].upper())
-            tend.border = border
-            if m['tendencia'] == 'subindo':
-                tend.fill = danger_fill
-            elif m['tendencia'] == 'descendo':
-                tend.fill = success_fill
-            ws5.cell(row=row, column=6, value=f"{m['variacao_tendencia']}%").border = border
-            row += 1
-
-        for col in range(1, 9):
-            ws5.column_dimensions[get_column_letter(col)].width = 20
-
-        buffer = BytesIO()
-        wb.save(buffer)
-        buffer.seek(0)
-
-        response = HttpResponse(
-            buffer.getvalue(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        )
-        response['Content-Disposition'] = (
-            f'attachment; filename="relatorio_suprimentos_{ano}_{mes_ini:02d}-{mes_fim:02d}.xlsx"'
-        )
-        return response
-
-
-# ════════════════════════════════════════════════════════════════════
-#   SOLICITAÇÃO DE COMPRA — WORKFLOW PÓS-APROVAÇÃO
-# ════════════════════════════════════════════════════════════════════
-
-class SolicitacaoListView(LoginRequiredMixin, AppPermissionMixin, ListView):
-    """Lista de Solicitações de Compra com formulários inline por etapa."""
-    app_label_required = _APP
-    template_name = 'suprimentos/solicitacao/solicitacao_list.html'
-    context_object_name = 'solicitacoes'
-    paginate_by = 20
-    permission_required = 'suprimentos.view_solicitacaocompra'
-
-    def get_queryset(self):
-        user = self.request.user
-        qs = SolicitacaoCompra.objects.select_related(
-            'contrato', 'solicitante', 'comprador',
-            'fornecedor', 'aprovador_inicial',
-            'aprovador_cotacao', 'aprovador_pedido',
-        ).order_by('-criado_em')
-
-        if not user.is_superuser:
-            filial = getattr(user, 'filial_ativa', None)
-            if filial:
-                qs = qs.filter(contrato__filial=filial)
-
-        status = self.request.GET.get('status', '')
+        qs = Pedido.objects.select_related("contrato", "solicitante")
+        status = self.request.GET.get("status")
         if status:
             qs = qs.filter(status=status)
+        return qs.visiveis_para(self.request.user) if hasattr(qs, "visiveis_para") else qs
 
-        tipo_obra = self.request.GET.get('tipo_obra', '')
-        if tipo_obra:
-            qs = qs.filter(tipo_obra=tipo_obra)
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["status_choices"] = Pedido.StatusChoices.choices
+        return ctx
 
-        q = self.request.GET.get('q', '').strip()
-        if q:
-            qs = qs.filter(
-                Q(numero__icontains=q) |
-                Q(descricao_material__icontains=q) |
-                Q(contrato__cm__icontains=q) |
-                Q(contrato__cliente__icontains=q) |
-                Q(numero_cotacao__icontains=q) |
-                Q(numero_pedido__icontains=q)
+
+class PedidoDetailView(LoginRequiredMixin, DetailView):
+    model = Pedido
+    template_name = "suprimentos/pedido_detail.html"
+    context_object_name = "pedido"
+    
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["itens"] = self.object.itens.select_related("material")
+        ctx["anexos"] = self.object.anexos.all()
+        ctx["historico"] = self.object.historico.all()
+        ok, erros = self.object.verificar_verba()
+        ctx["verba_ok"], ctx["verba_erros"] = ok, erros
+        return ctx
+
+
+class PedidoCreateView(LoginRequiredMixin, CreateView):
+    model = Pedido
+    form_class = PedidoForm
+    template_name = "suprimentos/pedido_form.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        if self.request.POST:
+            ctx["formset"] = ItemPedidoFormSet(self.request.POST)
+        else:
+            ctx["formset"] = ItemPedidoFormSet()
+        return ctx
+
+    @transaction.atomic
+    def form_valid(self, form):
+        ctx = self.get_context_data()
+        formset = ctx["formset"]
+        form.instance.solicitante = self.request.user
+        if not form.instance.filial_id:
+            form.instance.filial = getattr(self.request.user, "filial", None)
+        if formset.is_valid():
+            self.object = form.save()
+            formset.instance = self.object
+            formset.save()
+            HistoricoPedido.registrar(
+                pedido=self.object,
+                descricao="Pedido criado (rascunho).",
+                responsavel=self.request.user,
+                status_novo=self.object.status,
             )
+            messages.success(self.request, f"Pedido {self.object.numero} criado.")
+            return redirect(self.object.get_absolute_url())
+        return self.render_to_response(self.get_context_data(form=form))
 
+
+class PedidoUpdateView(LoginRequiredMixin, UpdateView):
+    model = Pedido
+    form_class = PedidoForm
+    template_name = "suprimentos/pedido_form.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        if self.request.POST:
+            ctx["formset"] = ItemPedidoFormSet(self.request.POST, instance=self.object)
+        else:
+            ctx["formset"] = ItemPedidoFormSet(instance=self.object)
+        return ctx
+
+    @transaction.atomic
+    def form_valid(self, form):
+        ctx = self.get_context_data()
+        formset = ctx["formset"]
+        if formset.is_valid():
+            self.object = form.save()
+            formset.save()
+            HistoricoPedido.registrar(
+                pedido=self.object,
+                descricao="Pedido editado.",
+                responsavel=self.request.user,
+            )
+            messages.success(self.request, "Pedido atualizado.")
+            return redirect(self.object.get_absolute_url())
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+@login_required
+def pedido_submeter(request, pk):
+    """RASCUNHO/REVISAO → PENDENTE (envia para aprovação)."""
+    pedido = get_object_or_404(Pedido, pk=pk)
+    if pedido.status not in (Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO):
+        messages.error(request, "Pedido não pode ser submetido neste status.")
+        return redirect(pedido.get_absolute_url())
+    if not pedido.itens.exists():
+        messages.error(request, "Adicione ao menos um item antes de submeter.")
+        return redirect(pedido.get_absolute_url())
+    anterior = pedido.status
+    pedido.status = Pedido.StatusChoices.PENDENTE
+    pedido.save(update_fields=["status", "atualizado_em"])
+    HistoricoPedido.registrar(
+        pedido=pedido, descricao="Pedido submetido para aprovação.",
+        responsavel=request.user,
+        status_anterior=anterior, status_novo=pedido.status,
+    )
+    messages.success(request, "Pedido enviado para aprovação.")
+    return redirect(pedido.get_absolute_url())
+
+
+# ═════════════════════════════════════════════════════════════
+# 2. APROVAR PEDIDO (Gerente)
+# ═════════════════════════════════════════════════════════════
+@login_required
+@permission_required("suprimentos.pode_aprovar_pedido", raise_exception=True)
+def pedido_aprovar(request, pk):
+    pedido = get_object_or_404(Pedido, pk=pk)
+    if pedido.status != Pedido.StatusChoices.PENDENTE:
+        messages.error(request, "Apenas pedidos PENDENTES podem ser avaliados.")
+        return redirect(pedido.get_absolute_url())
+
+    if request.method == "POST":
+        form = AprovarPedidoForm(request.POST)
+        if form.is_valid():
+            decisao = form.cleaned_data["decisao"]
+            motivo = form.cleaned_data["motivo"]
+            anterior = pedido.status
+            pedido.aprovador = request.user
+
+            if decisao == "APROVAR":
+                pedido.status = Pedido.StatusChoices.APROVADO
+                pedido.data_aprovacao = timezone.now()
+                pedido.save()
+                HistoricoPedido.registrar(
+                    pedido=pedido, descricao="Pedido aprovado.",
+                    responsavel=request.user,
+                    status_anterior=anterior, status_novo=pedido.status,
+                )
+                # Gera solicitação de compra automaticamente
+                try:
+                    sol = pedido.gerar_solicitacao_compra(request.user)
+                    messages.success(
+                        request,
+                        f"Pedido aprovado. Solicitação {sol.numero} gerada.",
+                    )
+                    return redirect(sol.get_absolute_url())
+                except ValidationError as e:
+                    messages.warning(request, f"Pedido aprovado, mas: {e.messages}")
+
+            elif decisao == "REVISAR":
+                pedido.status = Pedido.StatusChoices.REVISAO
+                pedido.motivo_revisao = motivo
+                pedido.save()
+                HistoricoPedido.registrar(
+                    pedido=pedido, descricao=f"Devolvido para revisão: {motivo}",
+                    responsavel=request.user,
+                    status_anterior=anterior, status_novo=pedido.status,
+                )
+                messages.info(request, "Pedido devolvido para revisão.")
+
+            else:  # REPROVAR
+                pedido.status = Pedido.StatusChoices.REPROVADO
+                pedido.motivo_reprovacao = motivo
+                pedido.save()
+                HistoricoPedido.registrar(
+                    pedido=pedido, descricao=f"Reprovado: {motivo}",
+                    responsavel=request.user,
+                    status_anterior=anterior, status_novo=pedido.status,
+                )
+                messages.warning(request, "Pedido reprovado.")
+            return redirect(pedido.get_absolute_url())
+    else:
+        form = AprovarPedidoForm()
+
+    return render(request, "suprimentos/pedido_aprovar.html", {
+        "pedido": pedido, "form": form,
+        "itens": pedido.itens.select_related("material"),
+    })
+
+
+# ═════════════════════════════════════════════════════════════
+# 3. SOLICITAÇÃO — Listagem / Detalhe / Cotação (NxN)
+# ═════════════════════════════════════════════════════════════
+class SolicitacaoListView(LoginRequiredMixin, ListView):
+    model = SolicitacaoCompra
+    template_name = "suprimentos/solicitacao_list.html"
+    context_object_name = "solicitacoes"
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = SolicitacaoCompra.objects.select_related("contrato", "solicitante", "comprador")
+        status = self.request.GET.get("status")
+        if status:
+            qs = qs.filter(status=status)
         return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        user = self.request.user
-
-        is_aprovador = _user_is_aprovador(user)
-        is_comprador = _user_is_comprador(user)
-        ctx['is_aprovador'] = is_aprovador
-        ctx['is_comprador'] = is_comprador
-
-        base_qs = self.get_queryset()
-        ctx['count_cotacao'] = base_qs.filter(status='FAZER_COTACAO').count()
-        ctx['count_aprovacao'] = base_qs.filter(
-            status__in=['COTACAO_ENVIADA', 'EM_APROVACAO']
-        ).count()
-        ctx['count_pendentes'] = base_qs.exclude(
-            status__in=['CONCLUIDO', 'CANCELADO']
-        ).count()
-
-        ctx['filtro_q'] = self.request.GET.get('q', '')
-        ctx['filtro_status'] = self.request.GET.get('status', '')
-        ctx['filtro_tipo_obra'] = self.request.GET.get('tipo_obra', '')
-
-        ctx['status_choices'] = SolicitacaoCompra.StatusChoices.choices
-        ctx['tipo_obra_choices'] = SolicitacaoCompra._meta.get_field('tipo_obra').choices
-
-        # Forms inline por solicitação
-        solicitacoes = ctx['solicitacoes']
-        forms_map = {}
-        for sol in solicitacoes:
-            sol_forms = {}
-
-            if sol.status == 'FAZER_COTACAO' and is_comprador:
-                sol_forms['form_cotacao'] = RegistrarCotacaoForm(prefix=f'cot_{sol.pk}')
-                sol_forms['form_anexo'] = AnexoSolicitacaoForm(prefix=f'anx_{sol.pk}')
-
-            if sol.status == 'COTACAO_ENVIADA' and is_aprovador:
-                sol_forms['form_validar'] = ValidarCotacaoForm(prefix=f'val_{sol.pk}')
-
-            if sol.status == 'CRIAR_PEDIDO_CT' and is_comprador:
-                sol_forms['form_pedido'] = CriarPedidoForm(prefix=f'ped_{sol.pk}')
-
-            if sol.status == 'EM_APROVACAO' and is_aprovador:
-                sol_forms['form_aprovar'] = AprovarPedidoForm(prefix=f'apr_{sol.pk}')
-
-            if sol.status == 'ENVIAR_PEDIDO' and is_comprador:
-                sol_forms['form_enviar'] = EnviarPedidoFornecedorForm(prefix=f'env_{sol.pk}')
-
-            if sol.status == 'ENTREGA_PENDENTE' and is_comprador:
-                sol_forms['form_entrega'] = RegistrarEntregaForm(prefix=f'ent_{sol.pk}')
-                if sol.data_entrega_efetiva:
-                    sol_forms['form_encerrar'] = EncerrarSolicitacaoForm(prefix=f'enc_{sol.pk}')
-
-            if sol_forms:
-                forms_map[sol.pk] = sol_forms
-
-        ctx['forms_map'] = forms_map
-
-        # Fornecedores filtrados por filial
-        fornecedores_qs = Parceiro.objects.filter(eh_fornecedor=True, ativo=True)
-        filial = getattr(user, 'filial_ativa', None)
-        if filial and not user.is_superuser:
-            fornecedores_qs = fornecedores_qs.filter(filial=filial)
-        ctx['fornecedores'] = fornecedores_qs.order_by('nome_fantasia')
-
-        ctx['tipo_nf_choices'] = SolicitacaoCompra._meta.get_field('tipo_nota_fiscal').choices
-
+        ctx["status_choices"] = SolicitacaoCompra.StatusChoices.choices
         return ctx
 
 
-class SolicitacaoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
-    app_label_required = _APP
+class SolicitacaoDetailView(LoginRequiredMixin, DetailView):
     model = SolicitacaoCompra
-    template_name = 'suprimentos/solicitacao/solicitacao_detail.html'
-    context_object_name = 'sol'
-    permission_required = 'suprimentos.view_solicitacaocompra'
-
-    def get_queryset(self):
-        return _sol_qs_for_user(self.request.user)
+    template_name = "suprimentos/solicitacao_detail.html"
+    context_object_name = "solicitacao"
     
-    def get(self, request, *args, **kwargs):
-        pk = kwargs.get('pk')
-        
-        # Se não encontrou na queryset filtrada por filial...
-        if not self.get_queryset().filter(pk=pk).exists():
-            # ...e o usuário é superuser, verifica se existe em outra filial
-            # (usuário comum cai direto no 404 padrão — comportamento correto)
-            if request.user.is_superuser:
-                sol_outra = (
-                    SolicitacaoCompra.objects
-                    .filter(pk=pk)
-                    .select_related('contrato__filial')
-                    .first()
-                )
-                if sol_outra:
-                    filial_correta = sol_outra.contrato.filial
-                    filial_ativa = getattr(request.user, 'filial_ativa', None)
-                    messages.warning(
-                        request,
-                        f'A solicitação <strong>{sol_outra.numero}</strong> pertence à filial '
-                        f'<strong>{filial_correta.nome}</strong>, mas sua filial ativa é '
-                        f'<strong>{filial_ativa.nome if filial_ativa else "—"}</strong>. '
-                        f'Troque de filial na barra superior para acessá-la.',
-                        extra_tags='safe'
-                    )
-                    return redirect('suprimentos:solicitacao_list')
-        
-        return super().get(request, *args, **kwargs)
 
+    # ──────────────────────────────────────────────────────────────
+    # Ordem oficial do fluxo da solicitação (CANCELADO fica fora)
+    # ──────────────────────────────────────────────────────────────
+    @property
+    def fluxo(self):
+        S = SolicitacaoCompra.StatusChoices
+        return [
+            S.FAZER_COTACAO,
+            S.COTACAO_ENVIADA,
+            S.EM_APROVACAO,
+            S.APROVADO,
+            S.ENVIAR_PEDIDO,
+            S.PEDIDO_GERADO,
+            S.EM_ENTREGA,
+            S.FINALIZADO,
+        ]
+
+    # ──────────────────────────────────────────────────────────────
+    def get_queryset(self):
+        """Otimiza o carregamento do objeto principal e relações diretas."""
+        return (
+            super()
+            .get_queryset()
+            .select_related(
+                "pedido",
+                "pedido__contrato",
+                "solicitante",
+                "comprador",
+                "aprovador_cotacao",
+            )
+        )
+
+    # ──────────────────────────────────────────────────────────────
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         sol = self.object
         user = self.request.user
-        is_aprovador = _user_is_aprovador(user)
-        is_comprador = _user_is_comprador(user)
+        S = SolicitacaoCompra.StatusChoices
+        status = sol.status
+        anexos_qs = sol.anexos.select_related("enviado_por")
 
-        ctx['is_aprovador'] = is_aprovador
-        ctx['is_comprador'] = is_comprador
 
-        ctx['etapas'] = [
-            {'num': 1, 'titulo': 'Fazer Cotação'},
-            {'num': 2, 'titulo': 'Validar Cotação'},
-            {'num': 3, 'titulo': 'Criar Pedido'},
-            {'num': 4, 'titulo': 'Aprovar Pedido'},
-            {'num': 5, 'titulo': 'Enviar Fornecedor'},
-            {'num': 6, 'titulo': 'Entrega'},
-            {'num': 7, 'titulo': 'Nota Fiscal'},
-            {'num': 8, 'titulo': 'Concluído'},
-        ]
+        # Esconde confidenciais de quem não tem permissão
+        if not user.has_perm("suprimentos.view_anexosolicitacao_confidencial"):
+            anexos_qs = anexos_qs.filter(confidencial=False)
 
-        if sol.status == 'FAZER_COTACAO' and is_comprador:
-            ctx['form_cotacao'] = RegistrarCotacaoForm(user=self.request.user, instance=sol)
+        ctx.update({
+            "anexos": anexos_qs,
+            
+        })
+    
 
-        if sol.status == 'COTACAO_ENVIADA' and is_aprovador:
-            ctx['form_validar_cotacao'] = ValidarCotacaoForm()
+        # ───────── Posição atual no fluxo ─────────
+        fluxo = self.fluxo
+        try:
+            pos = fluxo.index(status)
+        except ValueError:          # CANCELADO ou status fora do fluxo
+            pos = -1
 
-        if sol.status == 'CRIAR_PEDIDO_CT' and is_comprador:
-            ctx['form_criar_pedido'] = CriarPedidoForm(user=self.request.user, instance=sol)
+        def passou(etapa) -> bool:
+            """True se o fluxo já atingiu (ou ultrapassou) a etapa informada."""
+            return pos >= fluxo.index(etapa)
 
-        if sol.status == 'EM_APROVACAO' and is_aprovador:
-            ctx['form_aprovar_pedido'] = AprovarPedidoForm()
-            if hasattr(sol, 'verificar_verba'):
-                ok, msg = sol.verificar_verba()
-                ctx['verba_ok'] = ok
-                ctx['verba_msg'] = msg
+        # ───────── Querysets / dados base ─────────
+        itens = (
+            sol.itens
+            .select_related("material")
+            .prefetch_related("cotacoes__fornecedor")
+        )
+        pedidos_compra = sol.pedidos_compra.select_related("fornecedor")
+        tem_cotacoes = itens.filter(cotacoes__isnull=False).exists()
 
-        if sol.status == 'ENVIAR_PEDIDO' and is_comprador:
-            ctx['form_enviar_fornecedor'] = EnviarPedidoFornecedorForm()
+        # ───────── Permissões ─────────
+        pode_cotar_perm   = user.has_perm("suprimentos.pode_cotar")
+        pode_aprovar_perm = user.has_perm("suprimentos.pode_aprovar_cotacao")
 
-        if sol.status == 'ENTREGA_PENDENTE' and is_comprador:
-            if not sol.data_entrega_efetiva:
-                ctx['form_entrega'] = RegistrarEntregaForm()
-            else:
-                ctx['form_encerrar'] = EncerrarSolicitacaoForm()
+        # ───────── Estados pontuais ─────────
+        em_cotacao   = status in (S.FAZER_COTACAO, S.COTACAO_ENVIADA)
+        em_aprovacao = status == S.EM_APROVACAO
+        pronto_pc    = status in (S.APROVADO, S.ENVIAR_PEDIDO)  # pode montar PC
 
-        ctx['form_anexo'] = AnexoSolicitacaoForm()
-        ctx['form_observacao'] = ObservacaoSolicitacaoForm()
-        ctx['form_cancelar'] = CancelarSolicitacaoForm()
+        # ───────── Monta contexto ─────────
+        ctx.update(
+            {
+                # Dados
+                "itens": itens,
+                "anexos": sol.anexos.all(),
+                "pedidos_compra": pedidos_compra,
+                "historico": sol.historico.all(),
+                "comparativo": self._montar_comparativo(itens),
+                "tem_cotacoes": tem_cotacoes,
+                "todos_cotados": sol.todos_itens_cotados,
 
-        ctx['anexos'] = sol.anexos.all() if hasattr(sol, 'anexos') else []
-        ctx['historico'] = sol.historicos.all().order_by('-criado_em') if hasattr(sol, 'historicos') else []
+                # Stepper — "done" = já passou da etapa; "active" = está nela
+                "step_cotacao_done":   passou(S.EM_APROVACAO),
+                "step_cotacao_active": em_cotacao,
+                "step_aprov_done":     passou(S.APROVADO),
+                "step_aprov_active":   em_aprovacao,
+                "step_pc_done":        passou(S.PEDIDO_GERADO),
+                "step_pc_active":      pronto_pc,
 
-        if hasattr(sol, 'pedido'):
-            ctx['pedido_origem'] = sol.pedido
-        elif hasattr(sol, 'pedido_origem'):
-            ctx['pedido_origem'] = sol.pedido_origem
+                # Navegação lateral
+                "nav_cotacao":   status != S.FAZER_COTACAO,
+                "nav_aprovacao": passou(S.EM_APROVACAO),
+                "pc_gerado":     passou(S.PEDIDO_GERADO),
 
+                # Botões de ação (estado + permissão)
+                "pode_cotar": em_cotacao and pode_cotar_perm,
+                "pode_enviar_aprovacao": (
+                    status == S.COTACAO_ENVIADA
+                    and tem_cotacoes
+                    and pode_cotar_perm
+                ),
+                "pode_aprovar_cotacao": em_aprovacao and pode_aprovar_perm,
+                "pode_montar_pc": pronto_pc and pode_aprovar_perm,
+            }
+        )
         return ctx
 
+    # ──────────────────────────────────────────────────────────────
+    @staticmethod
+    def _montar_comparativo(itens):
+        """Total que cada fornecedor representaria se fornecesse tudo o que cotou."""
+        agregado = defaultdict(lambda: {"total": Decimal("0.00"), "qtd_itens": 0})
 
-class SolicitacaoCotacaoView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
-
-    def post(self, request, pk):
-        sol = _get_sol_seguro(request.user, pk)
-        user = request.user
-
-        if not _user_is_comprador(user):
-            messages.error(request, 'Apenas compradores podem registrar cotações.')
-            return redirect(sol.get_absolute_url())
-        if sol.status != 'FAZER_COTACAO':
-            messages.error(request, 'Status inválido para registrar cotação.')
-            return redirect(sol.get_absolute_url())
-
-        form = RegistrarCotacaoForm(request.POST, instance=sol)
-        if form.is_valid():
-            status_ant = sol.status
-            sol = form.save(commit=False)
-            sol.status = 'COTACAO_ENVIADA'
-            sol.comprador = user
-            sol.save()
-
-            _registrar_hist_sol(
-                sol,
-                f"Cotação registrada por {user.get_full_name() or user.username}. "
-                f"Nº: {sol.numero_cotacao}. CNPJ: {sol.cnpj_compra}.",
-                user, status_ant, 'COTACAO_ENVIADA',
-            )
-            try:
-                notificar_cotacao_enviada(sol)
-            except Exception as e:
-                logger.error(f"Erro notificação cotação enviada: {e}")
-
-            messages.success(request, 'Cotação registrada! Aguardando validação. 📊')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{field}: {error}')
-        return redirect(sol.get_absolute_url())
-
-
-class SolicitacaoValidarCotacaoView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
-
-    def post(self, request, pk):
-        sol = _get_sol_seguro(request.user, pk)
-        user = request.user
-
-        if not _user_is_aprovador(user):
-            messages.error(request, 'Sem permissão para validar cotação.')
-            return redirect(sol.get_absolute_url())
-        if sol.status != 'COTACAO_ENVIADA':
-            messages.error(request, 'Cotação não está aguardando validação.')
-            return redirect(sol.get_absolute_url())
-
-        form = ValidarCotacaoForm(request.POST)
-        if form.is_valid():
-            status_ant = sol.status
-            sol.data_validacao_cotacao = form.cleaned_data['data_validacao']
-            sol.aprovador_cotacao = user
-            sol.status = 'CRIAR_PEDIDO_CT'
-            sol.save(update_fields=[
-                'status', 'data_validacao_cotacao',
-                'aprovador_cotacao', 'atualizado_em',
-            ])
-            _registrar_hist_sol(
-                sol,
-                f"Cotação validada por {user.get_full_name() or user.username}.",
-                user, status_ant, 'CRIAR_PEDIDO_CT',
-            )
-            try:
-                notificar_cotacao_validada(sol)
-            except Exception as e:
-                logger.error(f"Erro notificação cotação validada: {e}")
-
-            messages.success(request, 'Cotação validada! Comprador pode criar o pedido. ✅')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{field}: {error}')
-        return redirect(sol.get_absolute_url())
-
-
-class SolicitacaoCriarPedidoView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
-
-    def post(self, request, pk):
-        sol = _get_sol_seguro(request.user, pk)
-        user = request.user
-
-        if not _user_is_comprador(user):
-            messages.error(request, 'Apenas compradores podem criar pedidos.')
-            return redirect(sol.get_absolute_url())
-        if sol.status != 'CRIAR_PEDIDO_CT':
-            messages.error(request, 'Status inválido para criar pedido.')
-            return redirect(sol.get_absolute_url())
-
-        form = CriarPedidoForm(request.POST, instance=sol)
-        if form.is_valid():
-            status_ant = sol.status
-            sol = form.save(commit=False)
-            sol.status = 'EM_APROVACAO'
-            sol.save()
-
-            ok, msg_verba = sol.verificar_verba()
-            if not ok:
-                messages.warning(request, msg_verba)
-
-            _registrar_hist_sol(
-                sol,
-                f"Pedido criado por {user.get_full_name() or user.username}. "
-                f"Nº: {sol.numero_pedido}. "
-                f"Fornecedor: {sol.fornecedor}. Valor: R$ {sol.valor_pedido:.2f}.",
-                user, status_ant, 'EM_APROVACAO',
-            )
-            try:
-                notificar_pedido_aprovado(sol)
-            except Exception as e:
-                logger.error(f"Erro notificação pedido criado: {e}")
-
-            messages.success(request, 'Pedido criado! Aguardando aprovação. 📦')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{field}: {error}')
-        return redirect(sol.get_absolute_url())
-
-
-class SolicitacaoAprovarPedidoView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
-
-    def post(self, request, pk):
-        sol = _get_sol_seguro(request.user, pk)
-        user = request.user
-
-        if not _user_is_aprovador(user):
-            messages.error(request, 'Sem permissão para aprovar pedido.')
-            return redirect(sol.get_absolute_url())
-        if sol.status != 'EM_APROVACAO':
-            messages.error(request, 'Pedido não está em aprovação.')
-            return redirect(sol.get_absolute_url())
-
-        form = AprovarPedidoForm(request.POST)
-        if form.is_valid():
-            status_ant = sol.status
-            sol.data_aprovacao_pedido = form.cleaned_data['data_aprovacao_pedido']
-            sol.aprovador_pedido = user
-            sol.status = 'ENVIAR_PEDIDO'
-            sol.save(update_fields=[
-                'status', 'data_aprovacao_pedido',
-                'aprovador_pedido', 'atualizado_em',
-            ])
-            _registrar_hist_sol(
-                sol,
-                f"Pedido aprovado por {user.get_full_name() or user.username}.",
-                user, status_ant, 'ENVIAR_PEDIDO',
-            )
-            try:
-                notificar_pedido_aprovado(sol)
-            except Exception as e:
-                logger.error(f"Erro notificação pedido aprovado: {e}")
-
-            messages.success(request, 'Pedido aprovado! Enviar ao fornecedor. ✅')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{field}: {error}')
-        return redirect(sol.get_absolute_url())
-
-class SolicitacaoMontarPedidosView(LoginRequiredMixin, AppPermissionMixin, View):
-    """
-    Etapa 3 (novo fluxo) — Monta N PedidoCompra a partir das cotações escolhidas.
-    
-    Fluxo:
-      1. Mostra todos os itens da solicitação
-      2. Para cada item, lista as cotações registradas
-      3. Comprador agrupa itens por fornecedor e clica em "Gerar Pedido"
-      4. Pode repetir até cobrir 100% dos itens
-    """
-    app_label_required = _APP
-    template_name = 'suprimentos/solicitacao/montar_pedidos.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        sol = self._get_sol_seguro(kwargs.get('pk'))
-        if not sol:
-            return redirect('suprimentos:solicitacao_list')
-        # 🛡️ Guard: bloqueia se faltar cotação em qualquer item
-        itens_sem_cotacao = sol.itens.filter(cotacao_escolhida__isnull=True)
-        if itens_sem_cotacao.exists():
-            qtd = itens_sem_cotacao.count()
-            messages.error(
-                request,
-                f"⚠️ Não é possível montar pedidos: {qtd} item(ns) "
-                f"sem cotação escolhida. Volte para a etapa de cotação."
-            )
-            return redirect('suprimentos:solicitacao_detail', pk=sol.pk)
-
-        return super().dispatch(request, *args, **kwargs)
-
-    def get(self, request, pk):
-        sol = _get_sol_seguro(request.user, pk)
-        if not _user_is_comprador(request.user):
-            messages.error(request, 'Apenas compradores podem montar pedidos.')
-            return redirect(sol.get_absolute_url())
-        if sol.status != 'CRIAR_PEDIDO_CT':
-            messages.error(request, 'Status inválido.')
-            return redirect(sol.get_absolute_url())
-        if not sol.usa_novo_fluxo:
-            messages.warning(
-                request,
-                'Esta solicitação usa o fluxo antigo. Use a tela tradicional.'
-            )
-            return redirect(sol.get_absolute_url())
-
-        # Itens da solicitação com suas cotações
-        itens = sol.itens.select_related('material').prefetch_related(
-            'cotacoes__fornecedor', 'cotacao_escolhida__fornecedor',
-        ).all()
-
-        # Pedidos de compra já criados
-        pedidos_existentes = sol.pedidos_compra.select_related(
-            'fornecedor'
-        ).prefetch_related('itens').all()
-
-        # Itens já alocados em algum PedidoCompra
-        itens_alocados_ids = set(
-            ItemPedidoCompra.objects.filter(
-                pedido_compra__solicitacao=sol
-            ).values_list('item_solicitacao_id', flat=True)
-        )
-
-        # Agrupa itens NÃO alocados por fornecedor (via cotacao_escolhida)
-        agrupado = {}  # {fornecedor_id: {'fornecedor': obj, 'itens': [...]}}
-        itens_sem_escolha = []
         for item in itens:
-            if item.pk in itens_alocados_ids:
-                continue
-            if not item.cotacao_escolhida_id:
-                itens_sem_escolha.append(item)
-                continue
-            forn = item.cotacao_escolhida.fornecedor
-            key = forn.pk
-            if key not in agrupado:
-                agrupado[key] = {'fornecedor': forn, 'itens': []}
-            agrupado[key]['itens'].append(item)
+            for cotacao in item.cotacoes.all():
+                nome = cotacao.fornecedor.nome_fantasia
+                agregado[nome]["total"] += cotacao.valor_total
+                agregado[nome]["qtd_itens"] += 1
 
-        return render(request, self.template_name, {
-            'sol': sol,
-            'itens': itens,
-            'pedidos_existentes': pedidos_existentes,
-            'agrupado_por_fornecedor': agrupado,
-            'itens_sem_escolha': itens_sem_escolha,
-            'todos_alocados': not agrupado and not itens_sem_escolha,
-        })
+        return sorted(
+            ({"fornecedor": nome, **dados} for nome, dados in agregado.items()),
+            key=lambda x: x["total"],
+        )
+    
 
-    @transaction.atomic
-    def post(self, request, pk):
-        """Gera UM PedidoCompra para o fornecedor selecionado, com itens marcados."""
-        sol = _get_sol_seguro(request.user, pk)
-        user = request.user
+@login_required
+@permission_required("suprimentos.pode_cotar", raise_exception=True)
+def cotacao_adicionar(request, solicitacao_pk):
+    """
+    Lança a cotação de UM fornecedor para os itens da solicitação.
+    Gera 1 Cotacao por ItemSolicitacao que tiver valor preenchido.
+    """
+    solicitacao = get_object_or_404(SolicitacaoCompra, pk=solicitacao_pk)
+    itens = list(
+        solicitacao.itens.select_related("material")
+        .exclude(status=ItemSolicitacao.StatusItem.CANCELADO)
+    )
 
-        if not _user_is_comprador(user) or sol.status != 'CRIAR_PEDIDO_CT':
-            messages.error(request, 'Operação não permitida.')
-            return redirect(sol.get_absolute_url())
+    # initial do formset: uma linha por item da solicitação
+    initial_itens = [{"item_id": item.pk} for item in itens]
 
-        fornecedor_id = request.POST.get('fornecedor_id')
-        item_ids = request.POST.getlist('item_ids')
-        numero_pedido = request.POST.get('numero_pedido', '').strip()
-        data_emissao = request.POST.get('data_emissao') or None
-        data_prevista = request.POST.get('data_entrega_prevista') or None
-        tipo_nf = request.POST.get('tipo_nota_fiscal', '')
-        observacoes = request.POST.get('observacoes', '')
+    if request.method == "POST":
+        cab_form = CotacaoCabecalhoForm(request.POST, request.FILES)
+        formset = CotacaoItemValorFormSet(request.POST, initial=initial_itens)
 
-        if not fornecedor_id or not item_ids:
-            messages.error(request, 'Selecione fornecedor e ao menos 1 item.')
-            return redirect(request.path)
+        if cab_form.is_valid() and formset.is_valid():
+            fornecedor = cab_form.cleaned_data["fornecedor"]
 
-        fornecedor = get_object_or_404(
-            Parceiro, pk=fornecedor_id, eh_fornecedor=True
+            # Coleta apenas os itens com valor > 0 preenchido
+            linhas_validas = [
+                f.cleaned_data for f in formset
+                if f.cleaned_data.get("valor_unitario")
+            ]
+
+            if not linhas_validas:
+                messages.error(request, "Informe ao menos um valor por item.")
+            else:
+                # Mapa rápido id -> ItemSolicitacao
+                mapa_itens = {item.pk: item for item in itens}
+                try:
+                    with transaction.atomic():
+                        criadas = 0
+                        for linha in linhas_validas:
+                            item = mapa_itens.get(linha["item_id"])
+                            if not item:
+                                continue
+
+                            # Verifica duplicidade ANTES (respeita o UniqueConstraint)
+                            ja_existe = Cotacao.objects.filter(
+                                item_solicitacao=item,
+                                fornecedor=fornecedor,
+                            ).exists()
+                            if ja_existe:
+                                raise IntegrityError(
+                                    f"item:{item.material.descricao}"
+                                )
+
+                            Cotacao.objects.create(
+                                item_solicitacao=item,
+                                fornecedor=fornecedor,
+                                valor_unitario=linha["valor_unitario"],
+                                prazo_entrega_dias=cab_form.cleaned_data.get("prazo_entrega_dias"),
+                                condicoes_pagamento=cab_form.cleaned_data.get("condicoes_pagamento", ""),
+                                validade_cotacao=cab_form.cleaned_data.get("validade_cotacao"),
+                                observacoes=cab_form.cleaned_data.get("observacoes", ""),
+                                anexo_cotacao=cab_form.cleaned_data.get("anexo_cotacao"),
+                                criado_por=request.user,
+                            )
+                            # Atualiza status do item
+                            if item.status == ItemSolicitacao.StatusItem.PENDENTE_COTACAO:
+                                item.status = ItemSolicitacao.StatusItem.COTADO
+                                item.save(update_fields=["status"])
+                            criadas += 1
+
+                        # Atualiza status da solicitação se já está cotando
+                        if solicitacao.status == SolicitacaoCompra.StatusChoices.FAZER_COTACAO:
+                            solicitacao.status = SolicitacaoCompra.StatusChoices.COTACAO_ENVIADA
+                            solicitacao.save(update_fields=["status", "atualizado_em"])
+
+                    messages.success(
+                        request,
+                        f"Cotação de {fornecedor.nome_fantasia} lançada para {criadas} item(ns)!"
+                    )
+                    return redirect("suprimentos:solicitacao_detalhe", pk=solicitacao.pk)
+
+                except IntegrityError as e:
+                    messages.error(
+                        request,
+                        f"O fornecedor '{fornecedor.nome_fantasia}' já cotou um ou mais "
+                        f"destes itens. Edite a cotação existente, se necessário."
+                    )
+    else:
+        cab_form = CotacaoCabecalhoForm()
+        formset = CotacaoItemValorFormSet(initial=initial_itens)
+
+    # Junta cada subform com seu item para o template (mesma ordem!)
+    linhas = list(zip(formset.forms, itens))
+
+    return render(request, "suprimentos/cotacao_form.html", {
+        "cab_form": cab_form,
+        "formset": formset,
+        "linhas": linhas,
+        "solicitacao": solicitacao,
+    })
+
+
+@login_required
+def cotacao_excluir(request, pk):
+    cot = get_object_or_404(Cotacao, pk=pk)
+    sol_pk = cot.item_solicitacao.solicitacao.pk
+    cot.delete()
+    messages.info(request, "Cotação removida.")
+    return redirect("suprimentos:solicitacao_detalhe", pk=sol_pk)
+
+
+@login_required
+@permission_required("suprimentos.pode_cotar", raise_exception=True)
+def solicitacao_enviar_aprovacao(request, pk):
+    """FAZER_COTACAO → EM_APROVACAO (todos os itens cotados)."""
+    sol = get_object_or_404(SolicitacaoCompra, pk=pk)
+    if not sol.todos_itens_cotados:
+        messages.error(request, "Todos os itens precisam de ao menos 1 cotação.")
+        return redirect(sol.get_absolute_url())
+    sol.comprador = request.user
+    sol.data_cotacao = timezone.now().date()
+    sol.status = SolicitacaoCompra.StatusChoices.EM_APROVACAO
+    sol.save()
+    messages.success(request, "Cotações enviadas para aprovação.")
+    return redirect(sol.get_absolute_url())
+
+
+# ─────────────────────────────────────────────────────────────
+# HELPERS — cotacao_aprovar
+# ─────────────────────────────────────────────────────────────
+def _coletar_escolhas(request, itens):
+    """
+    Lê as escolhas do POST e soma por classificação.
+    Retorna: (escolhas, total_por_classif, erro_str_ou_None)
+    """
+    escolhas = []  # [(item, cotacao_ou_None)]
+    total_por_classif = defaultdict(lambda: Decimal("0.00"))
+
+    for item in itens:
+        cotacao_id = request.POST.get(f"cotacao_{item.pk}", "").strip()
+
+        if cotacao_id:
+            # valida que o ID é numérico antes de consultar
+            if not cotacao_id.isdigit():
+                return [], total_por_classif, (
+                    f"Cotação inválida para o item “{item.material.descricao}”."
+                )
+            cotacao = item.cotacoes.filter(pk=cotacao_id).first()
+            if not cotacao:
+                return [], total_por_classif, (
+                    f"Cotação inválida para o item “{item.material.descricao}”."
+                )
+            escolhas.append((item, cotacao))
+            total_por_classif[item.material.classificacao] += cotacao.valor_total
+        else:
+            escolhas.append((item, None))  # "Nenhum" → não comprar
+
+    return escolhas, total_por_classif, None
+
+
+def _checar_estouros(total_por_classif, verba, labels):
+    """Retorna lista de mensagens de estouro por classificação."""
+    estouros = []
+    for classif, total in total_por_classif.items():
+        campo_saldo = SALDO_POR_CLASSIF.get(classif)
+        if not campo_saldo:
+            continue
+        saldo = getattr(verba, campo_saldo, None) or Decimal("0.00")
+        if total > saldo:
+            label = labels.get(classif, classif)
+            estouros.append(
+                f"{label}: escolhido R$ {total:.2f} > saldo R$ {saldo:.2f}"
+            )
+    return estouros
+
+
+def _devolver_para_revisao(request, sol, msg_estouro, S):
+    """Devolve o pedido vinculado para REVISÃO de forma atômica."""
+    with transaction.atomic():
+        pedido = getattr(sol, "pedido", None)
+        if pedido is not None:
+            status_anterior = pedido.status
+            pedido.status = Pedido.StatusChoices.REVISAO
+            pedido.motivo_revisao = msg_estouro
+            pedido.save(update_fields=[
+                "status", "motivo_revisao", "atualizado_em",
+            ])
+            _registrar_historico(
+                HistoricoPedido.registrar,
+                pedido=pedido,
+                descricao=f"Devolvido para revisão (verba): {msg_estouro}",
+                responsavel=request.user,
+                status_anterior=status_anterior,
+                status_novo=Pedido.StatusChoices.REVISAO,
+            )
+
+        _registrar_historico(
+            HistoricoSolicitacao.registrar,
+            solicitacao=sol,
+            descricao=f"Cotação não aprovada — {msg_estouro}",
+            responsavel=request.user,
+            status_anterior=sol.status,
+            status_novo=sol.status,
         )
 
-        # Valida que todos os itens têm cotação escolhida DESTE fornecedor
-        itens_qs = ItemSolicitacao.objects.filter(
-            pk__in=item_ids,
-            solicitacao=sol,
-            cotacao_escolhida__fornecedor=fornecedor,
-        ).select_related('cotacao_escolhida', 'material')
 
-        if itens_qs.count() != len(item_ids):
+def _montar_comparativo(itens):
+    """Agrega cotações por fornecedor para o comparativo (GET)."""
+    agg = {}
+    for item in itens:
+        for cot in item.cotacoes.all():
+            f = cot.fornecedor
+            entry = agg.setdefault(f.id, {
+                "fornecedor": f,
+                "total": Decimal("0.00"),
+                "qtd_itens": 0,
+                "prazos": [],
+                "pagamentos": set(),
+            })
+            entry["total"] += cot.valor_total
+            entry["qtd_itens"] += 1
+            if cot.prazo_entrega_dias is not None:
+                entry["prazos"].append(cot.prazo_entrega_dias)
+            if cot.condicoes_pagamento:
+                entry["pagamentos"].add(cot.condicoes_pagamento.strip())
+
+    comparativo = []
+    for entry in agg.values():
+        prazos = entry.pop("prazos")
+        pagamentos = entry.pop("pagamentos")
+        entry["prazo"] = max(prazos) if prazos else None
+        entry["pagamentos_lista"] = " | ".join(sorted(pagamentos)) if pagamentos else ""
+        if len(pagamentos) == 1:
+            entry["pagamento"] = next(iter(pagamentos))
+        elif len(pagamentos) > 1:
+            entry["pagamento"] = "Variadas"
+        else:
+            entry["pagamento"] = None
+        comparativo.append(entry)
+
+    comparativo.sort(key=lambda d: d["total"])
+    return comparativo
+
+
+def _montar_painel_verba(sol, labels):
+    """Monta o painel de verba e o dict de saldos para o JS (GET)."""
+    verba, _ = _obter_verba_do_mes(sol)
+
+    painel_verba = []
+    saldos_json = {}
+    for classif, (campo_verba, campo_saldo) in CAMPOS_VERBA.items():
+        v_verba = (getattr(verba, campo_verba, None) or Decimal("0.00")) if verba else Decimal("0.00")
+        v_saldo = (getattr(verba, campo_saldo, None) or Decimal("0.00")) if verba else Decimal("0.00")
+        painel_verba.append({
+            "classif": classif,
+            "label": labels.get(classif, classif),
+            "verba": v_verba,
+            "saldo": v_saldo,
+            "estimado": Decimal("0.00"),
+        })
+        saldos_json[classif] = float(v_saldo)
+
+    return painel_verba, saldos_json
+
+
+# ─────────────────────────────────────────────────────────────
+# 4. APROVAR COTAÇÃO (escolha por item) + CHECAGEM DE VERBA
+# ─────────────────────────────────────────────────────────────
+@login_required
+@permission_required("suprimentos.pode_aprovar_cotacao", raise_exception=True)
+def cotacao_aprovar(request, pk):
+    """
+    Gerente escolhe a cotação vencedora de cada item.
+
+    Reforço de servidor:
+        - Só processa se a solicitação estiver EM_APROVACAO (idempotência).
+        - select_for_update() evita aprovação concorrente (duplo clique / abas).
+        - Toda gravação é atômica; verba insuficiente devolve para REVISÃO.
+
+    Regra de verba (por classificação EPI/CONSUMO/FERRAMENTA):
+        - Verba suficiente   → APROVA a solicitação.
+        - Verba insuficiente → devolve o Pedido para REVISÃO.
+    """
+    sol = get_object_or_404(
+        SolicitacaoCompra.objects.select_related("contrato"),
+        pk=pk,
+    )
+
+    S = SolicitacaoCompra.StatusChoices
+
+    # ═════════════════════════════════════════════════════════
+    # 🔒 GUARDA DE STATUS (server-side, antes de qualquer coisa)
+    # ═════════════════════════════════════════════════════════
+    if sol.status != S.EM_APROVACAO:
+        messages.warning(
+            request,
+            f"Esta solicitação não está disponível para aprovação "
+            f"(status atual: {sol.get_status_display()}).",
+        )
+        return redirect(sol.get_absolute_url())
+
+    itens = (
+        sol.itens
+        .select_related("material")
+        .prefetch_related("cotacoes__fornecedor")
+    )
+    labels = dict(CategoriaMaterial.choices)
+
+    # ═════════════════════════════════════════════════════════
+    # POST — coleta escolhas → valida verba → grava (atômico)
+    # ═════════════════════════════════════════════════════════
+    if request.method == "POST":
+        escolhas, total_por_classif, erro_post = _coletar_escolhas(request, itens)
+        if erro_post:
+            messages.error(request, erro_post)
+            return redirect(request.path)
+
+        # Exige ao menos uma cotação escolhida
+        if not any(cot for _, cot in escolhas):
+            messages.warning(request, "Escolha ao menos uma cotação para aprovar.")
+            return redirect(request.path)
+
+        # ── Verba do mês (defensivo) ─────────────────────────
+        verba, erro = _obter_verba_do_mes(sol)
+        if erro:
+            messages.error(request, erro)
+            return redirect(request.path)
+        if verba is None:
             messages.error(
                 request,
-                'Alguns itens não têm cotação aprovada deste fornecedor.'
+                "Verba do contrato não cadastrada para o período da solicitação.",
             )
             return redirect(request.path)
 
-        # Cria o PedidoCompra
-        pc = PedidoCompra.objects.create(
-            solicitacao=sol,
-            fornecedor=fornecedor,
-            filial=sol.filial,
-            numero_pedido=numero_pedido,
-            data_emissao=data_emissao,
-            data_entrega_prevista=data_prevista,
-            tipo_nota_fiscal=tipo_nf,
-            observacoes=observacoes,
-            status=PedidoCompra.StatusPC.EMITIDO,
-            criado_por=user,
-        )
+        # ── Checagem de saldo por classificação ──────────────
+        estouros = _checar_estouros(total_por_classif, verba, labels)
 
-        # Cria os ItemPedidoCompra (snapshot das cotações)
-        for item in itens_qs:
-            cot = item.cotacao_escolhida
-            ItemPedidoCompra.objects.create(
-                pedido_compra=pc,
-                cotacao=cot,
-                item_solicitacao=item,
-                material=item.material,
-                quantidade=item.quantidade,
-                valor_unitario=cot.valor_unitario,
-            )
-
-        pc.recalcular_total()
-
-        # Verifica se TODOS os itens foram alocados
-        total_itens = sol.itens.count()
-        itens_alocados = ItemPedidoCompra.objects.filter(
-            pedido_compra__solicitacao=sol
-        ).values('item_solicitacao_id').distinct().count()
-
-        if itens_alocados >= total_itens:
-            status_ant = sol.status
-            sol.status = 'EM_APROVACAO'
-            sol.save(update_fields=['status', 'atualizado_em'])
-            _registrar_hist_sol(
-                sol,
-                f"Pedido {pc.numero} criado ({fornecedor}, "
-                f"R$ {pc.valor_total:.2f}). Todos os itens alocados — "
-                f"enviado para aprovação.",
-                user, status_ant, 'EM_APROVACAO',
-            )
-            messages.success(
+        # ── VERBA INSUFICIENTE → devolve para REVISÃO ────────
+        if estouros:
+            msg_estouro = "Verba insuficiente — " + " | ".join(estouros)
+            _devolver_para_revisao(request, sol, msg_estouro, S)
+            messages.error(
                 request,
-                f'✅ Pedido {pc.numero} criado! Solicitação enviada para aprovação.'
+                f"❌ {msg_estouro}. Pedido devolvido para revisão do solicitante.",
             )
             return redirect(sol.get_absolute_url())
 
-        _registrar_hist_sol(
-            sol,
-            f"Pedido {pc.numero} criado para {fornecedor} "
-            f"(R$ {pc.valor_total:.2f}, {len(item_ids)} item(ns)).",
-            user,
-        )
+        # ── VERBA OK → grava tudo de forma atômica e APROVA ──
+        try:
+            with transaction.atomic():
+                # 🔒 Lock + revalidação do status sob trava (anti-concorrência)
+                sol_locked = (
+                    SolicitacaoCompra.objects
+                    .select_for_update()
+                    .get(pk=sol.pk)
+                )
+                if sol_locked.status != S.EM_APROVACAO:
+                    messages.warning(
+                        request,
+                        "Esta solicitação já foi processada por outro usuário.",
+                    )
+                    return redirect(sol_locked.get_absolute_url())
+
+                for item, cot in escolhas:
+                    if cot:
+                        item.cotacao_escolhida = cot
+                        item.status = ItemSolicitacao.StatusItem.APROVADO
+                    else:
+                        item.cotacao_escolhida = None
+                        item.status = ItemSolicitacao.StatusItem.REPROVADO  # "não comprar"
+                    item.save(update_fields=[
+                        "cotacao_escolhida", "status", "atualizado_em",
+                    ])
+
+                sol_locked.status = S.APROVADO
+                sol_locked.aprovador_cotacao = request.user
+                sol_locked.data_validacao_cotacao = timezone.now().date()
+                sol_locked.save(update_fields=[
+                    "status", "aprovador_cotacao",
+                    "data_validacao_cotacao", "atualizado_em",
+                ])
+
+                _registrar_historico(
+                    HistoricoSolicitacao.registrar,
+                    solicitacao=sol_locked,
+                    descricao="Cotações aprovadas dentro da verba.",
+                    responsavel=request.user,
+                    status_anterior=S.EM_APROVACAO,
+                    status_novo=S.APROVADO,
+                )
+        except SolicitacaoCompra.DoesNotExist:
+            messages.error(request, "Solicitação não encontrada.")
+            return redirect("suprimentos:lista_solicitacoes")
+
         messages.success(
             request,
-            f'✅ Pedido {pc.numero} criado! '
-            f'Continue alocando os itens restantes.'
+            "✅ Cotações aprovadas dentro da verba. Monte os Pedidos de Compra.",
         )
-        return redirect(request.path)
+        return redirect("suprimentos:montar_pedido_compra", pk=sol.pk)
 
-class SolicitacaoRegistrarCotacaoItemView(LoginRequiredMixin, AppPermissionMixin, View):
-    """Comprador registra UMA cotação (fornecedor + preço) para UM item."""
-    app_label_required = _APP
+    # ═════════════════════════════════════════════════════════
+    # GET — comparativo por fornecedor + painel de verba + saldos
+    # ═════════════════════════════════════════════════════════
+    comparativo = _montar_comparativo(itens)
+    painel_verba, saldos_json = _montar_painel_verba(sol, labels)
 
-    @transaction.atomic
-    def post(self, request, pk, item_pk):
-        sol = _get_sol_seguro(request.user, pk)
-        item = get_object_or_404(ItemSolicitacao, pk=item_pk, solicitacao=sol)
-        user = request.user
+    return render(request, "suprimentos/cotacao_aprovar.html", {
+        "solicitacao": sol,
+        "itens": itens,
+        "comparativo": comparativo,
+        "painel_verba": painel_verba,
+        "saldos_json": saldos_json,
+    })
 
-        if not _user_is_comprador(user):
-            messages.error(request, 'Apenas compradores.')
+
+# ═════════════════════════════════════════════════════════════
+# 5. MONTAR PEDIDO DE COMPRA (NxN — agrupa por fornecedor)
+# ═════════════════════════════════════════════════════════════
+@login_required
+@permission_required("suprimentos.pode_montar_pc", raise_exception=True)
+@transaction.atomic
+def montar_pedido_compra(request, pk):
+    """Agrupa itens aprovados por fornecedor e gera 1 PedidoCompra por fornecedor."""
+    sol = get_object_or_404(SolicitacaoCompra, pk=pk)
+
+    # Alias local para legibilidade
+    PC_GERADO = SolicitacaoCompra.StatusChoices.PEDIDO_GERADO
+
+    if request.method == "POST":
+        sol = SolicitacaoCompra.objects.select_for_update().get(pk=sol.pk)
+
+        # ── 1) Idempotência ──────────────────────────────────────
+        if sol.status == PC_GERADO:
+            messages.info(request, "Os Pedidos de Compra já foram gerados.")
             return redirect(sol.get_absolute_url())
 
-        form = RegistrarCotacaoForm(request.POST, user=user)
-        if form.is_valid():
-            cot = form.save(commit=False)
-            cot.item_solicitacao = item
-            cot.criado_por = user
-            try:
-                cot.save()
-                if item.status == ItemSolicitacao.StatusItem.PENDENTE_COTACAO:
-                    item.status = ItemSolicitacao.StatusItem.COTADO
-                    item.save(update_fields=['status', 'atualizado_em'])
-                _registrar_hist_sol(
-                    sol,
-                    f"Cotação registrada: {cot.fornecedor} — "
-                    f"R$ {cot.valor_unitario:.2f} para {item.material}.",
-                    user,
+        status_anterior = sol.status
+
+
+        # 🔁 Reavalia DENTRO do lock (consistência garantida)
+        itens_aprovados = sol.itens.filter(
+            status=ItemSolicitacao.StatusItem.APROVADO,
+            cotacao_escolhida__isnull=False,
+        ).select_related("cotacao_escolhida__fornecedor", "material")
+
+        if not itens_aprovados.exists():
+            messages.error(request, "Nenhum item aprovado com cotação escolhida.")
+            return redirect(sol.get_absolute_url())
+
+        # ✅ Respeita os fornecedores marcados nos checkboxes
+        fornecedores_sel = set(request.POST.getlist("fornecedores"))
+        observacoes = request.POST.get("observacoes", "").strip()
+
+        # Agrupa por fornecedor (apenas os selecionados)
+        grupos = {}
+        for item in itens_aprovados:
+            forn = item.cotacao_escolhida.fornecedor
+            if fornecedores_sel and str(forn.pk) not in fornecedores_sel:
+                continue
+            grupos.setdefault(forn.pk, {"fornecedor": forn, "itens": []})
+            grupos[forn.pk]["itens"].append(item)
+
+        if not grupos:
+            messages.error(request, "Selecione ao menos um fornecedor para gerar o PC.")
+            return redirect(request.path)
+
+        pcs_criados = []
+        for dados in grupos.values():
+            pc = PedidoCompra.objects.create(
+                solicitacao=sol,
+                fornecedor=dados["fornecedor"],
+                filial=sol.filial,
+                status=PedidoCompra.StatusPC.EMITIDO,
+                data_emissao=timezone.now().date(),
+                criado_por=request.user,
+                observacoes=observacoes,
+            )
+            for item in dados["itens"]:
+                cot = item.cotacao_escolhida
+                ItemPedidoCompra.objects.create(
+                    pedido_compra=pc,
+                    cotacao=cot,
+                    item_solicitacao=item,
+                    material=item.material,
+                    quantidade=item.quantidade,
+                    valor_unitario=cot.valor_unitario,
                 )
-                messages.success(request, '✅ Cotação registrada!')
-            except Exception as e:
-                messages.error(request, f'Erro: {e}')
-        else:
-            for field, errors in form.errors.items():
-                for err in errors:
-                    messages.error(request, f'{field}: {err}')
+            pc.recalcular_total()
+            pcs_criados.append(pc)
+
+        # ── Atualiza status da solicitação ───────────────────────
+        sol.status = PC_GERADO  # ← era SOLICITACAO_GERADA
+        sol.data_criacao_pedido = timezone.now().date()
+        sol.save(update_fields=["status", "data_criacao_pedido", "atualizado_em"])
+
+         # ── Histórico ────────────────────────────────────────────
+        try:
+            HistoricoSolicitacao.registrar(
+                solicitacao=sol,
+                descricao=(
+                    f"{len(pcs_criados)} Pedido(s) de Compra emitido(s): "
+                    + ", ".join(pc.numero for pc in pcs_criados)
+                ),
+                responsavel=request.user,
+                status_anterior=status_anterior,
+                status_novo=PC_GERADO,  # ← era SOLICITACAO_GERADA
+            )
+        except Exception:
+            pass
+
+        messages.success(request, f"{len(pcs_criados)} Pedido(s) de Compra emitido(s).")
+
+        if len(pcs_criados) == 1:
+            return redirect(pcs_criados[0].get_absolute_url())
         return redirect(sol.get_absolute_url())
 
+    # ── Preview (GET) ─────────────────────────────────────────
+    itens_aprovados = sol.itens.filter(
+        status=ItemSolicitacao.StatusItem.APROVADO,
+        cotacao_escolhida__isnull=False,
+    ).select_related("cotacao_escolhida__fornecedor", "material")
 
-class SolicitacaoEscolherCotacaoView(LoginRequiredMixin, AppPermissionMixin, View):
-    """Gerente/Aprovador escolhe a cotação vencedora de UM item."""
-    app_label_required = _APP
+    if not itens_aprovados.exists():
+        messages.error(request, "Nenhum item aprovado com cotação escolhida.")
+        return redirect(sol.get_absolute_url())
 
-    @transaction.atomic
-    def post(self, request, pk, item_pk, cot_pk):
-        sol = _get_sol_seguro(request.user, pk)
-        item = get_object_or_404(ItemSolicitacao, pk=item_pk, solicitacao=sol)
-        cot = get_object_or_404(Cotacao, pk=cot_pk, item_solicitacao=item)
-        user = request.user
+    # Agrupa por fornecedor + consolida prazo/pagamento divergentes
+    #   prazo:     maior (pior caso de entrega)
+    #   pagamento: condição única, "Variadas" ou None
+    grupos = {}
+    for item in itens_aprovados:
+        cot = item.cotacao_escolhida
+        forn = cot.fornecedor
 
-        if not _user_is_aprovador(user):
-            messages.error(request, 'Apenas aprovadores.')
-            return redirect(sol.get_absolute_url())
+        g = grupos.setdefault(forn.pk, {
+            "fornecedor": forn,
+            "itens": [],
+            "total": Decimal("0.00"),
+            "prazos": [],
+            "pagamentos": set(),
+        })
 
-        item.cotacao_escolhida = cot
-        item.status = ItemSolicitacao.StatusItem.APROVADO
-        item.save(update_fields=['cotacao_escolhida', 'status', 'atualizado_em'])
+        item.valor_cotado = cot.valor_unitario
+        item.total_cotado = cot.valor_total
+        g["itens"].append(item)
+        g["total"] += cot.valor_total
 
-        _registrar_hist_sol(
-            sol,
-            f"Cotação escolhida para {item.material}: "
-            f"{cot.fornecedor} — R$ {cot.valor_unitario:.2f}",
-            user,
+        if cot.prazo_entrega_dias is not None:
+            g["prazos"].append(cot.prazo_entrega_dias)
+        if cot.condicoes_pagamento:
+            g["pagamentos"].add(cot.condicoes_pagamento.strip())
+
+    # Pós-processa: consolida prazo e pagamento por fornecedor
+    grupos_fornecedor = []
+    for g in grupos.values():
+        prazos = g.pop("prazos")
+        pagamentos = g.pop("pagamentos")
+
+        # Prazo → maior (pior caso); None se não houver
+        g["prazo"] = max(prazos) if prazos else None
+
+        # Pagamento → único, "Variadas" ou None
+        if len(pagamentos) == 1:
+            g["pagamento"] = next(iter(pagamentos))
+        elif len(pagamentos) > 1:
+            g["pagamento"] = "Variadas"
+        else:
+            g["pagamento"] = None
+
+        # Para tooltip quando houver divergência
+        g["pagamentos_lista"] = " | ".join(sorted(pagamentos)) if pagamentos else ""
+
+        grupos_fornecedor.append(g)
+
+    grupos_fornecedor = sorted(grupos_fornecedor, key=lambda d: d["total"])
+
+    return render(request, "suprimentos/montar_pc.html", {
+        "solicitacao": sol,
+        "grupos_fornecedor": grupos_fornecedor,
+        "itens": list(itens_aprovados),
+        "verba_disponivel": sol.valor_estimado,
+    })
+
+# ═════════════════════════════════════════════════════════════
+# 6. PEDIDO DE COMPRA — Detalhe / Acompanhar Entrega / Finalizar
+# ═════════════════════════════════════════════════════════════
+class PedidoCompraDetailView(LoginRequiredMixin, DetailView):
+    model = PedidoCompra
+    template_name = "suprimentos/pedido_compra_detail.html"
+    context_object_name = "pc"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["itens"] = self.object.itens.select_related("material")
+        ctx["anexos_entrega"] = self.object.anexos_entrega.all()  # ← novo
+        return ctx
+
+@login_required
+@permission_required("suprimentos.pode_receber_pc", raise_exception=True)
+@transaction.atomic
+def pc_finalizar(request, pk):
+    """RECEBIDO — completa o saldo restante e, se todos da SOL, conclui."""
+    pc = get_object_or_404(PedidoCompra, pk=pk)
+    pc.status = PedidoCompra.StatusPC.RECEBIDO
+    pc.recebido_por = request.user
+    if not pc.data_entrega_efetiva:
+        pc.data_entrega_efetiva = timezone.now().date()
+    pc.save()
+
+    # Completa apenas o que faltar (não sobrescreve entregas parciais)
+    itens = list(pc.itens.all())
+    for item in itens:
+        if (item.quantidade_recebida or 0) < item.quantidade:
+            item.quantidade_recebida = item.quantidade
+    if itens:
+        ItemPedidoCompra.objects.bulk_update(itens, ["quantidade_recebida"])
+
+    sol = pc.solicitacao
+    todos = sol.pedidos_compra.exclude(status=PedidoCompra.StatusPC.CANCELADO)
+    if all(p.status == PedidoCompra.StatusPC.RECEBIDO for p in todos):
+        sol.status = SolicitacaoCompra.StatusChoices.CONCLUIDO
+        sol.data_entrega_efetiva = timezone.now().date()
+        sol.save()
+        messages.success(request, "PC recebido. Solicitação CONCLUÍDA!")
+    else:
+        messages.success(request, "Pedido de Compra recebido.")
+    return redirect(pc.get_absolute_url())
+
+@login_required
+@permission_required("suprimentos.pode_visualizar_pc", raise_exception=True)
+def pc_enviar_fornecedor(request, pk):
+    pc = get_object_or_404(PedidoCompra, pk=pk)
+    pc.status = PedidoCompra.StatusPC.ENVIADO_FORNECEDOR
+    pc.data_envio = timezone.now().date()
+    pc.save()
+    messages.success(request, "Pedido enviado ao fornecedor.")
+    return redirect(pc.get_absolute_url())
+
+
+def _render_entrega(request, pc, itens, form):
+    """
+    Renderiza a tela de recebimento/entrega de um Pedido de Compra.
+
+    Helper compartilhado entre o fluxo GET e os retornos de erro
+    do POST (ex.: rollback por quantidade inválida).
+    """
+    contexto = {
+        "pc": pc,
+        "pedido": pc,          # alias defensivo p/ templates antigos
+        "itens": itens,
+        "form": form,
+        "titulo": f"Recebimento — {pc.numero}",
+    }
+    return render(request, "suprimentos/pc_entrega.html", contexto)
+
+
+@login_required
+@permission_required("suprimentos.pode_receber_pedido_compra", raise_exception=True)
+@transaction.atomic
+def pc_acompanhar_entrega(request, pk):
+    """
+    Registra recebimento de um Pedido de Compra.
+
+    Reforço de servidor:
+        - Bloqueia GET/POST se o PC estiver ENTREGUE / RECEBIDO / CANCELADO.
+        - select_for_update() evita recebimento concorrente.
+    """
+    pc = get_object_or_404(
+        PedidoCompra.objects.prefetch_related("itens__material"), pk=pk
+    )
+
+    S = PedidoCompra.StatusPC
+
+    # Status que impedem novo recebimento
+    STATUS_FINALIZADOS = (S.ENTREGUE, S.RECEBIDO, S.CANCELADO)
+
+    # ═════════════════════════════════════════════════════════
+    # 🔒 GUARDA DE STATUS
+    # ═════════════════════════════════════════════════════════
+    if pc.status in STATUS_FINALIZADOS:
+        messages.warning(
+            request,
+            f"Este pedido não está disponível para entrega "
+            f"(status atual: {pc.get_status_display()}).",
         )
+        return redirect("suprimentos:pc_detalhe", pk=pc.pk)
 
-        # Se TODOS os itens têm cotação escolhida → avança para Criar Pedido/CT
-        if not sol.itens.filter(cotacao_escolhida__isnull=True).exists():
-            status_ant = sol.status
-            sol.status = 'CRIAR_PEDIDO_CT'
-            sol.save(update_fields=['status', 'atualizado_em'])
-            _registrar_hist_sol(
-                sol,
-                "Todas as cotações foram aprovadas. Pronto para criar pedidos.",
-                user, status_ant, 'CRIAR_PEDIDO_CT',
+    itens = list(pc.itens.select_related("material"))
+
+    if request.method == "POST":
+        form = EntregaPedidoCompraForm(request.POST, request.FILES, instance=pc)
+
+        if form.is_valid():
+            # 🔒 Lock + revalidação sob trava
+            pc_locked = (
+                PedidoCompra.objects
+                .select_for_update()
+                .get(pk=pc.pk)
             )
-            messages.success(request, '✅ Cotação aprovada! Avance para criar os pedidos.')
-        else:
-            messages.success(request, '✅ Cotação aprovada para este item.')
+            if pc_locked.status in STATUS_FINALIZADOS:
+                messages.warning(
+                    request,
+                    "Este pedido já foi finalizado por outro usuário.",
+                )
+                return redirect("suprimentos:pc_detalhe", pk=pc.pk)
 
-        return redirect(sol.get_absolute_url())
+            pc = form.save()
 
+            # 1) Processa recebimento item a item
+            houve_recebimento = False
+            for item in itens:
+                raw = request.POST.get(f"recebido_{item.pk}", "").strip()
+                if not raw:
+                    continue
+                try:
+                    qtd = Decimal(raw.replace(",", "."))
+                except (InvalidOperation, AttributeError):
+                    messages.warning(
+                        request,
+                        f"Valor inválido para o item {item.material.descricao}.",
+                    )
+                    continue
 
-class SolicitacaoEnviarFornecedorView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
+                if qtd <= 0:
+                    continue
+                if qtd > item.saldo:
+                    messages.error(
+                        request,
+                        f"Quantidade recebida ({qtd}) maior que o saldo "
+                        f"({item.saldo}) para {item.material.descricao}.",
+                    )
+                    transaction.set_rollback(True)
+                    return redirect(
+                        "suprimentos:pc_acompanhar_entrega", pk=pc.pk
+                    )  # ✅ redireciona, sai do atomic
 
-    def post(self, request, pk):
-        sol = _get_sol_seguro(request.user, pk)
-        user = request.user
+                item.quantidade_recebida = (item.quantidade_recebida or Decimal("0")) + qtd
+                item.save(update_fields=["quantidade_recebida"])
+                houve_recebimento = True
 
-        if not _user_is_comprador(user):
-            messages.error(request, 'Apenas compradores podem enviar pedidos.')
-            return redirect(sol.get_absolute_url())
-        if sol.status != 'ENVIAR_PEDIDO':
-            messages.error(request, 'Status inválido.')
-            return redirect(sol.get_absolute_url())
+            # 2) Salva anexos
+            for arquivo in form.cleaned_data.get("anexos", []):
+                EntregaAnexo.objects.create(
+                    pedido_compra=pc,
+                    arquivo=arquivo,
+                    nota_fiscal=pc.numero_nota_fiscal or "",
+                    enviado_por=request.user,
+                )
 
-        form = EnviarPedidoFornecedorForm(request.POST)
-        if form.is_valid():
-            status_ant = sol.status
-            sol.data_envio_fornecedor = form.cleaned_data['data_envio']
-            sol.data_prevista_entrega = form.cleaned_data['data_prevista']
-            sol.status = 'ENTREGA_PENDENTE'
-            sol.save(update_fields=[
-                'status', 'data_envio_fornecedor',
-                'data_prevista_entrega', 'atualizado_em',
-            ])
-            _registrar_hist_sol(
-                sol,
-                f"Enviado ao fornecedor por {user.get_full_name() or user.username}. "
-                f"Previsão: {sol.data_prevista_entrega}.",
-                user, status_ant, 'ENTREGA_PENDENTE',
-            )
-            try:
-                notificar_pedido_enviado_fornecedor(sol)
-            except Exception as e:
-                logger.error(f"Erro notificação envio fornecedor: {e}")
+            # 3) Registra quem recebeu + atualiza status
+            if houve_recebimento and not pc.recebido_por:
+                pc.recebido_por = request.user
+                pc.save(update_fields=["recebido_por", "atualizado_em"])
 
-            messages.success(request, f'Pedido enviado! Previsão: {sol.data_prevista_entrega}. 🚚')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{field}: {error}')
-        return redirect(sol.get_absolute_url())
+            pc.atualizar_status_entrega()
 
+            if houve_recebimento:
+                messages.success(request, "Recebimento registrado com sucesso!")
+            else:
+                messages.info(request, "Dados de entrega atualizados.")
+            return redirect("suprimentos:pc_detalhe", pk=pc.pk)
+    else:
+        form = EntregaPedidoCompraForm(instance=pc)
 
-class SolicitacaoRegistrarEntregaView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
-
-    def post(self, request, pk):
-        sol = _get_sol_seguro(request.user, pk)
-        user = request.user
-
-        if not _user_is_comprador(user):
-            messages.error(request, 'Apenas compradores.')
-            return redirect(sol.get_absolute_url())
-        if sol.status != 'ENTREGA_PENDENTE':
-            messages.error(request, 'Status inválido.')
-            return redirect(sol.get_absolute_url())
-
-        form = RegistrarEntregaForm(request.POST)
-        if form.is_valid():
-            sol.data_entrega_efetiva = form.cleaned_data['data_entrega']
-            sol.save(update_fields=['data_entrega_efetiva', 'atualizado_em'])
-            _registrar_hist_sol(
-                sol,
-                f"Entrega efetiva em {sol.data_entrega_efetiva} "
-                f"por {user.get_full_name() or user.username}.",
-                user,
-            )
-            try:
-                notificar_entrega_registrada(sol)
-            except Exception as e:
-                logger.error(f"Erro notificação entrega: {e}")
-
-            messages.success(request, 'Entrega registrada! Agora informe o Nº da NF para encerrar. 📦')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{field}: {error}')
-        return redirect(sol.get_absolute_url())
+    return _render_entrega(request, pc, itens, form)
 
 
-class SolicitacaoEncerrarView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
+@login_required
+@permission_required("suprimentos.pode_visualizar_pedido_compra", raise_exception=True)
+def pc_detalhe(request, pk):
+    """Detalhe do Pedido de Compra com todas as entregas/anexos e progresso."""
+    pc = get_object_or_404(
+        PedidoCompra.objects.select_related("fornecedor", "filial"),
+        pk=pk,
+    )
+    itens = list(pc.itens.select_related("material"))
 
-    def post(self, request, pk):
-        sol = _get_sol_seguro(request.user, pk)
-        user = request.user
+    # Anexos de entrega (ordenados do mais recente p/ o mais antigo)
+    anexos = (
+        pc.anexos_entrega
+        .select_related("enviado_por")
+        .order_by("-created_at")  # ajuste se o campo de data tiver outro nome
+    )
 
-        if not _user_is_comprador(user):
-            messages.error(request, 'Apenas compradores.')
-            return redirect(sol.get_absolute_url())
-        if sol.status != 'ENTREGA_PENDENTE' or not sol.data_entrega_efetiva:
-            messages.error(request, 'Registre a entrega antes de encerrar.')
-            return redirect(sol.get_absolute_url())
+    # Totais agregados
+    total_pedido = sum((i.quantidade or Decimal("0") for i in itens), Decimal("0"))
+    total_recebido = sum((i.quantidade_recebida or Decimal("0") for i in itens), Decimal("0"))
+    total_saldo = total_pedido - total_recebido
 
-        form = EncerrarSolicitacaoForm(request.POST)
-        if form.is_valid():
-            status_ant = sol.status
-            sol.numero_nota_fiscal = form.cleaned_data['numero_nota_fiscal']
-            sol.status = 'CONCLUIDO'
-            sol.save(update_fields=['status', 'numero_nota_fiscal', 'atualizado_em'])
-            _registrar_hist_sol(
-                sol,
-                f"ENCERRADA por {user.get_full_name() or user.username}. NF: {sol.numero_nota_fiscal}.",
-                user, status_ant, 'CONCLUIDO',
-            )
-            try:
-                notificar_solicitacao_concluida(sol)
-            except Exception as e:
-                logger.error(f"Erro notificação conclusão: {e}")
+    progresso_pct = Decimal("0")
+    if total_pedido > 0:
+        progresso_pct = (total_recebido / total_pedido * 100).quantize(Decimal("0.1"))
 
-            messages.success(request, f'Solicitação {sol.numero} CONCLUÍDA! ✅🎉')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{field}: {error}')
-        return redirect(sol.get_absolute_url())
+    valor_total = sum(
+        ((i.quantidade or Decimal("0")) * (i.valor_unitario or Decimal("0")) for i in itens),
+        Decimal("0"),
+    )
 
+    # Agrupa anexos por nota fiscal (cada "recebimento" = uma NF)
+    entregas = {}
+    for anexo in anexos:
+        chave = anexo.nota_fiscal or "Sem NF"
+        entregas.setdefault(chave, []).append(anexo)
 
-class SolicitacaoCancelarView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
-
-    def post(self, request, pk):
-        sol = _get_sol_seguro(request.user, pk)
-        user = request.user
-
-        if not sol.pode_cancelar:
-            messages.error(request, 'Não pode ser cancelada.')
-            return redirect(sol.get_absolute_url())
-
-        pode = (
-            user == sol.solicitante
-            or _user_is_aprovador(user)
-            or _user_is_comprador(user)
-        )
-        if not pode:
-            messages.error(request, 'Sem permissão.')
-            return redirect(sol.get_absolute_url())
-
-        form = CancelarSolicitacaoForm(request.POST)
-        if form.is_valid():
-            status_ant = sol.status
-            sol.status = 'CANCELADO'
-            sol.motivo_cancelamento = form.cleaned_data['motivo']
-            timestamp = timezone.now().strftime('%d/%m/%Y %H:%M')
-            sol.observacoes = (
-                f"{sol.observacoes}\n"
-                f"[CANCELADO em {timestamp}] Motivo: {sol.motivo_cancelamento}"
-            ).strip()
-            sol.save(update_fields=[
-                'status', 'motivo_cancelamento', 'observacoes', 'atualizado_em',
-            ])
-            _registrar_hist_sol(
-                sol,
-                f"CANCELADA por {user.get_full_name() or user.username}. "
-                f"Motivo: {sol.motivo_cancelamento}",
-                user, status_ant, 'CANCELADO',
-            )
-            try:
-                notificar_solicitacao_cancelada(sol)
-            except Exception as e:
-                logger.error(f"Erro notificação cancelamento: {e}")
-
-            messages.warning(request, f'Solicitação {sol.numero} cancelada.')
-        else:
-            messages.error(request, 'Informe o motivo do cancelamento.')
-        return redirect(sol.get_absolute_url())
+    context = {
+        "pc": pc,
+        "itens": itens,
+        "anexos": anexos,
+        "entregas": entregas,
+        "total_pedido": total_pedido,
+        "total_recebido": total_recebido,
+        "total_saldo": total_saldo,
+        "progresso_pct": progresso_pct,
+        "valor_total": valor_total,
+    }
+    return render(request, "suprimentos/pc_detalhe.html", context)
 
 
-class SolicitacaoAnexoView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
-
-    def post(self, request, pk):
-        sol = _get_sol_seguro(request.user, pk)
-        form = AnexoSolicitacaoForm(request.POST, request.FILES)
-        if form.is_valid():
-            try:
-                anexo = form.save(commit=False)
-                anexo.solicitacao = sol
-                anexo.enviado_por = request.user
-                anexo.save()
-                _registrar_hist_sol(sol, f"Anexo: {anexo.nome_arquivo}", request.user)
-                messages.success(request, 'Anexo enviado! 📎')
-            except Exception as e:
-                logger.error(f"Erro ao salvar anexo da solicitação {sol.numero}: {e}")
-                messages.error(request, f'Arquivo rejeitado: {e}')
-        else:
-            for error in form.errors.values():
-                messages.error(request, error)
-        return redirect(sol.get_absolute_url())
+# ═════════════════════════════════════════════════════════════
+# CADASTROS AUXILIARES (Parceiro / Material / Contrato)
+# ═════════════════════════════════════════════════════════════
+class ParceiroListView(LoginRequiredMixin, ListView):
+    model = Parceiro
+    template_name = "suprimentos/parceiro_list.html"
+    context_object_name = "parceiros"
+    paginate_by = 25
 
 
-class SolicitacaoAnexoDeleteView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
-
-    def post(self, request, pk, anexo_pk):
-        sol = _get_sol_seguro(request.user, pk)
-        anexo = get_object_or_404(AnexoSolicitacao, pk=anexo_pk, solicitacao=sol)
-        nome = anexo.nome_arquivo
-        anexo.arquivo.delete(save=False)
-        anexo.delete()
-        _registrar_hist_sol(sol, f"Anexo removido: {nome}", request.user)
-        messages.success(request, f'Anexo "{nome}" removido.')
-        return redirect(sol.get_absolute_url())
+class ParceiroCreateView(LoginRequiredMixin, CreateView):
+    model = Parceiro
+    form_class = ParceiroForm
+    template_name = "suprimentos/parceiro_form.html"
+    success_url = reverse_lazy("suprimentos:parceiro_list")
 
 
-class SolicitacaoObservacaoView(LoginRequiredMixin, AppPermissionMixin, View):
-    app_label_required = _APP
+class MaterialListView(LoginRequiredMixin, ListView):
+    model = Material
+    template_name = "suprimentos/material_list.html"
+    context_object_name = "materiais"
+    paginate_by = 30
 
-    def post(self, request, pk):
-        sol = _get_sol_seguro(request.user, pk)
-        user = request.user
-        form = ObservacaoSolicitacaoForm(request.POST)
-        if form.is_valid():
-            texto = form.cleaned_data['texto']
-            timestamp = timezone.now().strftime('%d/%m/%Y %H:%M')
-            nome = user.get_full_name() or user.username
-            sol.observacoes = (
-                f"{sol.observacoes}\n[{timestamp} — {nome}] {texto}"
-            ).strip()
-            sol.save(update_fields=['observacoes', 'atualizado_em'])
-            _registrar_hist_sol(sol, f"Observação: {texto[:100]}", user)
-            messages.success(request, 'Observação registrada! 📝')
-        else:
-            messages.error(request, 'Texto obrigatório.')
-        return redirect(sol.get_absolute_url())
+    def get_queryset(self):
+        qs = Material.objects.all()
+        q = self.request.GET.get("q")
+        if q:
+            qs = qs.filter(Q(descricao__icontains=q) | Q(codigo__icontains=q))
+        return qs
 
+
+class MaterialCreateView(LoginRequiredMixin, CreateView):
+    model = Material
+    form_class = MaterialForm
+    template_name = "suprimentos/material_form.html"
+    success_url = reverse_lazy("suprimentos:material_list")
+
+
+class ContratoListView(LoginRequiredMixin, ListView):
+    model = Contrato
+    template_name = "suprimentos/contrato_list.html"
+    context_object_name = "contratos"
+    paginate_by = 25
+
+
+# ═════════════════════════════════════════════════════════════
+# 7. PEDIDO DE COMPRA — Impressão (A4 / PDF)
+# ═════════════════════════════════════════════════════════════
+class PedidoCompraImprimirView(LoginRequiredMixin, DetailView):
+    model = PedidoCompra
+    template_name = "suprimentos/pc_imprimir.html"
+    context_object_name = "pc"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["itens"] = self.object.itens.select_related("material", "cotacao")
+        ctx["valor_total"] = self.object.valor_total  # ← campo real do model
+        ctx["emitido_em"] = timezone.now()
+        return ctx

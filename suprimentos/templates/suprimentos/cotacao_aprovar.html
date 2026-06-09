@@ -1,0 +1,426 @@
+{% extends "suprimentos/base_suprimentos.html" %}
+{% block sup_content %}
+
+<div class="sup-header">
+  <h1><i class="bi bi-check2-square me-2"></i>Aprovar Cotação · {{ solicitacao.numero }}</h1>
+  <small class="opacity-75">{{ solicitacao.pedido.contrato }}</small>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="row g-4">
+    <div class="col-lg-8">
+
+      {# ──────────────────────────────────────────────────────────── #}
+      {# ESCOLHA POR ITEM — cada item escolhe sua cotação vencedora     #}
+      {# ──────────────────────────────────────────────────────────── #}
+      <div class="card sup-card mb-4">
+        <div class="card-header bg-white fw-semibold">
+          <i class="bi bi-ui-checks me-1"></i> Escolha da Cotação por Item
+        </div>
+        <div class="card-body p-0">
+          {% for item in itens %}
+          <div class="border-bottom p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <span class="fw-semibold">{{ item.material.descricao }}</span>
+                <span class="badge bg-secondary ms-1">{{ item.material.get_classificacao_display }}</span>
+                <br>
+                <small class="text-muted">
+                  Qtde: {{ item.quantidade|floatformat:2 }} {{ item.material.get_unidade_display }}
+                </small>
+              </div>
+              {% if item.status == "APROVADO" %}
+                <span class="badge bg-success">Aprovado</span>
+              {% endif %}
+            </div>
+
+            {% if item.cotacoes.all %}
+            <div class="table-responsive">
+              <table class="table table-sm table-sup mb-0 align-middle">
+                <thead>
+                  <tr>
+                    <th class="text-center" style="width:60px;">Escolher</th>
+                    <th>Fornecedor</th>
+                    <th class="text-end">Unitário</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-center">Prazo</th>
+                    <th>Pgto.</th>
+                    <th class="text-center" style="width:70px;">Anexo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for cot in item.cotacoes.all %}
+                  <tr class="{% if cot.is_menor_preco %}table-success{% endif %}">
+                    <td class="text-center">
+                      <input type="radio"
+                            name="cotacao_{{ item.pk }}"
+                            value="{{ cot.pk }}"
+                            class="form-check-input radio-cotacao"
+                            data-classif="{{ item.material.classificacao }}"
+                            data-total="{{ cot.valor_total|stringformat:'.2f' }}"
+                            {% if item.cotacao_escolhida_id == cot.pk %}checked
+                            {% elif not item.cotacao_escolhida_id and cot.is_menor_preco %}checked{% endif %}>
+                    </td>
+                    <td>
+                      {{ cot.fornecedor.nome_fantasia }}
+                      {% if cot.is_menor_preco %}
+                        <span class="badge bg-success ms-1">Menor preço</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-end">R$ {{ cot.valor_unitario|floatformat:2 }}</td>
+                    <td class="text-end fw-semibold">R$ {{ cot.valor_total|floatformat:2 }}</td>
+                    <td class="text-center">{{ cot.prazo_entrega_dias|default:"—" }} dias</td>
+                    <td><small>{{ cot.condicoes_pagamento|default:"—" }}</small></td>
+                    <td class="text-center">
+                      {% if cot.arquivo %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-bs-toggle="modal" data-bs-target="#modalAnexo"
+                                data-url="{{ cot.arquivo.url }}"
+                                data-nome="{{ cot.fornecedor.nome_fantasia }}"
+                                data-ext="{{ cot.arquivo.name|slice:'-3:'|lower }}">
+                          <i class="bi bi-paperclip"></i>
+                        </button>
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+
+                  {# ── Linha NENHUM: não comprar este item ── #}
+                  <tr class="linha-nenhum">
+                    <td class="text-center">
+                      <input type="radio"
+                            name="cotacao_{{ item.pk }}"
+                            value=""
+                            class="form-check-input radio-cotacao"
+                            data-classif="{{ item.material.classificacao }}"
+                            data-total="0.00"
+                            {% if not item.cotacao_escolhida_id and not item.menor_cotacao %}checked{% endif %}>
+                    </td>
+                    <td colspan="6" class="text-muted fst-italic">
+                      <i class="bi bi-dash-circle me-1"></i> Não comprar este item
+                    </td>
+                  </tr>
+                </tbody>
+
+              </table>
+            </div>
+            {% else %}
+            <div class="alert alert-warning mb-0 py-2 small">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              Sem cotações para este item — não é possível aprovar.
+            </div>
+            {% endif %}
+          </div>
+          {% empty %}
+          <div class="text-center text-muted py-4">
+            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+            Nenhum item nesta solicitação.
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {# ──────────────────────────────────────────────────────────── #}
+      {# COMPARATIVO AGREGADO POR FORNECEDOR (apenas leitura)           #}
+      {# ──────────────────────────────────────────────────────────── #}
+      <div class="card sup-card mb-4">
+        <div class="card-header bg-white fw-semibold">
+          <i class="bi bi-bar-chart me-1"></i> Comparativo por Fornecedor
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sup mb-0 align-middle">
+            <thead>
+              <tr>
+                <th>Fornecedor</th>
+                <th class="text-end">Total</th>
+                <th class="text-center">Prazo</th>
+                <th>Pgto.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for linha in comparativo %}
+              <tr class="{% if forloop.first %}table-success{% endif %}">
+                <td>
+                  {{ linha.fornecedor.nome_fantasia }}
+                  {% if forloop.first %}<span class="badge bg-success ms-1">Menor total</span>{% endif %}
+                  <br><small class="text-muted">{{ linha.qtd_itens }} cotação(ões)</small>
+                </td>
+                <td class="text-end fw-semibold">R$ {{ linha.total|floatformat:2 }}</td>
+                <td class="text-center">{{ linha.prazo|default:"—" }} dias</td>
+                <td>
+                    {% if linha.pagamento == "Variadas" %}
+                      <small class="text-warning fw-semibold"
+                            data-bs-toggle="tooltip"
+                            title="{{ linha.pagamentos_lista }}">
+                        <i class="bi bi-exclamation-circle me-1"></i>Variadas
+                      </small>
+                    {% else %}
+                      <small>{{ linha.pagamento|default:"—" }}</small>
+                    {% endif %}
+                  </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-4">
+                  <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                  Nenhuma cotação lançada.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    {# ──────────────────────────────────────────────────────────── #}
+    {# PAINEL DE VERBA + DECISÃO                                      #}
+    {# ──────────────────────────────────────────────────────────── #}
+    <div class="col-lg-4">
+
+      {# ── Painel de Verba por classificação ── #}
+      <div class="card sup-card mb-3">
+        <div class="card-header bg-white fw-semibold">
+          <i class="bi bi-wallet2 me-1"></i> Verba do Mês
+        </div>
+        <div class="card-body">
+          {% for v in painel_verba %}
+            {% if v.verba or v.estimado %}
+            <div class="mb-3" data-painel-classif="{{ v.classif }}">
+              <div class="d-flex justify-content-between small fw-semibold">
+                <span>{{ v.label }}</span>
+                <span class="badge bg-secondary js-badge-status">—</span>
+              </div>
+              <dl class="row mb-0 small mt-1">
+                <dt class="col-7 fw-normal text-muted">Saldo disponível</dt>
+                <dd class="col-5 text-end mb-1">R$ {{ v.saldo|floatformat:2 }}</dd>
+
+                <dt class="col-7 fw-normal text-muted">Selecionado</dt>
+                <dd class="col-5 text-end mb-0 js-valor-selecionado">R$ 0,00</dd>
+              </dl>
+              <div class="progress mt-2" style="height:6px;">
+                <div class="progress-bar js-barra-verba" role="progressbar" style="width:0%"></div>
+              </div>
+            </div>
+            {% endif %}
+          {% endfor %}
+
+          {% if not painel_verba %}
+            <div class="text-center text-muted py-4">
+              <i class="bi bi-wallet2 fs-3 d-block mb-2"></i>
+              Verba do contrato não cadastrada.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {# ── Decisão ── #}
+      <div class="card sup-card mb-3">
+        <div class="card-header bg-white fw-semibold">Decisão</div>
+        <div class="card-body d-grid gap-2">
+
+          {% if solicitacao.status == "aprovado" %}
+            {# Já aprovado → botão inativo + feedback #}
+            <button type="button" class="btn btn-success" disabled>
+              <i class="bi bi-check-circle-fill"></i> Solicitação Aprovada
+            </button>
+            <div class="alert alert-success py-2 mb-0 small text-center">
+              <i class="bi bi-info-circle me-1"></i>
+              Aprovada em {{ solicitacao.data_aprovacao|date:"d/m/Y H:i"|default:"—" }}
+              {% if solicitacao.aprovado_por %}por {{ solicitacao.aprovado_por }}{% endif %}.
+            </div>
+          {% else %}
+            {# Pendente → botão ativo (respeitando regra de itens) #}
+            <button type="submit" class="btn btn-primary"
+                    {% if not itens %}disabled{% endif %}>
+              <i class="bi bi-check-lg"></i> Confirmar Aprovação
+            </button>
+            {% if not itens %}
+              <small class="text-muted text-center">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Adicione itens para habilitar a aprovação.
+              </small>
+            {% endif %}
+          {% endif %}
+
+          <a href="{% url 'suprimentos:solicitacao_detalhe' solicitacao.pk %}"
+            class="btn btn-light">Voltar</a>
+        </div>
+      </div>
+
+      <div class="alert alert-info small">
+        <i class="bi bi-info-circle me-1"></i>
+        Ao aprovar, a verba é validada por classificação. Se o total exceder o
+        saldo, o pedido é <strong>devolvido para revisão</strong>.
+        Caso contrário, segue para <strong>montagem do Pedido de Compra</strong>.
+      </div>
+    </div>
+  </div>
+
+  {{ saldos_json|json_script:"saldos-data" }}
+
+  {# ── Modal de Anexo ── #}
+  <div class="modal fade" id="modalAnexo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-paperclip me-1"></i>
+            Anexo · <span id="anexoNome"></span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body p-0" style="min-height:60vh;">
+          <div id="anexoConteudo" class="w-100 h-100 d-flex justify-content-center align-items-center">
+            <div class="spinner-border text-secondary" role="status"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a id="anexoDownload" href="#" class="btn btn-light" download>
+            <i class="bi bi-download me-1"></i> Baixar
+          </a>
+          <button type="button" id="anexoImprimir" class="btn btn-primary">
+            <i class="bi bi-printer me-1"></i> Imprimir
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const saldos = JSON.parse(document.getElementById("saldos-data").textContent);
+  const radios = document.querySelectorAll(".radio-cotacao");
+  const btnConfirmar = document.querySelector('button[type="submit"]');
+
+  const fmt = (v) =>
+    "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  function recalcular() {
+    // Soma por classificação (apenas radios marcados)
+    const totais = {};
+    radios.forEach((r) => {
+      if (r.checked) {
+        const cls = r.dataset.classif;
+        const val = parseFloat(r.dataset.total) || 0;
+        totais[cls] = (totais[cls] || 0) + val;
+      }
+    });
+
+    let temEstouro = false;
+
+    // Atualiza cada painel
+    document.querySelectorAll("[data-painel-classif]").forEach((painel) => {
+      const cls = painel.dataset.painelClassif;
+      const selecionado = totais[cls] || 0;
+      const saldo = parseFloat(saldos[cls]) || 0;
+
+      const elValor = painel.querySelector(".js-valor-selecionado");
+      const elBadge = painel.querySelector(".js-badge-status");
+      const elBarra = painel.querySelector(".js-barra-verba");
+
+      if (elValor) elValor.textContent = fmt(selecionado);
+
+      const estoura = selecionado > saldo;
+      const pct = saldo > 0 ? Math.min((selecionado / saldo) * 100, 100) : (selecionado > 0 ? 100 : 0);
+
+      if (elBarra) {
+        elBarra.style.width = pct + "%";
+        elBarra.className = "progress-bar js-barra-verba " +
+          (estoura ? "bg-danger" : pct > 80 ? "bg-warning" : "bg-success");
+      }
+
+      if (elValor) {
+        elValor.classList.toggle("text-danger", estoura);
+        elValor.classList.toggle("fw-semibold", estoura);
+      }
+
+      if (elBadge) {
+        elBadge.textContent = estoura ? "Estoura" : "OK";
+        elBadge.className = "badge js-badge-status " + (estoura ? "bg-danger" : "bg-success");
+      }
+
+      if (estoura) temEstouro = true;
+    });
+
+    // Bloqueia confirmação se estourar (a view também valida)
+    if (btnConfirmar) {
+      btnConfirmar.disabled = temEstouro;
+      btnConfirmar.title = temEstouro ? "Verba insuficiente em uma ou mais classificações" : "";
+    }
+  }
+
+  radios.forEach((r) => r.addEventListener("change", recalcular));
+  recalcular(); // estado inicial
+
+  // ── Modal de anexo ──
+  const modal = document.getElementById("modalAnexo");
+  if (!modal) return;
+
+  let urlAtual = "";
+
+  modal.addEventListener("show.bs.modal", function (event) {
+    const btn = event.relatedTarget;
+    const url = btn.getAttribute("data-url");
+    const nome = btn.getAttribute("data-nome") || "Cotação";
+    const ext = (btn.getAttribute("data-ext") || "").toLowerCase();
+
+    urlAtual = url;
+    document.getElementById("anexoNome").textContent = nome;
+    document.getElementById("anexoDownload").href = url;
+
+    const cont = document.getElementById("anexoConteudo");
+    const imgExts = ["jpg", "png", "peg", "gif", "bmp", "ebp"]; // 'peg'=jpeg, 'ebp'=webp (slice -3)
+
+    if (ext === "pdf") {
+      cont.innerHTML =
+        `<iframe src="${url}" class="w-100" style="height:70vh;border:0;" title="Anexo"></iframe>`;
+    } else if (imgExts.includes(ext)) {
+      cont.innerHTML =
+        `<img src="${url}" class="img-fluid" style="max-height:70vh;" alt="Anexo">`;
+    } else {
+      cont.innerHTML =
+        `<div class="text-center text-muted p-5">
+           <i class="bi bi-file-earmark fs-1 d-block mb-2"></i>
+           Pré-visualização não disponível para este formato.<br>
+           Use o botão <strong>Baixar</strong>.
+         </div>`;
+    }
+  });
+
+  // Impressão: abre só o anexo numa janela isolada e dispara print
+  document.getElementById("anexoImprimir").addEventListener("click", function () {
+    if (!urlAtual) return;
+    const win = window.open(urlAtual, "_blank");
+    if (win) {
+      win.addEventListener("load", () => {
+        try { win.focus(); win.print(); } catch (e) { /* fallback silencioso */ }
+      });
+    }
+  });
+
+  // Limpa o conteúdo ao fechar (evita PDF tocando/duplicado)
+  modal.addEventListener("hidden.bs.modal", function () {
+    document.getElementById("anexoConteudo").innerHTML =
+      '<div class="spinner-border text-secondary" role="status"></div>';
+    urlAtual = "";
+  });
+
+  // Tooltips do Bootstrap
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+    new bootstrap.Tooltip(el);
+  });
+
+
+})();
+</script>
+{% endblock %}
+

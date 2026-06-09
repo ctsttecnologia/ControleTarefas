@@ -1,5 +1,4 @@
 
-
 # suprimentos/services.py
 """
 Serviços de negócio reutilizáveis do app Suprimentos.

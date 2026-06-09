@@ -1,18 +1,19 @@
-{% extends "suprimentos/suprimentos_base.html" %}
-{% load static %}
+{% extends "suprimentos/base_suprimentos.html" %}
 
+{% load static %}
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
-{% block suprimentos_content %}
+
+{% block sup_content %}
 <div class="container-fluid mt-4">
 
     <!-- ═══════════════════ HEADER ═══════════════════ -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div class="sup-header d-flex justify-content-between align-items-center">
         <div>
             <h2 class="mb-0">
                 <i class="bi bi-cart-fill me-2 text-primary"></i>{{ titulo_pagina }}
             </h2>
-            <small class="text-muted">
+            <small class="text-secuundary">
                 {% if is_paginated %}
                     {{ paginator.count }} pedido(s) encontrado(s)
                 {% else %}
@@ -21,11 +22,11 @@
             </small>
         </div>
         <div class="d-flex gap-2">
-            <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-secondary">
+            <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-success">
                 <i class="bi bi-arrow-left me-1"></i> Voltar
             </a>
             {% if perms.suprimentos.add_pedido or user.is_superuser %}
-            <a href="{% url 'suprimentos:pedido_criar' %}" class="btn btn-success">
+            <a href="{% url 'suprimentos:pedido_novo' %}" class="btn btn-success">
                 <i class="bi bi-plus-lg me-1"></i> Novo Pedido
             </a>
             {% endif %}
@@ -233,7 +234,7 @@
                                         </a>
                                     {% else %}
                                         {% if perms.suprimentos.add_pedido or user.is_superuser %}
-                                        <a href="{% url 'suprimentos:pedido_criar' %}"
+                                        <a href="{% url 'suprimentos:pedido_novo' %}"
                                            class="btn btn-success mt-3">
                                             <i class="bi bi-plus-lg me-1"></i> Criar primeiro pedido
                                         </a>
@@ -253,5 +254,5 @@
         </div>
     </div>
 </div>
-{% endblock suprimentos_content %}
+{% endblock sup_content %}
 

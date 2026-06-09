@@ -69,8 +69,7 @@ def suprimentos_notificacoes(request):
     status_pendentes = []
     
     if is_comprador:
-        status_pendentes += ['FAZER_COTACAO', 'CRIAR_PEDIDO_CT', 
-                             'ENVIAR_PEDIDO', 'ENTREGA_PENDENTE']
+        status_pendentes += ['FAZER_COTACAO', 'ENTREGA_PENDENTE']
     
     if is_aprovador:
         status_pendentes += ['COTACAO_ENVIADA', 'EM_APROVACAO']
@@ -93,7 +92,7 @@ def suprimentos_badges(request):
     
     qs = SolicitacaoCompra.objects.exclude(status__in=['CONCLUIDO', 'CANCELADO'])
     
-    if not request.user.is_superuser:
+    if not request.user.is_superuser and not request.user.groups.filter(name='APROVADORES').exists():
         filial = getattr(request.user, 'filial_ativa', None)
         if filial:
             qs = qs.filter(contrato__filial=filial)

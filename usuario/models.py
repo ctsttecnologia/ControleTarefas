@@ -158,9 +158,7 @@ class GroupCardPermissions(models.Model):
         verbose_name = "Permissão de Cartão de Grupo"
         verbose_name_plural = "Permissões de Cartões de Grupo"
 
-#
 # Seus modelos Proxy 
-#
 class GrupoProxy(Group):
     class Meta:
         proxy = True
