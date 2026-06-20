@@ -1,0 +1,213 @@
+
+{% extends "suprimentos/base_suprimentos.html" %}
+{% load static %}
+
+{% block sup_content %}
+
+<div class="sup-page-head">
+    <h2 class="sup-page-title">
+        <i class="bi bi-file-earmark-text me-2"></i>Pedidos de Compra
+    </h2>   
+    <div class="sup-page-actions">
+        <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-light fw-semibold">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+    </div>
+</div>
+<small class="opacity-75">Acompanhamento de emissão, entrega e recebimento</small>
+<hr>
+
+{# ─── KPIs ─── #}
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card sup-card h-100 border-start border-4 border-primary">
+      <div class="card-body d-flex justify-content-between">
+        <div>
+          <div class="text-muted small">Pedidos de Compras</div>
+          <h3 class="fw-bold mb-0">{{ total_pcs }}</h3>
+        </div>
+        <i class="bi bi-collection fs-1 text-primary opacity-50"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card sup-card h-100 border-start border-4 border-warning">
+      <div class="card-body d-flex justify-content-between">
+        <div>
+          <div class="text-muted small">Em Aberto</div>
+          <h3 class="fw-bold mb-0">{{ pcs_abertos }}</h3>
+        </div>
+        <i class="bi bi-truck fs-1 text-warning opacity-50"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card sup-card h-100 border-start border-4 border-success">
+      <div class="card-body d-flex justify-content-between">
+        <div>
+          <div class="text-muted small">Recebidos</div>
+          <h3 class="fw-bold mb-0">{{ pcs_recebidos }}</h3>
+        </div>
+        <i class="bi bi-check-circle fs-1 text-success opacity-50"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card sup-card h-100 border-start border-4 {% if pcs_atrasados %}border-danger{% else %}border-secondary{% endif %}">
+      <div class="card-body d-flex justify-content-between">
+        <div>
+          <div class="text-muted small">Atrasados</div>
+          <h3 class="fw-bold mb-0 {% if pcs_atrasados %}text-danger{% endif %}">{{ pcs_atrasados }}</h3>
+        </div>
+        <i class="bi bi-exclamation-triangle fs-1 {% if pcs_atrasados %}text-danger{% else %}text-secondary{% endif %} opacity-50"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ─── Filtros ─── #}
+<div class="card sup-card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label small text-muted mb-1">Buscar</label>
+        <input type="text" name="q" value="{{ busca_atual }}" class="form-control"
+               placeholder="Nº PC, Nº externo, fornecedor ou NF...">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos</option>
+          {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if status_atual == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <div class="form-check mt-4">
+          <input type="checkbox" name="atrasados" value="1" id="chkAtrasados"
+                 class="form-check-input" {% if atrasados_atual == "1" %}checked{% endif %}>
+          <label class="form-check-label small" for="chkAtrasados">Só atrasados</label>
+        </div>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-fill">
+          <i class="bi bi-funnel"></i> Filtrar
+        </button>
+        <a href="{% url 'suprimentos:pc_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ─── Tabela ─── #}
+<div class="card sup-card">
+  <div class="table-responsive">
+    <table class="table table-hover table-sup align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Nº PC</th>
+          <th>Fornecedor</th>
+          <th>Emissão</th>
+          <th>Entrega Prev.</th>
+          <th class="text-center">Progresso</th>
+          <th>Status</th>
+          <th class="text-end">Valor</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pc in pedidos_compra %}
+        {% widthratio pc.itens.count 1 1 as _ignore %}
+        <tr>
+          <td>
+            <span class="fw-semibold">{{ pc.numero }}</span>
+            {% if pc.numero_pedido %}<br><small class="text-muted">Ext: {{ pc.numero_pedido }}</small>{% endif %}
+          </td>
+          <td>{{ pc.fornecedor.nome_fantasia|truncatechars:30 }}</td>
+          <td>{{ pc.data_emissao|date:"d/m/Y"|default:"—" }}</td>
+          <td>
+            {% if pc.esta_atrasado %}
+              <span class="text-danger fw-semibold">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                {{ pc.data_entrega_prevista|date:"d/m/Y" }}
+              </span>
+            {% else %}
+              {{ pc.data_entrega_prevista|date:"d/m/Y"|default:"—" }}
+            {% endif %}
+          </td>
+          <td style="min-width:120px">
+            {% with rec=pc.itens_recebidos ped=pc.itens_quantidade %}{% endwith %}
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar
+                    {% if pc.status == 'ENTREGUE' or pc.status == 'RECEBIDO' %}bg-success
+                    {% elif pc.status == 'ENTREGA_PARCIAL' %}bg-warning
+                    {% else %}bg-secondary{% endif %}"
+                   role="progressbar"
+                   style="width: {% if pc.status == 'ENTREGUE' or pc.status == 'RECEBIDO' %}100{% elif pc.status == 'ENTREGA_PARCIAL' %}50{% else %}0{% endif %}%;">
+              </div>
+            </div>
+          </td>
+          <td>
+            {% if pc.status == "ENTREGUE" or pc.status == "RECEBIDO" %}
+              <span class="badge bg-success">{{ pc.get_status_display }}</span>
+            {% elif pc.status == "ENTREGA_PARCIAL" %}
+              <span class="badge bg-warning text-dark">{{ pc.get_status_display }}</span>
+            {% elif pc.status == "CANCELADO" %}
+              <span class="badge bg-dark">{{ pc.get_status_display }}</span>
+            {% elif pc.status == "ENVIADO_FORNECEDOR" %}
+              <span class="badge bg-info">{{ pc.get_status_display }}</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ pc.get_status_display }}</span>
+            {% endif %}
+          </td>
+          <td class="text-end fw-semibold">R$ {{ pc.valor_total|floatformat:2 }}</td>
+          <td class="text-end">
+            <a href="{{ pc.get_absolute_url }}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="empty-state text-center text-muted py-4">
+            <i class="bi bi-inbox d-block fs-2 mb-2"></i>
+            Nenhum pedido de compra encontrado.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# ─── Paginação ─── #}
+{% if is_paginated %}
+<nav class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if busca_atual %}&q={{ busca_atual }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}{% if atrasados_atual %}&atrasados=1{% endif %}">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+    </li>
+    {% endif %}
+
+    <li class="page-item disabled">
+      <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    </li>
+
+    {% if page_obj.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if busca_atual %}&q={{ busca_atual }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}{% if atrasados_atual %}&atrasados=1{% endif %}">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}
+

@@ -2,15 +2,31 @@
 {% extends "suprimentos/base_suprimentos.html" %}
 
 {% block sup_content %}
-<div class="sup-header">
-  <h1><i class="bi bi-cart-plus me-2"></i>Montar Pedido de Compra · {{ solicitacao.numero }}</h1>
-  <small class="opacity-75">{{ solicitacao.pedido.contrato }} · Agrupe os itens por fornecedor para gerar os PCs</small>
+
+{# ───────────────────────── CABEÇALHO ───────────────────────── #}
+<div class="sup-page-head">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+      <h2 class="sup-page-title mb-1">
+        <i class="bi bi-cart-plus me-2"></i>Montar Pedido de Compra · {{ solicitacao.numero }}
+      </h2>
+      <small class="opacity-75">
+        {{ solicitacao.pedido.contrato }} · Agrupe os itens por fornecedor para gerar os PCs
+      </small>
+    </div>
+
+    <div class="sup-page-actions d-flex align-items-center gap-2">
+      <span class="badge bg-light text-dark badge-status fs-6">
+        {{ solicitacao.get_status_display }}
+      </span>
+    </div>
+  </div>
 </div>
 
 <form method="post" action="{% url 'suprimentos:montar_pedido_compra' solicitacao.pk %}">
   {% csrf_token %}
 
-  <!-- Resumo da solicitação -->
+  {# ───── Resumo da solicitação ───── #}
   <div class="card sup-card mb-4"><div class="card-body row text-center">
     <div class="col-md-3"><small class="text-muted d-block">Solicitação</small><span class="fw-bold">{{ solicitacao.numero }}</span></div>
     <div class="col-md-3"><small class="text-muted d-block">Itens</small><span class="fw-bold">{{ itens|length }}</span></div>
@@ -18,7 +34,7 @@
     <div class="col-md-3"><small class="text-muted d-block">Verba disp.</small><span class="fw-bold text-success">R$ {{ verba_disponivel|floatformat:2 }}</span></div>
   </div></div>
 
-  <!-- Agrupamento por fornecedor -->
+  {# ───── Agrupamento por fornecedor ───── #}
   <div class="card sup-card mb-4">
     <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
       <span><i class="bi bi-diagram-3 me-1"></i> Itens por Fornecedor</span>
@@ -77,7 +93,7 @@
     {% endfor %}
   </div>
 
-  <!-- Observações + total selecionado -->
+  {# ───── Observações + total selecionado ───── #}
   <div class="row g-4 mb-4">
     <div class="col-lg-8">
       <div class="card sup-card h-100"><div class="card-body">
@@ -93,16 +109,19 @@
     </div>
   </div>
 
+  {# ───── Ações ───── #}
   <div class="d-flex gap-2">
     <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-check2-circle"></i> Gerar Pedido(s) de Compra</button>
     <a href="{{ solicitacao.get_absolute_url }}" class="btn btn-light btn-lg">Cancelar</a>
   </div>
 </form>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
 function brl(v){ return 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
 function recalcTotal(){
   let total = 0;
   document.querySelectorAll('.grupo-check:checked').forEach(function(chk){
@@ -114,6 +133,7 @@ function recalcTotal(){
   });
   document.getElementById('total-selecionado').textContent = brl(total);
 }
+
 document.querySelectorAll('.grupo-check').forEach(c => c.addEventListener('change', recalcTotal));
 recalcTotal();
 

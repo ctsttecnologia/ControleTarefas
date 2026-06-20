@@ -1,0 +1,41 @@
+
+{% load static %}
+<div class="sup-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1><i class="bi bi-box-seam me-2"></i>Suprimentos</h1>
+    <small class="opacity-75">Gestão de pedidos, cotações e compras</small>
+  </div>
+  <div class="d-flex gap-2">
+    {% if perms.suprimentos.view_pedido or user.is_superuser %}
+    <a href="{% url 'suprimentos:pedido_novo' %}" class="btn btn-light fw-semibold">
+      <i class="bi bi-plus-lg me-2"></i> Novo Pedido
+    </a>
+    {% endif %}
+    {% if perms.suprimentos.view_material or user.is_superuser %}
+    <a href="{% url 'suprimentos:material_list' %}" class="btn btn-light fw-semibold">
+      <i class="bi bi-box me-2"></i> Materiais
+    </a>
+    {% endif %}
+    {% if perms.suprimentos.view_contrato or user.is_superuser %}
+    <a href="{% url 'suprimentos:contrato_list' %}" class="btn btn-light fw-semibold">
+      <i class="bi bi-building me-2"></i> Contratos
+    </a>
+    {% endif %}
+    {% if perms.suprimentos.view_parceiro or user.is_superuser %}
+    <a href="{% url 'suprimentos:parceiro_list' %}" class="btn btn-light fw-semibold">
+      <i class="bi bi-people me-2"></i> Parceiros
+    </a>
+    {% endif %}
+    {% if perms.tributacao.view_tributacao or user.is_superuser %}
+    <a href="{% url 'tributacao:dashboard' %}" class="btn btn-light fw-semibold">
+      <i class="bi bi-percent me-2"></i> Tributação
+    </a>
+    {% endif %}
+    {% if perms.suprimentos.view_verba or user.is_superuser %}
+    <a href="{% url 'suprimentos:verba_list' %}" class="btn btn-light fw-semibold">
+      <i class="bi bi-$-dollar-circle me-2"></i> Verbas
+    </a>
+    {% endif %}
+  </div>
+</div>
+

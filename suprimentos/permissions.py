@@ -14,3 +14,11 @@ def is_comprador(user):
 
 def is_coordenador(user):
     return _in_group(user, "Coordenador", "Solicitante")
+
+# suprimentos/permissions.py — aliases de compatibilidade (no FINAL do arquivo)
+is_suprimentos = is_comprador          # alias
+is_gerente = is_gerencia               # alias
+
+def pode_ver_solicitacao(user):
+    """Suprimentos ou Gerência (bloqueia coordenador puro)."""
+    return is_comprador(user) or is_gerencia(user)

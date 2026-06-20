@@ -1,23 +1,33 @@
 
 <!-- suprimentos/templates/suprimentos/parceiro_form.html -->
-{% extends "suprimentos/suprimentos_base.html" %}
+{% extends "suprimentos/base_suprimentos.html" %}
+{% load humanize %}
 {% load crispy_forms_tags %}
 {% load static %}
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
-{% block suprimentos_content %}
+{% block sup_content %}
 <div class="container-fluid mt-4">
-    <div class="container-fluid d-flex justify-content-between align-items-center mb-3">
-        <div>
-            {% include "partials/_page_header.html" with title=titulo_pagina %}
-        </div>
-        <div>
-            <a href="{% url 'suprimentos:parceiro_upload_massa' %}" class="btn btn-outline-secondary mt-3" title="Planilha para Importação de Endereços">
-                <i class="bi bi-plus-circle"></i> Planilha para Importação
+    
+    <div class="sup-page-head">
+        <h2 class="sup-page-title">
+            <div>
+                <i class="bi bi-building me-2"></i>{{ parceiro.nome_fantasia }} / {{ parceiro.razao_social }} <br>
+                CNPJ: {{ parceiro.cnpj }} <br>
+                Filial:  <small class="opacity-50">{{ parceiro.filial }}</small>
+            </div>
+        </h2>
+        <div class="sup-page-actions">
+            <a href="{% url 'suprimentos:parceiro_upload_massa' %}" class="btn btn-outline-secondary mt-1" title="Planilha para Importação de Fornecedores e Fabricantes">
+                <i class="bi bi-plus-circle me-2"></i> Importação
+            </a>
+            <a href="{% url 'suprimentos:parceiro_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i> Voltar à Lista
             </a>
         </div>
     </div>
     <hr>
+
     <div class="card shadow-sm">
         <div class="card-body">
             <form method="post" novalidate>
@@ -40,9 +50,9 @@
                     </div>
                     
                     <div class="col-1 d-flex align-items-center justify-content-between ">
-                        {% if perms.suprimentos.add_logradouro or user.is.superuser %}
+                        {% if perms.suprimentos.add_logradouro or user.is_superuser %}
                         <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-outline-secondary mt-3" title="Incluir Novo Endereço">
-                           <i class="bi bi-plus-circle"></i> 
+                            <i class="bi bi-plus-circle"></i>
                         </a>
                         {% endif %}
                     </div>
@@ -66,8 +76,8 @@
                 <div class="form-check form-switch mb-3">{{ form.ativo|as_crispy_field }}</div>
                 
                 <div class="mt-4">
-                    {% if perms.suprimentos.add_parceiro or user.is.superuser %}
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Salvar</button>
+                    {% if perms.suprimentos.add_parceiro or perms.suprimentos.change_parceiro or user.is_superuser %}
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i> Salvar</button>
                     <a href="{% url 'suprimentos:parceiro_list' %}" class="btn btn-secondary">Cancelar</a>
                     {% endif %}
                 </div>
@@ -75,5 +85,5 @@
         </div>
     </div>
 </div>
-{% endblock suprimentos_content %}
+{% endblock sup_content %}
 

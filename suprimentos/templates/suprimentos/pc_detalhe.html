@@ -1,31 +1,43 @@
 
 {% extends "suprimentos/base_suprimentos.html" %}
 {% load static %}
+{% block title %}Pedido de Compra · {{ pc.pk }}{% endblock %}
+
 {% block sup_content %}
 <div class="container py-4">
 
   {# ─── Cabeçalho ─── #}
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <div>
-      <h4 class="mb-1">
-        <i class="bi bi-receipt me-1"></i> Pedido de Compra #{{ pc.pk }}
-      </h4>
-      <small class="text-muted">{{ pc.fornecedor }} · {{ pc.filial }}</small>
-    </div>
-    <div class="d-flex gap-2">
-      {% if pc.status == "entregue" %}
-        <span class="badge bg-success fs-6">Entregue</span>
-      {% elif pc.status == "parcial" %}
-        <span class="badge bg-warning text-dark fs-6">Entrega Parcial</span>
-      {% else %}
-        <span class="badge bg-secondary fs-6">Pendente</span>
-      {% endif %}
-      <a href="{% url 'suprimentos:pc_entrega' pc.pk %}" class="btn btn-primary btn-sm">
-        <i class="bi bi-truck me-1"></i> Receber Entrega
-      </a>
-    </div>
-  </div>
 
+   <div class="sup-page-head">
+        <h2 class="sup-page-title">
+            <i class="bi bi-receipt me-1"></i> Pedido de Compra - {{ pc.pk }}
+        </h2>   
+        <div class="sup-page-actions">
+            
+            <a href="{% url 'suprimentos:pc_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i> Voltar à Lista
+            </a>
+        </div>
+    </div>
+    <small class="text-muted">{{ pc.fornecedor }} · {{ pc.filial }}</small>
+    <hr>
+    <div class="d-flex gap-2">
+      {% if pc.status == "ENTREGUE" or pc.status == "RECEBIDO" %}
+        <span class="badge bg-success fs-6">{{ pc.get_status_display }}</span>
+      {% elif pc.status == "ENTREGA_PARCIAL" %}
+        <span class="badge bg-warning text-dark fs-6">{{ pc.get_status_display }}</span>
+      {% elif pc.status == "CANCELADO" %}
+        <span class="badge bg-dark fs-6">{{ pc.get_status_display }}</span>
+      {% else %}
+        <span class="badge bg-secondary fs-6">{{ pc.get_status_display }}</span>
+      {% endif %}
+
+      {% if pc.status != "RECEBIDO" and pc.status != "CANCELADO" %}
+        <a href="{% url 'suprimentos:pc_acompanhar_entrega' pc.pk %}" class="btn btn-primary btn-sm">
+          <i class="bi bi-truck me-1"></i> Receber Entrega
+        </a>
+      {% endif %}
+    </div>
   {# ─── Resumo / KPIs ─── #}
   <div class="row g-3 mb-4">
     <div class="col-md-3">
@@ -65,19 +77,20 @@
   {# ─── Barra de progresso geral ─── #}
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
+      {% widthratio total_recebido total_pedido 100 as progresso_geral %}
       <div class="d-flex justify-content-between mb-1">
         <span class="fw-semibold">Progresso da Entrega</span>
         <span class="text-muted">
           {{ total_recebido|floatformat:2 }} / {{ total_pedido|floatformat:2 }}
-          ({{ progresso_pct }}%)
+          ({{ progresso_geral }}%)
         </span>
       </div>
       <div class="progress" style="height: 14px;">
         <div class="progress-bar
-              {% if progresso_pct >= 100 %}bg-success{% elif progresso_pct > 0 %}bg-warning{% else %}bg-secondary{% endif %}"
-             role="progressbar"
-             style="width: {{ progresso_pct }}%;"
-             aria-valuenow="{{ progresso_pct }}" aria-valuemin="0" aria-valuemax="100">
+              {% if total_saldo <= 0 and total_pedido > 0 %}bg-success{% elif total_recebido > 0 %}bg-warning{% else %}bg-secondary{% endif %}"
+            role="progressbar"
+            style="width: {{ progresso_geral }}%;"
+            aria-valuenow="{{ progresso_geral }}" aria-valuemin="0" aria-valuemax="100">
         </div>
       </div>
     </div>
@@ -102,7 +115,6 @@
         </thead>
         <tbody>
           {% for item in itens %}
-          {% with pct=item.progresso_pct %}
           <tr>
             <td>
               {{ item.material.descricao }}<br>
@@ -116,14 +128,17 @@
             </td>
             <td class="text-end">R$ {{ item.valor_unitario|default:0|floatformat:2 }}</td>
             <td>
-              <div class="progress" style="height: 10px;">
+              {% widthratio item.quantidade_recebida item.quantidade 100 as pct_calc %}
+              <div class="progress" style="height: 10px;" title="{{ pct_calc }}%">
                 <div class="progress-bar
                       {% if item.saldo <= 0 %}bg-success{% else %}bg-warning{% endif %}"
-                     style="width: {{ pct|default:0 }}%;"></div>
+                    role="progressbar"
+                    style="width: {{ pct_calc }}%;"
+                    aria-valuenow="{{ pct_calc }}" aria-valuemin="0" aria-valuemax="100">
+                </div>
               </div>
             </td>
           </tr>
-          {% endwith %}
           {% empty %}
           <tr><td colspan="6" class="text-center text-muted py-3">Sem itens.</td></tr>
           {% endfor %}
@@ -201,9 +216,9 @@
   </div>
   {% endif %}
 
-  <a href="javascript:history.back()" class="btn btn-outline-secondary">
-    <i class="bi bi-arrow-left me-1"></i> Voltar
-  </a>
+    <a href="{% url 'suprimentos:pc_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
 
 </div>
 {% endblock %}

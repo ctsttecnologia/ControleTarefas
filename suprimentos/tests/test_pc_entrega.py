@@ -31,8 +31,14 @@ class BasePCEntregaTestCase(TestCase):
         cls.user = User.objects.create_user(
             username="emerson", password="senha-teste-123",
         )
-        perm = Permission.objects.get(codename="pode_receber_pedido_compra")
-        cls.user.user_permissions.add(perm)
+        perms = Permission.objects.filter(
+            codename__in=[
+                "pode_receber_pedido_compra",
+                "pode_visualizar_pedido_compra",
+                "view_pedidocompra",   # ← necessária para abrir o pc_detalhe
+            ]
+        )
+        cls.user.user_permissions.add(*perms)
 
         # ── Filial / Contrato / Fornecedor ────────────────────
         cls.filial = Filial.objects.create(nome="Filial Teste")
@@ -254,6 +260,7 @@ class PCEntregaTests(BasePCEntregaTestCase):
         self.pc.save(update_fields=["status"])
 
         resp = self.client.get(self.url, follow=True)
+        
         self.assertRedirects(
             resp, reverse("suprimentos:pc_detalhe", kwargs={"pk": self.pc.pk})
         )

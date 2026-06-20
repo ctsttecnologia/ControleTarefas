@@ -81,10 +81,7 @@ class Usuario(AbstractUser):
         return self.get_full_name() or self.username
     
     # ---------- Perfis hierárquicos ----------
-    @property
-    def is_administrador(self) -> bool:
-        return self.groups.filter(name=GRUPO_ADMINISTRADOR).exists()
-
+    
     @property
     def is_gerente(self) -> bool:
         return self.groups.filter(name=GRUPO_GERENTE).exists()

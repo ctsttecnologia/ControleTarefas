@@ -121,6 +121,18 @@ def usuario_comum(db, filial_a):
     user.save()
     return user
 
+@pytest.fixture
+def usuario_factory(db):
+    def _criar(**kwargs):
+        defaults = {
+            "username": "user_teste",
+            "email": "teste@exemplo.com",
+        }
+        defaults.update(kwargs)
+        return Usuario.objects.create_user(
+            password="senha123", **defaults
+        )
+    return _criar
 
 # =============================================================================
 # FUNCIONÁRIOS

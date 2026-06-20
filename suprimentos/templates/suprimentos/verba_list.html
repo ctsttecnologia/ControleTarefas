@@ -1,0 +1,73 @@
+
+{% extends "suprimentos/base_suprimentos.html" %}
+{% load humanize static %}
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block sup_content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">{{ titulo_pagina }}</h4>
+    <a href="{% url 'suprimentos:verba_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg"></i> Nova Verba
+    </a>
+  </div>
+
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+      <select name="contrato" class="form-select" onchange="this.form.submit()">
+        <option value="">Todos os contratos</option>
+        {% for c in contratos %}
+          <option value="{{ c.id }}" {% if contrato_atual == c.id|stringformat:"s" %}selected{% endif %}>
+            {{ c.cm }} — {{ c.cliente }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <input type="number" name="ano" class="form-control" placeholder="Ano"
+             value="{{ ano_atual }}" min="2020" max="2100">
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-outline-secondary">Filtrar</button>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Contrato</th>
+          <th>Período</th>
+          <th class="text-end">Verba Total</th>
+          <th class="text-end">Compra Total</th>
+          <th class="text-end">Saldo</th>
+          <th class="text-center">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in verbas %}
+        <tr>
+          <td>{{ v.contrato.cm }}<br><small class="text-muted">{{ v.contrato.cliente }}</small></td>
+          <td>{{ v.mes|stringformat:"02d" }}/{{ v.ano }}</td>
+          <td class="text-end">R$ {{ v.verba_total|floatformat:2 }}</td>
+          <td class="text-end">R$ {{ v.compra_total|floatformat:2 }}</td>
+          <td class="text-end {% if v.saldo_total < 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+            R$ {{ v.saldo_total|floatformat:2 }}
+          </td>
+          <td class="text-center">
+            <a href="{% url 'suprimentos:verba_detail' v.pk %}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+            <a href="{% url 'suprimentos:verba_update' v.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+            <a href="{% url 'suprimentos:verba_delete' v.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Nenhuma verba cadastrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}
+

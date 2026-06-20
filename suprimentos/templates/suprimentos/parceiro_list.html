@@ -1,258 +1,173 @@
+<!-- suprimentos/templates/suprimentos/parceiro_list.html -->
 {% extends "suprimentos/base_suprimentos.html" %}
-
 {% load static %}
-{% block title %}{{ titulo_pagina }}{% endblock %}
-
+{% block title %}Parceiros{% endblock %}
 
 {% block sup_content %}
 <div class="container-fluid mt-4">
 
-    <!-- ═══════════════════ HEADER ═══════════════════ -->
-    <div class="sup-header d-flex justify-content-between align-items-center">
-        <div>
-            <h2 class="mb-0">
-                <i class="bi bi-cart-fill me-2 text-primary"></i>{{ titulo_pagina }}
-            </h2>
-            <small class="text-secuundary">
-                {% if is_paginated %}
-                    {{ paginator.count }} pedido(s) encontrado(s)
-                {% else %}
-                    {{ pedidos|length }} pedido(s) encontrado(s)
-                {% endif %}
-            </small>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-success">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
+    {# ── Cabeçalho ── #}
+    <div class="sup-page-head">
+        <h2 class="sup-page-title">
+            <i class="bi bi-file-earmark-text me-2"></i>Fornecedores e Fabricantes
+        </h2>
+        <div class="sup-page-actions">
+            <a href="{% url 'suprimentos:parceiro_upload_massa' %}"
+            class="btn btn-outline-secondary" title="Planilha para Importação">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Importar
             </a>
-            {% if perms.suprimentos.add_pedido or user.is_superuser %}
-            <a href="{% url 'suprimentos:pedido_novo' %}" class="btn btn-success">
-                <i class="bi bi-plus-lg me-1"></i> Novo Pedido
+            {% if perms.suprimentos.add_parceiro or user.is_superuser %}
+            <a href="{% url 'suprimentos:parceiro_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Novo Parceiro
             </a>
             {% endif %}
         </div>
     </div>
+    <hr>
+    {# ── Mensagens ── #}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
 
-    <!-- ═══════════════════ CARDS RESUMO POR STATUS (opcional) ═══════════════════ -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <a href="?status=RASCUNHO" class="text-decoration-none">
-                <div class="card shadow-sm border-0 h-100 bg-adaptive">
-                    <div class="card-body py-3">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
-                                <i class="bi bi-pencil-square fs-3 text-secondary"></i>
-                            </div>
-                            <div>
-                                <small class="text-muted d-block">Rascunho</small>
-                                <strong class="text-strong">
-                                    {{ pedidos|length }}
-                                </strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
+    {# ── Busca / Filtros ── #}
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" name="q" value="{{ request.GET.q }}"
+                       class="form-control" placeholder="Buscar por nome, razão social ou CNPJ...">
+            </div>
         </div>
-        <div class="col-6 col-md-3">
-            <a href="?status=PENDENTE" class="text-decoration-none">
-                <div class="card shadow-sm border-0 h-100 bg-adaptive">
-                    <div class="card-body py-3">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
-                                <i class="bi bi-hourglass-split fs-3 text-warning"></i>
-                            </div>
-                            <div>
-                                <small class="text-muted d-block">Pendentes</small>
-                                <strong class="text-strong">Aguardando</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
+        <div class="col-md-3">
+            <select name="tipo" class="form-select">
+                <option value="">Todos os tipos</option>
+                <option value="fornecedor" {% if request.GET.tipo == 'fornecedor' %}selected{% endif %}>Fornecedores</option>
+                <option value="fabricante" {% if request.GET.tipo == 'fabricante' %}selected{% endif %}>Fabricantes</option>
+            </select>
         </div>
-        <div class="col-6 col-md-3">
-            <a href="?status=APROVADO" class="text-decoration-none">
-                <div class="card shadow-sm border-0 h-100 bg-adaptive">
-                    <div class="card-body py-3">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
-                                <i class="bi bi-check-circle-fill fs-3 text-success"></i>
-                            </div>
-                            <div>
-                                <small class="text-muted d-block">Aprovados</small>
-                                <strong class="text-strong">Em curso</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-outline-primary flex-grow-1">Filtrar</button>
+            <a href="{% url 'suprimentos:parceiro_list' %}" class="btn btn-outline-secondary">Limpar</a>
         </div>
-        <div class="col-6 col-md-3">
-            <a href="?status=REVISAO" class="text-decoration-none">
-                <div class="card shadow-sm border-0 h-100 bg-adaptive">
-                    <div class="card-body py-3">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
-                                <i class="bi bi-arrow-counterclockwise fs-3 text-info"></i>
-                            </div>
-                            <div>
-                                <small class="text-muted d-block">Em Revisão</small>
-                                <strong class="text-strong">Atenção</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
+    </form>
 
-    <!-- ═══════════════════ CARD PRINCIPAL ═══════════════════ -->
+    {# ── Tabela ────────────────────────────────────────────── #}
     <div class="card shadow-sm">
-        <div class="card-body">
-
-            <!-- Filtros -->
-            <form method="get" class="row g-2 mb-4">
-                <div class="col-md-5">
-                    <label class="form-label small fw-bold mb-1">
-                        <i class="bi bi-search me-1"></i>Buscar
-                    </label>
-                    <input type="text" name="q" class="form-control"
-                           placeholder="Nº pedido ou cliente..."
-                           value="{{ filtro_q }}">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small fw-bold mb-1">
-                        <i class="bi bi-funnel me-1"></i>Status
-                    </label>
-                    <select name="status" class="form-select">
-                        <option value="">Todos os Status</option>
-                        {% for val, label in status_choices %}
-                            <option value="{{ val }}" {% if filtro_status == val %}selected{% endif %}>
-                                {{ label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3 d-flex align-items-end gap-1">
-                    <button class="btn btn-primary flex-grow-1" type="submit">
-                        <i class="bi bi-funnel-fill me-1"></i> Filtrar
-                    </button>
-                    {% if filtro_q or filtro_status %}
-                    <a href="{% url 'suprimentos:pedido_lista' %}"
-                       class="btn btn-outline-secondary" title="Limpar filtros">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
-                    {% endif %}
-                </div>
-            </form>
-
-            <!-- Tabela -->
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Nº Pedido</th>
-                            <th>Contrato</th>
-                            <th>Solicitante</th>
-                            <th class="text-center">Itens</th>
-                            <th>Status</th>
-                            <th>Data</th>
-                            <th class="text-end">Valor Total</th>
-                            <th class="text-end">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for p in pedidos %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nome Fantasia</th>
+                        <th>Razão Social</th>
+                        <th>CNPJ</th>
+                        <th>Contato</th>
+                        <th>Telefone</th>
+                        <th class="text-center">Tipo</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for parceiro in parceiros %}
                         <tr>
                             <td>
-                                <a href="{{ p.get_absolute_url }}" class="text-decoration-none">
-                                    <strong class="text-strong">{{ p.numero }}</strong>
+                                <a href="{% url 'suprimentos:parceiro_detail' pk=parceiro.pk %}"
+                                   class="fw-semibold text-decoration-none">
+                                    {{ parceiro.nome_fantasia }}
                                 </a>
-                                {% if p.solicitacao_gerada %}
-                                    <br>
-                                    <small class="text-success">
-                                        <i class="bi bi-link-45deg"></i> {{ p.solicitacao_gerada.numero }}
-                                    </small>
-                                {% endif %}
                             </td>
+                            <td class="text-muted">{{ parceiro.razao_social|default:"—" }}</td>
+                            <td>{{ parceiro.cnpj|default:"—" }}</td>
+                            <td>{{ parceiro.contato|default:"—" }}</td>
                             <td>
-                                <span class="d-block fw-bold">{{ p.contrato.cm }}</span>
-                                <small class="text-muted">{{ p.contrato.cliente|truncatechars:35 }}</small>
-                            </td>
-                            <td>
-                                {{ p.solicitante.get_full_name|default:p.solicitante.username }}
+                                {% if parceiro.celular %}{{ parceiro.celular }}
+                                {% elif parceiro.telefone %}{{ parceiro.telefone }}
+                                {% else %}—{% endif %}
                             </td>
                             <td class="text-center">
-                                <span class="badge bg-light text-dark border">
-                                    <i class="bi bi-box-seam me-1"></i>{{ p.qtd_itens }}
-                                </span>
+                                {% if parceiro.eh_fornecedor %}
+                                    <span class="badge bg-warning text-dark">Fornecedor</span>
+                                {% endif %}
+                                {% if parceiro.eh_fabricante %}
+                                    <span class="badge bg-info">Fabricante</span>
+                                {% endif %}
+                                {% if not parceiro.eh_fornecedor and not parceiro.eh_fabricante %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
                             </td>
-                            <td>
-                                <span class="badge
-                                    {% if p.status == 'APROVADO' %}bg-success
-                                    {% elif p.status == 'PENDENTE' %}bg-warning text-dark
-                                    {% elif p.status == 'REPROVADO' %}bg-danger
-                                    {% elif p.status == 'RECEBIDO' %}bg-primary
-                                    {% elif p.status == 'ENTREGUE' %}bg-info text-dark
-                                    {% elif p.status == 'CANCELADO' %}bg-dark
-                                    {% elif p.status == 'REVISAO' %}bg-warning text-dark
-                                    {% elif p.status == 'RASCUNHO' %}bg-secondary
-                                    {% else %}bg-secondary{% endif %}">
-                                    {{ p.get_status_display }}
-                                </span>
-                            </td>
-                            <td class="text-nowrap">
-                                {{ p.data_pedido|date:"d/m/Y" }}
-                                <br>
-                                <small class="text-muted">{{ p.data_pedido|date:"H:i" }}</small>
-                            </td>
-                            <td class="text-end fw-bold text-strong">
-                                R$ {{ p.valor_total|floatformat:2 }}
+                            <td class="text-center">
+                                {% if parceiro.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inativo</span>
+                                {% endif %}
                             </td>
                             <td class="text-end">
-                                <a href="{{ p.get_absolute_url }}"
-                                   class="btn btn-sm btn-outline-info"
-                                   title="Ver detalhes">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8">
-                                <div class="empty-state text-center py-5">
-                                    <i class="bi bi-inbox" style="font-size: 3rem; color: var(--bs-text-muted);"></i>
-                                    <h6 class="mt-3 text-muted">Nenhum pedido encontrado.</h6>
-                                    {% if filtro_q or filtro_status %}
-                                        <p class="text-muted small">
-                                            Tente ajustar os filtros aplicados.
-                                        </p>
-                                        <a href="{% url 'suprimentos:pedido_lista' %}"
-                                           class="btn btn-outline-secondary btn-sm mt-2">
-                                            <i class="bi bi-x-lg me-1"></i> Limpar filtros
-                                        </a>
-                                    {% else %}
-                                        {% if perms.suprimentos.add_pedido or user.is_superuser %}
-                                        <a href="{% url 'suprimentos:pedido_novo' %}"
-                                           class="btn btn-success mt-3">
-                                            <i class="bi bi-plus-lg me-1"></i> Criar primeiro pedido
-                                        </a>
-                                        {% endif %}
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'suprimentos:parceiro_detail' pk=parceiro.pk %}"
+                                       class="btn btn-outline-secondary" title="Ver detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if perms.suprimentos.change_parceiro or user.is_superuser %}
+                                    <a href="{% url 'suprimentos:parceiro_update' pk=parceiro.pk %}"
+                                       class="btn btn-outline-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
                                     {% endif %}
                                 </div>
                             </td>
                         </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            {% if is_paginated %}
-                {% include 'partials/pagination.html' %}
-            {% endif %}
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                Nenhum parceiro encontrado.
+                                {% if perms.suprimentos.add_parceiro or user.is_superuser %}
+                                <div class="mt-2">
+                                    <a href="{% url 'suprimentos:parceiro_create' %}" class="btn btn-sm btn-primary">
+                                        Cadastrar o primeiro
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
+
+    {# ── Paginação ─────────────────────────────────────────── #}
+    {% if is_paginated %}
+        <nav class="mt-3" aria-label="Paginação de parceiros">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">&laquo;</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                </li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">&raquo;</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+
 </div>
 {% endblock sup_content %}
-

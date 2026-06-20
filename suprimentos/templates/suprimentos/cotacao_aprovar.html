@@ -1,10 +1,21 @@
 {% extends "suprimentos/base_suprimentos.html" %}
+{% load static %}
 {% block sup_content %}
 
-<div class="sup-header">
-  <h1><i class="bi bi-check2-square me-2"></i>Aprovar Cotação · {{ solicitacao.numero }}</h1>
-  <small class="opacity-75">{{ solicitacao.pedido.contrato }}</small>
-</div>
+<div class="sup-page-head">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+      <h2 class="sup-page-title mb-1">
+        <i class="bi bi-file-earmark-text me-2"></i>Aprovar Cotação · {{ solicitacao.numero }}
+      </h2>
+      <small class="opacity-75">
+        Origem: Pedido {{ solicitacao.pedido.numero }}<br>{{ solicitacao.pedido.contrato }}
+      </small>
+    </div>
+    <div div class="sup-page-actions">
+      
+    </div>
+  </div>
 
 <form method="post">
   {% csrf_token %}

@@ -1,10 +1,21 @@
 {% extends "suprimentos/base_suprimentos.html" %}
 
 {% block sup_content %}
-<div class="sup-header">
-  <h1><i class="bi bi-clipboard-check me-2"></i>Solicitações de Compra</h1>
-  <small class="opacity-75">Cotação, aprovação e montagem de pedidos</small>
+
+
+<div class="sup-page-head">
+    <h2 class="sup-page-title">
+      <div>
+        <i class="bi bi-file-earmark-text me-2"></i>Solicitações de Compra
+      </div>
+    </h2>
+  <div class="sup-page-actions">
+    <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-light fw-semibold">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+  </div>
 </div>
+<hr>
 
 <div class="card sup-card mb-3">
   <div class="card-body">

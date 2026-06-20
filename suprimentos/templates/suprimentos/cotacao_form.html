@@ -1,11 +1,23 @@
 
 {% extends "suprimentos/base_suprimentos.html" %}
+{% load static %}
 
 {% block sup_content %}
-<div class="sup-header">
-  <h1><i class="bi bi-search-dollar me-2"></i>Lançar Cotação · {{ solicitacao.numero }}</h1>
-  <small class="opacity-75">{{ solicitacao.pedido.contrato }}</small>
+
+<div class="sup-page-head">
+  <h2 class="sup-page-title">
+      <i class="bi bi-file-earmark-text me-2"></i>Cotação
+      <small class="opacity-75">Lançar Cotação · {{ solicitacao.numero }}</small>
+  </h2>
+    <div class="sup-page-actions">
+        
+    </div>
+      <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left me-1"></i> Voltar
+      </a>
 </div>
+<small class="opacity-75">{{ solicitacao.pedido.contrato }}</small> 
+<hr>
 
 {% if pode_cotar %}
   <a href="{% url 'suprimentos:cotacao_adicionar' solicitacao.pk %}" class="btn btn-primary">
