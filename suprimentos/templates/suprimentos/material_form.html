@@ -1,14 +1,14 @@
 
-{% extends "suprimentos/suprimentos_base.html" %}
+{% extends "suprimentos/base_suprimentos.html" %}
 {% load crispy_forms_tags %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
-{% block suprimentos_content %}
+{% block sup_content %}
 <div class="container-fluid mt-4">
     <div class="card shadow-sm">
         <div class="card-header bg-light">
-            <h4 class="mb-0"><i class="bi bi-box-seam me-2"></i>{{ titulo_pagina }}</h4>
+            <h4 class="mb-0"><i class="bi bi-box-seam me-2"></i> Cadastrar Material</h4>
         </div>
         <div class="card-body">
             <form method="post" novalidate>
@@ -51,15 +51,12 @@
                     </div>
                 </div>
 
-                {# ═══════════════════════════════════════════════ #}
-                {# ── BLOCO EPI: Vínculo com SST ──               #}
-                {# ═══════════════════════════════════════════════ #}
+                {# ── BLOCO EPI: Vínculo com SST ── #}
                 <div id="bloco-vinculo-epi" style="display:none;">
                     <hr>
                     <h5 class="text-primary mb-3">
-                        <i class="bi bi-shield-check me-1"></i> Vínculo com SST
+                        <i class="bi bi-shield-check me-2"></i> Vínculo com SST
                     </h5>
-
                     <div class="mb-3">
                         <label class="form-label fw-bold">{{ form.equipamento_epi.label }}</label>
                         {{ form.equipamento_epi }}
@@ -68,7 +65,6 @@
                             <div class="text-danger small">{{ form.equipamento_epi.errors }}</div>
                         {% endif %}
                     </div>
-
                     <div class="card border-primary mt-3" id="bloco-criar-epi">
                         <div class="card-header bg-primary bg-opacity-10 py-2">
                             <div class="form-check">
@@ -113,15 +109,12 @@
                     </div>
                 </div>
 
-                {# ═══════════════════════════════════════════════ #}
                 {# ── BLOCO FERRAMENTA: Vínculo com Ferramentas ── #}
-                {# ═══════════════════════════════════════════════ #}
                 <div id="bloco-vinculo-ferramenta" style="display:none;">
                     <hr>
                     <h5 class="text-warning mb-3">
-                        <i class="bi bi-tools me-1"></i> Vínculo com Ferramentas
+                        <i class="bi bi-tools me-2"></i> Vínculo com Ferramentas
                     </h5>
-
                     <div class="mb-3">
                         <label class="form-label fw-bold">{{ form.ferramenta_ref.label }}</label>
                         {{ form.ferramenta_ref }}
@@ -130,7 +123,6 @@
                             <div class="text-danger small">{{ form.ferramenta_ref.errors }}</div>
                         {% endif %}
                     </div>
-
                     <div class="card border-warning mt-3" id="bloco-criar-ferramenta">
                         <div class="card-header bg-warning bg-opacity-10 py-2">
                             <div class="form-check">
@@ -186,14 +178,12 @@
                     </div>
                 </div>
 
-                {# ═══════════════════════════════════════════════════════ #}
-                {# ── BLOCO TRIBUTAÇÃO (DENTRO do form!) ──               #}
-                {# ═══════════════════════════════════════════════════════ #}
+                {# ── BLOCO TRIBUTAÇÃO ── #}
                 <hr>
                 <div class="card border-primary border-opacity-25 mb-3" id="bloco-tributacao">
                     <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">
-                            <i class="bi bi-calculator me-1 text-primary"></i> Informações Tributárias
+                            <i class="bi bi-calculator me-2 text-primary"></i> Informações Tributárias
                             <small class="text-muted">(opcional)</small>
                         </h6>
                         <a href="{% url 'tributacao:dashboard' %}" target="_blank"
@@ -210,7 +200,7 @@
                                 {{ form.ncm }}
                                 <div class="form-text">
                                     Código fiscal do material no Mercosul.
-                                    {% if perms.tributacao.add_solicitacao or user.is.superuser %}
+                                    {% if perms.tributacao.add_solicitacao or user.is_superuser %}
                                     <a href="{% url 'tributacao:ncm_create' %}" target="_blank">
                                         <i class="bi bi-plus-circle"></i> Cadastrar NCM
                                     </a>
@@ -227,7 +217,7 @@
                                 {{ form.grupo_tributario }}
                                 <div class="form-text">
                                     Define CFOP, alíquotas e créditos fiscais.
-                                    {% if perms.tributacao.add_grupo_tributario or user.is.superuser %}     
+                                    {% if perms.tributacao.add_grupo_tributario or user.is_superuser %}
                                     <a href="{% url 'tributacao:grupo_create' %}" target="_blank">
                                         <i class="bi bi-plus-circle"></i> Criar grupo
                                     </a>
@@ -275,12 +265,12 @@
 
                 {# ── Botões ── #}
                 <div class="d-flex justify-content-between mt-4">
-                    <a href="{% url 'suprimentos:material_lista' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i> Voltar
+                    <a href="{% url 'suprimentos:material_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i> Voltar
                     </a>
-                    {% if perms.suprimentos.add_material or user.is.superuser %}
+                    {% if perms.suprimentos.add_material or user.is_superuser%}
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-lg me-1"></i> Salvar
+                        <i class="bi bi-check-lg me-2"></i> Salvar
                     </button>
                     {% endif %}
                 </div>
@@ -288,42 +278,33 @@
         </div>
     </div>
 </div>
-{% endblock suprimentos_content %}
+{% endblock sup_content %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const classificacao = document.getElementById('id_classificacao');
 
-    // ── Blocos de seção ──
     const blocoEpi = document.getElementById('bloco-vinculo-epi');
     const blocoFerramenta = document.getElementById('bloco-vinculo-ferramenta');
 
-    // ── EPI: elementos ──
     const criarEpiCheck = document.getElementById('id_criar_equipamento_epi');
     const camposNovoEpi = document.getElementById('campos-novo-epi');
     const selectEquipamento = document.getElementById('id_equipamento_epi');
     const blocoCriarEpi = document.getElementById('bloco-criar-epi');
 
-    // ── Ferramenta: elementos ──
     const criarFerrCheck = document.getElementById('id_criar_ferramenta');
     const camposNovaFerr = document.getElementById('campos-nova-ferramenta');
     const selectFerramenta = document.getElementById('id_ferramenta_ref');
     const blocoCriarFerr = document.getElementById('bloco-criar-ferramenta');
 
-    // ── Tributação: elementos ──
     const grupoSelect = document.getElementById('id_grupo_tributario');
     const preview = document.getElementById('grupo-trib-preview');
 
-    // ═══════════════════════════════════════
-    // Toggle principal por classificação
-    // ═══════════════════════════════════════
     function toggleBlocos() {
         const val = classificacao.value;
-
         blocoEpi.style.display = val === 'EPI' ? 'block' : 'none';
         blocoFerramenta.style.display = val === 'FERRAMENTA' ? 'block' : 'none';
-
         if (val !== 'EPI') {
             criarEpiCheck.checked = false;
             camposNovoEpi.style.display = 'none';
@@ -332,14 +313,10 @@ document.addEventListener('DOMContentLoaded', function () {
             criarFerrCheck.checked = false;
             camposNovaFerr.style.display = 'none';
         }
-
         toggleCriarEpi();
         toggleCriarFerr();
     }
 
-    // ═══════════════════════════════════════
-    // Toggle criar EPI
-    // ═══════════════════════════════════════
     function toggleCriarEpi() {
         if (selectEquipamento.value) {
             blocoCriarEpi.style.display = 'none';
@@ -351,9 +328,6 @@ document.addEventListener('DOMContentLoaded', function () {
         camposNovoEpi.style.display = criarEpiCheck.checked ? 'block' : 'none';
     }
 
-    // ═══════════════════════════════════════
-    // Toggle criar Ferramenta
-    // ═══════════════════════════════════════
     function toggleCriarFerr() {
         if (selectFerramenta.value) {
             blocoCriarFerr.style.display = 'none';
@@ -365,18 +339,13 @@ document.addEventListener('DOMContentLoaded', function () {
         camposNovaFerr.style.display = criarFerrCheck.checked ? 'block' : 'none';
     }
 
-    // ═══════════════════════════════════════
-    // Preview Grupo Tributário (AJAX)
-    // ═══════════════════════════════════════
     function carregarPreviewGrupo() {
         if (!grupoSelect || !preview) return;
-
         const grupoId = grupoSelect.value;
         if (!grupoId) {
             preview.classList.add('d-none');
             return;
         }
-
         fetch(`/tributacao/api/grupo/${grupoId}/`)
             .then(r => {
                 if (!r.ok) throw new Error('Erro na API');
@@ -384,59 +353,40 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(data => {
                 document.getElementById('preview-cfop').textContent = data.cfop;
-
-                // ICMS
                 const icmsRecup = data.icms.recuperavel
                     ? '<span class="badge bg-success">crédito</span>'
                     : '<span class="badge bg-secondary">sem crédito</span>';
                 document.getElementById('preview-icms').innerHTML =
                     `${data.icms.aliquota}% ${icmsRecup}`;
-
-                // PIS / COFINS
                 const pisRecup = data.pis.recuperavel ? '✓' : '✗';
                 const cofRecup = data.cofins.recuperavel ? '✓' : '✗';
                 document.getElementById('preview-pis-cofins').innerHTML =
                     `PIS ${data.pis.aliquota}% (${pisRecup}) / COFINS ${data.cofins.aliquota}% (${cofRecup})`;
-
-                // IPI
                 const ipiRecup = data.ipi.recuperavel
                     ? '<span class="badge bg-success">crédito</span>'
                     : '<span class="badge bg-secondary">custo</span>';
                 document.getElementById('preview-ipi').innerHTML =
                     `${data.ipi.aliquota}% ${ipiRecup}`;
-
                 preview.classList.remove('d-none');
             })
             .catch(() => preview.classList.add('d-none'));
     }
 
-    // ═══════════════════════════════════════
-    // Event listeners
-    // ═══════════════════════════════════════
     classificacao.addEventListener('change', toggleBlocos);
-
     criarEpiCheck.addEventListener('change', toggleCriarEpi);
     selectEquipamento.addEventListener('change', toggleCriarEpi);
-
     criarFerrCheck.addEventListener('change', toggleCriarFerr);
     selectFerramenta.addEventListener('change', toggleCriarFerr);
-
     if (grupoSelect) {
         grupoSelect.addEventListener('change', carregarPreviewGrupo);
     }
 
-    // ═══════════════════════════════════════
-    // Estado inicial
-    // ═══════════════════════════════════════
     toggleBlocos();
-
-    // Trigger preview se já tem grupo selecionado (edição)
     if (grupoSelect && grupoSelect.value) {
         carregarPreviewGrupo();
     }
 });
 </script>
 {% endblock %}
-
 
 

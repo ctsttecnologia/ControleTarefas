@@ -1,27 +1,27 @@
 
-
+<!--
+  Template: Dashboard do módulo de Suprimentos
+  Exibe KPIs, gráficos e listas resumidas para gestão rápida-->
+  
 {% extends "suprimentos/base_suprimentos.html" %}
+{% load static %}
 
 {% block sup_content %}
-<div class="sup-header d-flex justify-content-between align-items-center">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
   <div>
-    <h1><i class="bi bi-box-seam me-2"></i>Suprimentos</h1>
-    <small class="opacity-75">Gestão de pedidos, cotações e compras</small>
+    <div class="sup-page-head">
+      <h2 class="sup-page-title">
+        <i class="bi bi-box-seam me-2"></i>Painel de Controle
+      </h2>
+      <div class="sup-page-actions"></div>
+    </div>
   </div>
-  <a href="{% url 'suprimentos:pedido_novo' %}" class="btn btn-light fw-semibold">
-    <i class="bi bi-plus-lg"></i> Novo Pedido
-  </a>
-  <a href="{% url 'suprimentos:material_list' %}" class="btn btn-light fw-semibold">
-    <i class="bi bi-plus-lg"></i> Material
-  </a>
-  <a href="{% url 'suprimentos:parceiro_list' %}" class="btn btn-light fw-semibold">
-    <i class="bi bi-plus-lg"></i> Parceiro
-  </a>
 </div>
-
+<hr>
+{# ─── KPIs ─── #}
 <div class="row g-3 mb-4">
   <div class="col-md-3">
-    <div class="card sup-card h-100">
+    <div class="card sup-card h-100 border-start border-4 border-warning">
       <div class="card-body">
         <div class="d-flex justify-content-between">
           <div>
@@ -35,7 +35,7 @@
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card sup-card h-100">
+    <div class="card sup-card h-100 border-start border-4 border-info">
       <div class="card-body">
         <div class="d-flex justify-content-between">
           <div>
@@ -49,7 +49,7 @@
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card sup-card h-100">
+    <div class="card sup-card h-100 border-start border-4 border-primary">
       <div class="card-body">
         <div class="d-flex justify-content-between">
           <div>
@@ -63,12 +63,17 @@
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card sup-card h-100">
+    <div class="card sup-card h-100 border-start border-4 {% if pcs_atrasados %}border-danger{% else %}border-secondary{% endif %}">
       <div class="card-body">
         <div class="d-flex justify-content-between">
           <div>
             <div class="text-muted small">Entregas Pendentes</div>
             <h3 class="fw-bold mb-0">{{ pcs_pendentes_entrega }}</h3>
+            {% if pcs_atrasados %}
+              <small class="text-danger fw-semibold">
+                <i class="bi bi-exclamation-triangle-fill"></i> {{ pcs_atrasados }} atrasada(s)
+              </small>
+            {% endif %}
           </div>
           <i class="bi bi-truck fs-1 text-secondary opacity-50"></i>
         </div>
@@ -77,6 +82,98 @@
   </div>
 </div>
 
+{# ─── Linha: Valor do mês + gráficos ─── #}
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="card sup-card h-100">
+      <div class="card-body text-center d-flex flex-column justify-content-center">
+        <div class="text-muted small mb-1">Comprado no mês</div>
+        <h2 class="fw-bold text-success mb-3">R$ {{ valor_comprado_mes|floatformat:2 }}</h2>
+        <div class="text-start">
+          {% for c in compras_classif %}
+          <div class="d-flex justify-content-between border-bottom py-1">
+            <span class="text-muted">{{ c.label }}</span>
+            <span class="fw-semibold">R$ {{ c.total|floatformat:2 }}</span>
+          </div>
+          {% empty %}
+          <p class="text-muted text-center mb-0">Sem compras no mês.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card sup-card h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-graph-up me-1"></i> Evolução de Compras (6 meses)
+      </div>
+      <div class="card-body">
+        <canvas id="chartEvolucao" height="110"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ─── Linha: Funil + Top fornecedores ─── #}
+<div class="row g-3 mb-4">
+  <div class="col-lg-7">
+    <div class="card sup-card h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-funnel me-1"></i> Funil do Fluxo
+      </div>
+      <div class="card-body">
+        {% with f=funil %}
+        <div class="d-flex flex-wrap gap-2 text-center justify-content-between">
+          <div class="flex-fill"><div class="badge bg-secondary w-100 py-2">Aprovados<br><span class="fs-5">{{ f.pedidos_aprovados }}</span></div></div>
+          <div class="flex-fill"><div class="badge bg-info w-100 py-2">Em Cotação<br><span class="fs-5">{{ f.em_cotacao }}</span></div></div>
+          <div class="flex-fill"><div class="badge bg-warning text-dark w-100 py-2">Aprovação<br><span class="fs-5">{{ f.em_aprovacao }}</span></div></div>
+          <div class="flex-fill"><div class="badge bg-primary w-100 py-2">PC Gerado<br><span class="fs-5">{{ f.pc_gerado }}</span></div></div>
+          <div class="flex-fill"><div class="badge bg-success w-100 py-2">Finalizado<br><span class="fs-5">{{ f.finalizado }}</span></div></div>
+        </div>
+        {% endwith %}
+
+        {% if entregas_atrasadas %}
+        <hr>
+        <h6 class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i> Entregas Atrasadas</h6>
+        <ul class="list-group list-group-flush">
+          {% for pc in entregas_atrasadas %}
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <a href="{{ pc.get_absolute_url }}">{{ pc.numero }} · {{ pc.fornecedor.nome_fantasia|truncatechars:25 }}</a>
+            <span class="text-danger small">Prevista: {{ pc.data_entrega_prevista|date:"d/m/Y" }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card sup-card h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-trophy me-1"></i> Top Fornecedores (mês)
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <tbody>
+            {% for f in top_fornecedores %}
+            <tr>
+              <td>{{ forloop.counter }}. {{ f.fornecedor__nome_fantasia|truncatechars:28 }}</td>
+              <td class="text-muted text-center">{{ f.qtd }} PC</td>
+              <td class="text-end fw-semibold">R$ {{ f.total|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td class="text-center text-muted py-3">Sem dados no mês.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ─── Últimos pedidos ─── #}
 <div class="card sup-card">
   <div class="card-header bg-white fw-semibold">
     <i class="bi bi-clock-history me-1"></i> Últimos Pedidos
@@ -104,4 +201,39 @@
     </table>
   </div>
 </div>
+
+{# ─── Chart.js ─── #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+{{ evolucao_labels|json_script:"evoLabels" }}
+{{ evolucao_valores|json_script:"evoValores" }}
+<script>
+  const labels = JSON.parse(document.getElementById("evoLabels").textContent);
+  const valores = JSON.parse(document.getElementById("evoValores").textContent);
+  const ctx = document.getElementById("chartEvolucao");
+  if (ctx && labels.length) {
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Compras (R$)",
+          data: valores,
+          backgroundColor: "rgba(13,110,253,.6)",
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { callback: v => "R$ " + v.toLocaleString("pt-BR") }
+          }
+        }
+      }
+    });
+  }
+</script>
 {% endblock %}
+

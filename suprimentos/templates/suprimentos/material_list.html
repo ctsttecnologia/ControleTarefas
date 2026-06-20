@@ -5,10 +5,7 @@
 <style>
     /* ═══════════════════════════════════════════════════════════════
        Tabela com scroll horizontal — ADAPTATIVA (claro/escuro)
-       Usa variáveis globais de --surface-* e --bs-border-color
     ═══════════════════════════════════════════════════════════════ */
-
-    /* ── Wrapper da tabela ── */
     .table-scroll-wrapper {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
@@ -16,137 +13,82 @@
         border-radius: 0.5rem;
         background-color: var(--surface-elevated);
     }
-
     .table-scroll-wrapper table {
-        min-width: 1400px;
+        min-width: 1500px;
         margin-bottom: 0;
         color: var(--bs-body-color);
     }
-
-    /* ── Coluna fixa à DIREITA (Ações) ── */
     .table-scroll-wrapper th:last-child,
     .table-scroll-wrapper td:last-child {
-        position: sticky;
-        right: 0;
-        z-index: 2;
+        position: sticky; right: 0; z-index: 2;
         background-color: var(--surface-elevated);
         box-shadow: -4px 0 8px rgba(0, 0, 0, 0.04);
     }
-
     .table-scroll-wrapper thead th:last-child {
-        background-color: var(--surface-muted);
-        z-index: 3;
+        background-color: var(--surface-muted); z-index: 3;
     }
-
-    /* ── Coluna fixa à ESQUERDA (Código) ── */
     .table-scroll-wrapper th:first-child,
     .table-scroll-wrapper td:first-child {
-        position: sticky;
-        left: 0;
-        z-index: 2;
+        position: sticky; left: 0; z-index: 2;
         background-color: var(--surface-elevated);
         box-shadow: 4px 0 8px rgba(0, 0, 0, 0.04);
     }
-
     .table-scroll-wrapper thead th:first-child {
-        background-color: var(--surface-muted);
-        z-index: 3;
+        background-color: var(--surface-muted); z-index: 3;
     }
-
-    /* ── Zebra striping adaptativo nas colunas fixas ── */
     .table-scroll-wrapper tbody tr:nth-child(even) td:first-child,
     .table-scroll-wrapper tbody tr:nth-child(even) td:last-child {
         background-color: var(--surface-muted);
     }
-
-    /* ── Hover adaptativo (linha inteira + colunas fixas) ── */
-    .table-scroll-wrapper tbody tr:hover td {
-        background-color: var(--surface-hover);
-    }
-
+    .table-scroll-wrapper tbody tr:hover td,
     .table-scroll-wrapper tbody tr:hover td:first-child,
     .table-scroll-wrapper tbody tr:hover td:last-child {
         background-color: var(--surface-hover);
     }
-
-    /* ── Scrollbar personalizada — TEMA CLARO ── */
-    .table-scroll-wrapper::-webkit-scrollbar {
-        height: 8px;
-    }
-
+    .table-scroll-wrapper::-webkit-scrollbar { height: 8px; }
     .table-scroll-wrapper::-webkit-scrollbar-track {
-        background-color: var(--surface-subtle);
-        border-radius: 4px;
+        background-color: var(--surface-subtle); border-radius: 4px;
     }
-
     .table-scroll-wrapper::-webkit-scrollbar-thumb {
-        background-color: rgba(var(--bs-primary-rgb), 0.3);
-        border-radius: 4px;
+        background-color: rgba(var(--bs-primary-rgb), 0.3); border-radius: 4px;
     }
-
     .table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
         background-color: rgba(var(--bs-primary-rgb), 0.6);
     }
-
-    /* ── Cabeçalho fixo no topo ao rolar ── */
     .table-scroll-wrapper thead th {
-        position: sticky;
-        top: 0;
-        z-index: 1;
+        position: sticky; top: 0; z-index: 1;
         background-color: var(--surface-muted);
         color: var(--bs-text-muted);
-        white-space: nowrap;
-        font-size: 0.82rem;
+        white-space: nowrap; font-size: 0.82rem;
         padding: 0.6rem 0.75rem;
         border-bottom: 2px solid var(--bs-border-color);
     }
-
-    /* ── Células do corpo ── */
     .table-scroll-wrapper tbody td {
-        white-space: nowrap;
-        font-size: 0.85rem;
+        white-space: nowrap; font-size: 0.85rem;
         padding: 0.55rem 0.75rem;
         color: var(--bs-body-color);
         border-color: var(--bs-border-color);
     }
-
-    /* ── Indicador de scroll ── */
     .scroll-hint {
-        display: none;
-        text-align: center;
-        padding: 0.4rem;
-        font-size: 0.75rem;
-        color: var(--bs-text-muted);
+        display: none; text-align: center; padding: 0.4rem;
+        font-size: 0.75rem; color: var(--bs-text-muted);
         background-color: var(--surface-muted);
         border: 1px solid var(--bs-border-color);
-        border-top: none;
-        border-radius: 0 0 0.5rem 0.5rem;
+        border-top: none; border-radius: 0 0 0.5rem 0.5rem;
     }
+    @media (max-width: 1500px) { .scroll-hint { display: block; } }
 
-    @media (max-width: 1400px) {
-        .scroll-hint {
-            display: block;
-        }
-    }
-
-    /* ═══════════════════════════════════════════════════════════════
-       Ajustes específicos para TEMA ESCURO
-    ═══════════════════════════════════════════════════════════════ */
     [data-bs-theme="dark"] .table-scroll-wrapper {
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
     }
-
     [data-bs-theme="dark"] .table-scroll-wrapper th:last-child,
     [data-bs-theme="dark"] .table-scroll-wrapper td:last-child {
         box-shadow: -4px 0 8px rgba(0, 0, 0, 0.3);
     }
-
     [data-bs-theme="dark"] .table-scroll-wrapper th:first-child,
     [data-bs-theme="dark"] .table-scroll-wrapper td:first-child {
         box-shadow: 4px 0 8px rgba(0, 0, 0, 0.3);
     }
-
-    /* Badge "N/C" no dark — melhora contraste */
     [data-bs-theme="dark"] .badge.bg-light.text-warning {
         background-color: var(--surface-subtle) !important;
         color: #ffda6a !important;
@@ -154,24 +96,28 @@
     }
 </style>
 
-
 <div class="container-fluid mt-4">
-    <div class="sup-header d-flex justify-content-between align-items-center">
-        <h2><i class="bi bi-box-seam me-2"></i>{{ titulo_pagina }}</h2>
-        <div>
+
+    <div class="sup-page-head">
+        <h2 class="sup-page-title">
+            <i class="bi bi-file-earmark-text me-2"></i>Lista de Material
+        </h2>
+
+        <div class="sup-page-actions">
             <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
+            <i class="bi bi-arrow-left me-1"></i> Voltar
             </a>
-            {% if perms.suprimentos.add_material or user.is.superuser %}
+            {% if perms.suprimentos.add_material or user.is_superuser %}
             <a href="{% url 'suprimentos:material_novo' %}" class="btn btn-success">
-                <i class="bi bi-plus-lg me-1"></i> Novo Material
+            <i class="bi bi-plus-lg me-1"></i> Novo Material
             </a>
-            <a href="{% url 'suprimentos:material_importar' %}" class="btn btn-outline-success">
-                <i class="bi bi-upload"></i> Importar em Massa
+            <a href="{% url 'suprimentos:material_upload_massa' %}" class="btn btn-outline-success">
+            <i class="bi bi-upload me-1"></i> Importar em Massa
             </a>
             {% endif %}
         </div>
     </div>
+    <hr>
 
     {# ── Cards de Resumo do Catálogo ── #}
     <div class="row g-3 mb-4">
@@ -256,12 +202,10 @@
                 </div>
                 {% if filtro_q or filtro_classificacao or filtro_tipo or filtro_sem_grupo %}
                 <div class="col-md-1">
-                    {% if perms.suprimentos.delete_material or user.is.superuser %}
                     <a href="{% url 'suprimentos:material_lista' %}" class="btn btn-outline-secondary w-100"
                        title="Limpar filtros">
                         <i class="bi bi-x-lg"></i>
                     </a>
-                    {% endif %}
                 </div>
                 {% endif %}
             </form>
@@ -273,6 +217,7 @@
                         <tr>
                             <th>Código</th>
                             <th>Descrição</th>
+                            <th class="text-center">Origem</th>
                             <th>Classificação</th>
                             <th>Tipo</th>
                             <th>Marca</th>
@@ -303,6 +248,14 @@
                                     <i class="bi bi-tools text-warning ms-1" title="Vinculado a Ferramenta"></i>
                                 {% endif %}
                             </td>
+                            {# ── Origem: Global ou Filial ── #}
+                            <td class="text-center">
+                                {% if m.filial_id %}
+                                    <span class="badge bg-secondary" title="Material próprio da filial">Filial</span>
+                                {% else %}
+                                    <span class="badge bg-info" title="Material do catálogo global">Global</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 <span class="badge
                                     {% if m.classificacao == 'EPI' %}bg-info
@@ -319,9 +272,7 @@
                             {# NCM #}
                             <td class="text-center">
                                 {% if m.ncm %}
-                                    <code class="small" title="{{ m.ncm.descricao }}">
-                                        {{ m.ncm.codigo }}
-                                    </code>
+                                    <code class="small" title="{{ m.ncm.descricao }}">{{ m.ncm.codigo }}</code>
                                 {% else %}
                                     <span class="text-muted">—</span>
                                 {% endif %}
@@ -330,14 +281,12 @@
                             {# Grupo Tributário #}
                             <td class="text-center">
                                 {% if m.grupo_tributario %}
-                                    <span class="badge bg-primary bg-opacity-75"
-                                          title="{{ m.grupo_tributario.nome }}">
+                                    <span class="badge bg-primary bg-opacity-75" title="{{ m.grupo_tributario.nome }}">
                                         <i class="bi bi-calculator"></i>
                                         {{ m.grupo_tributario.nome|truncatechars:15 }}
                                     </span>
                                 {% else %}
-                                    <span class="badge bg-light text-warning border"
-                                          title="Sem grupo tributário">
+                                    <span class="badge bg-light text-warning border" title="Sem grupo tributário">
                                         <i class="bi bi-exclamation-triangle"></i> N/C
                                     </span>
                                 {% endif %}
@@ -345,14 +294,12 @@
 
                             {# ═══ Colunas Tributárias ═══ #}
                             {% if calc and not calc.sem_grupo %}
-                                {# ICMS #}
                                 <td class="text-end">
                                     R$ {{ calc.icms.valor|floatformat:2 }}
                                     {% if calc.icms.recuperavel %}
                                         <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
                                     {% endif %}
                                 </td>
-                                {# IPI #}
                                 <td class="text-end">
                                     R$ {{ calc.ipi.valor|floatformat:2 }}
                                     {% if calc.ipi.recuperavel %}
@@ -361,25 +308,21 @@
                                         <br><small class="text-danger"><i class="bi bi-x-circle-fill"></i> custo</small>
                                     {% endif %}
                                 </td>
-                                {# PIS #}
                                 <td class="text-end">
                                     R$ {{ calc.pis.valor|floatformat:2 }}
                                     {% if calc.pis.recuperavel %}
                                         <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
                                     {% endif %}
                                 </td>
-                                {# COFINS #}
                                 <td class="text-end">
                                     R$ {{ calc.cofins.valor|floatformat:2 }}
                                     {% if calc.cofins.recuperavel %}
                                         <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
                                     {% endif %}
                                 </td>
-                                {# Créditos #}
                                 <td class="text-end">
                                     <strong class="text-success">R$ {{ calc.total_creditos|floatformat:2 }}</strong>
                                 </td>
-                                {# Custo Real Unitário #}
                                 <td class="text-end">
                                     <strong class="text-primary">R$ {{ calc.custo_unitario|floatformat:2 }}</strong>
                                     {% if calc.percentual_economia > 0 %}
@@ -400,8 +343,8 @@
                                 {% endif %}
                             </td>
                             <td class="text-end">
-                                {% if perms.suprimentos.change_material or user.is.superuser %}
-                                    <a href="{% url 'suprimentos:material_editar' pk=m.pk %}"
+                                {% if perm.suprimentos.change_material or user.is_superuser%}
+                                    <a href="{% url 'suprimentos:material_update' pk=m.pk %}"
                                        class="btn btn-sm btn-outline-primary" title="Editar">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
@@ -411,7 +354,7 @@
                         {% endwith %}
                         {% empty %}
                         <tr>
-                            <td colspan="17" class="text-center text-muted py-4">
+                            <td colspan="18" class="text-center text-muted py-4">
                                 Nenhum material encontrado.
                             </td>
                         </tr>
@@ -434,7 +377,6 @@
 
 <script>
 (function() {
-    // Esconde o hint quando o usuário já rolou
     const wrapper = document.getElementById('tableWrapper');
     const hint = document.getElementById('scrollHint');
     if (wrapper && hint) {
@@ -447,4 +389,5 @@
 })();
 </script>
 {% endblock sup_content %}
+
 

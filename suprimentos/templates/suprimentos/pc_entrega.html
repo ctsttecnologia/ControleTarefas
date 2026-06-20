@@ -1,10 +1,25 @@
 
 {% extends "suprimentos/base_suprimentos.html" %}
 {% load static %}
+{% block title %}Receber Entrega — Pedido: {{ pc.pk }}{% endblock %}
+
 {% block sup_content %}
 
 <div class="container py-4">
-  <h4 class="mb-3">Receber Entrega — Pedido #{{ pc.pk }}</h4>
+
+  <div class="sup-page-head">
+      <h2 class="sup-page-title">
+          <i class="bi bi-receipt me-1"></i> Receber Entrega — Pedido: {{ pc.pk }}
+      </h2>   
+      <div class="sup-page-actions">
+          
+          <a href="{% url 'suprimentos:pc_list' %}" class="btn btn-secondary">
+              <i class="bi bi-arrow-left me-2"></i> Voltar à Lista
+          </a>
+      </div>
+  </div>
+  <small class="text-muted">{{ pc.fornecedor }} · {{ pc.filial }}</small>
+  <hr>
 
   <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}

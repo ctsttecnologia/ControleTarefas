@@ -11,7 +11,9 @@ from .models import (
 )
 from decimal import Decimal
 from django.forms import formset_factory, inlineformset_factory
-
+from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
+from .models import VerbaContrato
 
 
 # ═════════════════════════════════════════════════════════════
@@ -227,14 +229,17 @@ class MultipleFileInput(forms.ClearableFileInput):
 
 class MultipleFileField(forms.FileField):
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("widget", MultipleFileInput(attrs={"class": "form-control"}))
+        kwargs.setdefault("widget", MultipleFileInput(attrs={
+            "class": "form-control",
+            "multiple": True,
+        }))
         super().__init__(*args, **kwargs)
 
     def clean(self, data, initial=None):
         single = super().clean
         if isinstance(data, (list, tuple)):
-            return [single(d, initial) for d in data if d]
-        return single(data, initial)
+            return [single(d, initial) for d in data]
+        return [single(data, initial)]
 
 
 # ═════════════════════════════════════════════════════════════
@@ -325,15 +330,22 @@ class EntregaPedidoCompraForm(BootstrapMixin, forms.ModelForm):
 
 
 # ═════════════════════════════════════════════════════════════
-# 5. ANEXOS (genéricos)
+# 5. ANEXOS 
 # ═════════════════════════════════════════════════════════════
 class AnexoPedidoForm(forms.Form):
-    arquivos = MultipleFileField(required=False, label="Anexos")
-    descricao = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={"class": "form-control"}),
+    arquivos = MultipleFileField(
+        label=_("Arquivos"),
+        required=True,
     )
-
+    observacao = forms.CharField(
+        label=_("Observação"),
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "Descrição opcional (aplicada a todos)",
+        }),
+    )
 
 class AnexoSolicitacaoForm(forms.Form):
     arquivos = MultipleFileField(required=False, label="Anexos")
@@ -341,3 +353,132 @@ class AnexoSolicitacaoForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={"class": "form-control"}),
     )
+
+# ═════════════════════════════════════════════════════════════
+# 6. Material 
+# ═════════════════════════════════════════════════════════════
+
+class MaterialForm(forms.ModelForm):
+    """
+    Formulário de Material.
+
+    O parâmetro `filial` é OPCIONAL e usado APENAS para:
+      - validações de unicidade (descrição + marca dentro da filial);
+      - geração automática de código por filial.
+
+    ⚠️ A PERSISTÊNCIA da filial é responsabilidade do `FilialCreateMixin`
+       (que injeta `form.instance.filial_id`). Este form NÃO atribui
+       `self.instance.filial`, evitando dupla escrita conflitante.
+    """
+
+    class Meta:
+        model = Material
+        fields = [
+            "descricao", "classificacao", "tipo", "marca",
+            "unidade", "valor_unitario", "ncm", "grupo_tributario",
+            "equipamento_epi", "ferramenta_ref", "ativo",
+        ]
+        widgets = {
+            "descricao": forms.TextInput(attrs={"class": "form-control"}),
+            "classificacao": forms.Select(attrs={"class": "form-select"}),
+            "tipo": forms.Select(attrs={"class": "form-select"}),
+            "marca": forms.TextInput(attrs={"class": "form-control"}),
+            "unidade": forms.Select(attrs={"class": "form-select"}),
+            "valor_unitario": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "ncm": forms.Select(attrs={"class": "form-select"}),
+            "grupo_tributario": forms.Select(attrs={"class": "form-select"}),
+            "equipamento_epi": forms.Select(attrs={"class": "form-select"}),
+            "ferramenta_ref": forms.Select(attrs={"class": "form-select"}),
+            "ativo": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        # Captura a filial ANTES de chamar super() (não é campo do form)
+        self.filial = kwargs.pop("filial", None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned = super().clean()
+        descricao = (cleaned.get("descricao") or "").strip()
+        marca = (cleaned.get("marca") or "").strip()
+
+        # Validação de unicidade ESCOPADA por filial (descrição + marca)
+        if descricao:
+            qs = Material.objects.filter(
+                descricao__iexact=descricao,
+                marca__iexact=marca,
+            )
+            # Considera a filial ativa OU catálogo global
+            if self.filial is not None:
+                qs = qs.filter(filial=self.filial)
+
+            # Exclui o próprio objeto em edição
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            if qs.exists():
+                self.add_error(
+                    "descricao",
+                    "Já existe um material com esta descrição e marca nesta filial."
+                )
+        return cleaned
+    
+
+class VerbaContratoForm(forms.ModelForm):
+    class Meta:
+        model = VerbaContrato
+        fields = [
+            "contrato", "ano", "mes",
+            "verba_epi", "verba_consumo", "verba_ferramenta",
+        ]
+        widgets = {
+            "contrato": forms.Select(attrs={"class": "form-select"}),
+            "ano": forms.NumberInput(attrs={
+                "class": "form-control", "min": 2020, "max": 2100,
+            }),
+            "mes": forms.Select(attrs={"class": "form-select"}),
+            "verba_epi": forms.NumberInput(attrs={
+                "class": "form-control", "step": "0.01", "min": 0,
+            }),
+            "verba_consumo": forms.NumberInput(attrs={
+                "class": "form-control", "step": "0.01", "min": 0,
+            }),
+            "verba_ferramenta": forms.NumberInput(attrs={
+                "class": "form-control", "step": "0.01", "min": 0,
+            }),
+        }
+
+    MESES = [
+        (1, "Janeiro"), (2, "Fevereiro"), (3, "Março"), (4, "Abril"),
+        (5, "Maio"), (6, "Junho"), (7, "Julho"), (8, "Agosto"),
+        (9, "Setembro"), (10, "Outubro"), (11, "Novembro"), (12, "Dezembro"),
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["mes"].widget = forms.Select(
+            choices=self.MESES, attrs={"class": "form-select"}
+        )
+        if not self.instance.pk:
+            hoje = timezone.now()
+            self.fields["ano"].initial = hoje.year
+            self.fields["mes"].initial = hoje.month
+
+    def clean(self):
+        cleaned = super().clean()
+        contrato = cleaned.get("contrato")
+        ano = cleaned.get("ano")
+        mes = cleaned.get("mes")
+
+        if contrato and ano and mes:
+            qs = VerbaContrato.objects.filter(
+                contrato=contrato, ano=ano, mes=mes
+            )
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(
+                    f"Já existe verba cadastrada para {contrato.cm} "
+                    f"em {mes:02d}/{ano}."
+                )
+        return cleaned

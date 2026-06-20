@@ -1,0 +1,66 @@
+{% extends "suprimentos/base_suprimentos.html" %}
+{% load humanize static %}
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block sup_content %}
+<div class="container py-3" style="max-width: 720px;">
+  <h4 class="mb-3">{{ titulo_pagina }}</h4>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Contrato</label>
+          {{ form.contrato }}
+          {% for e in form.contrato.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Ano</label>
+            {{ form.ano }}
+            {% for e in form.ano.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Mês</label>
+            {{ form.mes }}
+            {% for e in form.mes.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <hr>
+        <h6 class="text-muted mb-3">Valores das Verbas (R$)</h6>
+
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">EPI</label>
+            {{ form.verba_epi }}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Consumo</label>
+            {{ form.verba_consumo }}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Ferramenta</label>
+            {{ form.verba_ferramenta }}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer d-flex justify-content-between">
+        <a href="{% url 'suprimentos:verba_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+

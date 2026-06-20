@@ -19,6 +19,19 @@
     margin-bottom: 1.5rem;
     box-shadow: 0 4px 14px rgba(0, 0, 0, .08);
 }
+/* ── A.1b Título de página interna (.sup-page-title) ─────────────── */
+.sup-page-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    color: var(--bs-body-color);
+}
+.sup-page-title i {
+    font-size: 1.0rem;          /* ícone proporcional ao texto */
+    opacity: .85;
+}
 .sup-header h1 {
     font-size: 1.45rem;
     font-weight: 700;
@@ -28,6 +41,37 @@
 }
 .sup-header small { color: rgba(255, 255, 255, .85); }
 .sup-header .opacity-75 { opacity: .85; }
+
+/* ── A.1c Barra de cabeçalho de página (título + ações) ──────────── */
+.sup-page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .75rem;
+    margin-bottom: 1.25rem;
+}
+/* dentro da barra, o título não precisa de margem própria */
+.sup-page-head .sup-page-title {
+    margin: 0;
+}
+.sup-page-head .sup-page-actions {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+.solicitacao-header__linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap; /* evita quebra travada em telas menores */
+}
+.solicitacao-header__linha .btn-voltar {
+  margin-left: auto;
+}
+
 
 /* ── A.2 Cards do módulo (.sup-card) ─────────────────────────────── */
 .sup-card {
@@ -393,3 +437,45 @@
     box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
 }
 
+/* 20. Transição suave da linha */
+  .formset-row {
+    transition: opacity .25s ease, transform .25s ease, max-height .35s ease, margin .35s ease, padding .35s ease;
+    overflow: hidden;
+    max-height: 400px;
+  }
+
+  /* Estado "removido": linha colapsa */
+  .formset-row.is-removing {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  .formset-row.is-removed {
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Esconde o checkbox DELETE nativo (controlamos via botão) */
+  .formset-row .delete-checkbox { display: none; }
+
+  /* Botão lixeira */
+  .btn-remove-item {
+    line-height: 1;
+  }
+
+  /* Banner de desfazer */
+  .undo-banner {
+    display: none;
+    align-items: center;
+    gap: .75rem;
+    background: #fff3cd;
+    border: 1px solid #ffe69c;
+    color: #664d03;
+    border-radius: .5rem;
+    padding: .5rem .9rem;
+    font-size: .875rem;
+  }
+  .undo-banner.show { display: flex; }

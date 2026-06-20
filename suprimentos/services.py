@@ -24,7 +24,7 @@ from ferramentas.models import Ferramenta as FerramentaModel
 from suprimentos.models import (
     Material, CategoriaMaterial, TipoMaterial, UnidadeMedida,
 )
-from tributacao.models import NCM, GrupoTributario
+from tributacao.models import CFOP, NCM, GrupoTributario
 
 logger = logging.getLogger(__name__)
 
@@ -106,16 +106,28 @@ class MaterialImportService:
                 codigo=codigo, ativo=True
             ).first()
         return self._cache_ncm[codigo]
-
+    
     def _get_grupo(self, codigo):
+        """Busca GrupoTributario por código (único na filial), com cache."""
         if not codigo:
             return None
         codigo = str(codigo).strip()
         if codigo not in self._cache_grupo:
             self._cache_grupo[codigo] = GrupoTributario.objects.filter(
-                codigo=codigo, ativo=True
+                codigo=codigo, filial=self.filial, ativo=True
             ).first()
         return self._cache_grupo[codigo]
+
+
+    def _criar_grupo(self, codigo):
+        cfop = CFOP.objects.create(codigo= codigo(), descricao='Venda')
+        return GrupoTributario.objects.create(
+            codigo=codigo,
+            nome=f'Grupo {codigo}',
+            cfop=cfop,
+            filial=self.filial,
+        )
+
 
     # ── Leitura do arquivo ───────────────────────────────────────────
     def _ler_arquivo(self):

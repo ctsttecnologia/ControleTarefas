@@ -1,682 +1,785 @@
-
 # suprimentos/relatorios.py
-
 """
-Módulo de relatórios gerenciais do Suprimentos.
-Centraliza toda a lógica de consulta e cálculo para:
-  - Quantitativo (quantidades por categoria, contrato, período)
-  - Qualitativo (verba × gasto real × meta)
-  - Gastos acima da meta (alertas e desvios)
-  - Economias (onde sobrou verba)
-  - Estimativas (projeção de gasto próximos meses)
+Módulo de relatórios gerenciais do Suprimentos (REFATORADO).
+
+Estratégia de performance:
+  - Substitui loops aninhados (N+1) por agregações em lote com
+    values().annotate(), construindo "mapas" em memória.
+  - Reduz de centenas/milhares de queries para um número FIXO (~12).
+  - Suporta períodos que cruzam anos.
+  - Tipagem Decimal consistente com .quantize() na saída.
 """
 
 import logging
 from collections import defaultdict
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import date
 
-from django.db.models import Sum, Count, F, Q, Avg, DecimalField
-from django.db.models.functions import Coalesce, TruncMonth
+from django.db.models import Sum, Count, DecimalField, IntegerField, Value
+from django.db.models.functions import Coalesce
+from decimal import Decimal
+from django.db.models import Sum
 
-from .models import (
-    Contrato, VerbaContrato, Pedido, ItemPedido,
-    Material, CategoriaMaterial, EstoqueConsumo,
-)
+from .models import Contrato, Pedido, VerbaContrato, ItemPedido, CategoriaMaterial
 
 logger = logging.getLogger(__name__)
 
-ZERO = Decimal('0.00')
-STATUS_COMPRA = ['APROVADO', 'ENTREGUE', 'RECEBIDO']
+# ─────────────────────────────────────────────────────────────
+# CONSTANTES
+# ─────────────────────────────────────────────────────────────
+
+ZERO = Decimal("0.00")
+DEC = DecimalField(max_digits=18, decimal_places=2)
+INT = IntegerField()
+CENTAVO = Decimal("0.01")
+
+STATUS_COMPRA = ["APROVADO", "ENTREGUE", "RECEBIDO"]
+
+# Ordem fixa de categorias (cod, label)
 CATEGORIAS = [
-    ('EPI', 'EPI'),
-    ('CONSUMO', 'Consumo'),
-    ('FERRAMENTA', 'Ferramenta'),
+    (CategoriaMaterial.EPI, "EPI"),
+    (CategoriaMaterial.CONSUMO, "Consumo"),
+    (CategoriaMaterial.FERRAMENTA, "Ferramenta"),
+]
+CODS = [c for c, _ in CATEGORIAS]
+
+# Mapeia categoria -> campo de verba correspondente
+VERBA_FIELD = {
+    CategoriaMaterial.EPI: "verba_epi",
+    CategoriaMaterial.CONSUMO: "verba_consumo",
+    CategoriaMaterial.FERRAMENTA: "verba_ferramenta",
+}
+
+_NOMES_MES = [
+    "", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+    "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+]
+
+# Status considerados "efetivados" no relatório
+STATUS_VALIDOS = [
+    Pedido.StatusChoices.APROVADO,
+    Pedido.StatusChoices.ENTREGUE,
+    Pedido.StatusChoices.RECEBIDO,
+    Pedido.StatusChoices.SOLICITACAO_GERADA,
 ]
 
 
-# ═══════════════════════════════════════════════════════
-# HELPERS
-# ═══════════════════════════════════════════════════════
+# ─────────────────────────────────────────────────────────────
+# HELPERS BÁSICOS
+# ─────────────────────────────────────────────────────────────
+
+def _D(v) -> Decimal:
+    """Converte qualquer valor para Decimal seguro."""
+    if v is None:
+        return ZERO
+    if isinstance(v, Decimal):
+        return v
+    return Decimal(str(v))
+
+
+def _q(v) -> Decimal:
+    """Quantiza para 2 casas (saída)."""
+    return _D(v).quantize(CENTAVO, rounding=ROUND_HALF_UP)
+
+
+def _label_mes(ano, mes) -> str:
+    return f"{_NOMES_MES[mes]}/{ano}"
+
 
 def _meses_periodo(ano_ini, mes_ini, ano_fim, mes_fim):
-    """Gera lista de tuplas (ano, mes) entre dois períodos inclusive."""
+    """Lista de (ano, mes) entre dois períodos, inclusive. Suporta multi-ano."""
     meses = []
     a, m = ano_ini, mes_ini
-    while (a, m) <= (ano_fim, mes_fim):
+    # trava de segurança: máx 120 meses (10 anos)
+    for _ in range(120):
+        if (a, m) > (ano_fim, mes_fim):
+            break
         meses.append((a, m))
         m += 1
         if m > 12:
-            m = 1
-            a += 1
+            m, a = 1, a + 1
     return meses
 
 
-def _label_mes(ano, mes):
-    """Retorna label amigável: 'Jan/2026'."""
-    nomes = [
-        '', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-        'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
-    ]
-    return f"{nomes[mes]}/{ano}"
+def _pct(parte, total) -> Decimal:
+    parte, total = _D(parte), _D(total)
+    if total == ZERO:
+        return ZERO
+    return ((parte / total) * 100).quantize(CENTAVO, rounding=ROUND_HALF_UP)
 
 
-def _pct(parte, total):
-    """Calcula percentual seguro (evita divisão por zero)."""
-    if not total or total == 0:
-        return Decimal('0.00')
-    return round((parte / total) * 100, 2)
+def _variacao_pct(atual, anterior) -> Decimal:
+    atual, anterior = _D(atual), _D(anterior)
+    if anterior == ZERO:
+        return Decimal("100.00") if atual > ZERO else ZERO
+    return (((atual - anterior) / anterior) * 100).quantize(
+        CENTAVO, rounding=ROUND_HALF_UP
+    )
 
 
-def _variacao_pct(atual, anterior):
-    """Calcula variação percentual entre dois valores."""
-    if not anterior or anterior == 0:
-        if atual and atual > 0:
-            return Decimal('100.00')
-        return Decimal('0.00')
-    return round(((atual - anterior) / anterior) * 100, 2)
+# ─────────────────────────────────────────────────────────────
+# VALIDAÇÃO E NORMALIZAÇÃO DE PARÂMETROS
+# ─────────────────────────────────────────────────────────────
+
+def _normalizar_periodo(ano_ini, mes_ini, ano_fim=None, mes_fim=None):
+    """Valida e normaliza um período. Levanta ValueError se inválido."""
+    ano_fim = ano_fim if ano_fim is not None else ano_ini
+    mes_fim = mes_fim if mes_fim is not None else mes_ini
+
+    for nome, mes in (("mes_ini", mes_ini), ("mes_fim", mes_fim)):
+        if not (1 <= int(mes) <= 12):
+            raise ValueError(f"{nome} inválido: {mes} (esperado 1..12)")
+
+    if (ano_ini, mes_ini) > (ano_fim, mes_fim):
+        raise ValueError("Período inicial não pode ser maior que o final.")
+
+    return int(ano_ini), int(mes_ini), int(ano_fim), int(mes_fim)
 
 
-# ═══════════════════════════════════════════════════════
-# 1. QUANTITATIVO
-# ═══════════════════════════════════════════════════════
+def _normalizar_contratos(contrato_ids):
+    """Remove duplicados e valores falsy, garante lista de ints."""
+    return sorted({int(c) for c in (contrato_ids or []) if c})
 
-def relatorio_quantitativo(contrato_ids, ano, mes_ini, mes_fim):
+
+# ─────────────────────────────────────────────────────────────
+# MAPAS EM LOTE (núcleo da performance)
+# ─────────────────────────────────────────────────────────────
+
+def _filtro_itens(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim):
     """
-    Retorna dados quantitativos de compras por categoria e período.
-
-    Returns:
-        dict com:
-        - resumo_geral: totais por categoria
-        - por_mes: lista mês a mês com quantidades e valores
-        - top_materiais: materiais mais comprados
-        - por_contrato: breakdown por contrato
+    Filtro de ItemPedido por período multi-ano.
+    Usa data_pedido (DateTimeField). Para multi-ano, filtramos por
+    intervalo de datas no nível de mês.
     """
-    meses = _meses_periodo(ano, mes_ini, ano, mes_fim)
+    from django.db.models import Q
 
-    # ── Base query: Itens de pedidos com status de compra ──
-    itens_base = ItemPedido.objects.filter(
+    di = date(ano_ini, mes_ini, 1)
+    # primeiro dia do mês seguinte ao fim
+    if mes_fim == 12:
+        df = date(ano_fim + 1, 1, 1)
+    else:
+        df = date(ano_fim, mes_fim + 1, 1)
+
+    return Q(
         pedido__contrato_id__in=contrato_ids,
         pedido__status__in=STATUS_COMPRA,
-        pedido__data_pedido__year=ano,
-        pedido__data_pedido__month__gte=mes_ini,
-        pedido__data_pedido__month__lte=mes_fim,
-    ).select_related('material', 'pedido__contrato')
+        pedido__data_pedido__date__gte=di,
+        pedido__data_pedido__date__lt=df,
+    )
 
-    # ── Resumo geral por categoria ──
+
+def _mapa_gasto(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim):
+    """
+    1 QUERY → mapa[(contrato_id, ano, mes, categoria)] = {'valor':.., 'qtd':..}
+    """
+    qs = (
+        ItemPedido.objects
+        .filter(_filtro_itens(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim))
+        .values(
+            "pedido__contrato_id",
+            "pedido__data_pedido__year",
+            "pedido__data_pedido__month",
+            "material__classificacao",
+        )
+        .annotate(
+            valor=Coalesce(Sum("valor_total"), Value(ZERO), output_field=DEC),
+            qtd=Coalesce(Sum("quantidade"), Value(0), output_field=INT),
+            n_itens=Count("id"),
+            n_pedidos=Count("pedido", distinct=True),
+        )
+    )
+    mapa = {}
+    for r in qs:
+        chave = (
+            r["pedido__contrato_id"],
+            r["pedido__data_pedido__year"],
+            r["pedido__data_pedido__month"],
+            r["material__classificacao"],
+        )
+        mapa[chave] = {
+            "valor": _D(r["valor"]),
+            "qtd": int(r["qtd"] or 0),
+            "n_itens": r["n_itens"],
+            "n_pedidos": r["n_pedidos"],
+        }
+    return mapa
+
+
+def _mapa_verba(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim):
+    """
+    1 QUERY → mapa[(contrato_id, ano, mes, categoria)] = Decimal(verba)
+    """
+    from django.db.models import Q
+
+    # Filtro multi-ano por (ano, mes)
+    filtro = Q()
+    for a, m in _meses_periodo(ano_ini, mes_ini, ano_fim, mes_fim):
+        filtro |= Q(ano=a, mes=m)
+    if not filtro:
+        return {}
+
+    qs = (
+        VerbaContrato.objects
+        .filter(filtro, contrato_id__in=contrato_ids)
+        .values("contrato_id", "ano", "mes")
+        .annotate(
+            epi=Coalesce(Sum("verba_epi"), Value(ZERO), output_field=DEC),
+            consumo=Coalesce(Sum("verba_consumo"), Value(ZERO), output_field=DEC),
+            ferramenta=Coalesce(Sum("verba_ferramenta"), Value(ZERO), output_field=DEC),
+        )
+    )
+    mapa = {}
+    for r in qs:
+        base = (r["contrato_id"], r["ano"], r["mes"])
+        mapa[(*base, CategoriaMaterial.EPI)] = _D(r["epi"])
+        mapa[(*base, CategoriaMaterial.CONSUMO)] = _D(r["consumo"])
+        mapa[(*base, CategoriaMaterial.FERRAMENTA)] = _D(r["ferramenta"])
+    return mapa
+
+
+def _g(mapa_gasto, cid, ano, mes, cod):
+    """Acesso seguro ao gasto."""
+    return mapa_gasto.get((cid, ano, mes, cod), {}).get("valor", ZERO)
+
+
+def _v(mapa_verba, cid, ano, mes, cod):
+    """Acesso seguro à verba."""
+    return mapa_verba.get((cid, ano, mes, cod), ZERO)
+
+
+# ═════════════════════════════════════════════════════════════
+# 1. QUANTITATIVO
+# ═════════════════════════════════════════════════════════════
+
+def relatorio_quantitativo(contrato_ids, ano, mes_ini, mes_fim, ano_fim=None):
+    contrato_ids = _normalizar_contratos(contrato_ids)
+    ano_ini, mes_ini, ano_fim, mes_fim = _normalizar_periodo(
+        ano, mes_ini, ano_fim, mes_fim
+    )
+    if not contrato_ids:
+        return _quantitativo_vazio()
+
+    meses = _meses_periodo(ano_ini, mes_ini, ano_fim, mes_fim)
+    mapa = _mapa_gasto(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim)
+
+    # ── Resumo geral por categoria (agrega o mapa) ──
+    acc = {cod: {"valor": ZERO, "qtd": 0, "n_itens": 0, "pedidos": set()}
+           for cod in CODS}
+    for (cid, a, m, cod), v in mapa.items():
+        if cod in acc:
+            acc[cod]["valor"] += v["valor"]
+            acc[cod]["qtd"] += v["qtd"]
+            acc[cod]["n_itens"] += v["n_itens"]
+            acc[cod]["pedidos"].add((cid, a, m))
+
     resumo_geral = []
     for cod, label in CATEGORIAS:
-        qs = itens_base.filter(material__classificacao=cod)
-        agg = qs.aggregate(
-            total_qtd=Coalesce(Sum('quantidade'), 0),
-            total_valor=Coalesce(Sum('valor_total'), ZERO, output_field=DecimalField()),
-            total_itens=Count('id'),
-            total_pedidos=Count('pedido', distinct=True),
-        )
+        d = acc[cod]
         resumo_geral.append({
-            'categoria': cod,
-            'categoria_label': label,
-            'qtd_itens_linha': agg['total_itens'],
-            'qtd_pedidos': agg['total_pedidos'],
-            'qtd_unidades': agg['total_qtd'],
-            'valor_total': agg['total_valor'],
+            "categoria": cod,
+            "categoria_label": label,
+            "qtd_itens_linha": d["n_itens"],
+            "qtd_unidades": d["qtd"],
+            "valor_total": _q(d["valor"]),
         })
-
-    total_geral_valor = sum(r['valor_total'] for r in resumo_geral)
+    total_geral = sum((r["valor_total"] for r in resumo_geral), ZERO)
     for r in resumo_geral:
-        r['pct_valor'] = _pct(r['valor_total'], total_geral_valor)
+        r["pct_valor"] = _pct(r["valor_total"], total_geral)
 
     # ── Por mês ──
     por_mes = []
     for a, m in meses:
-        itens_mes = itens_base.filter(
-            pedido__data_pedido__year=a,
-            pedido__data_pedido__month=m,
-        )
-        dados_mes = {'label': _label_mes(a, m), 'ano': a, 'mes': m}
+        d = {"label": _label_mes(a, m), "ano": a, "mes": m}
         total_mes = ZERO
-        for cod, label in CATEGORIAS:
-            agg = itens_mes.filter(material__classificacao=cod).aggregate(
-                qtd=Coalesce(Sum('quantidade'), 0),
-                valor=Coalesce(Sum('valor_total'), ZERO, output_field=DecimalField()),
-            )
-            dados_mes[f'qtd_{cod.lower()}'] = agg['qtd']
-            dados_mes[f'valor_{cod.lower()}'] = agg['valor']
-            total_mes += agg['valor']
-        dados_mes['valor_total'] = total_mes
-        por_mes.append(dados_mes)
+        for cod, _label in CATEGORIAS:
+            val = ZERO
+            qtd = 0
+            for cid in contrato_ids:
+                cell = mapa.get((cid, a, m, cod))
+                if cell:
+                    val += cell["valor"]
+                    qtd += cell["qtd"]
+            d[f"valor_{cod.lower()}"] = _q(val)
+            d[f"qtd_{cod.lower()}"] = qtd
+            total_mes += val
+        d["valor_total"] = _q(total_mes)
+        por_mes.append(d)
 
-    # ── Top 15 materiais mais comprados ──
-    top_materiais = (
-        itens_base
-        .values('material__descricao', 'material__classificacao', 'material__unidade')
+    # ── Top materiais (1 QUERY dedicada) ──
+    top_materiais = list(
+        ItemPedido.objects
+        .filter(_filtro_itens(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim))
+        .values("material__descricao", "material__classificacao", "material__unidade")
         .annotate(
-            qtd_total=Sum('quantidade'),
-            valor_total=Sum('valor_total'),
-            vezes_pedido=Count('pedido', distinct=True),
+            qtd_total=Coalesce(Sum("quantidade"), Value(0), output_field=INT),
+            valor_total=Coalesce(Sum("valor_total"), Value(ZERO), output_field=DEC),
+            vezes_pedido=Count("pedido", distinct=True),
         )
-        .order_by('-valor_total')[:15]
+        .order_by("-valor_total")[:15]
     )
 
-    # ── Breakdown por contrato ──
+    # ── Por contrato ──
+    contratos = {c.id: c for c in Contrato.objects.filter(id__in=contrato_ids)}
     por_contrato = []
-    contratos = Contrato.objects.filter(id__in=contrato_ids, ativo=True)
-    for contrato in contratos:
-        itens_ct = itens_base.filter(pedido__contrato=contrato)
-        dados_ct = {
-            'contrato': f"{contrato.cm} — {contrato.cliente}",
-            'contrato_id': contrato.id,
-        }
+    for cid in contrato_ids:
+        ct = contratos.get(cid)
+        if not ct:
+            continue
+        d = {"contrato": f"{ct.cm} — {ct.cliente}", "contrato_id": cid}
         total_ct = ZERO
-        for cod, label in CATEGORIAS:
-            agg = itens_ct.filter(material__classificacao=cod).aggregate(
-                valor=Coalesce(Sum('valor_total'), ZERO, output_field=DecimalField()),
-                qtd=Coalesce(Sum('quantidade'), 0),
-            )
-            dados_ct[f'valor_{cod.lower()}'] = agg['valor']
-            dados_ct[f'qtd_{cod.lower()}'] = agg['qtd']
-            total_ct += agg['valor']
-        dados_ct['valor_total'] = total_ct
+        for cod, _label in CATEGORIAS:
+            val = ZERO
+            qtd = 0
+            for a, m in meses:
+                cell = mapa.get((cid, a, m, cod))
+                if cell:
+                    val += cell["valor"]
+                    qtd += cell["qtd"]
+            d[f"valor_{cod.lower()}"] = _q(val)
+            d[f"qtd_{cod.lower()}"] = qtd
+            total_ct += val
+        d["valor_total"] = _q(total_ct)
         if total_ct > 0:
-            por_contrato.append(dados_ct)
-
-    por_contrato.sort(key=lambda x: x['valor_total'], reverse=True)
+            por_contrato.append(d)
+    por_contrato.sort(key=lambda x: x["valor_total"], reverse=True)
 
     return {
-        'resumo_geral': resumo_geral,
-        'total_geral_valor': total_geral_valor,
-        'por_mes': por_mes,
-        'top_materiais': list(top_materiais),
-        'por_contrato': por_contrato,
+        "resumo_geral": resumo_geral,
+        "total_geral_valor": _q(total_geral),
+        "por_mes": por_mes,
+        "top_materiais": top_materiais,
+        "por_contrato": por_contrato,
     }
 
 
-# ═══════════════════════════════════════════════════════
-# 2. QUALITATIVO (Verba × Gasto × Meta)
-# ═══════════════════════════════════════════════════════
+def _quantitativo_vazio():
+    return {
+        "resumo_geral": [
+            {"categoria": c, "categoria_label": l, "qtd_itens_linha": 0,
+             "qtd_unidades": 0, "valor_total": ZERO, "pct_valor": ZERO}
+            for c, l in CATEGORIAS
+        ],
+        "total_geral_valor": ZERO,
+        "por_mes": [], "top_materiais": [], "por_contrato": [],
+    }
 
-def relatorio_qualitativo(contrato_ids, ano, mes_ini, mes_fim):
+def total_periodo(contrato, inicio, fim):
     """
-    Comparação verba × gasto real por categoria, contrato e mês.
+    Soma o valor_total dos itens de pedidos efetivados de um contrato,
+    dentro do intervalo [inicio, fim].
 
-    Returns:
-        dict com:
-        - resumo_categorias: por categoria (verba, gasto, saldo, %)
-        - por_contrato_mes: tabela detalhada contrato × mês
-        - evolucao_mensal: série temporal verba vs gasto
+    Usa ItemPedido.objects (manager padrão, sem FilialManager) para
+    funcionar tanto em produção quanto em testes sem request ativo.
     """
-    meses = _meses_periodo(ano, mes_ini, ano, mes_fim)
+    total = (
+        ItemPedido.objects.filter(
+            pedido__contrato=contrato,
+            pedido__status__in=STATUS_VALIDOS,
+            pedido__data_pedido__date__gte=inicio,
+            pedido__data_pedido__date__lte=fim,
+        )
+        .aggregate(t=Sum("valor_total"))["t"]
+    )
+    return total or Decimal("0.00")
+
+def total_por_tipo(contrato, inicio, fim):
+    """
+    Agrupa o valor_total por `material.tipo` (CIVIL, ELETRICA, EPI...).
+    Retorna dict {tipo: Decimal}. Tipos sem movimento não aparecem.
+    """
+    qs = (
+        ItemPedido.objects.filter(
+            pedido__contrato=contrato,
+            pedido__status__in=STATUS_VALIDOS,
+            pedido__data_pedido__date__gte=inicio,
+            pedido__data_pedido__date__lte=fim,
+        )
+        .values("material__tipo")
+        .annotate(total=Sum("valor_total"))
+    )
+    return {
+        row["material__tipo"]: (row["total"] or Decimal("0.00"))
+        for row in qs
+    }
+
+# ═════════════════════════════════════════════════════════════
+# 2. QUALITATIVO (Verba × Gasto)
+# ═════════════════════════════════════════════════════════════
+
+def relatorio_qualitativo(contrato_ids, ano, mes_ini, mes_fim, ano_fim=None):
+    contrato_ids = _normalizar_contratos(contrato_ids)
+    ano_ini, mes_ini, ano_fim, mes_fim = _normalizar_periodo(
+        ano, mes_ini, ano_fim, mes_fim
+    )
+    if not contrato_ids:
+        return _qualitativo_vazio()
+
+    meses = _meses_periodo(ano_ini, mes_ini, ano_fim, mes_fim)
+    mg = _mapa_gasto(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim)
+    mv = _mapa_verba(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim)
 
     # ── Resumo por categoria (período inteiro) ──
     resumo_categorias = []
     total_verba_geral = ZERO
     total_gasto_geral = ZERO
-
     for cod, label in CATEGORIAS:
-        campo_verba = f'verba_{cod.lower()}'
-
-        # Verba total
-        verba = VerbaContrato.objects.filter(
-            contrato_id__in=contrato_ids,
-            ano=ano, mes__gte=mes_ini, mes__lte=mes_fim,
-        ).aggregate(
-            total=Coalesce(Sum(campo_verba), ZERO, output_field=DecimalField())
-        )['total']
-
-        # Gasto total
-        gasto = ItemPedido.objects.filter(
-            pedido__contrato_id__in=contrato_ids,
-            pedido__status__in=STATUS_COMPRA,
-            pedido__data_pedido__year=ano,
-            pedido__data_pedido__month__gte=mes_ini,
-            pedido__data_pedido__month__lte=mes_fim,
-            material__classificacao=cod,
-        ).aggregate(
-            total=Coalesce(Sum('valor_total'), ZERO, output_field=DecimalField())
-        )['total']
-
+        verba = sum(
+            (_v(mv, cid, a, m, cod) for cid in contrato_ids for a, m in meses),
+            ZERO,
+        )
+        gasto = sum(
+            (_g(mg, cid, a, m, cod) for cid in contrato_ids for a, m in meses),
+            ZERO,
+        )
         saldo = verba - gasto
-        pct_uso = _pct(gasto, verba)
-
+        pct = _pct(gasto, verba)
         resumo_categorias.append({
-            'categoria': cod,
-            'categoria_label': label,
-            'verba': verba,
-            'gasto': gasto,
-            'saldo': saldo,
-            'pct_uso': pct_uso,
-            'status': 'acima' if saldo < 0 else ('alerta' if pct_uso >= 80 else 'ok'),
+            "categoria": cod, "categoria_label": label,
+            "verba": _q(verba), "gasto": _q(gasto), "saldo": _q(saldo),
+            "pct_uso": pct,
+            "status": "acima" if saldo < 0 else ("alerta" if pct >= 80 else "ok"),
         })
         total_verba_geral += verba
         total_gasto_geral += gasto
 
-    # ── Evolução mensal (verba vs gasto) ──
+    # ── Evolução mensal ──
     evolucao_mensal = []
     for a, m in meses:
-        dado = {'label': _label_mes(a, m), 'ano': a, 'mes': m}
-        for cod, label in CATEGORIAS:
-            campo_verba = f'verba_{cod.lower()}'
-            verba_mes = VerbaContrato.objects.filter(
-                contrato_id__in=contrato_ids, ano=a, mes=m,
-            ).aggregate(
-                total=Coalesce(Sum(campo_verba), ZERO, output_field=DecimalField())
-            )['total']
+        d = {"label": _label_mes(a, m), "ano": a, "mes": m}
+        vt = gt = ZERO
+        for cod, _label in CATEGORIAS:
+            verba = sum((_v(mv, cid, a, m, cod) for cid in contrato_ids), ZERO)
+            gasto = sum((_g(mg, cid, a, m, cod) for cid in contrato_ids), ZERO)
+            d[f"verba_{cod.lower()}"] = _q(verba)
+            d[f"gasto_{cod.lower()}"] = _q(gasto)
+            d[f"saldo_{cod.lower()}"] = _q(verba - gasto)
+            vt += verba
+            gt += gasto
+        d["verba_total"] = _q(vt)
+        d["gasto_total"] = _q(gt)
+        d["saldo_total"] = _q(vt - gt)
+        evolucao_mensal.append(d)
 
-            gasto_mes = ItemPedido.objects.filter(
-                pedido__contrato_id__in=contrato_ids,
-                pedido__status__in=STATUS_COMPRA,
-                pedido__data_pedido__year=a,
-                pedido__data_pedido__month=m,
-                material__classificacao=cod,
-            ).aggregate(
-                total=Coalesce(Sum('valor_total'), ZERO, output_field=DecimalField())
-            )['total']
-
-            dado[f'verba_{cod.lower()}'] = verba_mes
-            dado[f'gasto_{cod.lower()}'] = gasto_mes
-            dado[f'saldo_{cod.lower()}'] = verba_mes - gasto_mes
-
-        dado['verba_total'] = sum(
-            dado[f'verba_{c.lower()}'] for c, _ in CATEGORIAS
-        )
-        dado['gasto_total'] = sum(
-            dado[f'gasto_{c.lower()}'] for c, _ in CATEGORIAS
-        )
-        dado['saldo_total'] = dado['verba_total'] - dado['gasto_total']
-        evolucao_mensal.append(dado)
-
-    # ── Por contrato (período inteiro) ──
+    # ── Por contrato ──
+    contratos = {c.id: c for c in Contrato.objects.filter(id__in=contrato_ids)}
     por_contrato = []
-    contratos = Contrato.objects.filter(id__in=contrato_ids, ativo=True)
-    for contrato in contratos:
-        dados_ct = {
-            'contrato': f"{contrato.cm} — {contrato.cliente}",
-            'contrato_id': contrato.id,
-            'categorias': [],
-        }
-        total_verba_ct = ZERO
-        total_gasto_ct = ZERO
-
+    for cid in contrato_ids:
+        ct = contratos.get(cid)
+        if not ct:
+            continue
+        d = {"contrato": f"{ct.cm} — {ct.cliente}",
+             "contrato_id": cid, "categorias": []}
+        vct = gct = ZERO
         for cod, label in CATEGORIAS:
-            campo_verba = f'verba_{cod.lower()}'
-            verba_ct = VerbaContrato.objects.filter(
-                contrato=contrato, ano=ano,
-                mes__gte=mes_ini, mes__lte=mes_fim,
-            ).aggregate(
-                total=Coalesce(Sum(campo_verba), ZERO, output_field=DecimalField())
-            )['total']
-
-            gasto_ct = ItemPedido.objects.filter(
-                pedido__contrato=contrato,
-                pedido__status__in=STATUS_COMPRA,
-                pedido__data_pedido__year=ano,
-                pedido__data_pedido__month__gte=mes_ini,
-                pedido__data_pedido__month__lte=mes_fim,
-                material__classificacao=cod,
-            ).aggregate(
-                total=Coalesce(Sum('valor_total'), ZERO, output_field=DecimalField())
-            )['total']
-
-            saldo_ct = verba_ct - gasto_ct
-            dados_ct['categorias'].append({
-                'categoria': cod,
-                'categoria_label': label,
-                'verba': verba_ct,
-                'gasto': gasto_ct,
-                'saldo': saldo_ct,
-                'pct_uso': _pct(gasto_ct, verba_ct),
+            verba = sum((_v(mv, cid, a, m, cod) for a, m in meses), ZERO)
+            gasto = sum((_g(mg, cid, a, m, cod) for a, m in meses), ZERO)
+            d["categorias"].append({
+                "categoria": cod, "categoria_label": label,
+                "verba": _q(verba), "gasto": _q(gasto),
+                "saldo": _q(verba - gasto), "pct_uso": _pct(gasto, verba),
             })
-            total_verba_ct += verba_ct
-            total_gasto_ct += gasto_ct
-
-        dados_ct['verba_total'] = total_verba_ct
-        dados_ct['gasto_total'] = total_gasto_ct
-        dados_ct['saldo_total'] = total_verba_ct - total_gasto_ct
-        por_contrato.append(dados_ct)
+            vct += verba
+            gct += gasto
+        d["verba_total"] = _q(vct)
+        d["gasto_total"] = _q(gct)
+        d["saldo_total"] = _q(vct - gct)
+        por_contrato.append(d)
 
     return {
-        'resumo_categorias': resumo_categorias,
-        'total_verba_geral': total_verba_geral,
-        'total_gasto_geral': total_gasto_geral,
-        'saldo_geral': total_verba_geral - total_gasto_geral,
-        'pct_uso_geral': _pct(total_gasto_geral, total_verba_geral),
-        'evolucao_mensal': evolucao_mensal,
-        'por_contrato': por_contrato,
+        "resumo_categorias": resumo_categorias,
+        "total_verba_geral": _q(total_verba_geral),
+        "total_gasto_geral": _q(total_gasto_geral),
+        "saldo_geral": _q(total_verba_geral - total_gasto_geral),
+        "pct_uso_geral": _pct(total_gasto_geral, total_verba_geral),
+        "evolucao_mensal": evolucao_mensal,
+        "por_contrato": por_contrato,
     }
 
 
-# ═══════════════════════════════════════════════════════
-# 3. GASTOS ACIMA DA META (Alertas)
-# ═══════════════════════════════════════════════════════
+def _qualitativo_vazio():
+    return {
+        "resumo_categorias": [
+            {"categoria": c, "categoria_label": l, "verba": ZERO, "gasto": ZERO,
+             "saldo": ZERO, "pct_uso": ZERO, "status": "ok"}
+            for c, l in CATEGORIAS
+        ],
+        "total_verba_geral": ZERO, "total_gasto_geral": ZERO,
+        "saldo_geral": ZERO, "pct_uso_geral": ZERO,
+        "evolucao_mensal": [], "por_contrato": [],
+    }
 
-def relatorio_alertas(contrato_ids, ano, mes_ini, mes_fim):
-    """
-    Identifica todos os desvios: meses/categorias/contratos
-    onde o gasto ultrapassou a verba.
 
-    Returns:
-        dict com:
-        - alertas: lista de desvios (contrato, mês, cat, verba, gasto, excesso)
-        - resumo_excesso: totais de excesso por categoria
-        - contratos_criticos: contratos com mais desvios
-    """
-    meses = _meses_periodo(ano, mes_ini, ano, mes_fim)
+# ═════════════════════════════════════════════════════════════
+# 3. ALERTAS (Gastos acima da meta)
+# ═════════════════════════════════════════════════════════════
+
+def relatorio_alertas(contrato_ids, ano, mes_ini, mes_fim, ano_fim=None):
+    contrato_ids = _normalizar_contratos(contrato_ids)
+    ano_ini, mes_ini, ano_fim, mes_fim = _normalizar_periodo(
+        ano, mes_ini, ano_fim, mes_fim
+    )
+    if not contrato_ids:
+        return {"alertas": [], "total_alertas": 0, "total_excesso_geral": ZERO,
+                "resumo_excesso": [], "contratos_criticos": []}
+
+    meses = _meses_periodo(ano_ini, mes_ini, ano_fim, mes_fim)
+    mg = _mapa_gasto(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim)
+    mv = _mapa_verba(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim)
+    contratos = {c.id: c for c in Contrato.objects.filter(id__in=contrato_ids)}
+
     alertas = []
     excesso_por_cat = defaultdict(lambda: ZERO)
     desvios_por_contrato = defaultdict(int)
 
-    contratos = Contrato.objects.filter(id__in=contrato_ids, ativo=True)
+    # Itera SÓ sobre as chaves de verba existentes (não produto cartesiano)
+    for (cid, a, m, cod) in mv.keys():
+        if (a, m) not in meses or cid not in contratos:
+            continue
+        verba = _v(mv, cid, a, m, cod)
+        if verba <= 0:
+            continue
+        gasto = _g(mg, cid, a, m, cod)
+        if gasto > verba:
+            excesso = gasto - verba
+            pct = _pct(excesso, verba)
+            ct = contratos[cid]
+            alertas.append({
+                "contrato": f"{ct.cm} — {ct.cliente}", "contrato_id": cid,
+                "mes_label": _label_mes(a, m), "ano": a, "mes": m,
+                "categoria": cod,
+                "categoria_label": dict(CATEGORIAS)[cod],
+                "verba": _q(verba), "gasto": _q(gasto), "excesso": _q(excesso),
+                "pct_excesso": pct,
+                "severidade": ("critico" if pct > 30
+                               else "alto" if pct > 15 else "moderado"),
+            })
+            excesso_por_cat[cod] += excesso
+            desvios_por_contrato[ct.cm] += 1
 
-    for contrato in contratos:
-        for a, m in meses:
-            for cod, label in CATEGORIAS:
-                campo_verba = f'verba_{cod.lower()}'
+    alertas.sort(key=lambda x: x["excesso"], reverse=True)
 
-                verba = VerbaContrato.objects.filter(
-                    contrato=contrato, ano=a, mes=m,
-                ).aggregate(
-                    total=Coalesce(Sum(campo_verba), ZERO, output_field=DecimalField())
-                )['total']
-
-                gasto = ItemPedido.objects.filter(
-                    pedido__contrato=contrato,
-                    pedido__status__in=STATUS_COMPRA,
-                    pedido__data_pedido__year=a,
-                    pedido__data_pedido__month=m,
-                    material__classificacao=cod,
-                ).aggregate(
-                    total=Coalesce(Sum('valor_total'), ZERO, output_field=DecimalField())
-                )['total']
-
-                if gasto > verba and verba > 0:
-                    excesso = gasto - verba
-                    pct_excesso = _pct(excesso, verba)
-                    alertas.append({
-                        'contrato': f"{contrato.cm} — {contrato.cliente}",
-                        'contrato_id': contrato.id,
-                        'mes_label': _label_mes(a, m),
-                        'ano': a,
-                        'mes': m,
-                        'categoria': cod,
-                        'categoria_label': label,
-                        'verba': verba,
-                        'gasto': gasto,
-                        'excesso': excesso,
-                        'pct_excesso': pct_excesso,
-                        'severidade': (
-                            'critico' if pct_excesso > 30
-                            else 'alto' if pct_excesso > 15
-                            else 'moderado'
-                        ),
-                    })
-                    excesso_por_cat[cod] += excesso
-                    desvios_por_contrato[contrato.cm] += 1
-
-    # Ordenar por excesso (maior primeiro)
-    alertas.sort(key=lambda x: x['excesso'], reverse=True)
-
-    # Resumo excesso por categoria
     resumo_excesso = [
-        {
-            'categoria': cod,
-            'categoria_label': label,
-            'total_excesso': excesso_por_cat.get(cod, ZERO),
-        }
-        for cod, label in CATEGORIAS
+        {"categoria": c, "categoria_label": l,
+         "total_excesso": _q(excesso_por_cat.get(c, ZERO))}
+        for c, l in CATEGORIAS
     ]
-
-    # Contratos com mais desvios
     contratos_criticos = sorted(
-        [{'contrato': k, 'desvios': v} for k, v in desvios_por_contrato.items()],
-        key=lambda x: x['desvios'], reverse=True
+        ({"contrato": k, "desvios": v} for k, v in desvios_por_contrato.items()),
+        key=lambda x: x["desvios"], reverse=True,
     )[:10]
 
     return {
-        'alertas': alertas,
-        'total_alertas': len(alertas),
-        'total_excesso_geral': sum(excesso_por_cat.values(), ZERO),
-        'resumo_excesso': resumo_excesso,
-        'contratos_criticos': contratos_criticos,
+        "alertas": alertas,
+        "total_alertas": len(alertas),
+        "total_excesso_geral": _q(sum(excesso_por_cat.values(), ZERO)),
+        "resumo_excesso": resumo_excesso,
+        "contratos_criticos": contratos_criticos,
     }
 
 
-# ═══════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════
 # 4. ECONOMIAS
-# ═══════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════
 
-def relatorio_economias(contrato_ids, ano, mes_ini, mes_fim):
-    """
-    Identifica onde sobrou verba (economia real).
+def relatorio_economias(contrato_ids, ano, mes_ini, mes_fim, ano_fim=None):
+    contrato_ids = _normalizar_contratos(contrato_ids)
+    ano_ini, mes_ini, ano_fim, mes_fim = _normalizar_periodo(
+        ano, mes_ini, ano_fim, mes_fim
+    )
+    if not contrato_ids:
+        return {"economias": [], "total_economias": 0,
+                "total_economia_geral": ZERO, "resumo_economia": [],
+                "ranking_contratos": []}
 
-    Returns:
-        dict com:
-        - economias: lista por contrato/mês/cat com verba sobrando
-        - resumo_economia: totais economizados por categoria
-        - ranking_contratos: contratos que mais economizaram
-    """
-    meses = _meses_periodo(ano, mes_ini, ano, mes_fim)
+    meses = _meses_periodo(ano_ini, mes_ini, ano_fim, mes_fim)
+    mg = _mapa_gasto(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim)
+    mv = _mapa_verba(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim)
+    contratos = {c.id: c for c in Contrato.objects.filter(id__in=contrato_ids)}
+
     economias = []
     economia_por_cat = defaultdict(lambda: ZERO)
     economia_por_contrato = defaultdict(lambda: ZERO)
 
-    contratos = Contrato.objects.filter(id__in=contrato_ids, ativo=True)
+    for (cid, a, m, cod) in mv.keys():
+        if (a, m) not in meses or cid not in contratos:
+            continue
+        verba = _v(mv, cid, a, m, cod)
+        if verba <= 0:
+            continue
+        gasto = _g(mg, cid, a, m, cod)
+        if gasto < verba:
+            economia = verba - gasto
+            ct = contratos[cid]
+            economias.append({
+                "contrato": f"{ct.cm} — {ct.cliente}", "contrato_id": cid,
+                "mes_label": _label_mes(a, m), "ano": a, "mes": m,
+                "categoria": cod, "categoria_label": dict(CATEGORIAS)[cod],
+                "verba": _q(verba), "gasto": _q(gasto),
+                "economia": _q(economia), "pct_economia": _pct(economia, verba),
+            })
+            economia_por_cat[cod] += economia
+            economia_por_contrato[ct.cm] += economia
 
-    for contrato in contratos:
-        for a, m in meses:
-            for cod, label in CATEGORIAS:
-                campo_verba = f'verba_{cod.lower()}'
-
-                verba = VerbaContrato.objects.filter(
-                    contrato=contrato, ano=a, mes=m,
-                ).aggregate(
-                    total=Coalesce(Sum(campo_verba), ZERO, output_field=DecimalField())
-                )['total']
-
-                gasto = ItemPedido.objects.filter(
-                    pedido__contrato=contrato,
-                    pedido__status__in=STATUS_COMPRA,
-                    pedido__data_pedido__year=a,
-                    pedido__data_pedido__month=m,
-                    material__classificacao=cod,
-                ).aggregate(
-                    total=Coalesce(Sum('valor_total'), ZERO, output_field=DecimalField())
-                )['total']
-
-                if verba > 0 and gasto < verba:
-                    economia = verba - gasto
-                    pct_economia = _pct(economia, verba)
-                    economias.append({
-                        'contrato': f"{contrato.cm} — {contrato.cliente}",
-                        'contrato_id': contrato.id,
-                        'mes_label': _label_mes(a, m),
-                        'ano': a,
-                        'mes': m,
-                        'categoria': cod,
-                        'categoria_label': label,
-                        'verba': verba,
-                        'gasto': gasto,
-                        'economia': economia,
-                        'pct_economia': pct_economia,
-                    })
-                    economia_por_cat[cod] += economia
-                    economia_por_contrato[contrato.cm] += economia
-
-    economias.sort(key=lambda x: x['economia'], reverse=True)
+    economias.sort(key=lambda x: x["economia"], reverse=True)
 
     resumo_economia = [
-        {
-            'categoria': cod,
-            'categoria_label': label,
-            'total_economia': economia_por_cat.get(cod, ZERO),
-        }
-        for cod, label in CATEGORIAS
+        {"categoria": c, "categoria_label": l,
+         "total_economia": _q(economia_por_cat.get(c, ZERO))}
+        for c, l in CATEGORIAS
     ]
-
     ranking_contratos = sorted(
-        [{'contrato': k, 'economia': v} for k, v in economia_por_contrato.items()],
-        key=lambda x: x['economia'], reverse=True
+        ({"contrato": k, "economia": _q(v)}
+         for k, v in economia_por_contrato.items()),
+        key=lambda x: x["economia"], reverse=True,
     )[:10]
 
     return {
-        'economias': economias,
-        'total_economias': len(economias),
-        'total_economia_geral': sum(economia_por_cat.values(), ZERO),
-        'resumo_economia': resumo_economia,
-        'ranking_contratos': ranking_contratos,
+        "economias": economias,
+        "total_economias": len(economias),
+        "total_economia_geral": _q(sum(economia_por_cat.values(), ZERO)),
+        "resumo_economia": resumo_economia,
+        "ranking_contratos": ranking_contratos,
     }
 
 
-# ═══════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════
 # 5. ESTIMATIVAS / PROJEÇÕES
-# ═══════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════
 
-def relatorio_estimativas(contrato_ids, ano, mes_atual):
-    """
-    Projeta gastos para os próximos meses baseado na média histórica.
+def relatorio_estimativas(contrato_ids, ano, mes_atual, n_historico=6, n_proj=6):
+    contrato_ids = _normalizar_contratos(contrato_ids)
+    if not (1 <= int(mes_atual) <= 12):
+        raise ValueError(f"mes_atual inválido: {mes_atual}")
+    if not contrato_ids:
+        return {"media_por_categoria": {}, "historico_mensal": [],
+                "projecao": [], "meses_historico_labels": []}
 
-    Usa média móvel dos últimos 6 meses e compara com verba planejada.
-
-    Returns:
-        dict com:
-        - media_mensal: gasto médio por categoria (últimos 6 meses)
-        - projecao: próximos 6 meses com gasto estimado vs verba
-        - tendencia: se está subindo ou descendo
-    """
-    # Últimos 6 meses de gasto real
-    meses_historico = []
+    # Histórico: n meses ANTERIORES a (ano, mes_atual)
+    meses_hist = []
     a, m = ano, mes_atual
-    for _ in range(6):
+    for _ in range(n_historico):
         m -= 1
         if m <= 0:
-            m = 12
-            a -= 1
-        meses_historico.append((a, m))
-    meses_historico.reverse()
+            m, a = 12, a - 1
+        meses_hist.append((a, m))
+    meses_hist.reverse()
 
-    # Calcular média por categoria
+    ano_ini, mes_ini = meses_hist[0]
+    ano_fim, mes_fim = meses_hist[-1]
+    mg = _mapa_gasto(contrato_ids, ano_ini, mes_ini, ano_fim, mes_fim)
+
+    # gasto total por (ano, mes, cod) somando contratos
+    def gasto_mes(a, m, cod):
+        return sum((_g(mg, cid, a, m, cod) for cid in contrato_ids), ZERO)
+
     media_por_cat = {}
-    historico_mensal = []
-
     for cod, label in CATEGORIAS:
-        gastos_hist = []
-        for ah, mh in meses_historico:
-            gasto = ItemPedido.objects.filter(
-                pedido__contrato_id__in=contrato_ids,
-                pedido__status__in=STATUS_COMPRA,
-                pedido__data_pedido__year=ah,
-                pedido__data_pedido__month=mh,
-                material__classificacao=cod,
-            ).aggregate(
-                total=Coalesce(Sum('valor_total'), ZERO, output_field=DecimalField())
-            )['total']
-            gastos_hist.append(gasto)
-
-        media = sum(gastos_hist) / len(gastos_hist) if gastos_hist else ZERO
-        media_por_cat[cod] = {
-            'media': round(media, 2),
-            'label': label,
-            'historico': gastos_hist,
-            'min': min(gastos_hist) if gastos_hist else ZERO,
-            'max': max(gastos_hist) if gastos_hist else ZERO,
+        hist = [gasto_mes(ah, mh, cod) for ah, mh in meses_hist]
+        n = len(hist) or 1
+        media = (sum(hist, ZERO) / n)
+        info = {
+            "media": _q(media), "label": label,
+            "historico": [_q(x) for x in hist],
+            "min": _q(min(hist)) if hist else ZERO,
+            "max": _q(max(hist)) if hist else ZERO,
         }
-
-        # Tendência: comparar média dos 3 últimos vs 3 primeiros
-        if len(gastos_hist) >= 6:
-            media_recente = sum(gastos_hist[3:]) / 3
-            media_antiga = sum(gastos_hist[:3]) / 3
-            media_por_cat[cod]['tendencia'] = (
-                'subindo' if media_recente > media_antiga * Decimal('1.05')
-                else 'descendo' if media_recente < media_antiga * Decimal('0.95')
-                else 'estavel'
+        if len(hist) >= 6:
+            recente = sum(hist[3:], ZERO) / 3
+            antiga = sum(hist[:3], ZERO) / 3
+            info["tendencia"] = (
+                "subindo" if recente > antiga * Decimal("1.05")
+                else "descendo" if recente < antiga * Decimal("0.95")
+                else "estavel"
             )
-            media_por_cat[cod]['variacao_tendencia'] = _variacao_pct(media_recente, media_antiga)
+            info["variacao_tendencia"] = _variacao_pct(recente, antiga)
         else:
-            media_por_cat[cod]['tendencia'] = 'insuficiente'
-            media_por_cat[cod]['variacao_tendencia'] = ZERO
+            info["tendencia"] = "insuficiente"
+            info["variacao_tendencia"] = ZERO
+        media_por_cat[cod] = info
 
-    # Histórico mensal completo (para gráfico)
-    for i, (ah, mh) in enumerate(meses_historico):
-        dado = {'label': _label_mes(ah, mh), 'ano': ah, 'mes': mh, 'tipo': 'historico'}
-        for cod, label in CATEGORIAS:
-            dado[f'gasto_{cod.lower()}'] = media_por_cat[cod]['historico'][i]
-        dado['gasto_total'] = sum(
-            dado[f'gasto_{c.lower()}'] for c, _ in CATEGORIAS
-        )
-        historico_mensal.append(dado)
+    # Histórico mensal (gráfico)
+    historico_mensal = []
+    for i, (ah, mh) in enumerate(meses_hist):
+        d = {"label": _label_mes(ah, mh), "ano": ah, "mes": mh,
+             "tipo": "historico"}
+        tot = ZERO
+        for cod, _l in CATEGORIAS:
+            val = media_por_cat[cod]["historico"][i]
+            d[f"gasto_{cod.lower()}"] = val
+            tot += val
+        d["gasto_total"] = _q(tot)
+        historico_mensal.append(d)
 
-    # Projeção próximos 6 meses
-    projecao = []
+    # Projeção: próximos n meses, comparando com verba planejada
     a_proj, m_proj = ano, mes_atual
-    for _ in range(6):
+    meses_proj = []
+    for _ in range(n_proj):
         m_proj += 1
         if m_proj > 12:
-            m_proj = 1
-            a_proj += 1
+            m_proj, a_proj = 1, a_proj + 1
+        meses_proj.append((a_proj, m_proj))
 
-        dado_proj = {
-            'label': _label_mes(a_proj, m_proj),
-            'ano': a_proj,
-            'mes': m_proj,
-            'tipo': 'projecao',
-        }
+    pa, pm = meses_proj[0]
+    pa_f, pm_f = meses_proj[-1]
+    mv_proj = _mapa_verba(contrato_ids, pa, pm, pa_f, pm_f)
 
-        total_verba_proj = ZERO
-        total_gasto_proj = ZERO
-        for cod, label in CATEGORIAS:
-            campo_verba = f'verba_{cod.lower()}'
-
-            # Verba planejada (se existir)
-            verba_plan = VerbaContrato.objects.filter(
-                contrato_id__in=contrato_ids,
-                ano=a_proj, mes=m_proj,
-            ).aggregate(
-                total=Coalesce(Sum(campo_verba), ZERO, output_field=DecimalField())
-            )['total']
-
-            gasto_est = media_por_cat[cod]['media']
-            saldo_est = verba_plan - gasto_est
-
-            dado_proj[f'verba_{cod.lower()}'] = verba_plan
-            dado_proj[f'gasto_{cod.lower()}'] = gasto_est
-            dado_proj[f'saldo_{cod.lower()}'] = saldo_est
-            total_verba_proj += verba_plan
-            total_gasto_proj += gasto_est
-
-        dado_proj['verba_total'] = total_verba_proj
-        dado_proj['gasto_total'] = total_gasto_proj
-        dado_proj['saldo_total'] = total_verba_proj - total_gasto_proj
-        projecao.append(dado_proj)
+    projecao = []
+    for (ap, mp) in meses_proj:
+        d = {"label": _label_mes(ap, mp), "ano": ap, "mes": mp,
+             "tipo": "projecao"}
+        vt = gt = ZERO
+        for cod, _l in CATEGORIAS:
+            verba = sum((mv_proj.get((cid, ap, mp, cod), ZERO)
+                         for cid in contrato_ids), ZERO)
+            gasto = media_por_cat[cod]["media"]
+            d[f"verba_{cod.lower()}"] = _q(verba)
+            d[f"gasto_{cod.lower()}"] = _q(gasto)
+            d[f"saldo_{cod.lower()}"] = _q(verba - gasto)
+            vt += verba
+            gt += gasto
+        d["verba_total"] = _q(vt)
+        d["gasto_total"] = _q(gt)
+        d["saldo_total"] = _q(vt - gt)
+        projecao.append(d)
 
     return {
-        'media_por_categoria': media_por_cat,
-        'historico_mensal': historico_mensal,
-        'projecao': projecao,
-        'meses_historico_labels': [_label_mes(a, m) for a, m in meses_historico],
+        "media_por_categoria": media_por_cat,
+        "historico_mensal": historico_mensal,
+        "projecao": projecao,
+        "meses_historico_labels": [_label_mes(a, m) for a, m in meses_hist],
     }
 
 
-# ═══════════════════════════════════════════════════════
-# 6. CONSOLIDADO (chama todos)
-# ═══════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════
+# 6. CONSOLIDADO
+# ═════════════════════════════════════════════════════════════
 
-def gerar_relatorio_completo(contrato_ids, ano, mes_ini, mes_fim):
-    """
-    Gera relatório completo consolidado com todas as seções.
-    """
+def gerar_relatorio_completo(contrato_ids, ano, mes_ini, mes_fim, ano_fim=None):
+    contrato_ids = _normalizar_contratos(contrato_ids)
+    ano_ini, mes_ini, ano_fim, mes_fim = _normalizar_periodo(
+        ano, mes_ini, ano_fim, mes_fim
+    )
     hoje = date.today()
 
     return {
-        'parametros': {
-            'ano': ano,
-            'mes_ini': mes_ini,
-            'mes_fim': mes_fim,
-            'periodo_label': f"{_label_mes(ano, mes_ini)} a {_label_mes(ano, mes_fim)}",
-            'gerado_em': hoje,
+        "parametros": {
+            "ano": ano_ini, "ano_fim": ano_fim,
+            "mes_ini": mes_ini, "mes_fim": mes_fim,
+            "periodo_label": (
+                f"{_label_mes(ano_ini, mes_ini)} a "
+                f"{_label_mes(ano_fim, mes_fim)}"
+            ),
+            "gerado_em": hoje,
         },
-        'quantitativo': relatorio_quantitativo(contrato_ids, ano, mes_ini, mes_fim),
-        'qualitativo': relatorio_qualitativo(contrato_ids, ano, mes_ini, mes_fim),
-        'alertas': relatorio_alertas(contrato_ids, ano, mes_ini, mes_fim),
-        'economias': relatorio_economias(contrato_ids, ano, mes_ini, mes_fim),
-        'estimativas': relatorio_estimativas(contrato_ids, ano, hoje.month),
+        "quantitativo": relatorio_quantitativo(
+            contrato_ids, ano_ini, mes_ini, mes_fim, ano_fim),
+        "qualitativo": relatorio_qualitativo(
+            contrato_ids, ano_ini, mes_ini, mes_fim, ano_fim),
+        "alertas": relatorio_alertas(
+            contrato_ids, ano_ini, mes_ini, mes_fim, ano_fim),
+        "economias": relatorio_economias(
+            contrato_ids, ano_ini, mes_ini, mes_fim, ano_fim),
+        "estimativas": relatorio_estimativas(
+            contrato_ids, ano_ini, hoje.month),
     }
 

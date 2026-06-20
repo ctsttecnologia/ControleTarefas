@@ -1,140 +1,218 @@
 ﻿{% extends "suprimentos/base_suprimentos.html" %}
 
 {% block sup_content %}
-<div class="sup-header d-flex justify-content-between align-items-center">
-  <div>
-    <h1><i class="bi bi-file-earmark-text me-2"></i>Pedido {{ pedido.numero }}</h1>
-    <small class="opacity-75">{{ pedido.contrato }} · {{ pedido.get_tipo_obra_display }}</small>
-  </div>
-  <span class="badge bg-light text-dark badge-status fs-6">{{ pedido.get_status_display }}</span>
-</div>
 
-<!-- STEPPER do fluxo geral -->
-<div class="card sup-card mb-4"><div class="card-body">
-  {% with s=pedido.status %}
-  <div class="stepper">
-    <div class="step {% if s != 'RASCUNHO' %}done{% else %}active{% endif %}">
-      <div class="dot">1</div><div class="label">Pedido</div>
-    </div>
-    <div class="step {% if s == 'APROVADO' or s == 'SOLICITACAO_GERADA' %}done{% elif s == 'PENDENTE' or s == 'REVISAO' %}active{% endif %}">
-      <div class="dot">2</div><div class="label">Aprovação</div>
-    </div>
-    <div class="step {% if s == 'SOLICITACAO_GERADA' %}done{% elif s == 'APROVADO' %}active{% endif %}">
-      <div class="dot">3</div><div class="label">Solicitação</div>
-    </div>
-    <div class="step {% if s == 'SOLICITACAO_GERADA' %}active{% endif %}">
-      <div class="dot"><i class="bi bi-cart-check"></i></div><div class="label">Compra</div>
-    </div>
-  </div>
-  {% endwith %}
-</div></div>
-
-<div class="row g-4">
-  <!-- Coluna principal -->
-  <div class="col-lg-8">
-    <div class="card sup-card mb-4">
-      <div class="card-header bg-white fw-semibold d-flex justify-content-between">
-        <span><i class="bi bi-list-ul me-1"></i> Itens do Pedido</span>
-        <span class="badge bg-primary">{{ itens|length }} item(ns)</span>
+  <div class="sup-page-head">
+      <h2 class="sup-page-title">
+          <i class="bi bi-file-earmark-text me-2"></i>Pedido: {{ pedido.numero }}
+      </h2>
+      <div class="sup-page-actions">
+        <span class="badge bg-light text-dark badge-status fs-6">{{ pedido.get_status_display }}</span>
       </div>
-      <div class="table-responsive">
-        <table class="table table-sup mb-0">
-          <thead><tr><th>Material</th><th>Qtd</th><th>Un.</th><th class="text-end">V. Unit.</th><th class="text-end">Total</th></tr></thead>
-          <tbody>
-            {% for item in itens %}
-            <tr>
-              <td>{{ item.material.descricao }}<br><small class="text-muted">{{ item.material.codigo }}</small></td>
-              <td>{{ item.quantidade }}</td>
-              <td>{{ item.get_unidade_medida_display }}</td>
-              <td class="text-end">R$ {{ item.valor_unitario|floatformat:2 }}</td>
-              <td class="text-end fw-semibold">R$ {{ item.valor_total|floatformat:2 }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-          <tfoot><tr class="table-light">
-            <td colspan="4" class="text-end fw-bold">TOTAL</td>
-            <td class="text-end fw-bold text-primary">R$ {{ pedido.valor_total|floatformat:2 }}</td>
-          </tr></tfoot>
-        </table>
+      <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-light fw-semibold">
+          <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+  </div>
+  <small class="opacity-75">{{ pedido.contrato }}</small>
+  <hr>
+
+  <!-- STEPPER do fluxo geral -->
+  <div class="card sup-card mb-4"><div class="card-body">
+    {% with s=pedido.status %}
+    <div class="stepper">
+      <div class="step {% if s != 'RASCUNHO' %}done{% else %}active{% endif %}">
+        <div class="dot">1</div><div class="label">Pedido</div>
+      </div>
+      <div class="step {% if s == 'APROVADO' or s == 'SOLICITACAO_GERADA' %}done{% elif s == 'PENDENTE' or s == 'REVISAO' %}active{% endif %}">
+        <div class="dot">2</div><div class="label">Aprovação</div>
+      </div>
+      <div class="step {% if s == 'SOLICITACAO_GERADA' %}done{% elif s == 'APROVADO' %}active{% endif %}">
+        <div class="dot">3</div><div class="label">Solicitação</div>
+      </div>
+      <div class="step {% if s == 'SOLICITACAO_GERADA' %}active{% endif %}">
+        <div class="dot"><i class="bi bi-cart-check"></i></div><div class="label">Compra</div>
       </div>
     </div>
+    {% endwith %}
+  </div></div>
 
-    <!-- Anexos -->
-    <div class="card sup-card mb-4">
-      <div class="card-header bg-white fw-semibold"><i class="bi bi-paperclip me-1"></i> Anexos</div>
-      <ul class="list-group list-group-flush">
-        {% for a in anexos %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-file-earmark me-1"></i>{{ a.nome_arquivo }} <small class="text-muted">({{ a.tamanho_humano }})</small></span>
-          <a href="{{ a.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">Abrir</a>
-        </li>
-        {% empty %}
-        <li class="list-group-item text-muted small">Nenhum anexo.</li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
+  <div class="row g-4">
+    <!-- ══════════════ Coluna principal ══════════════ -->
+    <div class="col-lg-8">
 
-  <!-- Sidebar -->
-  <div class="col-lg-4">
-    <div class="card sup-card mb-4"><div class="card-body">
-      <h6 class="fw-bold text-uppercase text-muted small mb-3">Informações</h6>
-      <dl class="row mb-0 small">
-        <dt class="col-5">Solicitante</dt><dd class="col-7">{{ pedido.solicitante.get_full_name|default:pedido.solicitante.username }}</dd>
-        <dt class="col-5">Data Pedido</dt><dd class="col-7">{{ pedido.data_pedido|date:"d/m/Y H:i" }}</dd>
-        <dt class="col-5">Data Necessária</dt><dd class="col-7">{{ pedido.data_necessaria|date:"d/m/Y"|default:"—" }}</dd>
-        {% if pedido.aprovador %}<dt class="col-5">Aprovador</dt><dd class="col-7">{{ pedido.aprovador.get_full_name }}</dd>{% endif %}
-      </dl>
-    </div></div>
-
-    <!-- Verba -->
-    <div class="card sup-card mb-4"><div class="card-body">
-      <h6 class="fw-bold text-uppercase text-muted small mb-2">Verba</h6>
-      {% if verba_ok %}
-        <div class="alert alert-success py-2 mb-0 small"><i class="bi bi-check-circle"></i> Dentro da verba.</div>
-      {% else %}
-        <div class="alert alert-danger py-2 mb-0 small">
-          <i class="bi bi-exclamation-triangle"></i>
-          <ul class="mb-0 ps-3">{% for e in verba_erros %}<li>{{ e }}</li>{% endfor %}</ul>
+      <!-- Itens do Pedido -->
+      <div class="card sup-card mb-4">
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between">
+          <span><i class="bi bi-list-ul me-1"></i> Itens do Pedido</span>
+          <span class="badge bg-primary">{{ itens|length }} item(ns)</span>
         </div>
-      {% endif %}
-    </div></div>
+        <div class="table-responsive">
+          <table class="table table-sup mb-0">
+            <thead><tr>
+              <th>Material</th>
+              <th>Qtd</th>
+              <th>Un.</th>
+              <th class="text-end">V. Unit.</th>
+              <th class="text-end">Verba</th>
+              <th class="text-end">Total</th>
+            </tr></thead>
+            <tbody>
+              {% for item in itens %}
+              <tr>
+                <td>{{ item.material.descricao }}<br><small class="text-muted">{{ item.material.codigo }}</small></td>
+                <td>{{ item.quantidade }}</td>
+                <td>{{ item.get_unidade_medida_display }}</td>
+                <td class="text-end">R$ {{ item.valor_unitario|floatformat:2 }}</td>
+                <td class="text-end">
+                  {% if item.verba_saldo is not None %}
+                    <span class="{% if item.verba_saldo < 0 %}text-danger{% else %}text-success{% endif %}">
+                      R$ {{ item.verba_saldo|floatformat:2 }}
+                    </span>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td class="text-end fw-semibold">R$ {{ item.valor_total|floatformat:2 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr class="table-light">
+                <td colspan="5" class="text-end fw-bold">TOTAL</td>
+                <td class="text-end fw-bold text-primary">R$ {{ pedido.valor_total|floatformat:2 }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
 
-    <!-- Ações -->
-    <div class="card sup-card mb-4"><div class="card-body d-grid gap-2">
-      {% if pedido.status == 'RASCUNHO' or pedido.status == 'REVISAO' %}
-        <a href="{% url 'suprimentos:pedido_editar' pedido.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
-        <form method="post" action="{% url 'suprimentos:pedido_submeter' pedido.pk %}">{% csrf_token %}
-          <button class="btn btn-primary w-100"><i class="bi bi-send"></i> Submeter para Aprovação</button>
-        </form>
-      {% endif %}
-      {% if pedido.status == 'PENDENTE' and perms.suprimentos.pode_aprovar_pedido %}
-        <a href="{% url 'suprimentos:pedido_aprovar' pedido.pk %}" class="btn btn-success"><i class="bi bi-check2-square"></i> Avaliar Pedido</a>
-      {% endif %}
-      {% if pedido.solicitacao_gerada %}
-        <a href="{{ pedido.solicitacao_gerada.get_absolute_url }}" class="btn btn-info text-white"><i class="bi bi-arrow-right-circle"></i> Ver Solicitação</a>
-      {% endif %}
-    </div></div>
+      <!-- Anexos -->
+      <div class="card sup-card mb-4">
+        <div class="card-header bg-white fw-semibold">
+          <i class="bi bi-paperclip me-1"></i> Anexos
+        </div>
 
-    {% if pedido.motivo_revisao %}
-    <div class="alert alert-warning small"><strong>Revisão:</strong> {{ pedido.motivo_revisao }}</div>
-    {% endif %}
-    {% if pedido.motivo_reprovacao %}
-    <div class="alert alert-danger small"><strong>Reprovação:</strong> {{ pedido.motivo_reprovacao }}</div>
-    {% endif %}
+        <ul class="list-group list-group-flush">
+          {% for a in anexos %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>
+              <i class="bi bi-file-earmark me-1"></i>{{ a.nome_arquivo }}
+              <small class="text-muted">({{ a.tamanho_humano }})</small>
+              {% if a.observacao %}
+                <br><small class="text-muted fst-italic ms-4">{{ a.observacao }}</small>
+              {% endif %}
+            </span>
+            <a href="{{ a.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">Abrir</a>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted small">Nenhum anexo.</li>
+          {% endfor %}
+        </ul>
+
+        <!-- Formulário de upload múltiplo -->
+        <div class="card-body border-top">
+          <form method="post"
+                action="{% url 'suprimentos:pedido_anexo_upload' pedido.pk %}"
+                enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Arquivos</label>
+              <input type="file" name="arquivos" class="form-control form-control-sm" multiple required>
+              <small class="text-muted">Você pode selecionar vários arquivos de uma vez.</small>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Observação</label>
+              <input type="text" name="observacao" class="form-control form-control-sm"
+                    maxlength="255" placeholder="Descrição opcional (aplicada a todos)">
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">
+              <i class="bi bi-upload me-1"></i> Enviar Anexo(s)
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div><!-- /col-lg-8 -->
+
+    <!-- ══════════════ Sidebar ══════════════ -->
+    <div class="col-lg-4">
+
+      <!-- Informações -->
+      <div class="card sup-card mb-4"><div class="card-body">
+        <h6 class="fw-bold text-uppercase text-muted small mb-3">Informações</h6>
+        <dl class="row mb-0 small">
+          <dt class="col-5">Tipo</dt><dd class="col-7">{{ pedido.get_tipo_obra_display|default:"" }}</dd>
+          <dt class="col-5">Solicitante</dt><dd class="col-7">{{ pedido.solicitante.get_full_name|default:pedido.solicitante.username }}</dd>
+          <dt class="col-5">Data Pedido</dt><dd class="col-7">{{ pedido.data_pedido|date:"d/m/Y H:i" }}</dd>
+          <dt class="col-5">Data Necessária</dt><dd class="col-7">{{ pedido.data_necessaria|date:"d/m/Y"|default:"—" }}</dd>
+          {% if pedido.aprovador %}<dt class="col-5">Aprovador</dt><dd class="col-7">{{ pedido.aprovador.get_full_name }}</dd>{% endif %}
+        </dl>
+      </div></div>
+
+      <!-- Verba -->
+      <div class="card sup-card mb-4"><div class="card-body">
+        <h6 class="fw-bold text-uppercase text-muted small mb-2">Verba do Mês</h6>
+        {% if verba_mes %}
+          <dl class="row mb-2 small">
+            <dt class="col-7">Saldo EPI</dt>
+            <dd class="col-5 text-end {% if verba_mes.saldo_epi < 0 %}text-danger{% endif %}">R$ {{ verba_mes.saldo_epi|floatformat:2 }}</dd>
+            <dt class="col-7">Saldo Consumo</dt>
+            <dd class="col-5 text-end {% if verba_mes.saldo_consumo < 0 %}text-danger{% endif %}">R$ {{ verba_mes.saldo_consumo|floatformat:2 }}</dd>
+            <dt class="col-7">Saldo Ferramenta</dt>
+            <dd class="col-5 text-end {% if verba_mes.saldo_ferramenta < 0 %}text-danger{% endif %}">R$ {{ verba_mes.saldo_ferramenta|floatformat:2 }}</dd>
+          </dl>
+        {% else %}
+          <p class="text-muted small mb-2">Sem verba cadastrada para o mês.</p>
+        {% endif %}
+
+        {% if verba_ok %}
+          <div class="alert alert-success py-2 mb-0 small"><i class="bi bi-check-circle"></i> Dentro da verba.</div>
+        {% else %}
+          <div class="alert alert-danger py-2 mb-0 small">
+            <i class="bi bi-exclamation-triangle"></i>
+            <ul class="mb-0 ps-3">{% for e in verba_erros %}<li>{{ e }}</li>{% endfor %}</ul>
+          </div>
+        {% endif %}
+      </div></div>
+
+      <!-- Ações -->
+      <div class="card sup-card mb-4"><div class="card-body d-grid gap-2">
+        {% if pedido.status == 'RASCUNHO' or pedido.status == 'REVISAO' %}
+          <a href="{% url 'suprimentos:pedido_editar' pedido.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
+          <form method="post" action="{% url 'suprimentos:pedido_submeter' pedido.pk %}">{% csrf_token %}
+            <button class="btn btn-primary w-100"><i class="bi bi-send"></i> Submeter para Aprovação</button>
+          </form>
+        {% endif %}
+        {% if pedido.status == 'PENDENTE' and perms.suprimentos.pode_aprovar_pedido %}
+          <a href="{% url 'suprimentos:pedido_aprovar' pedido.pk %}" class="btn btn-success"><i class="bi bi-check2-square"></i> Avaliar Pedido</a>
+        {% endif %}
+        {% if pedido.solicitacao_gerada %}
+          <a href="{{ pedido.solicitacao_gerada.get_absolute_url }}" class="btn btn-info text-white"><i class="bi bi-arrow-right-circle"></i> Ver Solicitação</a>
+        {% endif %}
+      </div></div>
+
+      {% if pedido.motivo_revisao %}
+      <div class="alert alert-warning small"><strong>Revisão:</strong> {{ pedido.motivo_revisao }}</div>
+      {% endif %}
+      {% if pedido.motivo_reprovacao %}
+      <div class="alert alert-danger small"><strong>Reprovação:</strong> {{ pedido.motivo_reprovacao }}</div>
+      {% endif %}
+
+    </div><!-- /col-lg-4 -->
+  </div><!-- /row -->
+
+  <!-- Histórico -->
+  <div class="card sup-card mt-4">
+    <div class="card-header bg-white fw-semibold"><i class="bi bi-clock-history me-1"></i> Histórico</div>
+    <ul class="list-group list-group-flush">
+      {% for h in historico %}
+      <li class="list-group-item d-flex justify-content-between">
+        <span><span class="badge bg-secondary me-2">v{{ h.versao }}</span>{{ h.descricao }}</span>
+        <small class="text-muted">{{ h.responsavel|default:"—" }} · {{ h.criado_em|date:"d/m/Y H:i" }}</small>
+      </li>
+      {% empty %}<li class="list-group-item text-muted small">Sem registros.</li>{% endfor %}
+    </ul>
   </div>
-</div>
 
-<!-- Histórico -->
-<div class="card sup-card">
-  <div class="card-header bg-white fw-semibold"><i class="bi bi-clock-history me-1"></i> Histórico</div>
-  <ul class="list-group list-group-flush">
-    {% for h in historico %}
-    <li class="list-group-item d-flex justify-content-between">
-      <span><span class="badge bg-secondary me-2">v{{ h.versao }}</span>{{ h.descricao }}</span>
-      <small class="text-muted">{{ h.responsavel|default:"—" }} · {{ h.criado_em|date:"d/m/Y H:i" }}</small>
-    </li>
-    {% empty %}<li class="list-group-item text-muted small">Sem registros.</li>{% endfor %}
-  </ul>
-</div>
 {% endblock %}
+

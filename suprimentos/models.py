@@ -29,6 +29,7 @@ from core.upload import make_upload_path
 from core.validators import SecureFileValidator
 from logradouro.models import Logradouro
 from usuario.models import Filial
+from suprimentos.utils import _registrar_historico
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -732,18 +733,11 @@ class Pedido(TimestampedModel):
     def gerar_solicitacao_compra(self, usuario, usar_novo_fluxo=True):
         from decimal import Decimal
         from django.core.exceptions import ValidationError
-        from django.db import transaction
 
         if self.status != self.StatusChoices.APROVADO:
             raise ValidationError(
                 f"Pedido {self.numero} precisa estar APROVADO para gerar "
                 f"solicitação. Status atual: {self.get_status_display()}."
-            )
-
-        if getattr(self, "solicitacao_gerada_id", None):
-            raise ValidationError(
-                f"Pedido {self.numero} já possui SolicitacaoCompra vinculada "
-                f"(ID #{self.solicitacao_gerada_id})."
             )
 
         itens_pedido = list(self.itens.select_related("material").all())
@@ -752,7 +746,7 @@ class Pedido(TimestampedModel):
                 f"Pedido {self.numero} não possui itens para gerar solicitação."
             )
 
-        # 🆕 Resumo dos itens (já que Pedido não tem mais esses campos)
+        # ── Resumo dos itens (Pedido não tem mais esses campos) ──
         primeiro = itens_pedido[0]
         descricao_resumo = (
             f"{len(itens_pedido)} item(ns): "
@@ -764,48 +758,76 @@ class Pedido(TimestampedModel):
         )
         qtd_total = sum((i.quantidade for i in itens_pedido), 0)
 
-        with transaction.atomic():
-            status_inicial = SolicitacaoCompra.StatusChoices.FAZER_COTACAO
+        # ═══════════════════════════════════════════════════════════
+        # ✅ REAPROVEITAMENTO: já existe solicitação para este pedido?
+        # ═══════════════════════════════════════════════════════════
+        solicitacao_existente = SolicitacaoCompra.objects.filter(pedido=self).first()
+        if solicitacao_existente:
+            S = SolicitacaoCompra.StatusChoices
+            status_valido = solicitacao_existente.status in {c[0] for c in S.choices}
 
-            solicitacao = SolicitacaoCompra.objects.create(
-                pedido=self,
-                filial=self.filial,
-                solicitante=self.solicitante,
-                contrato=self.contrato,
-                tipo_obra=self.tipo_obra,
-                descricao_material=descricao_resumo,           # ✅ resumo dos itens
-                quantidade=qtd_total,                          # ✅ soma das quantidades
-                unidade_medida=primeiro.unidade_medida,        # ✅ unidade do 1º item
-                tipo_insumo=primeiro.material.tipo,            # ✅ tipo via material
-                data_necessaria=self.data_necessaria,
-                aprovador_inicial=self.aprovador,
-                data_aprovacao_inicial=self.data_aprovacao,
-                status=status_inicial,
-                usa_novo_fluxo=usar_novo_fluxo,
-                observacoes=f"Gerada automaticamente a partir do Pedido {self.numero}.",
+            # Status FAZER_COTACAO (normal) OU status corrompido/órfão
+            # (ex.: "PENDENTE_COTACAO" vindo do enum errado) → ressincroniza.
+            pode_ressincronizar = (
+                not status_valido
+                or solicitacao_existente.status == S.FAZER_COTACAO
             )
 
-            itens_criados = 0
-            if usar_novo_fluxo:
-                for item_pedido in itens_pedido:
-                    if item_pedido.material_id is None:
-                        raise ValidationError(
-                            f"Item do Pedido {self.numero} sem Material vinculado."
-                        )
-                    ItemSolicitacao.objects.create(
-                        solicitacao=solicitacao,
-                        item_pedido_origem=item_pedido,
-                        material=item_pedido.material,
-                        quantidade=item_pedido.quantidade,
-                        valor_unitario_estimado=(
-                            item_pedido.valor_unitario or Decimal("0.00")
-                        ),
-                        observacao=item_pedido.observacao or "",
-                        status=ItemSolicitacao.StatusItem.PENDENTE_COTACAO,
-                    )
-                    itens_criados += 1
+            if pode_ressincronizar:
+                # Se o status estava corrompido, normaliza para FAZER_COTACAO
+                if solicitacao_existente.status != S.FAZER_COTACAO:
+                    solicitacao_existente.status = S.FAZER_COTACAO
 
-            self.solicitacao_gerada = solicitacao
+                # Atualiza o cabeçalho com os dados do pedido (possivelmente revisado)
+                solicitacao_existente.filial = self.filial
+                solicitacao_existente.solicitante = self.solicitante
+                solicitacao_existente.contrato = self.contrato
+                solicitacao_existente.tipo_obra = self.tipo_obra
+                solicitacao_existente.descricao_material = descricao_resumo
+                solicitacao_existente.quantidade = qtd_total
+                solicitacao_existente.unidade_medida = primeiro.unidade_medida
+                solicitacao_existente.tipo_insumo = primeiro.material.tipo
+                solicitacao_existente.data_necessaria = self.data_necessaria
+                solicitacao_existente.aprovador_inicial = self.aprovador
+                solicitacao_existente.data_aprovacao_inicial = self.data_aprovacao
+                solicitacao_existente.usa_novo_fluxo = usar_novo_fluxo
+                solicitacao_existente.save()
+
+                # Ressincroniza os itens com o pedido revisado
+                itens_criados = 0
+                if usar_novo_fluxo:
+                    solicitacao_existente.itens.all().delete()
+                    for item_pedido in itens_pedido:
+                        if item_pedido.material_id is None:
+                            raise ValidationError(
+                                f"Item do Pedido {self.numero} sem Material vinculado."
+                            )
+                        ItemSolicitacao.objects.create(
+                            solicitacao=solicitacao_existente,
+                            item_pedido_origem=item_pedido,
+                            material=item_pedido.material,
+                            quantidade=item_pedido.quantidade,
+                            valor_unitario_estimado=(
+                                item_pedido.valor_unitario or Decimal("0.00")
+                            ),
+                            observacao=item_pedido.observacao or "",
+                            status=ItemSolicitacao.StatusItem.PENDENTE_COTACAO,
+                        )
+                        itens_criados += 1
+                descricao_hist = (
+                    f"Solicitação de Compra {solicitacao_existente.numero} "
+                    f"reaproveitada e ressincronizada ({itens_criados} item(ns))."
+                )
+            else:
+                # Cotação realmente em andamento: não mexe nos itens.
+                descricao_hist = (
+                    f"Solicitação de Compra {solicitacao_existente.numero} "
+                    f"reaproveitada (cotação em andamento — itens preservados)."
+                )
+
+            # Revincula e ajusta o status do pedido
+            if self.solicitacao_gerada_id != solicitacao_existente.pk:
+                self.solicitacao_gerada = solicitacao_existente
             self.status = self.StatusChoices.SOLICITACAO_GERADA
             self.save(update_fields=[
                 "solicitacao_gerada", "status", "atualizado_em"
@@ -814,10 +836,7 @@ class Pedido(TimestampedModel):
             try:
                 HistoricoPedido.registrar(
                     pedido=self,
-                    descricao=(
-                        f"Solicitação de Compra {solicitacao.numero} gerada "
-                        f"({itens_criados} item(ns))."
-                    ),
+                    descricao=descricao_hist,
                     responsavel=usuario,
                     status_anterior=self.StatusChoices.APROVADO,
                     status_novo=self.StatusChoices.SOLICITACAO_GERADA,
@@ -825,63 +844,73 @@ class Pedido(TimestampedModel):
             except Exception:
                 pass
 
-        return solicitacao
+            return solicitacao_existente
 
 
-    @property
-    def resumo_tributario(self):
-        valor_produtos = Decimal("0.00")
-        total_impostos = Decimal("0.00")
-        total_creditos = Decimal("0.00")
-        custo_real = Decimal("0.00")
-        total_nfe = Decimal("0.00")
-        itens_com_grupo = 0
-        total_itens = 0
+        # ═══════════════════════════════════════════════════════════
+        # CRIAÇÃO NORMAL (primeira vez)
+        # ═══════════════════════════════════════════════════════════
+        status_inicial = SolicitacaoCompra.StatusChoices.FAZER_COTACAO
 
-        for item in self.itens.select_related(
-            "material__grupo_tributario"
-        ).all():
-            total_itens += 1
-            valor_item = item.quantidade * item.valor_unitario
-            valor_produtos += valor_item
+        solicitacao = SolicitacaoCompra.objects.create(
+            pedido=self,
+            filial=self.filial,
+            solicitante=self.solicitante,
+            contrato=self.contrato,
+            tipo_obra=self.tipo_obra,
+            descricao_material=descricao_resumo,
+            quantidade=qtd_total,
+            unidade_medida=primeiro.unidade_medida,
+            tipo_insumo=primeiro.material.tipo,
+            data_necessaria=self.data_necessaria,
+            aprovador_inicial=self.aprovador,
+            data_aprovacao_inicial=self.data_aprovacao,
+            status=status_inicial,
+            usa_novo_fluxo=usar_novo_fluxo,
+            observacoes=f"Gerada automaticamente a partir do Pedido {self.numero}.",
+        )
 
-            if item.material.grupo_tributario:
-                itens_com_grupo += 1
-                try:
-                    calc = item.calcular_impostos()
-                    total_impostos += calc.get(
-                        "total_impostos", Decimal("0.00")
+        itens_criados = 0
+        if usar_novo_fluxo:
+            for item_pedido in itens_pedido:
+                if item_pedido.material_id is None:
+                    raise ValidationError(
+                        f"Item do Pedido {self.numero} sem Material vinculado."
                     )
-                    total_creditos += calc.get(
-                        "total_creditos", Decimal("0.00")
-                    )
-                    custo_real += calc.get("custo_real", Decimal("0.00"))
-                    total_nfe += calc.get("total_nfe", Decimal("0.00"))
-                except Exception:
-                    custo_real += valor_item
-                    total_nfe += valor_item
-            else:
-                custo_real += valor_item
-                total_nfe += valor_item
+                ItemSolicitacao.objects.create(
+                    solicitacao=solicitacao,
+                    item_pedido_origem=item_pedido,
+                    material=item_pedido.material,
+                    quantidade=item_pedido.quantidade,
+                    valor_unitario_estimado=(
+                        item_pedido.valor_unitario or Decimal("0.00")
+                    ),
+                    observacao=item_pedido.observacao or "",
+                    status=ItemSolicitacao.StatusItem.PENDENTE_COTACAO,
+                )
+                itens_criados += 1
 
-        pct = Decimal("0.00")
-        if valor_produtos > 0:
-            pct = ((total_creditos / valor_produtos) * 100).quantize(
-                Decimal("0.01")
+        self.solicitacao_gerada = solicitacao
+        self.status = self.StatusChoices.SOLICITACAO_GERADA
+        self.save(update_fields=[
+            "solicitacao_gerada", "status", "atualizado_em"
+        ])
+
+        try:
+            HistoricoPedido.registrar(
+                pedido=self,
+                descricao=(
+                    f"Solicitação de Compra {solicitacao.numero} gerada "
+                    f"({itens_criados} item(ns))."
+                ),
+                responsavel=usuario,
+                status_anterior=self.StatusChoices.APROVADO,
+                status_novo=self.StatusChoices.SOLICITACAO_GERADA,
             )
+        except Exception:
+            pass
 
-        return {
-            "valor_produtos": valor_produtos,
-            "total_impostos": total_impostos,
-            "total_creditos": total_creditos,
-            "total_nfe": total_nfe,
-            "custo_real": custo_real,
-            "percentual_economia": pct,
-            "itens_com_grupo": itens_com_grupo,
-            "total_itens": total_itens,
-            "cobertura_tributaria": f"{itens_com_grupo}/{total_itens}",
-        }
-
+        return solicitacao
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 4b. ANEXOS DO PEDIDO
@@ -908,6 +937,11 @@ class AnexoPedido(BaseAnexo):
         null=True,
         related_name='anexos_pedido_enviados',
         verbose_name='Enviado por',
+    )
+
+    observacao = models.CharField(
+        _("Observação"), max_length=255, blank=True, default="",
+        help_text=_("Descrição opcional do anexo."),
     )
     
     class Meta(BaseAnexo.Meta):
@@ -1329,6 +1363,15 @@ class SolicitacaoCompra(TimestampedModel):
         )
 
     def save(self, *args, **kwargs):
+        valores_validos = {c[0] for c in self.StatusChoices.choices}
+        if self.status not in valores_validos:
+            from django.core.exceptions import ValidationError
+            raise ValidationError(
+                f"Status inválido em SolicitacaoCompra: '{self.status}'. "
+                f"Válidos: {sorted(valores_validos)}"
+            )
+        super().save(*args, **kwargs)
+        
         if not self.numero:
             hoje = timezone.now()
             prefix = f"SOL-{hoje.strftime('%Y%m')}"
@@ -1376,6 +1419,46 @@ class SolicitacaoCompra(TimestampedModel):
                 f"(Verba: R$ {getattr(verba, campo_verba):.2f})"
             )
         return True, "Dentro da verba."
+    
+    def sincronizar_status_entrega(self, responsavel=None):
+        """
+        Sincroniza o status da solicitação com base nos PCs:
+        - todos RECEBIDO  → FINALIZADO
+        - algum em curso   → EM_ENTREGA
+        Idempotente: só grava se houver mudança real.
+        """
+        PC = PedidoCompra.StatusPC
+        S = self.StatusChoices
+
+        pcs = self.pedidos_compra.exclude(status=PC.CANCELADO)
+        if not pcs.exists():
+            return
+
+        todos_recebidos = not pcs.exclude(status=PC.RECEBIDO).exists()
+
+        if todos_recebidos:
+            novo = S.FINALIZADO
+        else:
+            # algum PC já saiu de EMITIDO (foi enviado/parcial/entregue)
+            em_andamento = pcs.exclude(status=PC.EMITIDO).exists()
+            novo = S.EM_ENTREGA if em_andamento else S.PEDIDO_GERADO
+
+        if self.status != novo:
+            anterior = self.status
+            self.status = novo
+            if novo == S.FINALIZADO:
+                self.data_entrega_efetiva = timezone.now().date()
+                self.save(update_fields=["status", "data_entrega_efetiva", "atualizado_em"])
+            else:
+                self.save(update_fields=["status", "atualizado_em"])
+            _registrar_historico(  # mova esse helper p/ um utils se preferir
+                HistoricoSolicitacao.registrar,
+                solicitacao=self,
+                descricao=f"Status sincronizado pelos PCs: {anterior} → {novo}",
+                responsavel=responsavel,
+                status_anterior=anterior,
+                status_novo=novo,
+            )
 
     # ── Properties ───────────────────────────────────────────────────────────
     @property
@@ -2059,7 +2142,7 @@ class PedidoCompra(TimestampedModel):
         return f"PC {self.numero} — {self.fornecedor.nome_fantasia}"
 
     def get_absolute_url(self):
-        return reverse("suprimentos:pedido_compra_detalhe", kwargs={"pk": self.pk})
+        return reverse("suprimentos:pc_detalhe", kwargs={"pk": self.pk})
 
     def save(self, *args, **kwargs):
         # Geração de número interno automático

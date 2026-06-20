@@ -1,10 +1,28 @@
 
 {% extends "suprimentos/base_suprimentos.html" %}
+{% load static %}
 
 {% block sup_content %}
-<div class="sup-header">
-  <h1><i class="bi bi-pencil-square me-2"></i>{% if object %}Editar{% else %}Novo{% endif %} Pedido</h1>
+
+<div id="undo-banner" class="undo-banner mb-3">
+  <i class="bi bi-info-circle"></i>
+  <span id="undo-text">Item removido.</span>
+  <button type="button" id="undo-btn" class="btn btn-sm btn-warning fw-semibold ms-auto">
+    <i class="bi bi-arrow-counterclockwise"></i> Desfazer
+  </button>
 </div>
+
+<div class="sup-page-head">
+  <h2 class="sup-page-title">
+    <i class="bi bi-pencil-square me-2"></i>{% if object %}Editar{% else %}Novo{% endif %} Pedido
+  </h2>
+  <div class="sup-page-actions">
+    <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-light fw-semibold">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+  </div>
+</div>
+<hr>
 
 <form method="post" novalidate>
   {% csrf_token %}
@@ -24,26 +42,41 @@
   <div class="card sup-card mb-4">
     <div class="card-header bg-white fw-semibold d-flex justify-content-between">
       <span><i class="bi bi-list-ul me-1"></i> Itens</span>
-      <button type="button" id="add-item" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus"></i> Adicionar item</button>
+      <button type="button" id="add-item" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-plus"></i> Adicionar item
+      </button>
     </div>
     <div class="card-body">
       {{ formset.management_form }}
       <div id="formset-container">
         {% for f in formset %}
-        <div class="formset-row row g-2 align-items-end mb-2 pb-2 border-bottom">
-          {{ f.id }}
-          <div class="col-md-4">
-            <label class="form-label small">Material</label>{{ f.material }}
+          <div class="formset-row row g-2 align-items-end mb-2 pb-2 border-bottom">
+            {{ f.id }}
+            <div class="col-md-3"><label class="form-label small">Material</label>{{ f.material }}</div>
+            <div class="col-md-1"><label class="form-label small">Qtd</label>{{ f.quantidade }}</div>
+            <div class="col-md-2"><label class="form-label small">Unidade</label>{{ f.unidade_medida }}</div>
+            <div class="col-md-1"><label class="form-label small form-control-plaintext">V. Unit.</label>{{ f.valor_unitario }}</div>
+            <div class="col-md-2"><label class="form-label small">Subtotal</label>
+              <div class="form-control-plaintext fw-semibold" data-subtotal>R$ 0,00</div>
+            </div>
+            <div class="col-md-2 d-flex gap-1"><label class="form-label small">Obs.</label>{{ f.observacao }}</div>
+            <div class="col-md-1 d-flex align-items-end justify-content-center">
+              {% if f.DELETE %}
+                <span class="delete-checkbox">{{ f.DELETE }}</span>
+              {% endif %}
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger btn-remove-item"
+                      title="Remover item" aria-label="Remover item">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
           </div>
-          <div class="col-md-2"><label class="form-label small">Qtd</label>{{ f.quantidade }}</div>
-          <div class="col-md-2"><label class="form-label small">Unidade</label>{{ f.unidade_medida }}</div>
-          <div class="col-md-2"><label class="form-label small">V. Unit.</label>{{ f.valor_unitario }}</div>
-          <div class="col-md-2 d-flex gap-1">
-            <div class="flex-grow-1"><label class="form-label small">Obs</label>{{ f.observacao }}</div>
-            {% if f.DELETE %}<div class="form-check pt-4">{{ f.DELETE }}</div>{% endif %}
-          </div>
-        </div>
         {% endfor %}
+      </div>
+
+      <div class="d-flex justify-content-end mt-3 pt-2 border-top">
+        <span class="me-2 fw-bold">Total Geral:</span>
+        <span id="total-geral" class="fw-bold">R$ 0,00</span>
       </div>
     </div>
   </div>
@@ -54,30 +87,215 @@
   </div>
 </form>
 
-<!-- Template oculto para clonagem -->
+<!-- Template oculto para clonagem (APENAS a linha, nada de <td>/<tfoot>) -->
 <template id="empty-form">
   <div class="formset-row row g-2 align-items-end mb-2 pb-2 border-bottom">
     {{ formset.empty_form.id }}
-    <div class="col-md-4"><label class="form-label small">Material</label>{{ formset.empty_form.material }}</div>
-    <div class="col-md-2"><label class="form-label small">Qtd</label>{{ formset.empty_form.quantidade }}</div>
+    <div class="col-md-3"><label class="form-label small">Material</label>{{ formset.empty_form.material }}</div>
+    <div class="col-md-1"><label class="form-label small">Qtd</label>{{ formset.empty_form.quantidade }}</div>
     <div class="col-md-2"><label class="form-label small">Unidade</label>{{ formset.empty_form.unidade_medida }}</div>
-    <div class="col-md-2"><label class="form-label small">V. Unit.</label>{{ formset.empty_form.valor_unitario }}</div>
-    <div class="col-md-2"><label class="form-label small">Obs</label>{{ formset.empty_form.observacao }}</div>
+    <div class="col-md-1"><label class="form-label small">V. Unit.</label>{{ formset.empty_form.valor_unitario }}</div>
+    <div class="col-md-2">
+      <label class="form-label small">Subtotal</label>
+      <div class="form-control-plaintext fw-semibold" data-subtotal>R$ 0,00</div>
+    </div>
+    <div class="col-md-2 d-flex gap-1"><label class="form-label small">Obs</label>{{ formset.empty_form.observacao }}</div>
+    <div class="col-md-1 d-flex align-items-end justify-content-center">
+      {% if formset.empty_form.DELETE %}
+        <span class="delete-checkbox">{{ formset.empty_form.DELETE }}</span>
+      {% endif %}
+      <button type="button" class="btn btn-sm btn-outline-danger btn-remove-item"
+              title="Remover item" aria-label="Remover item">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
   </div>
 </template>
+
+
+{{ material_precos_json|json_script:"material-precos" }}
+{{ material_unidades_json|json_script:"material-unidades" }}
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.getElementById('add-item').addEventListener('click', function () {
-  const container = document.getElementById('formset-container');
-  const totalForms = document.getElementById('id_itens-TOTAL_FORMS');
-  const idx = parseInt(totalForms.value);
-  const tpl = document.getElementById('empty-form').innerHTML.replace(/__prefix__/g, idx);
-  const div = document.createElement('div');
-  div.innerHTML = tpl;
-  container.appendChild(div.firstElementChild);
-  totalForms.value = idx + 1;
-});
+(function () {
+  const PRECOS   = JSON.parse(document.getElementById('material-precos').textContent);
+  const UNIDADES = JSON.parse(document.getElementById('material-unidades').textContent);
+
+  const banner   = document.getElementById('undo-banner');
+  const undoText = document.getElementById('undo-text');
+  const undoBtn  = document.getElementById('undo-btn');
+
+  let undoTimer  = null;
+  let lastRemoved = null;
+
+  const fmtBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  function parseNum(str) {
+    if (!str) return 0;
+    let s = String(str).trim();
+    if (s.indexOf(',') > -1) s = s.replace(/\./g, '').replace(',', '.');
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function isPersisted(row) {
+    const idInput = row.querySelector('input[name$="-id"]');
+    return idInput && idInput.value;
+  }
+
+  // ---------- Cálculos ----------
+  function calcLinha(row) {
+    if (!row) return 0;
+    const qtd   = parseNum(row.querySelector('input[name$="-quantidade"]')?.value);
+    const valor = parseNum(row.querySelector('input[name$="-valor_unitario"]')?.value);
+    const sub   = qtd * valor;
+    const subEl = row.querySelector('[data-subtotal]');
+    if (subEl) subEl.textContent = fmtBRL(sub);
+    return sub;
+  }
+
+  function calcTotal() {
+    let total = 0;
+    document.querySelectorAll('#formset-container .formset-row').forEach(function (row) {
+      if (row.classList.contains('is-removed')) return;
+      const del = row.querySelector('input[name$="-DELETE"]');
+      if (del && del.checked) return;
+      total += calcLinha(row);
+    });
+    const totalEl = document.getElementById('total-geral');
+    if (totalEl) totalEl.textContent = fmtBRL(total);
+  }
+
+  // ---------- Preço + Unidade automáticos ----------
+  function aplicarPreco(selectEl) {
+    const row = selectEl.closest('.formset-row');
+    if (!row) return;
+
+    // Valor unitário
+    const valorInput = row.querySelector('input[name$="-valor_unitario"]');
+    if (valorInput) {
+      const preco = PRECOS[selectEl.value];
+      if (preco !== undefined && preco !== null) {
+        const atual = parseNum(valorInput.value);
+        if (!atual || atual === 0) valorInput.value = preco;
+      }
+    }
+
+    // Unidade de medida (select OU input)
+    const unidEl = row.querySelector('[name$="-unidade_medida"]');
+    if (unidEl) {
+      const unid = UNIDADES[selectEl.value];
+      if (unid !== undefined && unid !== null && unid !== '') {
+        unidEl.value = unid;
+      }
+    }
+
+    calcTotal();
+  }
+
+  // ---------- Remoção com animação + desfazer ----------
+  function removerLinha(row) {
+    const del = row.querySelector('input[name$="-DELETE"]');
+    row.classList.add('is-removing');
+
+    setTimeout(function () {
+      row.classList.add('is-removed');
+
+      if (isPersisted(row) && del) {
+        del.checked = true;
+      } else {
+        row.querySelectorAll('input, select, textarea').forEach(function (el) {
+          if (el.name && el.name.endsWith('-DELETE')) return;
+          if (el.name && el.name.endsWith('-id')) return;
+          if (el.type === 'checkbox') el.checked = false;
+          else el.value = '';
+        });
+      }
+
+      lastRemoved = row;
+      calcTotal();
+      mostrarBanner(row);
+    }, 250);
+  }
+
+  function restaurarLinha(row) {
+    const del = row.querySelector('input[name$="-DELETE"]');
+    if (del) del.checked = false;
+    row.classList.remove('is-removed');
+    void row.offsetWidth;
+    row.classList.remove('is-removing');
+    calcTotal();
+  }
+
+  function mostrarBanner(row) {
+    const matSel = row.querySelector('select[name$="-material"]');
+    const nome   = matSel && matSel.selectedIndex > 0
+      ? matSel.options[matSel.selectedIndex].text.trim()
+      : 'Item';
+    undoText.textContent = `"${nome}" removido.`;
+    banner.classList.add('show');
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(esconderBanner, 6000);
+  }
+
+  function esconderBanner() {
+    banner.classList.remove('show');
+    lastRemoved = null;
+  }
+
+  undoBtn.addEventListener('click', function () {
+    if (lastRemoved) restaurarLinha(lastRemoved);
+    clearTimeout(undoTimer);
+    esconderBanner();
+  });
+
+  // ---------- Ligar eventos da linha ----------
+  function ligarLinha(row) {
+    if (!row) return;
+
+    const selectEl   = row.querySelector('select[name$="-material"]');
+    const qtdInput   = row.querySelector('input[name$="-quantidade"]');
+    const unidEl     = row.querySelector('[name$="-unidade_medida"]');
+    const valorInput = row.querySelector('input[name$="-valor_unitario"]');
+    const btnRemove  = row.querySelector('.btn-remove-item');
+
+    if (selectEl)   selectEl.addEventListener('change', function () { aplicarPreco(this); });
+    if (qtdInput)   qtdInput.addEventListener('input', calcTotal);
+    if (unidEl)     unidEl.addEventListener('change', calcTotal);
+    if (valorInput) valorInput.addEventListener('input', calcTotal);
+    if (btnRemove)  btnRemove.addEventListener('click', function () { removerLinha(row); });
+
+    const del = row.querySelector('input[name$="-DELETE"]');
+    if (del && del.checked) row.classList.add('is-removed');
+
+    calcLinha(row);
+  }
+
+  // ---------- Inicialização ----------
+  document.querySelectorAll('#formset-container .formset-row').forEach(ligarLinha);
+  calcTotal();
+
+  // ---------- Adicionar nova linha ----------
+  document.getElementById('add-item').addEventListener('click', function () {
+    const container  = document.getElementById('formset-container');
+    const totalForms = document.getElementById('id_itens-TOTAL_FORMS');
+    const idx = parseInt(totalForms.value);
+    const tpl = document.getElementById('empty-form').innerHTML.replace(/__prefix__/g, idx);
+
+    const div = document.createElement('div');
+    div.innerHTML = tpl.trim();
+    const novaLinha = div.firstElementChild;
+
+    container.appendChild(novaLinha);
+    totalForms.value = idx + 1;
+
+    ligarLinha(novaLinha);
+    calcTotal();
+
+    novaLinha.querySelector('select[name$="-material"]')?.focus();
+  });
+})();
 </script>
 {% endblock %}

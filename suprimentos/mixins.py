@@ -1,4 +1,4 @@
-#suprimentos/mixins.py
+# suprimentos/mixins.py
 """Mixins para aplicar permissões nas Views."""
 from django.conf import settings
 from django.contrib import messages

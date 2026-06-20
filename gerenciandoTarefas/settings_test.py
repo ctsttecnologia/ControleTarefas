@@ -21,12 +21,17 @@ from .settings import *  # noqa: F401, F403, E402
 # =============================================================================
 # 🗄️ BANCO DE DADOS — SQLite em memória (rápido e isolado)
 # =============================================================================
+# Banco descartável em memória — rápido e sem MySQL
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',   # ✅ correto
-        'NAME': ':memory:',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": ":memory:",
     }
 }
+
+# Acelera hashing de senha nos testes
+PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
 
 
 # =============================================================================

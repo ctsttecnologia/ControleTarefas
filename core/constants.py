@@ -34,20 +34,20 @@ GRUPOS_PERFIL: frozenset[str] = frozenset({
 })
 
 # ============================================================
-# GRUPOS — SETORES / DEPARTAMENTOS
+# GRUPOS — SETORES
 # ============================================================
+GRUPO_GESTAO_QUALIDADE = "GESTAO_QUALIDADE"
+GRUPO_SST_SEGURANCA = "SST_SEGURANCA"
 GRUPO_DEPARTAMENTO_PESSOAL = "DEPARTAMENTO_PESSOAL"
 GRUPO_PLANEJAMENTO = "PLANEJAMENTO"
 GRUPO_SUPRIMENTOS = "SUPRIMENTOS"
-GRUPO_GESTAO_QUALIDADE = "GESTAO_QUALIDADE"
-GRUPO_SST_SEGURANCA = "SST_SEGURANCA"
 
-GRUPOS_SETOR: frozenset[str] = frozenset({
+GRUPOS_SETOR: frozenset[str] = frozenset({   # ✅ agora é um frozenset
+    GRUPO_GESTAO_QUALIDADE,
+    GRUPO_SST_SEGURANCA,
     GRUPO_DEPARTAMENTO_PESSOAL,
     GRUPO_PLANEJAMENTO,
     GRUPO_SUPRIMENTOS,
-    GRUPO_GESTAO_QUALIDADE,
-    GRUPO_SST_SEGURANCA,
 })
 
 # ============================================================

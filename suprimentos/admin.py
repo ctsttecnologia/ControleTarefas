@@ -69,26 +69,6 @@ class MaterialAdmin(admin.ModelAdmin):
     list_per_page = 40
 
 
-# ── Contrato + Verba ──────────────────────────────────────────
-class VerbaContratoInline(admin.TabularInline):
-    model = VerbaContrato
-    extra = 0
-
-
-@admin.register(Contrato)
-class ContratoAdmin(admin.ModelAdmin):
-    list_display = ("cm", "cliente", "filial", "ativo")
-    list_filter = ("ativo", "filial")
-    search_fields = ("cm", "cliente")
-    inlines = [VerbaContratoInline]
-
-
-@admin.register(VerbaContrato)
-class VerbaContratoAdmin(admin.ModelAdmin):
-    list_display = ("contrato", "ano", "mes", "verba_total", "compra_total", "saldo_total")
-    list_filter = ("ano", "mes", "contrato")
-
-
 # ── Pedido ────────────────────────────────────────────────────
 @admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):
@@ -97,7 +77,7 @@ class PedidoAdmin(admin.ModelAdmin):
     search_fields = ("numero", "contrato__cm", "contrato__cliente")
     readonly_fields = ("numero", "data_pedido", "valor_total", "estoque_processado")
     inlines = [ItemPedidoInline, AnexoPedidoInline, HistoricoPedidoInline]
-    date_hierarchy = "data_pedido"
+    #date_hierarchy = "data_pedido"
 
     @admin.display(description="Status")
     def status_badge(self, obj):
@@ -150,6 +130,53 @@ class EstoqueConsumoAdmin(admin.ModelAdmin):
     list_display = ("material", "contrato", "tipo", "quantidade", "responsavel", "criado_em")
     list_filter = ("tipo", "filial", "contrato")
     search_fields = ("material__descricao",)
+
+# ── Contrato e Verba Contrato ──────────────────────────────────────────
+
+@admin.register(Contrato)
+class ContratoAdmin(admin.ModelAdmin):
+    list_display = ("cm", "cliente", "filial", "ativo", "atualizado_em")
+    list_filter = ("ativo", "filial")
+    search_fields = ("cm", "cliente")
+    list_select_related = ("filial",)
+    ordering = ("cm",)
+    readonly_fields = ("criado_em", "atualizado_em")
+    fieldsets = (
+        (None, {"fields": ("cm", "cliente", "filial", "ativo")}),
+        ("Auditoria", {
+            "classes": ("collapse",),
+            "fields": ("criado_em", "atualizado_em"),
+        }),
+    )
+
+
+@admin.register(VerbaContrato)
+class VerbaContratoAdmin(admin.ModelAdmin):
+    list_display = (
+        "contrato", "ano", "mes",
+        "verba_epi", "verba_consumo", "verba_ferramenta",
+        "verba_total_col", "compra_total_col", "saldo_total_col",
+    )
+    list_filter = ("ano", "mes", "contrato__filial")
+    search_fields = ("contrato__cm", "contrato__cliente")
+    list_select_related = ("contrato",)
+    ordering = ("-ano", "-mes")
+    autocomplete_fields = ("contrato",)
+
+    @admin.display(description="Verba Total")
+    def verba_total_col(self, obj):
+        return f"R$ {obj.verba_total:.2f}"
+
+    @admin.display(description="Compra Total")
+    def compra_total_col(self, obj):
+        return f"R$ {obj.compra_total:.2f}"
+
+    @admin.display(description="Saldo")
+    def saldo_total_col(self, obj):
+        cor = "green" if obj.saldo_total >= 0 else "red"
+        return format_html(
+            '<b style="color:{}">R$ {}</b>', cor, f"{obj.saldo_total:.2f}"
+        )
 
 
 admin.site.register([AnexoPedido, AnexoSolicitacao, HistoricoPedido, HistoricoSolicitacao, ItemPedidoCompra])

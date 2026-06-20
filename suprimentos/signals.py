@@ -10,80 +10,9 @@ from django.utils import timezone
 from django.db.models.signals import post_save
 from django.db import transaction
 from .models import ItemPedido, Pedido, EstoqueConsumo, CategoriaMaterial
-from .models import Pedido, SolicitacaoCompra, ItemSolicitacao
+from .models import Pedido
 
 logger = logging.getLogger(__name__)
-
-
-def _gerar_solicitacao_do_pedido(pedido):
-    """
-    Gera UMA SolicitacaoCompra (consolidada) com N ItemSolicitacao
-    a partir de um Pedido aprovado.
-    """
-
-    # Idempotência: já existe solicitação para esse pedido?
-    if SolicitacaoCompra.objects.filter(pedido=pedido).exists():
-        logger.info(f"⏭️ Pedido {pedido.numero} já tem solicitação.")
-        return
-
-    itens_pedido = pedido.itens.select_related('material').all()
-    if not itens_pedido.exists():
-        logger.warning(f"⚠️ Pedido {pedido.numero} sem itens.")
-        return
-
-    logger.info(f"🛒 Gerando solicitação de cotação para pedido {pedido.numero}...")
-
-    try:
-        with transaction.atomic():
-            # 1️⃣ Cabeçalho da solicitação
-            solicitacao = SolicitacaoCompra.objects.create(
-                pedido=pedido,
-                contrato=pedido.contrato,
-                filial=pedido.filial,
-                tipo_obra=getattr(pedido, 'tipo_obra', '') or '',
-                solicitante=pedido.solicitante,
-                aprovador_inicial=pedido.aprovador,
-                data_aprovacao_inicial=pedido.data_aprovacao or timezone.now(),
-                data_necessaria=pedido.data_necessaria,
-                status='PENDENTE_COTACAO',
-            )
-
-            # 2️⃣ Itens (1 por item do pedido, com rastreabilidade)
-            itens_criados = []
-            for item_ped in itens_pedido:
-                item_sol = ItemSolicitacao.objects.create(
-                    solicitacao=solicitacao,
-                    item_pedido_origem=item_ped,    # 🔗 rastreabilidade
-                    material=item_ped.material,
-                    quantidade=item_ped.quantidade,
-                    valor_unitario_estimado=item_ped.valor_unitario or 0,
-                    observacao=item_ped.observacao or '',
-                    status='AGUARDANDO_COTACAO', 
-                )
-                itens_criados.append(item_sol)
-
-            logger.info(
-                f"  ✅ {solicitacao.numero} criada com {len(itens_criados)} item(ns)."
-            )
-
-        # 3️⃣ Notificação (fora da transação para não travar o commit)
-        try:
-            from notifications.services import notificar_solicitacao_criada
-            notificar_solicitacao_criada(solicitacao)
-            logger.info(f"  🔔 Compradores notificados.")
-        except ImportError:
-            logger.debug("  ℹ️ Serviço de notificação não disponível.")
-        except Exception as e:
-            logger.warning(f"  ⚠️ Falha ao notificar: {e}")
-
-        return solicitacao
-
-    except Exception as e:
-        logger.error(
-            f"❌ Erro ao gerar solicitação do pedido {pedido.numero}: {e}",
-            exc_info=True,
-        )
-        return None
 
 
 @receiver(post_save, sender=Pedido)
@@ -91,11 +20,24 @@ def pedido_aprovado_criar_solicitacao(sender, instance, created, **kwargs):
     """Dispara criação da solicitação quando Pedido vira APROVADO."""
     if created:
         return
-    if instance.status != 'APROVADO':
+    if instance.status != Pedido.StatusChoices.APROVADO:
         return
 
-    # Espera o commit para garantir que os itens já foram salvos
-    transaction.on_commit(lambda: _gerar_solicitacao_do_pedido(instance))
+    def _criar():
+        # Recarrega para garantir estado atual e evitar instância stale
+        pedido = Pedido.objects.get(pk=instance.pk)
+        if pedido.status != Pedido.StatusChoices.APROVADO:
+            return
+        try:
+            # ✅ Fonte única da verdade — usa o método do modelo
+            pedido.gerar_solicitacao_compra(usuario=pedido.aprovador)
+        except Exception as e:
+            logger.error(
+                f"❌ Erro ao gerar solicitação do pedido {pedido.numero}: {e}",
+                exc_info=True,
+            )
+
+    transaction.on_commit(_criar)
 
 
 @receiver(pre_save, sender=Pedido)

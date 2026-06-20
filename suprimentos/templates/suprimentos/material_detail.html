@@ -1,0 +1,67 @@
+
+<!-- suprimentos/templates/suprimentos/material_detail.html -->
+{% extends "suprimentos/base_suprimentos.html" %}
+{% block title %}{{ material.descricao }}{% endblock %}
+
+{% block sup_content %}
+
+    <div class="sup-page-head">
+        <h2 class="h4 fw-bold mb-1">{{ material.descricao }}</h2>
+            <small class="text-muted"><code>{{ material.codigo }}</code></small>
+        <div class="sup-page-actions">
+            {% if perms.suprimentos.change_material or user.is_superuser %}
+            <a href="{% url 'suprimentos:material_update' material.pk %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+            {% endif %}
+            <a href="{% url 'suprimentos:material_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+    </div>
+    <hr>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card sup-card">
+        <div class="card-body p-4">
+          <h6 class="fw-bold text-muted mb-3">Dados Gerais</h6>
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Classificação</dt><dd class="col-sm-8">{{ material.get_classificacao_display }}</dd>
+            <dt class="col-sm-4">Tipo</dt><dd class="col-sm-8">{{ material.get_tipo_display }}</dd>
+            <dt class="col-sm-4">Marca</dt><dd class="col-sm-8">{{ material.marca|default:"—" }}</dd>
+            <dt class="col-sm-4">Unidade</dt><dd class="col-sm-8">{{ material.get_unidade_display }}</dd>
+            <dt class="col-sm-4">Valor Unitário</dt><dd class="col-sm-8">R$ {{ material.valor_unitario }}</dd>
+            <dt class="col-sm-4">NCM</dt><dd class="col-sm-8">{{ material.ncm|default:"—" }}</dd>
+            <dt class="col-sm-4">Grupo Tributário</dt><dd class="col-sm-8">{{ material.grupo_tributario|default:"—" }}</dd>
+            <dt class="col-sm-4">Status</dt>
+            <dd class="col-sm-8">
+              {% if material.ativo %}<span class="badge bg-success">Ativo</span>
+              {% else %}<span class="badge bg-danger">Inativo</span>{% endif %}
+            </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card sup-card">
+        <div class="card-body p-4">
+          <h6 class="fw-bold text-muted mb-3">Informação Tributária (unitária)</h6>
+          {% if info_tributaria.sem_grupo %}
+            <p class="text-muted mb-0"><i class="bi bi-info-circle me-1"></i>Sem grupo tributário vinculado.</p>
+          {% else %}
+            <dl class="row mb-0">
+              <dt class="col-7">Custo real</dt><dd class="col-5 text-end">R$ {{ info_tributaria.custo_real }}</dd>
+              <dt class="col-7">Total créditos</dt><dd class="col-5 text-end">R$ {{ info_tributaria.total_creditos }}</dd>
+              <dt class="col-7">Total impostos</dt><dd class="col-5 text-end">R$ {{ info_tributaria.total_impostos }}</dd>
+              <dt class="col-7">% Economia</dt><dd class="col-5 text-end">{{ info_tributaria.percentual_economia }}%</dd>
+            </dl>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock sup_content %}
+

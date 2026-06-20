@@ -8,10 +8,9 @@ e geração do template Excel.
 import csv
 from io import BytesIO, StringIO
 from decimal import Decimal
-
+from unittest.mock import Mock
 import openpyxl
 from django.test import TestCase
-
 from usuario.models import Filial
 from suprimentos.models import (
     Material, CategoriaMaterial, TipoMaterial, UnidadeMedida,
@@ -23,6 +22,11 @@ from suprimentos.services import (
     CABECALHOS_AMIGAVEIS,
 )
 from suprimentos.models import UnidadeMedida
+from tributacao.models import NCM, GrupoTributario, CFOP
+
+
+
+
 
 # Pega a PRIMEIRA unidade válida do enum, seja qual for
 UNIDADE_VALIDA = list(dict(UnidadeMedida.choices).keys())[0] 
@@ -240,6 +244,74 @@ class ValidarLinhaTests(TestCase):
         self.assertEqual(limpo['unidade'], 'PÇ')
         self.assertEqual(erros, [])
 
+
+class GetFKsCacheTests(TestCase):
+    """Cobre _get_ncm e _get_grupo: lookup, ativo, strip e cache (linhas 101-118)."""
+
+    def setUp(self):
+        self.filial = Filial.objects.create(nome='Matriz')
+
+    def _service(self):
+        return MaterialImportService(arquivo=Mock(), filial=self.filial)
+
+    def _criar_grupo(self, codigo):
+        cfop = CFOP.objects.create(codigo=f'5102-{codigo}', descricao='Venda')
+        return GrupoTributario.objects.create(
+            nome=f'Grupo {codigo}',
+            codigo=codigo,
+            cfop=cfop,
+            filial=self.filial,
+        )
+
+    # ── NCM ──────────────────────────────────────────────────────────
+    def test_get_ncm_vazio_retorna_none(self):
+        self.assertIsNone(self._service()._get_ncm(''))
+        self.assertIsNone(self._service()._get_ncm(None))
+
+    def test_get_ncm_existente_retorna_objeto(self):
+        ncm = NCM.objects.create(codigo='8546.90.00', descricao='Fita isolante')
+        self.assertEqual(self._service()._get_ncm('8546.90.00'), ncm)
+
+    def test_get_ncm_inexistente_retorna_none(self):
+        self.assertIsNone(self._service()._get_ncm('0000.00.00'))
+
+    def test_get_ncm_inativo_retorna_none(self):
+        NCM.objects.create(codigo='1111.11.11', descricao='Inativo', ativo=False)
+        self.assertIsNone(self._service()._get_ncm('1111.11.11'))
+
+    def test_get_ncm_usa_cache(self):
+        NCM.objects.create(codigo='2222.22.22', descricao='Cache')
+        svc = self._service()
+        svc._get_ncm('2222.22.22')
+        with self.assertNumQueries(0):
+            svc._get_ncm('2222.22.22')
+
+    def test_get_ncm_strip_espacos(self):
+        ncm = NCM.objects.create(codigo='3333.33.33', descricao='Strip')
+        self.assertEqual(self._service()._get_ncm('  3333.33.33  '), ncm)
+
+    # ── Grupo Tributário ─────────────────────────────────────────────
+    def test_get_grupo_vazio_retorna_none(self):
+        self.assertIsNone(self._service()._get_grupo(''))
+        self.assertIsNone(self._service()._get_grupo(None))
+
+    def test_get_grupo_existente_retorna_objeto(self):
+        gt = self._criar_grupo('GT-CONSUMO')
+        self.assertEqual(self._service()._get_grupo('GT-CONSUMO'), gt)
+
+    def test_get_grupo_inexistente_retorna_none(self):
+        self.assertIsNone(self._service()._get_grupo('GT-XXX'))
+
+    def test_get_grupo_usa_cache(self):
+        self._criar_grupo('GT-CACHE')
+        svc = self._service()
+        svc._get_grupo('GT-CACHE')
+        with self.assertNumQueries(0):
+            svc._get_grupo('GT-CACHE')
+
+    def test_get_grupo_strip_espacos(self):
+        gt = self._criar_grupo('GT-EPI')
+        self.assertEqual(self._service()._get_grupo('  GT-EPI  '), gt)
 
 # ═════════════════════════════════════════════════════════════════════
 # EXECUÇÃO DA IMPORTAÇÃO (com transação atômica)

@@ -152,6 +152,11 @@ class GrupoTributario(models.Model):
         ("S", "Saída (Venda/Remessa)"),
     ]
 
+    codigo = models.CharField(
+        "Código do Grupo",
+        max_length=50, blank=True, default="",
+        help_text="Identificador único do grupo na filial. Ex: GT-CONSUMO, GT-EPI, GT-SERVIÇOS",
+    )
     nome = models.CharField("Nome do Grupo", max_length=200)
     descricao = models.TextField("Descrição", blank=True, default="")
     natureza = models.CharField(
@@ -178,8 +183,15 @@ class GrupoTributario(models.Model):
         verbose_name = "Grupo Tributário"
         verbose_name_plural = "Grupos Tributários"
         ordering = ["nome"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["codigo", "filial"],
+                name="unique_codigo_grupo_por_filial",
+            ),
+        ]
         permissions = [
             ("pode_gerenciar_todas_filiais", "Pode gerenciar grupos tributários de todas as filiais"),
+            ("pode_gerenciar_filial_ativa", "Pode gerenciar grupos tributários da filial ativa"),
         ]
 
     def __str__(self):

@@ -1,0 +1,70 @@
+
+{% extends "suprimentos/base_suprimentos.html" %}
+
+{% block sup_content %}
+
+<div class="sup-page-head">
+    <h2 class="sup-page-title">
+        <i class="bi bi-check2-square me-2"></i>Avaliar Pedido {{ pedido.numero }}
+    </h2>   
+    <div class="sup-page-actions">
+        
+        <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-light fw-semibold">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+    </div>
+</div>
+<small class="opacity-75">{{ pedido.contrato }}</small>
+<hr>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card sup-card">
+      <div class="card-header bg-white fw-semibold">Itens do Pedido</div>
+      <div class="table-responsive">
+        <table class="table table-sup mb-0">
+          <thead><tr><th>Material</th><th>Qtd</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+            {% for item in itens %}
+            <tr><td>{{ item.material.descricao }}</td><td>{{ item.quantidade }} {{ item.get_unidade_medida_display }}</td>
+            <td class="text-end">R$ {{ item.valor_total|floatformat:2 }}</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot><tr class="table-light"><td colspan="2" class="text-end fw-bold">TOTAL</td>
+          <td class="text-end fw-bold text-primary">R$ {{ pedido.valor_total|floatformat:2 }}</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card sup-card">
+      <div class="card-header bg-white fw-semibold">Decisão</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            {% for radio in form.decisao %}
+            <div class="form-check mb-2">{{ radio.tag }}
+              <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">{{ form.motivo.label }}</label>
+            {{ form.motivo }}
+            {% if form.motivo.errors %}<div class="text-danger small">{{ form.motivo.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="d-grid gap-2">
+            <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Confirmar Decisão</button>
+            <a href="{{ pedido.get_absolute_url }}" class="btn btn-light">Voltar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="alert alert-info small mt-3">
+      <i class="bi bi-info-circle"></i> Ao <strong>aprovar</strong>, uma Solicitação de Compra é gerada automaticamente.
+    </div>
+  </div>
+</div>
+{% endblock %}
