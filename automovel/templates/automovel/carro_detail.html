@@ -113,11 +113,11 @@
 
 {% block automovel_content %}
 
-    {# ════════════════════════════════════════════════════════
+    <!--════════════════════════════════════════════════════════
        O HERO FOI REMOVIDO DAQUI!
        Agora quem renderiza a Placa Mercosul + título + botões
        é o _base_automovel.html automaticamente via {% if carro %}
-       ════════════════════════════════════════════════════════ #}
+       ════════════════════════════════════════════════════════ -->
 
     <div class="row g-4">
 
@@ -277,55 +277,56 @@
                         </div>
                         <div class="card-body history-scroll">
                             {% if agendamentos %}
-                            <ul class="timeline">
-                                {% for ag in agendamentos %}
-                                <li class="timeline-item
-                                    {% if ag.status == 'finalizado' %}timeline-item-success
-                                    {% elif ag.status == 'em_andamento' %}timeline-item-warning{% endif %}">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <div class="timeline-title">{{ ag.funcionario }}</div>
-                                            <div class="timeline-date">{{ ag.data_hora_agenda|date:"d/m/Y H:i" }}</div>
-                                            {% if ag.descricao %}
-                                            <div class="timeline-desc">{{ ag.descricao|truncatewords:12 }}</div>
-                                            {% endif %}
-                                        </div>
-                                        <div class="text-end">
-                                            <span class="badge status-pill-sm
-                                                bg-{% if ag.status == 'agendado' %}info
-                                                    {% elif ag.status == 'em_andamento' %}primary
-                                                    {% elif ag.status == 'finalizado' %}success
-                                                    {% else %}secondary{% endif %}">
-                                                {{ ag.get_status_display }}
-                                            </span>
-                                            <div class="mt-1">
-                                                <a href="{% url 'automovel:agendamento_detail' ag.id %}"
-                                                   class="btn btn-sm btn-outline-primary"
-                                                   style="border-radius: 50rem; font-size: 0.68rem; padding: 0.15rem 0.6rem;">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                                {% if ag.status != 'finalizado' and ag.status != 'cancelado' %}
-                                                <button type="button"
-                                                        class="btn btn-sm btn-success btn-finalizar-agenda"
-                                                        style="border-radius: 50rem; font-size: 0.68rem; padding: 0.15rem 0.6rem;"
-                                                        data-bs-toggle="modal" data-bs-target="#finalizarAgendamentoModal"
-                                                        data-id="{{ ag.id }}"
-                                                        data-placa="{{ carro.placa }}"
-                                                        data-motorista="{{ ag.funcionario }}">
-                                                    <i class="bi bi-check-lg"></i>
-                                                </button>
-                                                {% endif %}
+                                <ul class="timeline">
+                                    {% for ag in agendamentos %}
+                                        <li class="timeline-item
+                                            {% if ag.status == 'finalizado' %}timeline-item-success
+                                            {% elif ag.status == 'em_andamento' %}timeline-item-warning{% endif %}">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <div class="timeline-title">{{ ag.funcionario }}</div>
+                                                    <div class="timeline-date">{{ ag.data_hora_agenda|date:"d/m/Y H:i" }}</div>
+                                                    {% if ag.descricao %}
+                                                    <div class="timeline-desc">{{ ag.descricao|truncatewords:12 }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge status-pill-sm
+                                                        bg-{% if ag.status == 'agendado' %}info
+                                                            {% elif ag.status == 'em_andamento' %}primary
+                                                            {% elif ag.status == 'finalizado' %}success
+                                                            {% else %}secondary{% endif %}">
+                                                        {{ ag.get_status_display }}
+                                                    </span>
+                                                    <div class="mt-1">
+                                                        <a href="{% url 'automovel:agendamento_detail' ag.id %}"
+                                                        class="btn btn-sm btn-outline-primary"
+                                                        style="border-radius: 50rem; font-size: 0.68rem; padding: 0.15rem 0.6rem;">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                        {% if ag.status != 'finalizado' and ag.status != 'cancelado' %}
+                                                        <button type="button"
+                                                                class="btn btn-sm btn-success btn-finalizar-agenda"
+                                                                style="border-radius: 50rem; font-size: 0.68rem; padding: 0.15rem 0.6rem;"
+                                                                data-bs-toggle="modal" data-bs-target="#finalizarAgendamentoModal"
+                                                                data-id="{{ ag.id }}"
+                                                                data-placa="{{ carro.placa }}"
+                                                                data-motorista="{{ ag.funcionario }}">
+                                                            <i class="bi bi-check-lg"></i>
+                                                        </button>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                            {% else %}
-                            <div class="text-center py-4">
-                                <i class="bi bi-calendar-x text-muted" style="font-size: 2rem;"></i>
-                                <p class="text-muted small mt-2 mb-0">Nenhum agendamento registrado</p>
-                            </div>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-calendar-x text-muted" style="font-size: 2rem;"></i>
+                                    <p class="text-muted small mt-2 mb-0">Nenhum agendamento registrado</p>
+                                </div>
+                                {% endif %}
                             {% endif %}
                         </div>
                     </div>
