@@ -628,32 +628,33 @@
 {% block logradouro_extra_css %}{% endblock logradouro_extra_css %}
 {% endblock extra_css %}
 
+{# Sobrescreve o block de mensagens do base.html com o estilo do Logradouro #}
+{% block messages %}
+{% if messages %}
+<div class="mb-3">
+    {% for message in messages %}
+    <div class="log-alert log-alert-{{ message.tags|default:'info' }} d-flex align-items-center justify-content-between" role="alert">
+        <div>
+            {% if message.tags == 'success' %}
+                <i class="bi bi-check-circle-fill me-2"></i>
+            {% elif message.tags == 'error' or message.tags == 'danger' %}
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            {% elif message.tags == 'warning' %}
+                <i class="bi bi-exclamation-circle-fill me-2"></i>
+            {% else %}
+                <i class="bi bi-info-circle-fill me-2"></i>
+            {% endif %}
+            {{ message }}
+        </div>
+        <button type="button" class="btn-close btn-close-sm" onclick="this.parentElement.remove()" aria-label="Fechar"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock messages %}
+
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
-
-    {# Mensagens do Django #}
-    {% if messages %}
-    <div class="mb-3">
-        {% for message in messages %}
-        <div class="log-alert log-alert-{{ message.tags|default:'info' }} d-flex align-items-center justify-content-between" role="alert">
-            <div>
-                {% if message.tags == 'success' %}
-                    <i class="bi bi-check-circle-fill me-2"></i>
-                {% elif message.tags == 'error' or message.tags == 'danger' %}
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                {% elif message.tags == 'warning' %}
-                    <i class="bi bi-exclamation-circle-fill me-2"></i>
-                {% else %}
-                    <i class="bi bi-info-circle-fill me-2"></i>
-                {% endif %}
-                {{ message }}
-            </div>
-            <button type="button" class="btn-close btn-close-sm" onclick="this.parentElement.remove()" aria-label="Fechar"></button>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
     {% block logradouro_content %}
     {% endblock logradouro_content %}
 </div>
@@ -664,7 +665,6 @@
 (function() {
     'use strict';
 
-    // ═══ Auto-dismiss alertas após 5s ═══
     document.querySelectorAll('.log-alert').forEach(function(alert) {
         setTimeout(function() {
             alert.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
@@ -674,7 +674,6 @@
         }, 5000);
     });
 
-    // ═══ Inicializar tooltips do Bootstrap ═══
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.forEach(function(el) {
         new bootstrap.Tooltip(el);
@@ -685,7 +684,5 @@
 </script>
 {% block logradouro_extra_js %}{% endblock logradouro_extra_js %}
 {% endblock extra_js %}
-
-
 
 
