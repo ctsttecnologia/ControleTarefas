@@ -75,7 +75,7 @@
             {% for foto in linha %}
             <td class="foto-cell">
                 <img src="{{ foto.imagem.url }}" alt="">
-                <div class="foto-legenda"><b>Foto {{ foto.ordem }}:</b> {{ foto.legenda }}</div>
+                <div class="foto-legenda"><b>Foto {{ foto.ordem }}:</b>  {{ foto.legenda }}</div>
             </td>
             {% endfor %}
             {% if linha|length < 2 %}<td></td>{% endif %}
