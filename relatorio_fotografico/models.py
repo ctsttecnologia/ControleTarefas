@@ -1,15 +1,21 @@
 
 # relatorio_fotografico/models.py
 import math
+from io import BytesIO
 from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import models
 from django.urls import reverse
-
+from PIL import Image, ImageOps
 from core.mixins import make_upload_path, sanitize_image
 from core.validators import SecureFileValidator
 
 FOTOS_POR_PAGINA = 6  # 2 colunas x 3 linhas
 
+# Tamanho máximo padronizado para as fotos do relatório
+FOTO_MAX_SIZE = (800, 600)
+FOTO_QUALIDADE = 80
 
 class RelatorioFotografico(models.Model):
 
@@ -94,7 +100,6 @@ class RelatorioFotografico(models.Model):
         return resultado
 
 
-
 class FotoRelatorio(models.Model):
 
     relatorio = models.ForeignKey(
@@ -119,10 +124,39 @@ class FotoRelatorio(models.Model):
         return f'Foto #{self.ordem} - {self.relatorio_id}'
 
     def save(self, *args, **kwargs):
-        # Sanitiza a imagem (remove EXIF/metadados) em novos uploads
-        if self.imagem and hasattr(self.imagem, 'file'):
-            from django.core.files.uploadedfile import InMemoryUploadedFile
-            if isinstance(self.imagem.file, InMemoryUploadedFile):
-                self.imagem.file = sanitize_image(self.imagem.file)
+        is_new_upload = self.imagem and hasattr(self.imagem, 'file') and isinstance(
+            self.imagem.file, InMemoryUploadedFile
+        )
+
+        if is_new_upload:
+            # 1) Sanitiza a imagem (remove EXIF/metadados)
+            self.imagem.file = sanitize_image(self.imagem.file)
+
+            # 2) Padroniza tamanho/resolução
+            self.imagem.file = self._padronizar_imagem(self.imagem.file)
+
         super().save(*args, **kwargs)
 
+    def _padronizar_imagem(self, arquivo):
+        arquivo.seek(0)
+        img = Image.open(arquivo)
+        img = ImageOps.exif_transpose(img)
+
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+
+        # Corta e redimensiona para proporção fixa 4:3 (uniformiza o grid)
+        img = ImageOps.fit(img, FOTO_MAX_SIZE, Image.LANCZOS)
+
+        buffer = BytesIO()
+        img.save(buffer, format='JPEG', quality=FOTO_QUALIDADE, optimize=True)
+        buffer.seek(0)
+
+        nome_original = getattr(arquivo, 'name', 'foto.jpg')
+        nome_base = nome_original.rsplit('.', 1)[0]
+        novo_nome = f'{nome_base}.jpg'
+
+        return InMemoryUploadedFile(
+            buffer, None, novo_nome, 'image/jpeg',
+            buffer.getbuffer().nbytes, None,
+        )
