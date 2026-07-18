@@ -157,6 +157,7 @@ INSTALLED_APPS = [
     'api',
     'pgr_gestao.apps.PgrGestaoConfig',
     'ltcat',
+    'relatorio_fotografico',
 ]
 
 # Adicionar storages apenas quando disponível (produção)
