@@ -1,0 +1,356 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ relatorio.titulo }}{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<style>
+    .foto-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+        cursor: grab;
+        transition: box-shadow .2s;
+    }
+    .foto-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+    .foto-card.sortable-ghost { opacity: .4; }
+    .foto-card img {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+        display: block;
+    }
+    .foto-card-body { padding: 10px; }
+    .foto-numero {
+        position: absolute;
+        top: 8px; left: 8px;
+        background: rgba(0,0,0,.65);
+        color: #fff;
+        border-radius: 50%;
+        width: 26px; height: 26px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px; font-weight: 700;
+    }
+    .foto-wrapper { position: relative; }
+    .foto-remove-btn {
+        position: absolute;
+        top: 8px; right: 8px;
+        z-index: 5;
+    }
+    .drop-zone {
+        border: 2px dashed #adb5bd;
+        border-radius: 10px;
+        padding: 30px;
+        text-align: center;
+        color: #6c757d;
+        transition: all .2s;
+        cursor: pointer;
+    }
+    .drop-zone.dragover {
+        border-color: #0d6efd;
+        background: #f0f7ff;
+        color: #0d6efd;
+    }
+    .foto-legenda-textarea {
+        font-size: .85rem;
+    }
+    .badge-status-rascunho { background: #ffc107; color: #000; }
+    .badge-status-finalizado { background: #198754; }
+    .spinner-upload { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Cabeçalho -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-4 gap-2">
+        <div>
+            <h3 class="mb-1">
+                <i class="bi bi-camera-fill me-2"></i>{{ relatorio.titulo }}
+            </h3>
+            <div class="text-muted small">
+                <strong>Obra/Código:</strong> {{ relatorio.obra_codigo }} &nbsp;|&nbsp;
+                <strong>Data:</strong> {{ relatorio.data|date:"d/m/Y" }} &nbsp;|&nbsp;
+                <strong>Responsável:</strong> {{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }} &nbsp;|&nbsp;
+                <strong>Filial:</strong> {{ relatorio.filial }}
+            </div>
+            <span class="badge mt-2 {% if relatorio.status == 'finalizado' %}badge-status-finalizado{% else %}badge-status-rascunho{% endif %}">
+                {{ relatorio.get_status_display }}
+            </span>
+            <span class="badge bg-secondary mt-2">{{ total_folhas }} folha{{ total_folhas|pluralize }}</span>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'relatorio_fotografico:update' relatorio.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-pencil me-1"></i>Editar Dados
+            </a>
+            <a href="{% url 'relatorio_fotografico:export_docx' relatorio.pk %}" class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-word me-1"></i>Word
+            </a>
+            <a href="{% url 'relatorio_fotografico:export_pdf' relatorio.pk %}?inline=1" target="_blank" class="btn btn-outline-danger">
+                <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+            </a>
+            <button onclick="window.print()" class="btn btn-outline-dark">
+                <i class="bi bi-printer me-1"></i>Imprimir
+            </button>
+            <a href="{% url 'relatorio_fotografico:list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Upload de fotos -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h6 class="mb-3"><i class="bi bi-cloud-upload me-1"></i>Adicionar Fotos</h6>
+
+            <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                    <label class="btn btn-outline-primary w-100 mb-0">
+                        <i class="bi bi-images me-1"></i> Escolher da Galeria
+                        <input type="file" id="input-galeria" accept="image/*" multiple hidden>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="btn btn-outline-success w-100 mb-0">
+                        <i class="bi bi-camera me-1"></i> Tirar Foto (Câmera)
+                        <input type="file" id="input-camera" accept="image/*" capture="environment" hidden>
+                    </label>
+                </div>
+            </div>
+
+            <div id="drop-zone" class="drop-zone">
+                <i class="bi bi-cloud-arrow-up display-6"></i>
+                <p class="mb-0 mt-2">Ou arraste e solte as imagens aqui</p>
+            </div>
+
+            <div class="spinner-upload text-center mt-3" id="spinner-upload">
+                <div class="spinner-border text-primary" role="status"></div>
+                <span class="ms-2">Enviando fotos...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid de fotos (2 colunas x N linhas) -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0"><i class="bi bi-grid-3x3-gap me-1"></i>Fotos do Relatório</h6>
+                <small class="text-muted">Arraste os cards para reordenar</small>
+            </div>
+
+            <div id="fotos-grid" class="row g-3" data-relatorio-id="{{ relatorio.pk }}">
+                {% for foto in relatorio.fotos.all %}
+                <div class="col-md-6 foto-item" data-id="{{ foto.id }}">
+                    <div class="foto-card">
+                        <div class="foto-wrapper">
+                            <span class="foto-numero">{{ foto.ordem }}</span>
+                            <button class="btn btn-sm btn-danger foto-remove-btn btn-remove-foto" data-id="{{ foto.id }}" title="Remover">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            <img src="{{ foto.imagem.url }}" alt="Foto {{ foto.ordem }}">
+                        </div>
+                        <div class="foto-card-body">
+                            <textarea class="form-control foto-legenda-textarea legenda-input"
+                                      data-id="{{ foto.id }}"
+                                      rows="2"
+                                      placeholder="Descrição da foto...">{{ foto.legenda }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if not relatorio.fotos.all %}
+            <div id="fotos-empty" class="text-center text-muted py-5">
+                <i class="bi bi-images display-1"></i>
+                <p class="mt-3">Nenhuma foto adicionada ainda.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+(function () {
+    const relatorioId = {{ relatorio.pk }};
+    const uploadUrl = "{% url 'relatorio_fotografico:foto_upload' relatorio.pk %}";
+    const reorderUrl = "{% url 'relatorio_fotografico:foto_reorder' relatorio.pk %}";
+    const csrfToken = "{{ csrf_token }}";
+
+    const grid = document.getElementById('fotos-grid');
+    const spinner = document.getElementById('spinner-upload');
+    const emptyMsg = document.getElementById('fotos-empty');
+
+    function getCsrfCookie() {
+        const name = 'csrftoken=';
+        const decoded = decodeURIComponent(document.cookie);
+        for (const part of decoded.split(';')) {
+            const trimmed = part.trim();
+            if (trimmed.indexOf(name) === 0) return trimmed.substring(name.length);
+        }
+        return csrfToken;
+    }
+
+    function criarCardFoto(foto) {
+        const col = document.createElement('div');
+        col.className = 'col-md-6 foto-item';
+        col.dataset.id = foto.id;
+        col.innerHTML = `
+            <div class="foto-card">
+                <div class="foto-wrapper">
+                    <span class="foto-numero">${foto.ordem}</span>
+                    <button class="btn btn-sm btn-danger foto-remove-btn btn-remove-foto" data-id="${foto.id}" title="Remover">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    <img src="${foto.url}" alt="Foto ${foto.ordem}">
+                </div>
+                <div class="foto-card-body">
+                    <textarea class="form-control foto-legenda-textarea legenda-input"
+                              data-id="${foto.id}" rows="2"
+                              placeholder="Descrição da foto..."></textarea>
+                </div>
+            </div>`;
+        return col;
+    }
+
+    async function enviarArquivos(fileList) {
+        if (!fileList || fileList.length === 0) return;
+
+        const formData = new FormData();
+        for (const file of fileList) {
+            formData.append('imagens', file);
+        }
+
+        spinner.style.display = 'block';
+
+        try {
+            const resp = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCsrfCookie() },
+                body: formData,
+            });
+            const data = await resp.json();
+
+            if (data.ok) {
+                if (emptyMsg) emptyMsg.remove();
+                data.fotos.forEach(foto => {
+                    grid.appendChild(criarCardFoto(foto));
+                });
+                bindEventos();
+            } else {
+                alert('Erro ao enviar fotos: ' + (data.erro || 'desconhecido'));
+            }
+        } catch (e) {
+            alert('Falha na conexão ao enviar fotos.');
+            console.error(e);
+        } finally {
+            spinner.style.display = 'none';
+        }
+    }
+
+    // Input galeria
+    document.getElementById('input-galeria').addEventListener('change', (e) => {
+        enviarArquivos(e.target.files);
+        e.target.value = '';
+    });
+
+    // Input câmera
+    document.getElementById('input-camera').addEventListener('change', (e) => {
+        enviarArquivos(e.target.files);
+        e.target.value = '';
+    });
+
+    // Drag and drop
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        enviarArquivos(e.dataTransfer.files);
+    });
+    dropZone.addEventListener('click', () => {
+        document.getElementById('input-galeria').click();
+    });
+
+    // Remover foto
+    function bindEventos() {
+        document.querySelectorAll('.btn-remove-foto').forEach(btn => {
+            btn.onclick = async function () {
+                if (!confirm('Remover esta foto?')) return;
+                const id = this.dataset.id;
+                const resp = await fetch(`/relatorio-fotografico/foto/${id}/excluir/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCsrfCookie() },
+                });
+                const data = await resp.json();
+                if (data.ok) {
+                    document.querySelector(`.foto-item[data-id="${id}"]`).remove();
+                }
+            };
+        });
+
+        // Salvar legenda (debounce simples)
+        document.querySelectorAll('.legenda-input').forEach(textarea => {
+            let timeout;
+            textarea.addEventListener('input', function () {
+                clearTimeout(timeout);
+                const id = this.dataset.id;
+                const legenda = this.value;
+                timeout = setTimeout(async () => {
+                    await fetch(`/relatorio-fotografico/foto/${id}/editar/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCsrfCookie(),
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `legenda=${encodeURIComponent(legenda)}`,
+                    });
+                }, 600);
+            });
+        });
+    }
+
+    // SortableJS - reordenar via drag
+    new Sortable(grid, {
+        animation: 150,
+        handle: '.foto-card',
+        onEnd: async function () {
+            const ids = Array.from(grid.querySelectorAll('.foto-item')).map(el => el.dataset.id);
+            await fetch(reorderUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfCookie(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ordem: ids }),
+            });
+            // Atualiza numeração visual
+            document.querySelectorAll('.foto-item').forEach((el, idx) => {
+                el.querySelector('.foto-numero').textContent = idx + 1;
+            });
+        },
+    });
+
+    bindEventos();
+})();
+</script>
+
+<style>
+    @media print {
+        .btn, .drop-zone, #spinner-upload, .foto-remove-btn, .card-body h6 + .d-flex,
+        .foto-legenda-textarea { border: none !important; }
+        textarea.foto-legenda-textarea { pointer-events: none; background: transparent; resize: none; }
+    }
+</style>
+{% endblock %}
+
