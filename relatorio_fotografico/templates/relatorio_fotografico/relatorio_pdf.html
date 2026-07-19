@@ -1,4 +1,6 @@
 {% load static %}
+{% load relatorio_extras %}
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -8,15 +10,23 @@
         size: A4;
         margin: 1.2cm 1.5cm;
         @bottom-left { content: "Relatório Fotográfico — CETEST"; font-size: 9px; color: #555; }
-        @bottom-right { content: "Folha " counter(page) " de " counter(pages); font-size: 9px; }
+  
     }
-    body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1a1a1a; font-size: 11px; }
+    body { font-family: "Helvetica Neue", Arial, sans-serif; color: #0d0b0b; font-size: 11px; }
 
     .cabecalho-topo {
         display: flex; align-items: center; justify-content: space-between;
         margin-bottom: 10px;
     }
-    .cabecalho-topo img { height: 45px; }
+    .cabecalho-topo img { 
+        height: 45px; 
+    }
+    .linha-separadora {
+        width: 100%;
+        height: 1.0px;
+        background-color: #004cff86;
+        margin: 8px 0 10px 0;
+    }
     .titulo-principal {
         flex: 1; text-align: center; font-size: 18px; font-weight: 700;
         letter-spacing: 1px;
@@ -24,27 +34,55 @@
 
     .header-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
     .header-table td {
-        border: 1px solid #000; padding: 6px 10px; font-size: 11px; vertical-align: top;
+        border: 1px solid #fffefe; padding: 6px 10px; font-size: 11px; vertical-align: top;
     }
     .header-table td strong { display: block; margin-bottom: 2px; }
 
     .fotos-grid {
-        width: 100%; border-collapse: collapse; page-break-inside: avoid;
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed; /* força colunas de largura igual, ignorando conteúdo */
     }
     .fotos-grid td {
-        border: 1px solid #000; width: 50%; vertical-align: top; padding: 6px;
+        border: 1px solid #000;
+        width: 50%;
+        max-width: 50%;
+        vertical-align: top;
+        padding: 6px;
+        height: 6.8cm;
+        overflow: hidden;
+        word-wrap: break-word;   /* quebra palavras longas dentro da célula */
+        word-break: break-word;
     }
     .foto-cell img {
-        width: 100%; max-height: 6.5cm; object-fit: cover; display: block; margin-bottom: 4px;
+        width: 100%;
+        height: 5.8cm;
+        object-fit: cover;
+        display: block;
+        margin-bottom: 4px;
     }
-    .foto-legenda { font-size: 9.5px; line-height: 1.3; }
-    .foto-legenda b { font-weight: 700; }
+    .foto-legenda {
+        font-size: 9.5px;
+        line-height: 1.3;
+        max-height: 0.9cm;
+        overflow: hidden;
+        word-wrap: break-word;
+        word-break: break-word;
+    }
+    .foto-legenda b { 
+        font-weight: 700; 
+    }
 
-    .pagina-quebra { page-break-before: always; }
+    .pagina-quebra { 
+        page-break-before: always; 
+    }
+
+    .rodape-folha {
+        position: fixed; bottom: 0.3cm; right: 0; font-size: 9px;
+    }
 </style>
 </head>
 <body>
-
 
 {% for linhas in relatorio.paginas_em_linhas %}
 <div class="{% if not forloop.first %}pagina-quebra{% endif %}">
@@ -54,8 +92,9 @@
         <div class="titulo-principal">RELATÓRIO FOTOGRÁFICO</div>
         <div style="width:45px;"></div>
     </div>
-
+    
     <table class="header-table">
+        <div class="linha-separadora"></div>
         <tr>
             <td style="width:65%;"><strong>Obra/Contrato:</strong>{{ relatorio.obra_codigo }}</td>
             <td style="width:35%;"><strong>Data:</strong>{{ relatorio.data|date:"d/m/Y" }}</td>
@@ -74,8 +113,8 @@
         <tr>
             {% for foto in linha %}
             <td class="foto-cell">
-                <img src="{{ foto.imagem.url }}" alt="">
-                <div class="foto-legenda"><b>Foto {{ foto.ordem }}:</b>  {{ foto.legenda }}</div>
+                <img src="{{ fotos_urls|get_item:foto.id }}" alt="{{ foto.legenda }}">
+                <div class="foto-legenda"><b>Foto {{ foto.ordem }}:</b> {{ foto.legenda }}</div>
             </td>
             {% endfor %}
             {% if linha|length < 2 %}<td></td>{% endif %}
@@ -83,9 +122,10 @@
         {% endfor %}
     </table>
 
+    <div class="rodape-folha">Folha {{ forloop.counter }} de {{ total_folhas }}</div>
+
 </div>
 {% endfor %}
-
 
 </body>
 </html>
