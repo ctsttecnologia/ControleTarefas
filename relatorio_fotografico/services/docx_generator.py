@@ -8,7 +8,7 @@ from django.conf import settings
 from docx import Document
 from docx.shared import Cm, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ROW_HEIGHT_RULE
 from docx.oxml.ns import qn
 
 from ..models import FOTOS_POR_PAGINA
@@ -44,7 +44,34 @@ def _set_cell_border(cell, color="000000", sz=8):
     tc_pr.append(tc_borders)
 
 
-def gerar_docx_relatorio(relatorio):
+def _resolver_caminho_foto(foto, imagens_map):
+    """
+    Retorna o caminho da imagem a ser inserida no documento.
+
+    Prioriza a versão temporária padronizada (imagens_map), gerada
+    especificamente para exportação. Se não houver entrada no mapa
+    (ex.: chamada legada sem imagens_map), cai no arquivo original.
+    """
+    if imagens_map:
+        caminho_temp = imagens_map.get(foto.id)
+        if caminho_temp and os.path.exists(caminho_temp):
+            return caminho_temp
+
+    return foto.imagem.path
+
+
+def gerar_docx_relatorio(relatorio, imagens_map=None):
+    """
+    Gera o relatório em Word (.docx).
+
+    Args:
+        relatorio: instância de RelatorioFotografico.
+        imagens_map: dict opcional {foto.id: caminho_temp_padronizado}
+            gerado por `preparar_imagens_temporarias` na view. Quando
+            informado, as imagens temporárias são usadas no lugar do
+            arquivo original — mantendo o grid uniforme e o arquivo
+            final mais leve.
+    """
     doc = Document()
 
     section = doc.sections[0]
@@ -53,11 +80,12 @@ def gerar_docx_relatorio(relatorio):
     section.top_margin = Cm(1.2)
     section.bottom_margin = Cm(1.2)
 
+    largura_util = section.page_width - section.left_margin - section.right_margin
+
     # --- Cabeçalho com logo + título ---
     top_table = doc.add_table(rows=1, cols=3)
     top_table.autofit = False
 
-    largura_util = section.page_width - section.left_margin - section.right_margin
     largura_logo = Cm(3)
     largura_vazio = Cm(3)
     largura_titulo = largura_util - largura_logo - largura_vazio
@@ -82,7 +110,6 @@ def gerar_docx_relatorio(relatorio):
     run_titulo.bold = True
     run_titulo.font.size = Pt(16)
 
-
     # --- Cabeçalho (tabela 3x2, agora com Responsável) ---
     header = doc.add_table(rows=3, cols=2)
     header.style = 'Table Grid'
@@ -105,6 +132,14 @@ def gerar_docx_relatorio(relatorio):
     paginas = relatorio.paginas
     total_folhas = relatorio.total_folhas
 
+    # --- Configuração fixa do grid de fotos ---
+    LINHAS_GRID = 3
+    COLUNAS_GRID = 2
+    LARGURA_COLUNA = int(largura_util / COLUNAS_GRID)
+    LARGURA_IMAGEM = Cm(7.5)
+    ALTURA_IMAGEM = Cm(5.6)
+    ALTURA_LINHA = Cm(6.5)  # imagem + espaço da legenda
+
     for pagina_idx, fotos_pagina in enumerate(paginas, start=1):
         if pagina_idx > 1:
             doc.add_page_break()
@@ -116,15 +151,21 @@ def gerar_docx_relatorio(relatorio):
             run.bold = True
             run.font.size = Pt(10)
 
-        linhas = 3
-        colunas = 2
-        table = doc.add_table(rows=linhas, cols=colunas)
+        table = doc.add_table(rows=LINHAS_GRID, cols=COLUNAS_GRID)
         table.style = 'Table Grid'
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        table.autofit = False
 
-        for idx in range(linhas * colunas):
-            row = idx // colunas
-            col = idx % colunas
+        # Fixa a largura de todas as colunas/células (evita caixas desiguais)
+        for col in table.columns:
+            col.width = LARGURA_COLUNA
+        for row in table.rows:
+            for cell in row.cells:
+                cell.width = LARGURA_COLUNA
+
+        for idx in range(LINHAS_GRID * COLUNAS_GRID):
+            row = idx // COLUNAS_GRID
+            col = idx % COLUNAS_GRID
             cell = table.cell(row, col)
 
             if idx < len(fotos_pagina):
@@ -132,7 +173,14 @@ def gerar_docx_relatorio(relatorio):
                 paragraph = cell.paragraphs[0]
                 run = paragraph.add_run()
                 try:
-                    run.add_picture(foto.imagem.path, width=Cm(7.5))
+                    caminho_imagem = _resolver_caminho_foto(foto, imagens_map)
+                    # Largura E altura fixas (imagens já vêm padronizadas
+                    # em 4:3 pelo ImageOps.fit em preparar_imagens_temporarias)
+                    run.add_picture(
+                        caminho_imagem,
+                        width=LARGURA_IMAGEM,
+                        height=ALTURA_IMAGEM,
+                    )
                 except Exception:
                     paragraph.add_run('[imagem indisponível]')
                 paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -147,6 +195,12 @@ def gerar_docx_relatorio(relatorio):
             else:
                 cell.text = ''
 
+        # Trava a altura de todas as linhas DESTA tabela (dentro do loop
+        # de páginas, para valer em todas as páginas geradas).
+        for row in table.rows:
+            row.height = ALTURA_LINHA
+            row.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+
     # --- Rodapé fixo em todas as páginas ---
     for sec in doc.sections:
         footer_p = sec.footer.paragraphs[0]
@@ -160,3 +214,5 @@ def gerar_docx_relatorio(relatorio):
     doc.save(buffer)
     buffer.seek(0)
     return buffer
+
+
