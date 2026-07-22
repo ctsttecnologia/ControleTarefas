@@ -27,7 +27,7 @@ class RelatorioFotografico(models.Model):
     ]
 
     titulo = models.CharField('Assunto', max_length=200)
-    obra_codigo = models.CharField('Obra/Código', max_length=150)
+    obra_contrato = models.CharField('Obra/Contrato', max_length=150)
     data = models.DateField('Data')
     responsavel = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -54,6 +54,9 @@ class RelatorioFotografico(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    assunto = models.CharField(max_length=455, blank=True, default='')
+
+
     class Meta:
         verbose_name = 'Relatório Fotográfico'
         verbose_name_plural = 'Relatórios Fotográficos'
@@ -66,7 +69,7 @@ class RelatorioFotografico(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.titulo} - {self.obra_codigo} ({self.data:%d/%m/%Y})'
+        return f'{self.titulo} - {self.obra_contrato} ({self.data:%d/%m/%Y})'
 
     def get_absolute_url(self):
         return reverse('relatorio_fotografico:detail', args=[self.pk])
@@ -124,18 +127,18 @@ class FotoRelatorio(models.Model):
         return f'Foto #{self.ordem} - {self.relatorio_id}'
 
     def save(self, *args, **kwargs):
-        is_new_upload = self.imagem and hasattr(self.imagem, 'file') and isinstance(
-            self.imagem.file, InMemoryUploadedFile
-        )
-
-        if is_new_upload:
-            # 1) Sanitiza a imagem (remove EXIF/metadados)
+        # Usa `_committed`: é False sempre que o arquivo é novo/alterado
+        # e ainda não foi persistido no storage — funciona tanto para
+        # InMemoryUploadedFile (arquivos pequenos) quanto para
+        # TemporaryUploadedFile (arquivos grandes, ex.: fotos de celular
+        # em alta resolução), evitando que uploads grandes escapem da
+        # sanitização/padronização.
+        if self.imagem and not self.imagem._committed:
             self.imagem.file = sanitize_image(self.imagem.file)
-
-            # 2) Padroniza tamanho/resolução
             self.imagem.file = self._padronizar_imagem(self.imagem.file)
 
         super().save(*args, **kwargs)
+
 
     def _padronizar_imagem(self, arquivo):
         arquivo.seek(0)
@@ -160,3 +163,5 @@ class FotoRelatorio(models.Model):
             buffer, None, novo_nome, 'image/jpeg',
             buffer.getbuffer().nbytes, None,
         )
+
+

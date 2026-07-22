@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.generic import RedirectView
 from django.views.static import serve
 from django.urls import re_path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 # Importar as views de erro
 from core.views import (
@@ -69,6 +70,11 @@ urlpatterns = [
     path('notifications/', include('notifications.urls', namespace='notifications')),  # Para manter compatibilidade com URLs antigas
     path("ltcat/", include("ltcat.urls")),
     path('relatorio-fotografico/', include('relatorio_fotografico.urls')),
+
+    path('api/relatorio-fotografico/', include('relatorio_fotografico.api_urls')),
+    path('api/auth/', include('rest_framework.urls')),  # login sessão (opcional)
+    path('api/token/', TokenObtainPairView.as_view()),   # se usar JWT (simplejwt)
+    path('api/token/refresh/', TokenRefreshView.as_view()),
 
 ]
 

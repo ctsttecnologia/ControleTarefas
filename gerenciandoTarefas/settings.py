@@ -123,7 +123,6 @@ INSTALLED_APPS = [
     'django_bootstrap5',
     'django_htmx',
     'django_select2',
-    'rest_framework',
     'rest_framework.authtoken',
     'dj_rest_auth', 
     'widget_tweaks',
@@ -134,7 +133,12 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'notifications.apps.NotificationsConfig',
     'dal',
-    'dal_select2',                                       
+    'dal_select2',
+
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
+
     # Apps Locais
     'dashboard.apps.DashboardConfig',
     'usuario.apps.UsuarioConfig', 
@@ -196,9 +200,13 @@ MIDDLEWARE.extend([
     'core.middleware.MaintenanceModeMiddleware',
 ])
 
+MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
+
 MAINTENANCE_MODE = False
 
 APPEND_SLASH = True 
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 # =============================================================================
 # URLs E TEMPLATES
@@ -439,6 +447,7 @@ EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO', default='esg@c
 # =============================================================================
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
