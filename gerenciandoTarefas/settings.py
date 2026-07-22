@@ -62,6 +62,12 @@ else:
         'https://cetestgerenciandotarefas.com.br',
     ]
 
+CORS_ALLOWED_ORIGINS = [
+    'https://cetestgerenciandotarefas.com.br',
+]
+# ou, apenas em dev:
+# CORS_ALLOW_ALL_ORIGINS = True
+
 # =============================================================================
 # SEGURANÇA - CONFIGURAÇÕES ADAPTATIVAS POR AMBIENTE
 # =============================================================================
@@ -183,6 +189,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'core.middleware.DBConnectionMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 if IS_PRE_PRODUCTION:
@@ -199,8 +206,6 @@ MIDDLEWARE.extend([
     'django_htmx.middleware.HtmxMiddleware',
     'core.middleware.MaintenanceModeMiddleware',
 ])
-
-MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
 
 MAINTENANCE_MODE = False
 
