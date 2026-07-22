@@ -1,37 +1,31 @@
 
 # relatorio_fotografico/views.py
-# relatorio_fotografico/views.py
 """
 Views do app Relatório Fotográfico.
 
 Fluxo de imagens:
-- No upload (FotoUploadView / model.save), a imagem é apenas SANITIZADA
-  (remoção de EXIF/metadados) — o arquivo original enviado pelo usuário
-  é preservado no storage, sem redimensionamento.
-- Na EXPORTAÇÃO (Word/PDF), geramos versões TEMPORÁRIAS e padronizadas
-  (tamanho fixo, JPEG otimizado) apenas para montar o documento.
-  Esses arquivos temporários são salvos em um diretório temporário
-  (tempfile.TemporaryDirectory) e removidos automaticamente ao final
-  da requisição — nada fica salvo permanentemente no servidor.
+- No upload (FotoRelatorio.save), a imagem é SANITIZADA (remoção de
+  EXIF/metadados) e PADRONIZADA (tamanho fixo 800x600, JPEG q=80).
+  Essa é a única transformação feita — o arquivo salvo no storage já
+  é o definitivo, usado tanto na exibição quanto na exportação.
+- Word/PDF usam diretamente `foto.imagem` (sem gerar cópias
+  temporárias), já que a imagem já está padronizada desde o upload.
 """
 
-import io
 import json
-import tempfile
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
-from django.template.loader import render_to_string
 from django.urls import reverse_lazy
+from django.utils.dateparse import parse_date
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView, View,
 )
-from PIL import Image, ImageOps
-from weasyprint import HTML
 
 from core.mixins import (
     AppPermissionMixin, ViewFilialScopedMixin, FilialCreateMixin,
@@ -42,57 +36,9 @@ from .forms import RelatorioFotograficoForm
 from .services.docx_generator import gerar_docx_relatorio
 from .services.pdf_generator import gerar_pdf_relatorio
 
+User = get_user_model()
 
 APP_LABEL = 'relatorio_fotografico'
-
-# Tamanho/qualidade padronizados apenas para exportação (Word/PDF).
-# Não afeta a imagem original salva no banco/storage.
-EXPORT_FOTO_SIZE = (800, 600)
-EXPORT_FOTO_QUALIDADE = 80
-
-
-# -----------------------------------------------------------------------
-# Utilitário: gera imagens temporárias padronizadas para exportação
-# -----------------------------------------------------------------------
-
-def preparar_imagens_temporarias(relatorio, diretorio_temp):
-    """
-    Para cada foto do relatório, gera uma cópia temporária padronizada
-    (tamanho fixo, orientação corrigida, JPEG otimizado) dentro de
-    `diretorio_temp` e retorna um dict {foto.id: caminho_arquivo_temp}.
-
-    A imagem original da FotoRelatorio NÃO é alterada.
-    """
-    imagens_map = {}
-
-    for foto in relatorio.fotos.all():
-        if not foto.imagem:
-            continue
-
-        foto.imagem.open()
-        foto.imagem.seek(0)
-        img = Image.open(foto.imagem)
-
-        # Corrige rotação (fotos de celular) e garante modo RGB
-        img = ImageOps.exif_transpose(img)
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-
-        # Corta/redimensiona para proporção fixa (uniformiza o grid)
-        img = ImageOps.fit(img, EXPORT_FOTO_SIZE, Image.LANCZOS)
-
-        caminho_temp = f'{diretorio_temp}/foto_{foto.pk}.jpg'
-        img.save(
-            caminho_temp,
-            format='JPEG',
-            quality=EXPORT_FOTO_QUALIDADE,
-            optimize=True,
-        )
-
-        foto.imagem.close()
-        imagens_map[foto.id] = caminho_temp
-
-    return imagens_map
 
 
 class RelatorioScopeMixin:
@@ -133,7 +79,7 @@ class RelatorioListView(
         status = self.request.GET.get('status', '').strip()
         if busca:
             qs = qs.filter(
-                Q(titulo__icontains=busca) | Q(obra_codigo__icontains=busca)
+                Q(titulo__icontains=busca) | Q(obra_contrato__icontains=busca)
             )
         if status:
             qs = qs.filter(status=status)
@@ -160,21 +106,6 @@ class RelatorioDetailView(
         ctx['paginas'] = self.object.paginas
         ctx['total_folhas'] = self.object.total_folhas
         return ctx
-
-    # Observação: este método estava definido dentro da classe mas sem
-    # uso real na view (nenhuma rota o chamava). A geração de PDF real
-    # é feita pelo service `gerar_pdf_relatorio` e pela view
-    # `RelatorioExportPdfView`, abaixo. Método legado mantido comentado
-    # apenas para referência histórica:
-    #
-    # def gerar_pdf_relatorio(relatorio, request=None):
-    #     html_string = render_to_string(
-    #         'relatorio_fotografico/relatorio_pdf.html',
-    #         {'relatorio': relatorio, 'total_folhas': relatorio.total_folhas},
-    #         request=request,
-    #     )
-    #     base_url = request.build_absolute_uri('/') if request else None
-    #     return HTML(string=html_string, base_url=base_url).write_pdf()
 
 
 class RelatorioCreateView(
@@ -231,40 +162,92 @@ class RelatorioDeleteView(
 class FotoUploadView(AppPermissionMixin, LoginRequiredMixin, View):
     """
     Recebe múltiplos arquivos (input multiple, galeria ou câmera)
-    via POST AJAX e cria os registros FotoRelatorio.
+    via POST AJAX/multipart e cria os registros FotoRelatorio.
 
-    Aqui o arquivo é salvo tal como enviado (apenas sanitizado no
-    model.save()). O redimensionamento/padronização só ocorre depois,
-    na hora de exportar (ver `preparar_imagens_temporarias`).
+    Além das imagens, aceita opcionalmente:
+      - 'legendas': lista paralela às imagens (mesma ordem/índice).
+      - 'obra', 'data', 'assunto', 'responsavel': campos do
+        RelatorioFotografico, atualizados se enviados (útil para o
+        app mobile, que envia tudo em uma única chamada).
+
+    Cada imagem é sanitizada e padronizada automaticamente no
+    `FotoRelatorio.save()` (ver models.py) — nada a fazer aqui além
+    de criar o registro.
     """
     app_label_required = APP_LABEL
 
     def post(self, request, pk):
         relatorio = get_object_or_404(RelatorioFotografico, pk=pk)
         arquivos = request.FILES.getlist('imagens')
+        legendas = request.POST.getlist('legendas')
 
         if not arquivos:
             return JsonResponse(
                 {'ok': False, 'erro': 'Nenhuma imagem enviada.'}, status=400
             )
 
-        ultima_ordem = relatorio.fotos.count()
-        criadas = []
-
         with transaction.atomic():
+            relatorio_locked = (
+                RelatorioFotografico.objects.select_for_update().get(pk=pk)
+            )
+
+            self._atualizar_dados_relatorio(request, relatorio_locked)
+
+            ultima_ordem = (
+                relatorio_locked.fotos.aggregate(m=Max('ordem'))['m'] or 0
+            )
+            criadas = []
             for i, arquivo in enumerate(arquivos):
+                legenda = legendas[i] if i < len(legendas) else ''
                 foto = FotoRelatorio.objects.create(
-                    relatorio=relatorio,
+                    relatorio=relatorio_locked,
                     imagem=arquivo,
+                    legenda=legenda,
                     ordem=ultima_ordem + i + 1,
                 )
                 criadas.append({
                     'id': foto.id,
                     'url': foto.imagem.url,
+                    'legenda': foto.legenda,
                     'ordem': foto.ordem,
                 })
 
         return JsonResponse({'ok': True, 'fotos': criadas})
+
+    def _atualizar_dados_relatorio(self, request, relatorio):
+        """
+        Atualiza campos do relatório se enviados no POST.
+        Todos são opcionais — se ausentes, o relatório permanece
+        inalterado nesses campos.
+        """
+        campos_atualizados = []
+
+        obra = request.POST.get('obra')
+        if obra:
+            relatorio.obra_contrato = obra
+            campos_atualizados.append('obra_contrato')
+
+        data_str = request.POST.get('data')
+        if data_str:
+            data_convertida = parse_date(data_str)
+            if data_convertida:
+                relatorio.data = data_convertida
+                campos_atualizados.append('data')
+
+        assunto = request.POST.get('assunto')
+        if assunto is not None:
+            relatorio.assunto = assunto
+            campos_atualizados.append('assunto')
+
+        responsavel_id = request.POST.get('responsavel')
+        if responsavel_id:
+            usuario = User.objects.filter(pk=responsavel_id).first()
+            if usuario:
+                relatorio.responsavel = usuario
+                campos_atualizados.append('responsavel')
+
+        if campos_atualizados:
+            relatorio.save(update_fields=campos_atualizados)
 
 
 class FotoUpdateView(AppPermissionMixin, LoginRequiredMixin, View):
@@ -319,16 +302,9 @@ class FotoReorderView(AppPermissionMixin, LoginRequiredMixin, View):
 # -----------------------------------------------------------------------
 # EXPORTAÇÃO — WORD e PDF
 #
-# Ambas as views abaixo seguem o mesmo padrão:
-# 1) Abrem um diretório temporário (tempfile.TemporaryDirectory).
-# 2) Geram cópias padronizadas (tamanho fixo, JPEG otimizado) de todas
-#    as fotos do relatório dentro desse diretório.
-# 3) Passam o mapa {foto.id: caminho_temp} para o service de geração
-#    (gerar_docx_relatorio / gerar_pdf_relatorio), que deve usar essas
-#    imagens ao montar o documento (em vez do arquivo original).
-# 4) Ao saírem do bloco `with`, o diretório temporário e todo seu
-#    conteúdo são removidos automaticamente — nada fica salvo em disco
-#    além da duração da requisição.
+# As imagens já estão padronizadas (tamanho fixo, JPEG) desde o
+# upload (FotoRelatorio.save), então os services usam `foto.imagem`
+# diretamente — sem gerar cópias temporárias.
 # -----------------------------------------------------------------------
 
 class RelatorioExportDocxView(
@@ -339,15 +315,7 @@ class RelatorioExportDocxView(
 
     def get(self, request, *args, **kwargs):
         relatorio = self.get_object()
-
-        with tempfile.TemporaryDirectory() as diretorio_temp:
-            imagens_map = preparar_imagens_temporarias(
-                relatorio, diretorio_temp
-            )
-            # `gerar_docx_relatorio` deve aceitar `imagens_map` e usar
-            # os caminhos temporários (quando disponíveis) em vez da
-            # imagem original de cada FotoRelatorio.
-            buffer = gerar_docx_relatorio(relatorio, imagens_map=imagens_map)
+        buffer = gerar_docx_relatorio(relatorio)
 
         filename = f'relatorio_fotografico_{relatorio.pk}.docx'
         response = HttpResponse(
@@ -369,18 +337,7 @@ class RelatorioExportPdfView(
 
     def get(self, request, *args, **kwargs):
         relatorio = self.get_object()
-
-        with tempfile.TemporaryDirectory() as diretorio_temp:
-            imagens_map = preparar_imagens_temporarias(
-                relatorio, diretorio_temp
-            )
-            # `gerar_pdf_relatorio` deve aceitar `imagens_map` e, no
-            # template HTML usado pelo WeasyPrint, referenciar o
-            # caminho temporário (ex.: file:// ou src absoluto) em vez
-            # da URL da imagem original quando disponível no mapa.
-            pdf_bytes = gerar_pdf_relatorio(
-                relatorio, request=self.request, imagens_map=imagens_map
-            )
+        pdf_bytes = gerar_pdf_relatorio(relatorio, request=request)
 
         filename = f'relatorio_fotografico_{relatorio.pk}.pdf'
         inline = request.GET.get('inline') == '1'
@@ -389,5 +346,3 @@ class RelatorioExportPdfView(
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         response['Content-Disposition'] = f'{disposition}; filename="{filename}"'
         return response
-
-

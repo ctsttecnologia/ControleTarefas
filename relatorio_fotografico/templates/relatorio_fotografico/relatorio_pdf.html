@@ -44,7 +44,7 @@
     table-layout: fixed; /* força colunas de largura igual, ignorando conteúdo */
     }
     .fotos-grid td {
-        border: 1px solid #000;
+        border: 1px solid #004cff86;
         width: 50%;
         max-width: 50%;
         vertical-align: top;
@@ -96,7 +96,7 @@
     <table class="header-table">
         <div class="linha-separadora"></div>
         <tr>
-            <td style="width:65%;"><strong>Obra/Contrato:</strong>{{ relatorio.obra_codigo }}</td>
+            <td style="width:65%;"><strong>Obra/Contrato:</strong>{{ relatorio.obra_contrato }}</td>
             <td style="width:35%;"><strong>Data:</strong>{{ relatorio.data|date:"d/m/Y" }}</td>
         </tr>
         <tr>
@@ -121,7 +121,7 @@
         </tr>
         {% endfor %}
     </table>
-
+    <div class="linha-separadora"></div>
     <div class="rodape-folha">Folha {{ forloop.counter }} de {{ total_folhas }}</div>
 
 </div>

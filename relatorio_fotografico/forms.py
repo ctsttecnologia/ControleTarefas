@@ -9,13 +9,14 @@ from .models import RelatorioFotografico, FotoRelatorio
 class RelatorioFotograficoForm(forms.ModelForm):
     class Meta:
         model = RelatorioFotografico
-        fields = ['titulo', 'obra_codigo', 'data', 'responsavel', 'status']
+        fields = ['titulo', 'obra_contrato', 'data', 'responsavel', 'status', 'assunto']
         widgets = {
             'titulo': forms.TextInput(attrs={'class': 'form-control'}),
-            'obra_codigo': forms.TextInput(attrs={'class': 'form-control'}),
+            'obra_contrato': forms.TextInput(attrs={'class': 'form-control'}),
             'data': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'responsavel': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
+            'assunto': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
         }
 
 class FotoRelatorioForm(forms.ModelForm):
@@ -58,3 +59,6 @@ class MultiFileField(forms.FileField):
 
 class MultiplaFotoUploadForm(forms.Form):
     imagens = MultiFileField(required=False)
+
+
+    

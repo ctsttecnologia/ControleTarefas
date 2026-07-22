@@ -73,7 +73,7 @@
                 <i class="bi bi-camera-fill me-2"></i>{{ relatorio.titulo }}
             </h3>
             <div class="text-muted small">
-                <strong>Obra/Código:</strong> {{ relatorio.obra_codigo }} &nbsp;|&nbsp;
+                <strong>Obra/Contrato:</strong> {{ relatorio.obra_contrato }} &nbsp;|&nbsp;
                 <strong>Data:</strong> {{ relatorio.data|date:"d/m/Y" }} &nbsp;|&nbsp;
                 <strong>Responsável:</strong> {{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }} &nbsp;|&nbsp;
                 <strong>Filial:</strong> {{ relatorio.filial }}

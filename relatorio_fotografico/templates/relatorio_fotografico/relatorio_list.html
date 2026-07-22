@@ -66,7 +66,7 @@
                             {{ relatorio.titulo }}
                         </a>
                     </td>
-                    <td>{{ relatorio.obra_codigo }}</td>
+                    <td>{{ relatorio.obra_contrato }}</td>
                     <td>{{ relatorio.data|date:"d/m/Y" }}</td>
                     <td>{{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }}</td>
                     <td>{{ relatorio.filial }}</td>
@@ -127,7 +127,10 @@
         <p class="mt-3">Nenhum relatório fotográfico encontrado.</p>
     </div>
     {% endif %}
-
+    <p class="text-center text-muted mt-2 mb-0" style="font-size: 0.8rem;">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        — {{ page_obj.paginator.count }} cargo{{ page_obj.paginator.count|pluralize:"s" }} no total
+    </p>
 </div>
 {% endblock %}
 

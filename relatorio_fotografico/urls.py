@@ -19,3 +19,5 @@ urlpatterns = [
     path('<int:pk>/exportar/docx/', views.RelatorioExportDocxView.as_view(), name='export_docx'),
     path('<int:pk>/exportar/pdf/', views.RelatorioExportPdfView.as_view(), name='export_pdf'),
 ]
+
+
