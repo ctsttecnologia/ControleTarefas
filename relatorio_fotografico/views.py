@@ -77,12 +77,26 @@ class RelatorioListView(
         qs = super().get_queryset()
         busca = self.request.GET.get('q', '').strip()
         status = self.request.GET.get('status', '').strip()
+        responsavel_id = self.request.GET.get('responsavel', '').strip()
+        data_inicio = self.request.GET.get('data_inicio', '').strip()
+        data_fim = self.request.GET.get('data_fim', '').strip()
+
         if busca:
             qs = qs.filter(
                 Q(titulo__icontains=busca) | Q(obra_contrato__icontains=busca)
             )
         if status:
             qs = qs.filter(status=status)
+        if responsavel_id:
+            qs = qs.filter(responsavel_id=responsavel_id)
+
+        data_ini = parse_date(data_inicio) if data_inicio else None
+        data_f = parse_date(data_fim) if data_fim else None
+        if data_ini:
+            qs = qs.filter(data__gte=data_ini)
+        if data_f:
+            qs = qs.filter(data__lte=data_f)
+
         return qs
 
     def get_context_data(self, **kwargs):
@@ -90,8 +104,13 @@ class RelatorioListView(
         ctx['status_choices'] = RelatorioFotografico.STATUS_CHOICES
         ctx['q'] = self.request.GET.get('q', '')
         ctx['status_filtro'] = self.request.GET.get('status', '')
+        ctx['responsavel_filtro'] = self.request.GET.get('responsavel', '')
+        ctx['data_inicio'] = self.request.GET.get('data_inicio', '')
+        ctx['data_fim'] = self.request.GET.get('data_fim', '')
+        ctx['responsaveis'] = User.objects.filter(
+            relatorios_fotograficos_responsavel__isnull=False
+        ).distinct().order_by('first_name', 'username')
         return ctx
-
 
 class RelatorioDetailView(
     AppPermissionMixin, ViewFilialScopedMixin, RelatorioScopeMixin, DetailView
@@ -160,26 +179,14 @@ class RelatorioDeleteView(
 # -----------------------------------------------------------------------
 
 class FotoUploadView(AppPermissionMixin, LoginRequiredMixin, View):
-    """
-    Recebe múltiplos arquivos (input multiple, galeria ou câmera)
-    via POST AJAX/multipart e cria os registros FotoRelatorio.
-
-    Além das imagens, aceita opcionalmente:
-      - 'legendas': lista paralela às imagens (mesma ordem/índice).
-      - 'obra', 'data', 'assunto', 'responsavel': campos do
-        RelatorioFotografico, atualizados se enviados (útil para o
-        app mobile, que envia tudo em uma única chamada).
-
-    Cada imagem é sanitizada e padronizada automaticamente no
-    `FotoRelatorio.save()` (ver models.py) — nada a fazer aqui além
-    de criar o registro.
-    """
     app_label_required = APP_LABEL
 
     def post(self, request, pk):
         relatorio = get_object_or_404(RelatorioFotografico, pk=pk)
         arquivos = request.FILES.getlist('imagens')
         legendas = request.POST.getlist('legendas')
+        latitudes = request.POST.getlist('latitudes')
+        longitudes = request.POST.getlist('longitudes')
 
         if not arquivos:
             return JsonResponse(
@@ -190,7 +197,6 @@ class FotoUploadView(AppPermissionMixin, LoginRequiredMixin, View):
             relatorio_locked = (
                 RelatorioFotografico.objects.select_for_update().get(pk=pk)
             )
-
             self._atualizar_dados_relatorio(request, relatorio_locked)
 
             ultima_ordem = (
@@ -199,56 +205,51 @@ class FotoUploadView(AppPermissionMixin, LoginRequiredMixin, View):
             criadas = []
             for i, arquivo in enumerate(arquivos):
                 legenda = legendas[i] if i < len(legendas) else ''
+                lat = latitudes[i] if i < len(latitudes) else None
+                lng = longitudes[i] if i < len(longitudes) else None
+
                 foto = FotoRelatorio.objects.create(
                     relatorio=relatorio_locked,
                     imagem=arquivo,
                     legenda=legenda,
                     ordem=ultima_ordem + i + 1,
+                    latitude=lat or None,
+                    longitude=lng or None,
                 )
                 criadas.append({
                     'id': foto.id,
                     'url': foto.imagem.url,
                     'legenda': foto.legenda,
                     'ordem': foto.ordem,
+                    'coordenadas': foto.coordenadas_formatadas,
                 })
 
         return JsonResponse({'ok': True, 'fotos': criadas})
 
     def _atualizar_dados_relatorio(self, request, relatorio):
-        """
-        Atualiza campos do relatório se enviados no POST.
-        Todos são opcionais — se ausentes, o relatório permanece
-        inalterado nesses campos.
-        """
         campos_atualizados = []
-
         obra = request.POST.get('obra')
         if obra:
             relatorio.obra_contrato = obra
             campos_atualizados.append('obra_contrato')
-
         data_str = request.POST.get('data')
         if data_str:
             data_convertida = parse_date(data_str)
             if data_convertida:
                 relatorio.data = data_convertida
                 campos_atualizados.append('data')
-
         assunto = request.POST.get('assunto')
         if assunto is not None:
             relatorio.assunto = assunto
             campos_atualizados.append('assunto')
-
         responsavel_id = request.POST.get('responsavel')
         if responsavel_id:
             usuario = User.objects.filter(pk=responsavel_id).first()
             if usuario:
                 relatorio.responsavel = usuario
                 campos_atualizados.append('responsavel')
-
         if campos_atualizados:
             relatorio.save(update_fields=campos_atualizados)
-
 
 class FotoUpdateView(AppPermissionMixin, LoginRequiredMixin, View):
     app_label_required = APP_LABEL
@@ -346,3 +347,5 @@ class RelatorioExportPdfView(
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         response['Content-Disposition'] = f'{disposition}; filename="{filename}"'
         return response
+
+

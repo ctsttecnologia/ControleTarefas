@@ -24,6 +24,9 @@
         display: block;
     }
     .foto-card-body { padding: 10px; }
+
+    .foto-wrapper { position: relative; }
+
     .foto-numero {
         position: absolute;
         top: 8px; left: 8px;
@@ -33,13 +36,32 @@
         width: 26px; height: 26px;
         display: flex; align-items: center; justify-content: center;
         font-size: 12px; font-weight: 700;
+        z-index: 5;
     }
-    .foto-wrapper { position: relative; }
     .foto-remove-btn {
         position: absolute;
         top: 8px; right: 8px;
         z-index: 5;
     }
+    .foto-geo-badge {
+        position: absolute;
+        bottom: 8px; left: 8px;
+        background: rgba(0,0,0,.65);
+        color: #fff;
+        font-size: 10.5px;
+        padding: 3px 8px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        max-width: 90%;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        z-index: 5;
+    }
+    .foto-geo-badge i { font-size: 11px; }
+
     .drop-zone {
         border: 2px dashed #adb5bd;
         border-radius: 10px;
@@ -54,19 +76,31 @@
         background: #f0f7ff;
         color: #0d6efd;
     }
-    .foto-legenda-textarea {
-        font-size: .85rem;
-    }
+    .foto-legenda-textarea { font-size: .85rem; }
+
     .badge-status-rascunho { background: #ffc107; color: #000; }
     .badge-status-finalizado { background: #198754; }
+
     .spinner-upload { display: none; }
+
+    @media print {
+        .btn, .drop-zone, #spinner-upload, .foto-remove-btn, .modal {
+            display: none !important;
+        }
+        textarea.foto-legenda-textarea {
+            pointer-events: none;
+            background: transparent;
+            resize: none;
+            border: none;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
 
-    <!-- Cabeçalho -->
+    {# ==================== CABEÇALHO ==================== #}
     <div class="d-flex flex-wrap justify-content-between align-items-start mb-4 gap-2">
         <div>
             <h3 class="mb-1">
@@ -100,10 +134,14 @@
             <a href="{% url 'relatorio_fotografico:list' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i>Voltar
             </a>
+            <button type="button" class="btn btn-outline-danger"
+                    data-bs-toggle="modal" data-bs-target="#modalExcluirRelatorio">
+                <i class="bi bi-trash me-1"></i>Excluir
+            </button>
         </div>
     </div>
 
-    <!-- Upload de fotos -->
+    {# ==================== UPLOAD DE FOTOS ==================== #}
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <h6 class="mb-3"><i class="bi bi-cloud-upload me-1"></i>Adicionar Fotos</h6>
@@ -135,7 +173,7 @@
         </div>
     </div>
 
-    <!-- Grid de fotos (2 colunas x N linhas) -->
+    {# ==================== GRID DE FOTOS ==================== #}
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -149,10 +187,19 @@
                     <div class="foto-card">
                         <div class="foto-wrapper">
                             <span class="foto-numero">{{ foto.ordem }}</span>
-                            <button class="btn btn-sm btn-danger foto-remove-btn btn-remove-foto" data-id="{{ foto.id }}" title="Remover">
+                            <button class="btn btn-sm btn-danger foto-remove-btn btn-remove-foto"
+                                    data-id="{{ foto.id }}"
+                                    data-bs-toggle="modal" data-bs-target="#modalExcluirFoto"
+                                    title="Remover">
                                 <i class="bi bi-trash"></i>
                             </button>
                             <img src="{{ foto.imagem.url }}" alt="Foto {{ foto.ordem }}">
+                            {% if foto.tem_geolocalizacao %}
+                            <span class="foto-geo-badge" title="{{ foto.coordenadas_formatadas }}">
+                                <i class="bi bi-geo-alt-fill"></i>
+                                {% if foto.endereco %}{{ foto.endereco }}{% else %}{{ foto.coordenadas_formatadas }}{% endif %}
+                            </span>
+                            {% endif %}
                         </div>
                         <div class="foto-card-body">
                             <textarea class="form-control foto-legenda-textarea legenda-input"
@@ -176,9 +223,53 @@
 
 </div>
 
+{# ==================== MODAIS ==================== #}
+<div class="modal fade" id="modalExcluirRelatorio" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Excluir Relatório</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja excluir o relatório <strong>{{ relatorio.titulo }}</strong>?
+                <br><span class="text-danger small">Esta ação não pode ser desfeita e todas as fotos serão removidas.</span>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" action="{% url 'relatorio_fotografico:delete' relatorio.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalExcluirFoto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Excluir Foto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja remover esta foto do relatório?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarExcluirFoto">
+                    <i class="bi bi-trash me-1"></i>Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 (function () {
-    const relatorioId = {{ relatorio.pk }};
     const uploadUrl = "{% url 'relatorio_fotografico:foto_upload' relatorio.pk %}";
     const reorderUrl = "{% url 'relatorio_fotografico:foto_reorder' relatorio.pk %}";
     const csrfToken = "{{ csrf_token }}";
@@ -186,6 +277,7 @@
     const grid = document.getElementById('fotos-grid');
     const spinner = document.getElementById('spinner-upload');
     const emptyMsg = document.getElementById('fotos-empty');
+    let fotoIdParaExcluir = null;
 
     function getCsrfCookie() {
         const name = 'csrftoken=';
@@ -197,18 +289,36 @@
         return csrfToken;
     }
 
+    // Captura a localização atual (timeout curto, não bloqueia o upload)
+    function obterLocalizacao() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) return resolve(null);
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                () => resolve(null),
+                { timeout: 5000, maximumAge: 60000 }
+            );
+        });
+    }
+
     function criarCardFoto(foto) {
         const col = document.createElement('div');
         col.className = 'col-md-6 foto-item';
         col.dataset.id = foto.id;
+        const geoBadge = foto.coordenadas
+            ? `<span class="foto-geo-badge" title="${foto.coordenadas}">
+                 <i class="bi bi-geo-alt-fill"></i> ${foto.coordenadas}
+               </span>` : '';
         col.innerHTML = `
             <div class="foto-card">
                 <div class="foto-wrapper">
                     <span class="foto-numero">${foto.ordem}</span>
-                    <button class="btn btn-sm btn-danger foto-remove-btn btn-remove-foto" data-id="${foto.id}" title="Remover">
+                    <button class="btn btn-sm btn-danger foto-remove-btn btn-remove-foto"
+                            data-id="${foto.id}" data-bs-toggle="modal" data-bs-target="#modalExcluirFoto" title="Remover">
                         <i class="bi bi-trash"></i>
                     </button>
                     <img src="${foto.url}" alt="Foto ${foto.ordem}">
+                    ${geoBadge}
                 </div>
                 <div class="foto-card-body">
                     <textarea class="form-control foto-legenda-textarea legenda-input"
@@ -222,13 +332,15 @@
     async function enviarArquivos(fileList) {
         if (!fileList || fileList.length === 0) return;
 
+        const localizacao = await obterLocalizacao();
         const formData = new FormData();
         for (const file of fileList) {
             formData.append('imagens', file);
+            formData.append('latitudes', localizacao ? localizacao.lat : '');
+            formData.append('longitudes', localizacao ? localizacao.lng : '');
         }
 
         spinner.style.display = 'block';
-
         try {
             const resp = await fetch(uploadUrl, {
                 method: 'POST',
@@ -236,12 +348,9 @@
                 body: formData,
             });
             const data = await resp.json();
-
             if (data.ok) {
                 if (emptyMsg) emptyMsg.remove();
-                data.fotos.forEach(foto => {
-                    grid.appendChild(criarCardFoto(foto));
-                });
+                data.fotos.forEach(foto => grid.appendChild(criarCardFoto(foto)));
                 bindEventos();
             } else {
                 alert('Erro ao enviar fotos: ' + (data.erro || 'desconhecido'));
@@ -254,52 +363,30 @@
         }
     }
 
-    // Input galeria
     document.getElementById('input-galeria').addEventListener('change', (e) => {
         enviarArquivos(e.target.files);
         e.target.value = '';
     });
-
-    // Input câmera
     document.getElementById('input-camera').addEventListener('change', (e) => {
         enviarArquivos(e.target.files);
         e.target.value = '';
     });
 
-    // Drag and drop
     const dropZone = document.getElementById('drop-zone');
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('dragover');
-    });
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         dropZone.classList.remove('dragover');
         enviarArquivos(e.dataTransfer.files);
     });
-    dropZone.addEventListener('click', () => {
-        document.getElementById('input-galeria').click();
-    });
+    dropZone.addEventListener('click', () => document.getElementById('input-galeria').click());
 
-    // Remover foto
     function bindEventos() {
         document.querySelectorAll('.btn-remove-foto').forEach(btn => {
-            btn.onclick = async function () {
-                if (!confirm('Remover esta foto?')) return;
-                const id = this.dataset.id;
-                const resp = await fetch(`/relatorio-fotografico/foto/${id}/excluir/`, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': getCsrfCookie() },
-                });
-                const data = await resp.json();
-                if (data.ok) {
-                    document.querySelector(`.foto-item[data-id="${id}"]`).remove();
-                }
-            };
+            btn.onclick = function () { fotoIdParaExcluir = this.dataset.id; };
         });
 
-        // Salvar legenda (debounce simples)
         document.querySelectorAll('.legenda-input').forEach(textarea => {
             let timeout;
             textarea.addEventListener('input', function () {
@@ -320,7 +407,28 @@
         });
     }
 
-    // SortableJS - reordenar via drag
+    document.getElementById('btnConfirmarExcluirFoto').addEventListener('click', async function () {
+        if (!fotoIdParaExcluir) return;
+        const resp = await fetch(`/relatorio-fotografico/foto/${fotoIdParaExcluir}/excluir/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCsrfCookie() },
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            const item = document.querySelector(`.foto-item[data-id="${fotoIdParaExcluir}"]`);
+            if (item) item.remove();
+            if (!grid.querySelector('.foto-item') && !document.getElementById('fotos-empty')) {
+                const div = document.createElement('div');
+                div.id = 'fotos-empty';
+                div.className = 'text-center text-muted py-5';
+                div.innerHTML = '<i class="bi bi-images display-1"></i><p class="mt-3">Nenhuma foto adicionada ainda.</p>';
+                grid.parentNode.appendChild(div);
+            }
+        }
+        fotoIdParaExcluir = null;
+        bootstrap.Modal.getInstance(document.getElementById('modalExcluirFoto')).hide();
+    });
+
     new Sortable(grid, {
         animation: 150,
         handle: '.foto-card',
@@ -328,13 +436,9 @@
             const ids = Array.from(grid.querySelectorAll('.foto-item')).map(el => el.dataset.id);
             await fetch(reorderUrl, {
                 method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCsrfCookie(),
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'X-CSRFToken': getCsrfCookie(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ordem: ids }),
             });
-            // Atualiza numeração visual
             document.querySelectorAll('.foto-item').forEach((el, idx) => {
                 el.querySelector('.foto-numero').textContent = idx + 1;
             });
@@ -344,13 +448,6 @@
     bindEventos();
 })();
 </script>
-
-<style>
-    @media print {
-        .btn, .drop-zone, #spinner-upload, .foto-remove-btn, .card-body h6 + .d-flex,
-        .foto-legenda-textarea { border: none !important; }
-        textarea.foto-legenda-textarea { pointer-events: none; background: transparent; resize: none; }
-    }
-</style>
 {% endblock %}
+
 
