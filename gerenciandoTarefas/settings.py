@@ -1,4 +1,4 @@
-#-- Active: 1779136437007@@127.0.0.1@3306@dbcetest3
+
 """
 Django settings for gerenciandoTarefas 1.02 por Emerson Goncalves.
 """
@@ -47,7 +47,8 @@ FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 DEBUG = config('DEBUG', default=IS_DEVELOPMENT, cast=bool)
 
-#ALLOWED_HOSTS = ["127.0.0.1", "localhost", "testserver"]
+
+#ALLOWED_HOSTS = ['127.0.0.1', 'localhost', "testserver", '10.0.2.2']
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
 
 # CSRF Origins - adaptativo por ambiente
@@ -55,6 +56,7 @@ if IS_DEVELOPMENT:
     CSRF_TRUSTED_ORIGINS = [
         'http://127.0.0.1:8000',
         'http://localhost:8000',
+        'http://10.0.2.2:8000',
     ]
 else:
     CSRF_TRUSTED_ORIGINS = [
@@ -62,11 +64,11 @@ else:
         'https://cetestgerenciandotarefas.com.br',
     ]
 
-CORS_ALLOWED_ORIGINS = [
-    'https://cetestgerenciandotarefas.com.br',
+    CORS_ALLOWED_ORIGINS = [
+        'https://cetestgerenciandotarefas.com.br',
 ]
 # ou, apenas em dev:
-# CORS_ALLOW_ALL_ORIGINS = True
+#CORS_ALLOW_ALL_ORIGINS = True
 
 # =============================================================================
 # SEGURANÇA - CONFIGURAÇÕES ADAPTATIVAS POR AMBIENTE

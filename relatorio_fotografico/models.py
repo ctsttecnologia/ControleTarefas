@@ -102,7 +102,6 @@ class RelatorioFotografico(models.Model):
             resultado.append(linhas)
         return resultado
 
-
 class FotoRelatorio(models.Model):
 
     relatorio = models.ForeignKey(
@@ -116,6 +115,16 @@ class FotoRelatorio(models.Model):
     )
     legenda = models.TextField('Descrição', blank=True)
     ordem = models.PositiveIntegerField('Ordem', default=0)
+    # --- Geolocalização (capturada no momento do upload) ---
+    latitude = models.DecimalField(
+        max_digits=10, decimal_places=7, null=True, blank=True
+    )
+    longitude = models.DecimalField(
+        max_digits=10, decimal_places=7, null=True, blank=True
+    )
+    endereco = models.CharField(
+        'Endereço', max_length=255, blank=True, default=''
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -126,17 +135,21 @@ class FotoRelatorio(models.Model):
     def __str__(self):
         return f'Foto #{self.ordem} - {self.relatorio_id}'
 
+    @property
+    def tem_geolocalizacao(self):
+        return self.latitude is not None and self.longitude is not None
+
+    @property
+    def coordenadas_formatadas(self):
+        if not self.tem_geolocalizacao:
+            return ''
+        return f'{float(self.latitude):.5f}, {float(self.longitude):.5f}'
+
+
     def save(self, *args, **kwargs):
-        # Usa `_committed`: é False sempre que o arquivo é novo/alterado
-        # e ainda não foi persistido no storage — funciona tanto para
-        # InMemoryUploadedFile (arquivos pequenos) quanto para
-        # TemporaryUploadedFile (arquivos grandes, ex.: fotos de celular
-        # em alta resolução), evitando que uploads grandes escapem da
-        # sanitização/padronização.
         if self.imagem and not self.imagem._committed:
             self.imagem.file = sanitize_image(self.imagem.file)
             self.imagem.file = self._padronizar_imagem(self.imagem.file)
-
         super().save(*args, **kwargs)
 
 
@@ -144,21 +157,15 @@ class FotoRelatorio(models.Model):
         arquivo.seek(0)
         img = Image.open(arquivo)
         img = ImageOps.exif_transpose(img)
-
         if img.mode != 'RGB':
             img = img.convert('RGB')
-
-        # Corta e redimensiona para proporção fixa 4:3 (uniformiza o grid)
         img = ImageOps.fit(img, FOTO_MAX_SIZE, Image.LANCZOS)
-
         buffer = BytesIO()
         img.save(buffer, format='JPEG', quality=FOTO_QUALIDADE, optimize=True)
         buffer.seek(0)
-
         nome_original = getattr(arquivo, 'name', 'foto.jpg')
         nome_base = nome_original.rsplit('.', 1)[0]
         novo_nome = f'{nome_base}.jpg'
-
         return InMemoryUploadedFile(
             buffer, None, novo_nome, 'image/jpeg',
             buffer.getbuffer().nbytes, None,
