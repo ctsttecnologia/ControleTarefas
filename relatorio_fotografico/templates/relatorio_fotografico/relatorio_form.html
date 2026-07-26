@@ -27,7 +27,6 @@
                             {{ form.titulo }}
                             {% if form.titulo.errors %}<div class="text-danger small mt-1">{{ form.titulo.errors|join:", " }}</div>{% endif %}
                         </div>
-
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Obra/Contrato <span class="text-danger">*</span></label>
@@ -46,6 +45,11 @@
                                 <label class="form-label">Responsável <span class="text-danger">*</span></label>
                                 {{ form.responsavel }}
                                 {% if form.responsavel.errors %}<div class="text-danger small mt-1">{{ form.responsavel.errors|join:", " }}</div>{% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Observações</label>
+                                {{ form.observacoes }}
+                                {% if form.observacoes.errors %}<div class="text-danger small mt-1">{{ form.observacoes.errors|join:", " }}</div>{% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Status</label>

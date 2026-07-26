@@ -33,6 +33,8 @@ class RelatorioFotograficoSerializer(serializers.ModelSerializer):
 
     obra = serializers.CharField(source='obra_contrato', required=False, allow_blank=True)
     assunto = serializers.CharField(required=False, allow_blank=True)
+    observacoes = serializers.CharField(required=False, allow_blank=True)
+    data = serializers.DateField(required=False)
     titulo = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
@@ -41,6 +43,7 @@ class RelatorioFotograficoSerializer(serializers.ModelSerializer):
             'id', 'titulo', 'obra', 'obra_contrato', 'data', 'assunto',
             'responsavel', 'responsavel_nome', 'filial', 'status',
             'total_folhas', 'total_fotos', 'fotos', 'created_at', 'updated_at',
+            'observacoes',
         ]
         read_only_fields = [
             'id', 'obra_contrato', 'created_at', 'updated_at',

@@ -55,8 +55,7 @@ class RelatorioFotografico(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     assunto = models.CharField(max_length=455, blank=True, default='')
-
-
+    observacoes = models.TextField('Observações', blank=True, default='')
     class Meta:
         verbose_name = 'Relatório Fotográfico'
         verbose_name_plural = 'Relatórios Fotográficos'
