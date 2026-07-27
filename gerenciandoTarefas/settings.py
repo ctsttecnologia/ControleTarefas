@@ -213,8 +213,6 @@ MAINTENANCE_MODE = False
 
 APPEND_SLASH = True 
 
-CORS_ALLOW_ALL_ORIGINS = True
-
 # =============================================================================
 # URLs E TEMPLATES
 # =============================================================================
@@ -416,7 +414,7 @@ SENDFILE_ROOT = PRIVATE_MEDIA_ROOT
 SENDFILE_URL = '/private'
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 30 * 1024 * 1024
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 

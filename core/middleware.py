@@ -1,5 +1,4 @@
 # core/middleware.py
-
 import threading
 
 from django.conf import settings
