@@ -161,12 +161,13 @@ class FotoRelatorio(models.Model):
             self.imagem.file = sanitize_image(self.imagem.file)
             self.imagem.file = self._padronizar_imagem(self.imagem.file)
 
-        if self.tem_geolocalizacao and not self.endereco:
-            endereco = obter_endereco_por_coordenadas(self.latitude, self.longitude)
-            if endereco:
-                self.endereco = endereco[:255]
-
+        is_new = self._state.adding
         super().save(*args, **kwargs)
+
+        # Dispara a geocodificação de forma assíncrona, sem travar o request
+        if self.tem_geolocalizacao and not self.endereco:
+            from .tasks import preencher_endereco_foto
+            preencher_endereco_foto.delay(self.pk)
 
 
     def _padronizar_imagem(self, arquivo):
