@@ -10,6 +10,7 @@ from django.urls import reverse
 from PIL import Image, ImageOps
 from core.mixins import make_upload_path, sanitize_image
 from core.validators import SecureFileValidator
+from .services.geocoding import obter_endereco_por_coordenadas
 
 FOTOS_POR_PAGINA = 6  # 2 colunas x 3 linhas
 
@@ -101,6 +102,16 @@ class RelatorioFotografico(models.Model):
             resultado.append(linhas)
         return resultado
 
+    @property
+    def local(self):
+        """Endereço da primeira foto georreferenciada (com endereço já resolvido)."""
+        foto = (
+            self.fotos.exclude(endereco='')
+            .order_by('ordem', 'id')
+            .first()
+        )
+        return foto.endereco if foto else ''
+
 class FotoRelatorio(models.Model):
 
     relatorio = models.ForeignKey(
@@ -149,6 +160,12 @@ class FotoRelatorio(models.Model):
         if self.imagem and not self.imagem._committed:
             self.imagem.file = sanitize_image(self.imagem.file)
             self.imagem.file = self._padronizar_imagem(self.imagem.file)
+
+        if self.tem_geolocalizacao and not self.endereco:
+            endereco = obter_endereco_por_coordenadas(self.latitude, self.longitude)
+            if endereco:
+                self.endereco = endereco[:255]
+
         super().save(*args, **kwargs)
 
 

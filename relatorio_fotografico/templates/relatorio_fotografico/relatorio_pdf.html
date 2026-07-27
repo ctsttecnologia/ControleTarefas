@@ -38,6 +38,26 @@
     }
     .header-table td strong { display: block; margin-bottom: 2px; }
 
+    .observacoes-texto {
+    white-space: pre-wrap;      /* preserva quebras E quebra palavras longas */
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-top: 2px;
+    }
+    table {
+        width: 100%;
+        table-layout: fixed;   /* fundamental: impede que célula "estoure" com texto longo */
+        border-collapse: collapse;
+    }
+
+    td {
+        word-break: break-word;
+        overflow-wrap: break-word;
+        vertical-align: top;
+    }
+
     .fotos-grid {
     width: 100%;
     border-collapse: collapse;
@@ -100,11 +120,24 @@
             <td style="width:35%;"><strong>Data:</strong>{{ relatorio.data|date:"d/m/Y" }}</td>
         </tr>
         <tr>
-            <td><strong>Assunto:</strong>{{ relatorio.titulo }}</td>
+            <td><strong>Assunto:</strong> {{ relatorio.assunto }}</td>
             <td><strong>Folha:</strong>{{ forloop.counter }} de {{ total_folhas }}</td>
         </tr>
         <tr>
             <td colspan="2"><strong>Responsável:</strong>{{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }}</td>
+        </tr>
+    </table>
+    <div class="linha-separadora"></div>
+    <table class="header-table">
+        <tr>
+            <td><strong>Local:</strong> {{ endereco_formatado|default:"Não informado" }}</td>
+            <td><strong>Data/Hora:</strong>{{ relatorio.created_at|date:"d/m/Y H:i" }}</td>
+        </tr>
+        <tr>
+        <td colspan="2">
+            <strong>Observações:</strong>
+            <div class="observacoes-texto">{{ relatorio.observacoes|linebreaksbr }}</div>
+        </td>
         </tr>
     </table>
 
