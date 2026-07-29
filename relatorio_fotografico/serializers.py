@@ -1,3 +1,4 @@
+
 # relatorio_fotografico/serializers.py
 from rest_framework import serializers
 from .models import RelatorioFotografico, FotoRelatorio
@@ -13,10 +14,11 @@ class FotoRelatorioSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'imagem_url']
 
     def get_imagem_url(self, obj):
-        request = self.context.get('request')
-        if obj.imagem and request:
-            return request.build_absolute_uri(obj.imagem.url)
-        return obj.imagem.url if obj.imagem else None
+        # CloudinaryField.url já retorna URL absoluta HTTPS —
+        # não usar request.build_absolute_uri aqui.
+        if not obj.imagem:
+            return None
+        return obj.imagem.url
 
 
 class FotoUploadSerializer(serializers.ModelSerializer):
@@ -51,13 +53,14 @@ class RelatorioFotograficoSerializer(serializers.ModelSerializer):
         ]
 
     def get_responsavel_nome(self, obj):
+        if not obj.responsavel:
+            return None
         return obj.responsavel.get_full_name() or obj.responsavel.username
 
     def get_total_fotos(self, obj):
         return obj.fotos.count()
 
     def validate(self, attrs):
-        # Gera título automático se não enviado (responsavel/filial ficam a cargo da view)
         if not attrs.get('titulo'):
             obra = attrs.get('obra_contrato') or ''
             assunto = attrs.get('assunto') or ''
@@ -80,8 +83,11 @@ class RelatorioFotograficoListSerializer(serializers.ModelSerializer):
         ]
 
     def get_responsavel_nome(self, obj):
+        if not obj.responsavel:
+            return None
         return obj.responsavel.get_full_name() or obj.responsavel.username
 
     def get_total_fotos(self, obj):
         return obj.fotos.count()
+
 

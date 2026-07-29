@@ -208,6 +208,7 @@ class FotoUploadView(AppPermissionMixin, LoginRequiredMixin, View):
                 lat = latitudes[i] if i < len(latitudes) else None
                 lng = longitudes[i] if i < len(longitudes) else None
 
+                # CloudinaryField faz o upload automaticamente no .create()
                 foto = FotoRelatorio.objects.create(
                     relatorio=relatorio_locked,
                     imagem=arquivo,
@@ -218,7 +219,7 @@ class FotoUploadView(AppPermissionMixin, LoginRequiredMixin, View):
                 )
                 criadas.append({
                     'id': foto.id,
-                    'url': foto.imagem.url,
+                    'url': foto.imagem.url,  # URL HTTPS do Cloudinary
                     'legenda': foto.legenda,
                     'ordem': foto.ordem,
                     'coordenadas': foto.coordenadas_formatadas,
@@ -268,17 +269,20 @@ class FotoUpdateView(AppPermissionMixin, LoginRequiredMixin, View):
         foto.save(update_fields=['legenda', 'ordem'])
         return JsonResponse({'ok': True})
 
-
 class FotoDeleteView(AppPermissionMixin, LoginRequiredMixin, View):
     app_label_required = APP_LABEL
 
     def post(self, request, pk):
         foto = get_object_or_404(FotoRelatorio, pk=pk)
         relatorio_pk = foto.relatorio_id
-        foto.imagem.delete(save=False)
-        foto.delete()
-        return JsonResponse({'ok': True, 'relatorio': relatorio_pk})
 
+        # foto.imagem.delete(save=False) remove o arquivo no Cloudinary
+        # (funciona igual a ImageField — API compatível via django-cloudinary-storage)
+        if foto.imagem:
+            foto.imagem.delete(save=False)
+        foto.delete()
+
+        return JsonResponse({'ok': True, 'relatorio': relatorio_pk})
 
 class FotoReorderView(AppPermissionMixin, LoginRequiredMixin, View):
     """Recebe lista de IDs na nova ordem: {'ordem': [3,1,2,...]}"""
