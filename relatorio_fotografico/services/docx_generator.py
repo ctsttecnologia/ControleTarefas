@@ -9,6 +9,7 @@ models.py. Nenhum processamento de imagem é feito neste módulo.
 """
 import io
 import os
+import requests  # ← novo import
 
 from django.conf import settings
 
@@ -19,6 +20,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ROW_HEIGHT_RULE
 from docx.oxml.ns import qn
 
 from ..models import FOTOS_POR_PAGINA
+
 
 # --- Layout (cabeçalho) ---
 LARGURA_LOGO_COL = Cm(3)
@@ -77,8 +79,17 @@ def _set_cell_border(cell, color="000000", sz=8):
 
 
 def _resolver_caminho_foto(foto):
-    """Caminho físico da imagem (já padronizada no upload)."""
-    return foto.imagem.path
+    """
+    Retorna um buffer (BytesIO) com o binário da imagem, baixando
+    diretamente do Cloudinary via HTTPS (CloudinaryField não expõe
+    caminho de disco local — apenas .url).
+    """
+    if not foto.imagem:
+        raise ValueError('Foto sem imagem associada.')
+    response = requests.get(foto.imagem.url, timeout=10)
+    response.raise_for_status()
+    return io.BytesIO(response.content)
+
 
 
 def _configurar_secao(doc):
@@ -181,11 +192,11 @@ def _preencher_celula_foto(cell, foto, numero_foto):
     paragraph = cell.paragraphs[0]
     run = paragraph.add_run()
     try:
-        caminho_imagem = _resolver_caminho_foto(foto)
+        buffer_imagem = _resolver_caminho_foto(foto)
         # Largura E altura fixas — imagens já vêm padronizadas em 4:3
         # desde o upload (ImageOps.fit em FotoRelatorio._padronizar_imagem).
         run.add_picture(
-            caminho_imagem,
+            buffer_imagem,
             width=LARGURA_IMAGEM,
             height=ALTURA_IMAGEM,
         )
@@ -197,6 +208,7 @@ def _preencher_celula_foto(cell, foto, numero_foto):
     legenda_run = legenda_p.add_run(f"Foto {numero_foto:02d}: {foto.legenda}")
     legenda_run.font.size = Pt(9)
     legenda_p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
 
 def _adicionar_observacoes(doc, relatorio):
     """Observações como parágrafos, fora da tabela de cabeçalho."""
