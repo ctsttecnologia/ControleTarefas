@@ -122,7 +122,6 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
     'django.contrib.humanize',
     
     # Extensões
@@ -146,6 +145,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'cloudinary_storage',
+    'django.contrib.staticfiles',  # deve vir DEPOIS de cloudinary_storage
+    'cloudinary',
 
     # Apps Locais
     'dashboard.apps.DashboardConfig',
@@ -390,6 +392,14 @@ MEDIA_ROOT = BASE_DIR / 'midia'
     #MEDIA_URL = '/midia/'
     #logger.info("📦 GCS temporariamente desativado - usando WhiteNoise + local")
 
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
 if IS_DEVELOPMENT:
     # ── DESENVOLVIMENTO LOCAL ──
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
@@ -398,10 +408,11 @@ if IS_DEVELOPMENT:
     MEDIA_URL = '/midia/'
     logger.debug("📁 Usando storage local (Desenvolvimento)")
 else:
-    # ── PRÉ-PRODUÇÃO / PRODUÇÃO COM WHITENOISE ──
+    # ─PRODUÇÃO COM WHITENOISE ──
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     STATIC_URL = '/static/'
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     MEDIA_URL = '/midia/'
     logger.debug("📦 Usando WhiteNoise (Produção)")
 

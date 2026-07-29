@@ -11,6 +11,7 @@ from PIL import Image, ImageOps
 from core.mixins import make_upload_path, sanitize_image
 from core.validators import SecureFileValidator
 from .services.geocoding import obter_endereco_por_coordenadas
+from cloudinary.models import CloudinaryField
 
 FOTOS_POR_PAGINA = 6  # 2 colunas x 3 linhas
 
@@ -21,9 +22,11 @@ FOTO_QUALIDADE = 80
 class RelatorioFotografico(models.Model):
 
     STATUS_RASCUNHO = 'rascunho'
+    STATUS_PENDENTE = 'pendente'
     STATUS_FINALIZADO = 'finalizado'
     STATUS_CHOICES = [
         (STATUS_RASCUNHO, 'Rascunho'),
+        (STATUS_PENDENTE, 'Pendente'),
         (STATUS_FINALIZADO, 'Finalizado'),
     ]
 
@@ -119,9 +122,10 @@ class FotoRelatorio(models.Model):
         on_delete=models.CASCADE,
         related_name='fotos',
     )
-    imagem = models.ImageField(
-        upload_to=make_upload_path('relatorio_fotografico'),
-        validators=[SecureFileValidator('relatorio_fotografico')],
+    imagem = CloudinaryField(
+        'imagem',
+        folder='relatorios_fotograficos',   # organiza no Cloudinary
+        resource_type='image',
     )
     legenda = models.TextField('Descrição', blank=True)
     ordem = models.PositiveIntegerField('Ordem', default=0)
