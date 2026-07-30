@@ -173,6 +173,16 @@
         </div>
     </div>
 
+    <!-- Gráfico de Histórico -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h6 class="text-muted text-uppercase small">
+                📈 Histórico (últimos 5 min)
+            </h6>
+            <canvas id="grafico-historico" height="80"></canvas>
+        </div>
+    </div>
+
     <!-- Processos -->
     <div class="card shadow-sm">
         <div class="card-body">
@@ -197,6 +207,9 @@
     </div>
 </div>
 
+<!-- 1º: Chart.js precisa ser carregado ANTES do script que o utiliza -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+
 <script>
 function corBarra(percent) {
     if (percent < 70) return 'bg-success';
@@ -210,7 +223,7 @@ function atualizarBarra(barId, percent) {
     bar.className = 'progress-bar ' + corBarra(percent);
 }
 
-// 🆕 Avalia o status dos clientes Redis e retorna {classe, texto, tooltip}
+// Avalia o status dos clientes Redis e retorna {classe, texto, tooltip}
 function statusClientesRedis(num) {
     if (num <= 50) {
         return {
@@ -240,6 +253,107 @@ function statusClientesRedis(num) {
     }
 }
 
+// 2º: Buffer e gráfico devem ser criados ANTES de atualizar() ser chamada
+const MAX_PONTOS = 60; // 60 * 5s = 5 minutos de histórico
+
+const bufferDados = {
+    labels: [],
+    cpu: [],
+    mem: [],
+    redisClientes: [],
+    celeryFila: []
+};
+
+const ctx = document.getElementById('grafico-historico').getContext('2d');
+const grafico = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: bufferDados.labels,
+        datasets: [
+            {
+                label: 'CPU %',
+                data: bufferDados.cpu,
+                borderColor: '#198754',
+                backgroundColor: 'rgba(25,135,84,0.1)',
+                tension: 0.3,
+                pointRadius: 0,
+                yAxisID: 'y'
+            },
+            {
+                label: 'Memória %',
+                data: bufferDados.mem,
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13,110,253,0.1)',
+                tension: 0.3,
+                pointRadius: 0,
+                yAxisID: 'y'
+            },
+            {
+                label: 'Clientes Redis',
+                data: bufferDados.redisClientes,
+                borderColor: '#fd7e14',
+                backgroundColor: 'rgba(253,126,20,0.1)',
+                tension: 0.3,
+                pointRadius: 0,
+                yAxisID: 'y1'
+            },
+            {
+                label: 'Fila Celery',
+                data: bufferDados.celeryFila,
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220,53,69,0.1)',
+                tension: 0.3,
+                pointRadius: 0,
+                yAxisID: 'y1'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        animation: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+            y: {
+                position: 'left',
+                min: 0,
+                max: 100,
+                title: { display: true, text: '%' }
+            },
+            y1: {
+                position: 'right',
+                min: 0,
+                grid: { drawOnChartArea: false },
+                title: { display: true, text: 'Contagem' }
+            }
+        },
+        plugins: {
+            legend: { position: 'top' }
+        }
+    }
+});
+
+function adicionarPontoBuffer(d) {
+    const hora = new Date().toLocaleTimeString('pt-BR', { hour12: false });
+
+    bufferDados.labels.push(hora);
+    bufferDados.cpu.push(d.cpu.percent);
+    bufferDados.mem.push(d.memoria.percent);
+    bufferDados.redisClientes.push(parseInt(d.redis.clientes) || 0);
+    bufferDados.celeryFila.push(parseInt(d.celery.fila_celery) || 0);
+
+    // Mantém o buffer com tamanho fixo (janela deslizante)
+    if (bufferDados.labels.length > MAX_PONTOS) {
+        bufferDados.labels.shift();
+        bufferDados.cpu.shift();
+        bufferDados.mem.shift();
+        bufferDados.redisClientes.shift();
+        bufferDados.celeryFila.shift();
+    }
+
+    grafico.update();
+}
+
+// 3º: função principal de atualização
 async function atualizar() {
     try {
         const res = await fetch('{% url "core:monitoramento_api" %}');
@@ -291,7 +405,7 @@ async function atualizar() {
             document.getElementById('redis-keys').textContent = d.redis.total_keys || '-';
             document.getElementById('redis-versao').textContent = d.redis.versao || '-';
 
-            // 🆕 Clientes com badge colorida
+            // Clientes com badge colorida
             const numClientes = parseInt(d.redis.clientes) || 0;
             document.getElementById('redis-clients').textContent = numClientes;
 
@@ -312,6 +426,9 @@ async function atualizar() {
 
         // Celery
         document.getElementById('celery-fila').textContent = d.celery.fila_celery;
+
+        // Atualiza o gráfico de histórico (buffer) — apenas no sucesso
+        adicionarPontoBuffer(d);
 
         // Processos
         const tbody = document.getElementById('processos-body');
@@ -338,4 +455,5 @@ atualizar();
 setInterval(atualizar, 5000);
 </script>
 {% endblock %}
+
 
