@@ -275,12 +275,10 @@ class FotoDeleteView(AppPermissionMixin, LoginRequiredMixin, View):
     def post(self, request, pk):
         foto = get_object_or_404(FotoRelatorio, pk=pk)
         relatorio_pk = foto.relatorio_id
-
         # foto.imagem.delete(save=False) remove o arquivo no Cloudinary
         # (funciona igual a ImageField — API compatível via django-cloudinary-storage)
-        if foto.imagem:
-            foto.imagem.delete(save=False)
         foto.delete()
+
 
         return JsonResponse({'ok': True, 'relatorio': relatorio_pk})
 
