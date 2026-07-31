@@ -78,7 +78,8 @@
     }
     .foto-legenda-textarea { font-size: .85rem; }
 
-    .badge-status-rascunho { background: #ffc107; color: #000; }
+    .badge-status-rascunho { background: #595959; color: #000; }
+    .badge-status-pendente { background: #ffc107; color: #000; }
     .badge-status-finalizado { background: #198754; }
 
     .spinner-upload { display: none; }
@@ -112,7 +113,7 @@
                 <strong>Responsável:</strong> {{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }} &nbsp;|&nbsp;
                 <strong>Filial:</strong> {{ relatorio.filial }}
             </div>
-            <span class="badge mt-2 {% if relatorio.status == 'finalizado' %}badge-status-finalizado{% else %}badge-status-rascunho{% endif %}">
+            <span class="badge mt-2 {% if relatorio.status == 'finalizado' %}badge-status-finalizado{% else %}{% if relatorio.status == 'pendente' %}badge-status-pendente{% else %}badge-status-rascunho{% endif %}{% endif %}">
                 {{ relatorio.get_status_display }}
             </span>
             <span class="badge bg-secondary mt-2">{{ total_folhas }} folha{{ total_folhas|pluralize }}</span>
