@@ -74,6 +74,7 @@ class RelatorioFotograficoViewSet(viewsets.ModelViewSet):
     def upload_fotos(self, request, pk=None):
         relatorio = self.get_object()
         arquivos = request.FILES.getlist('imagens')
+        legendas = request.data.getlist('legendas')
 
         if not arquivos:
             return Response(
@@ -88,9 +89,11 @@ class RelatorioFotograficoViewSet(viewsets.ModelViewSet):
             )
             ultima_ordem = relatorio_locked.fotos.count()
             for i, arquivo in enumerate(arquivos):
+                legenda = legendas[i] if i < len(legendas) else ''
                 foto = FotoRelatorio.objects.create(
                     relatorio=relatorio_locked,
                     imagem=arquivo,
+                    legenda=legenda,
                     ordem=ultima_ordem + i + 1,
                 )
                 criadas.append(

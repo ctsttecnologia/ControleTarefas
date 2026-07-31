@@ -71,20 +71,7 @@ class AdminFilialScopedMixin:
 
 
 class ViewFilialScopedMixin:
-    """
-    NÍVEL 2 (Horizontal/Filial) - Para Views:
-    Filtra o queryset pela filial ativa da sessão.
-
-    Estratégia (em ordem de prioridade):
-      1. Se o manager do model tiver 'for_request(request)', usa-o.
-      2. Caso contrário, lê 'active_filial_id' da sessão e filtra
-         pelo campo 'filial' do model (se existir).
-    """
-
-    """
-    Restringe o queryset da view à filial ativa do usuário.
-    Espera que o model tenha um campo FK `filial`.
-    """
+    
     filial_field = 'filial'
 
     def get_filial_ativa(self):
@@ -125,7 +112,6 @@ class TecnicoScopeMixin:
         class MinhaView(AppPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, ListView):
             ...
     """
-
     tecnico_scope_lookup = None
     _TECNICO_CACHE_ATTR = '_tecnico_group_cache'
 
@@ -504,7 +490,7 @@ def _sanitize_image(uploaded_file):
 
         # Re-salva SEM metadados
         output = io.BytesIO()
-        img.save(output, format=img_format)
+        img.save(output, format=img_format, exif=b'')  # força remoção
         output.seek(0)
 
         return InMemoryUploadedFile(
@@ -816,11 +802,6 @@ class FuncionarioRequiredMixin(LoginRequiredMixin):
             except NoReverseMatch:
                 return redirect('/')
 
-
-# Alias público
-sanitize_image = _sanitize_image
-
-# core/mixins.py (ou onde está o TarefaAccessMixin)
 
 # =============================================================================
 # == MIXIN DE ACESSO AO MONITORAMENTO
