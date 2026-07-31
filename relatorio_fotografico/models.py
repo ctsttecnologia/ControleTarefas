@@ -2,22 +2,25 @@
 # relatorio_fotografico/models.py
 import math
 from io import BytesIO
+
 from django.conf import settings
-from django.core.files.base import ContentFile
-from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.core.files.uploadedfile import InMemoryUploadedFile, UploadedFile
 from django.db import models
 from django.urls import reverse
 from PIL import Image, ImageOps
-from core.mixins import make_upload_path, sanitize_image
-from core.validators import SecureFileValidator
-from .services.geocoding import obter_endereco_por_coordenadas
+
 from cloudinary.models import CloudinaryField
+
+from core.mixins import sanitize_image
+
+from .services.geocoding import obter_endereco_por_coordenadas
 
 FOTOS_POR_PAGINA = 6  # 2 colunas x 3 linhas
 
 # Tamanho máximo padronizado para as fotos do relatório
 FOTO_MAX_SIZE = (800, 600)
 FOTO_QUALIDADE = 80
+
 
 class RelatorioFotografico(models.Model):
 
@@ -60,6 +63,7 @@ class RelatorioFotografico(models.Model):
 
     assunto = models.CharField(max_length=455, blank=True, default='')
     observacoes = models.TextField('Observações', blank=True, default='')
+
     class Meta:
         verbose_name = 'Relatório Fotográfico'
         verbose_name_plural = 'Relatórios Fotográficos'
@@ -92,14 +96,13 @@ class RelatorioFotografico(models.Model):
             fotos[i:i + FOTOS_POR_PAGINA]
             for i in range(0, len(fotos), FOTOS_POR_PAGINA)
         ] or [[]]
-    
+
     @property
     def paginas_em_linhas(self):
         """Cada página já vem quebrada em linhas de 2 fotos."""
         resultado = []
         for pagina in self.paginas:
             linhas = [pagina[i:i + 2] for i in range(0, len(pagina), 2)]
-            # completa até 3 linhas
             while len(linhas) < 3:
                 linhas.append([])
             resultado.append(linhas)
@@ -115,6 +118,7 @@ class RelatorioFotografico(models.Model):
         )
         return foto.endereco if foto else ''
 
+
 class FotoRelatorio(models.Model):
 
     relatorio = models.ForeignKey(
@@ -124,11 +128,12 @@ class FotoRelatorio(models.Model):
     )
     imagem = CloudinaryField(
         'imagem',
-        folder='relatorios_fotograficos',   # organiza no Cloudinary
+        folder='relatorios_fotograficos',
         resource_type='image',
     )
     legenda = models.TextField('Descrição', blank=True)
     ordem = models.PositiveIntegerField('Ordem', default=0)
+
     # --- Geolocalização (capturada no momento do upload) ---
     latitude = models.DecimalField(
         max_digits=10, decimal_places=7, null=True, blank=True
@@ -159,11 +164,13 @@ class FotoRelatorio(models.Model):
             return ''
         return f'{float(self.latitude):.5f}, {float(self.longitude):.5f}'
 
-
     def save(self, *args, **kwargs):
-        if self.imagem and not self.imagem._committed:
-            self.imagem.file = sanitize_image(self.imagem.file)
-            self.imagem.file = self._padronizar_imagem(self.imagem.file)
+        # CloudinaryField não encapsula o arquivo bruto em FieldFile na
+        # atribuição (diferente do FileField nativo do Django), então
+        # verificamos diretamente se ainda é um UploadedFile "cru".
+        if isinstance(self.imagem, UploadedFile):
+            arquivo_sanitizado = sanitize_image(self.imagem)
+            self.imagem = self._padronizar_imagem(arquivo_sanitizado)
 
         is_new = self._state.adding
         super().save(*args, **kwargs)
@@ -173,23 +180,34 @@ class FotoRelatorio(models.Model):
             from .tasks import preencher_endereco_foto
             preencher_endereco_foto.delay(self.pk)
 
-
     def _padronizar_imagem(self, arquivo):
+        """
+        Redimensiona/recomprime a imagem para um tamanho e qualidade
+        padronizados antes do upload para o Cloudinary.
+        """
         arquivo.seek(0)
         img = Image.open(arquivo)
         img = ImageOps.exif_transpose(img)
+
         if img.mode != 'RGB':
             img = img.convert('RGB')
+
         img = ImageOps.fit(img, FOTO_MAX_SIZE, Image.LANCZOS)
+
         buffer = BytesIO()
         img.save(buffer, format='JPEG', quality=FOTO_QUALIDADE, optimize=True)
         buffer.seek(0)
+
         nome_original = getattr(arquivo, 'name', 'foto.jpg')
         nome_base = nome_original.rsplit('.', 1)[0]
         novo_nome = f'{nome_base}.jpg'
-        return InMemoryUploadedFile(
-            buffer, None, novo_nome, 'image/jpeg',
-            buffer.getbuffer().nbytes, None,
-        )
 
+        return InMemoryUploadedFile(
+            buffer,
+            None,
+            novo_nome,
+            'image/jpeg',
+            buffer.getbuffer().nbytes,
+            None,
+        )
 
