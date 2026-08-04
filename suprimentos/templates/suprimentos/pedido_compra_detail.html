@@ -9,11 +9,10 @@
     <h2 class="sup-page-title">
         <i class="bi bi-receipt me-2"></i>Pedido de Compra {{ pc.numero }}
     </h2>   
-    <div class="sup-page-actions">
-        
-        <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-light fw-semibold">
-          <i class="bi bi-speedometer2"></i> Dashboard
-        </a>
+    <div class="sup-page-actions">  
+      <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-secundary fw-semibold">
+        <i class="bi bi-speedometer me-2"></i>painel
+      </a>
     </div>
 </div>
 <span class="badge bg-light text-dark badge-status fs-6">{{ pc.get_status_display }}</span>
@@ -25,6 +24,10 @@
     {% with s=pc.status %}
     <div class="stepper">
       <div class="step done"><div class="dot"><i class="bi bi-check"></i></div><div class="label">Emitido</div></div>
+      <a href="{% url 'suprimentos:montar_pedido_compra_imprimir' solicitacao.pk %}"
+        target="_blank" class="btn btn-outline-secondary btn-lg">
+        <i class="bi bi-file-pdf"></i> Salvar em PDF
+      </a>
       <div class="step {% if s == 'ENTREGA_PARCIAL' or s == 'ENTREGUE' %}done{% elif s == 'AGUARDANDO_ENTREGA' %}active{% endif %}">
         <div class="dot">2</div><div class="label">Aguardando</div>
       </div>

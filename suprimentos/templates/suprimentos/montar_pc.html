@@ -112,7 +112,13 @@
   {# ───── Ações ───── #}
   <div class="d-flex gap-2">
     <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-check2-circle"></i> Gerar Pedido(s) de Compra</button>
+    <a href="{% url 'suprimentos:montar_pedido_compra_imprimir' solicitacao.pk %}"
+      target="_blank" class="btn btn-outline-secondary btn-lg">
+      <i class="bi bi-file-pdf"></i> Salvar em PDF
+    </a>
     <a href="{{ solicitacao.get_absolute_url }}" class="btn btn-light btn-lg">Cancelar</a>
+  </div>
+
   </div>
 </form>
 

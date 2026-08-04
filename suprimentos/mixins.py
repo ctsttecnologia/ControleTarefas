@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.views import redirect_to_login
 from django.shortcuts import redirect
+from py_serializable import logger
 
 from . import permissions as perms
 
@@ -45,6 +46,7 @@ class _SuperuserBypassMixin(UserPassesTestMixin):
         try:
             return redirect(self.redirect_url_no_permission)
         except Exception:
+            logger.warning("Falha ao redirecionar para %s", self.redirect_url_no_permission, exc_info=True)
             return redirect('/')
 
 

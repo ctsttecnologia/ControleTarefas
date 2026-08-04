@@ -64,7 +64,7 @@ ALL_CARDS = [
         'permission': 'suprimentos.view_pedido',
         'icon': 'images/suprimentos.gif',
         'links': [
-            {'url': 'suprimentos:dashboard', 'text': 'Suprimentos', 'permission': 'suprimentos.view_pedido'},
+            {'url': 'suprimentos:dashboard', 'text': 'Painel', 'permission': 'suprimentos.view_pedido'},
         ]
     },
     {

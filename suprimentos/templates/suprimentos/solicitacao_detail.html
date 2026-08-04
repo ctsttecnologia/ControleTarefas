@@ -1,3 +1,4 @@
+#  suprimentos/templates/suprimentos/solicitacao_detail
 {% extends "suprimentos/base_suprimentos.html" %}
 
 {% block sup_content %}
@@ -148,9 +149,13 @@
                           <span class="text-nowrap">
                             R$ {{ c.valor_unitario|floatformat:2 }}
                             {% if pode_cotar %}
-                              · <a href="{% url 'suprimentos:cotacao_excluir' c.pk %}"
-                                   class="text-danger"
-                                   onclick="return confirm('Excluir esta cotação?');">excluir</a>
+                              <form method="post" action="{% url 'suprimentos:cotacao_excluir' c.pk %}"
+                                    class="d-inline" onsubmit="return confirm('Excluir esta cotação?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link btn-sm text-danger p-0 align-baseline">
+                                  excluir
+                                </button>
+                              </form>
                             {% endif %}
                           </span>
                         </li>
@@ -264,9 +269,12 @@
       {% endif %}
 
       {% if pode_enviar_aprovacao %}
-        <a href="{% url 'suprimentos:solicitacao_enviar_aprovacao' solicitacao.pk %}" class="btn btn-warning">
-          <i class="bi bi-send-check"></i> Enviar para Aprovação
-        </a>
+        <form method="post" action="{% url 'suprimentos:solicitacao_enviar_aprovacao' solicitacao.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">
+                Enviar para aprovação
+            </button>
+        </form>
       {% endif %}
 
       {% if pode_aprovar_cotacao %}

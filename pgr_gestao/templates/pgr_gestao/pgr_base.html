@@ -12,7 +12,7 @@
 
 <style>
 
-    <!--LAYOUT — Container Flex sidebar + main-->   
+    /* LAYOUT — Container Flex sidebar + main */
 
     .pgr-layout {
         display: flex;
@@ -22,7 +22,7 @@
         position: relative;
     }
 
-    <!-- SIDEBAR PGR — Adaptativa claro/escuro -->
+    /* SIDEBAR PGR — Adaptativa claro/escuro */
 
     .pgr-sidebar {
         flex: 0 0 250px;
@@ -100,7 +100,7 @@
         list-style: none;
     }
 
-    <!-- MAIN CONTENT -->
+    /* MAIN CONTENT — Breadcrumb */
 
     .pgr-main-content .breadcrumb {
         background-color: transparent;
@@ -128,7 +128,7 @@
         color: var(--bs-text-muted);
     }
 
-    <!-- MAIN CONTENT -->
+    /* MAIN CONTENT */
 
     .pgr-main-content {
         flex: 1 1 auto;
@@ -137,8 +137,7 @@
         max-width: 100%;
     }
 
-
-    <!-- MOBILE — Sidebar colapsável -->
+    /* MOBILE — Sidebar colapsável */
 
     .pgr-sidebar-toggle {
         display: none;
@@ -207,14 +206,14 @@
         }
     }
 
-    <!-- AJUSTE: zera padding do #main-content do base global -->
+    /* AJUSTE: zera padding do #main-content do base global */
 
     #main-content:has(.pgr-layout) {
         padding-top: 0 !important;
         padding-bottom: 0 !important;
     }
 
-    <!--IMPRESSÃO-->   
+    /* IMPRESSÃO */
 
     @media print {
         .pgr-sidebar,
@@ -234,6 +233,7 @@
         }
     }
 </style>
+
 
 {% block extra_pgr_css %}{% endblock %}
 {% endblock extra_css %}
