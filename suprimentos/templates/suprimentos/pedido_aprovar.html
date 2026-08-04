@@ -1,4 +1,4 @@
-
+# suprimentos/templates/suprimentos/pedido_aprovar.html
 {% extends "suprimentos/base_suprimentos.html" %}
 
 {% block sup_content %}
@@ -8,10 +8,9 @@
         <i class="bi bi-check2-square me-2"></i>Avaliar Pedido {{ pedido.numero }}
     </h2>   
     <div class="sup-page-actions">
-        
-        <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-light fw-semibold">
-          <i class="bi bi-speedometer2"></i> Dashboard
-        </a>
+      <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-secundary fw-semibold">
+        <i class="bi bi-speedometer me-2"></i>painel
+      </a>
     </div>
 </div>
 <small class="opacity-75">{{ pedido.contrato }}</small>

@@ -51,9 +51,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         dry_run = options['dry_run']
-        itens = ItemPedido.objects.select_related(
-            'material', 'material__grupo_tributario'
-        ).all()
+        itens = ItemPedido.objects.filter(
+            pedido__status__in=['APROVADO', 'SOLICITACAO_GERADA']
+        ).select_related('material', 'material__grupo_tributario')
 
         atualizados = 0
         sem_grupo = 0

@@ -9,8 +9,8 @@
       <div class="sup-page-actions">
         <span class="badge bg-light text-dark badge-status fs-6">{{ pedido.get_status_display }}</span>
       </div>
-      <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-light fw-semibold">
-          <i class="bi bi-speedometer2"></i> Dashboard
+      <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-secundary fw-semibold">
+          <i class="bi bi-speedometer me-2"></i> Painel
       </a>
   </div>
   <small class="opacity-75">{{ pedido.contrato }}</small>

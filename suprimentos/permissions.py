@@ -1,4 +1,12 @@
 # suprimentos/permissions.py
+
+# Nomes canônicos de grupos — usar SEMPRE estas constantes, nunca strings soltas
+GRUPO_GERENCIA = ["Gerência", "Gerencia", "Admin"]
+GRUPO_COMPRADOR = ["Comprador", "Suprimentos", "Compradores"]
+GRUPO_COORDENADOR = ["Coordenador", "Solicitante"]
+GRUPO_APROVADORES = ["Aprovadores"]
+
+
 def _in_group(user, *names):
     if not user.is_authenticated:
         return False
@@ -6,19 +14,23 @@ def _in_group(user, *names):
         return True
     return user.groups.filter(name__in=names).exists()
 
+
 def is_gerencia(user):
-    return _in_group(user, "Gerência", "Gerencia", "Admin")
+    return _in_group(user, *GRUPO_GERENCIA)
 
 def is_comprador(user):
-    return _in_group(user, "Comprador", "Suprimentos")
+    return _in_group(user, *GRUPO_COMPRADOR)
 
 def is_coordenador(user):
-    return _in_group(user, "Coordenador", "Solicitante")
+    return _in_group(user, *GRUPO_COORDENADOR)
 
-# suprimentos/permissions.py — aliases de compatibilidade (no FINAL do arquivo)
-is_suprimentos = is_comprador          # alias
-is_gerente = is_gerencia               # alias
+def is_aprovador(user):
+    return _in_group(user, *GRUPO_APROVADORES) or is_gerencia(user)
+
+
+is_suprimentos = is_comprador
+is_gerente = is_gerencia
 
 def pode_ver_solicitacao(user):
-    """Suprimentos ou Gerência (bloqueia coordenador puro)."""
     return is_comprador(user) or is_gerencia(user)
+

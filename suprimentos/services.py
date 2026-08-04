@@ -26,6 +26,7 @@ from suprimentos.models import (
 )
 from tributacao.models import CFOP, NCM, GrupoTributario
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -120,13 +121,9 @@ class MaterialImportService:
 
 
     def _criar_grupo(self, codigo):
-        cfop = CFOP.objects.create(codigo= codigo(), descricao='Venda')
-        return GrupoTributario.objects.create(
-            codigo=codigo,
-            nome=f'Grupo {codigo}',
-            cfop=cfop,
-            filial=self.filial,
-        )
+        cfop = CFOP.objects.create(codigo=codigo, descricao='Venda')
+        return GrupoTributario.objects.create(...)
+
 
 
     # ── Leitura do arquivo ───────────────────────────────────────────
@@ -462,9 +459,9 @@ def gerar_template_excel():
         c.border = st['border']
 
     instrucoes = [
-        ("Descrição", "✅ SIM", "Texto livre até 500 caracteres."),
-        ("Classificação", "✅ SIM", "Use o código da aba 'Referências'. Ex: EPI, CONSUMO, FERRAMENTA"),
-        ("Tipo", "✅ SIM", "Use o código da aba 'Referências'. Ex: ELETRICA, LIMPEZA, EPI"),
+        ("Descrição", "SIM", "Texto livre até 500 caracteres."),
+        ("Classificação", "SIM", "Use o código da aba 'Referências'. Ex: EPI, CONSUMO, FERRAMENTA"),
+        ("Tipo", "SIM", "Use o código da aba 'Referências'. Ex: ELETRICA, LIMPEZA, EPI"),
         ("Marca", "—",     "Texto livre até 100 caracteres."),
         ("Unidade", "—", "Use o código da aba 'Referências'. Padrão: PÇ (Peça)."),
         ("Valor Unitário", "—", "Decimal. Aceita '12.50' ou '12,50'. Padrão: 0,00."),
@@ -543,4 +540,10 @@ def criar_ferramenta_from_form(material, form, filial):
     )
     return ferramenta
 
-
+def gerar_solicitacoes_do_pedido(pedido):
+    """
+    Gera SolicitacaoCompra para cada material distinto de um Pedido aprovado.
+    API pública — usada tanto pelo signal quanto por management commands.
+    """
+    from .signals import _gerar_solicitacoes_do_pedido as _impl
+    return _impl(pedido)

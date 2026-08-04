@@ -50,16 +50,6 @@ class ParceiroForm(BootstrapMixin, forms.ModelForm):
         }
 
 
-class MaterialForm(BootstrapMixin, forms.ModelForm):
-    class Meta:
-        model = Material
-        fields = [
-            "codigo", "descricao", "classificacao", "tipo", "marca",
-            "unidade", "valor_unitario", "equipamento_epi", "ferramenta_ref",
-            "ncm", "grupo_tributario", "filial", "ativo",
-        ]
-
-
 class ContratoForm(BootstrapMixin, forms.ModelForm):
     class Meta:
         model = Contrato
@@ -237,8 +227,10 @@ class MultipleFileField(forms.FileField):
 
     def clean(self, data, initial=None):
         single = super().clean
+        if not data:
+            return []
         if isinstance(data, (list, tuple)):
-            return [single(d, initial) for d in data]
+            return [single(d, initial) for d in data if d]
         return [single(data, initial)]
 
 
@@ -477,8 +469,6 @@ class VerbaContratoForm(forms.ModelForm):
             if self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
-                raise forms.ValidationError(
-                    f"Já existe verba cadastrada para {contrato.cm} "
-                    f"em {mes:02d}/{ano}."
-                )
+                self.add_error("mes", f"Já existe verba cadastrada para {contrato.cm} em {mes:02d}/{ano}.")
+
         return cleaned

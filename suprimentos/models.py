@@ -16,9 +16,10 @@ import os
 import uuid
 from decimal import Decimal
 from pathlib import Path
+from venv import logger
 from django.db.models import Sum, F
 from django.conf import settings
-from django.core.validators import MinValueValidator
+from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.db import models, transaction
 from django.urls import reverse
 from django.utils import timezone
@@ -30,6 +31,7 @@ from core.validators import SecureFileValidator
 from logradouro.models import Logradouro
 from usuario.models import Filial
 from suprimentos.utils import _registrar_historico
+from django.db.models import Max
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -155,9 +157,9 @@ class UnidadeMedida(models.TextChoices):
     
 
 class TipoObra(models.TextChoices):
-    CM = "CM", "CM - Contrato de Manutenção"
-    CR = "CR", "CR - Contrato de Reforma"
-    VE = "VE", "VE - Venda"
+    CM = "CM", "Contrato de Manutenção"
+    CR = "CR", "Contrato de Reforma"
+    VE = "VE", "Venda"
 
 
 class TipoNotaFiscal(models.TextChoices):
@@ -462,22 +464,23 @@ class VerbaContrato(models.Model):
         return self.verba_epi + self.verba_consumo + self.verba_ferramenta
 
     def _soma_itens(self, classificacao):
-        """Soma valor_total dos itens aprovados/entregues no mês."""
-        from django.db.models import Sum
-
-        total = ItemPedido.objects.filter(
-            pedido__contrato=self.contrato,
-            pedido__status__in=[
-                Pedido.StatusChoices.APROVADO,
-                Pedido.StatusChoices.ENTREGUE,
-                Pedido.StatusChoices.RECEBIDO,
+        """Soma valor_total dos itens de PCs (emitidos/entregues/recebidos) no mês, para este contrato."""
+        total = ItemPedidoCompra.objects.filter(
+            pedido_compra__solicitacao__contrato=self.contrato,
+            pedido_compra__status__in=[
+                PedidoCompra.StatusPC.EMITIDO,
+                PedidoCompra.StatusPC.ENVIADO_FORNECEDOR,
+                PedidoCompra.StatusPC.ENTREGA_PARCIAL,
+                PedidoCompra.StatusPC.ENTREGUE,
+                PedidoCompra.StatusPC.RECEBIDO,
             ],
-            pedido__data_pedido__year=self.ano,
-            pedido__data_pedido__month=self.mes,
+            pedido_compra__data_emissao__year=self.ano,
+            pedido_compra__data_emissao__month=self.mes,
             material__classificacao=classificacao,
         ).aggregate(t=Sum("valor_total"))["t"]
         return total or Decimal("0.00")
-    
+
+
     @property
     def compra_epi(self):
         return self._soma_itens(CategoriaMaterial.EPI)
@@ -570,7 +573,7 @@ class Pedido(TimestampedModel):
         choices=TipoObra.choices,
         default=TipoObra.CM,
     )
-
+    
     data_necessaria = models.DateField(
         _("Data Necessária para Entrega"),
         null=True, blank=True,
@@ -1108,6 +1111,7 @@ class ItemPedido(models.Model):
             self.total_creditos = calc.get("total_creditos", Decimal("0.00"))
             self.custo_real = calc.get("custo_real", Decimal("0.00"))
         except Exception:
+            logger.exception("Falha ao calcular impostos do item (material=%s)", self.material_id)
             self.total_impostos = Decimal("0.00")
             self.total_creditos = Decimal("0.00")
             self.custo_real = Decimal("0.00")
@@ -1120,7 +1124,7 @@ class ItemPedido(models.Model):
 
     def __str__(self):
         unidade = self.get_unidade_medida_display() if self.unidade_medida else ""
-        return f"{self.quantidade}x {self.material.descricao}"
+        return f"{self.quantidade}x {self.material.descricao}, {unidade} — R$ {self.valor_total:.2f}"
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1149,17 +1153,6 @@ class SolicitacaoCompra(TimestampedModel):
         FINALIZADO      = "FINALIZADO",      "Finalizado"
         CANCELADO       = "CANCELADO",       "Cancelado"
 
-    # Novo campo (substitui numero_pedido)
-    numero_pedido = models.CharField(
-        _("Nº do Pedido (Externo)"),
-        max_length=50,
-        blank=True,
-        default="",
-        help_text=_(
-            "Nº do pedido no sistema externo. "
-            "DEPRECATED na SolicitacaoCompra — usar PedidoCompra.numero_pedido."
-        ),
-    )
 
     # Flag para indicar que esta solicitação já usa o novo fluxo
     usa_novo_fluxo = models.BooleanField(
@@ -1363,26 +1356,48 @@ class SolicitacaoCompra(TimestampedModel):
         )
 
     def save(self, *args, **kwargs):
-        valores_validos = {c[0] for c in self.StatusChoices.choices}
-        if self.status not in valores_validos:
-            from django.core.exceptions import ValidationError
-            raise ValidationError(
-                f"Status inválido em SolicitacaoCompra: '{self.status}'. "
-                f"Válidos: {sorted(valores_validos)}"
-            )
+        if not self.pk and not self.numero:
+            with transaction.atomic():
+                # Lock nas linhas do ano/filial para impedir números duplicados
+                # em requisições concorrentes
+                ano = timezone.now().year
+                qs = SolicitacaoCompra.objects.select_for_update().filter(
+                    numero__startswith=f"SOL-{ano}-"
+                )
+                if getattr(self, "filial_id", None):
+                    qs = qs.filter(filial_id=self.filial_id)
+
+                ultimo = qs.aggregate(max_num=Max("numero"))["max_num"]
+                if ultimo:
+                    seq = int(ultimo.split("-")[-1]) + 1
+                else:
+                    seq = 1
+
+                self.numero = f"SOL-{ano}-{seq:05d}"
+                super().save(*args, **kwargs)
+                return
+
         super().save(*args, **kwargs)
-        
-        if not self.numero:
-            hoje = timezone.now()
-            prefix = f"SOL-{hoje.strftime('%Y%m')}"
-            ultimo = (
-                SolicitacaoCompra.objects.filter(numero__startswith=prefix)
-                .order_by("-numero")
-                .first()
-            )
-            seq = int(ultimo.numero.split("-")[-1]) + 1 if ultimo else 1
-            self.numero = f"{prefix}-{seq:04d}"
-        super().save(*args, **kwargs)
+
+    def _gerar_numero(self):
+        import re
+        hoje = timezone.now()
+        prefix = f"SOL-{hoje.strftime('%Y%m')}-"
+        for _ in range(5):
+            with transaction.atomic():
+                ultimo = (
+                    SolicitacaoCompra._base_manager
+                    .select_for_update()
+                    .filter(numero__startswith=prefix)
+                    .order_by("-numero")
+                    .first()
+                )
+                seq = int(ultimo.numero.split("-")[-1]) + 1 if ultimo else 1
+                candidato = f"{prefix}{seq:04d}"
+                if not SolicitacaoCompra._base_manager.filter(numero=candidato).exists():
+                    return candidato
+        return f"{prefix}{int(hoje.timestamp()) % 10000:04d}"
+
 
     # ── Verificação de Verba ─────────────────────────────────────────────────
 
@@ -1490,7 +1505,6 @@ class SolicitacaoCompra(TimestampedModel):
             S.COTACAO_ENVIADA: 2,
             S.EM_APROVACAO:    3,
             S.APROVADO:        4,
-            S.PEDIDO_GERADO:   4,
             S.ENVIAR_PEDIDO:   5,
             S.EM_ENTREGA:      7,
             S.FINALIZADO:      8,
@@ -1628,7 +1642,10 @@ class EntregaAnexo(models.Model):
         on_delete=models.CASCADE,
         related_name="anexos_entrega",   # usado nas views: pc.anexos_entrega.all()
     )
-    arquivo = models.FileField(upload_to="entregas/%Y/%m/")
+    arquivo = models.FileField(
+        upload_to=make_upload_path('suprimentos_entregas'),
+        validators=[SecureFileValidator('suprimentos_entregas')],
+    )
     nota_fiscal = models.CharField("Nota Fiscal", max_length=60, blank=True)
     enviado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -1662,7 +1679,7 @@ class HistoricoSolicitacao(BaseHistorico):
     descricao = models.TextField(_("Descrição das Alterações"))
     responsavel = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, related_name="historicos_solic_responsavel",
+        null=True, blank=True, related_name="historicos_solic_responsavel",
         verbose_name=_("Responsável"),
     )
     status_anterior = models.CharField(_("Status Anterior"), max_length=25, blank=True, default="")
@@ -1946,7 +1963,13 @@ class Cotacao(TimestampedModel):
     anexo_cotacao = models.FileField(
         upload_to="cotacoes/%Y/%m/",
         null=True, blank=True,
-        verbose_name=_("Anexo (PDF da cotação)"),
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=["pdf", "doc", "docx", "xls", "xlsx"],
+                message=_("Formato de arquivo inválido. Permitidos: PDF, DOC, DOCX, XLS, XLSX."),
+            ),
+        ],
+        verbose_name=_("Anexo da Cotação"),
     )
     criado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,

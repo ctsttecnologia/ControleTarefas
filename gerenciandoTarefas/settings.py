@@ -237,8 +237,7 @@ TEMPLATES = [
                 'pgr_gestao.context_processors.pgr_stats',
                 'notifications.context_processors.notification_processor',
                 'gestao_riscos.context_processors.dias_sem_acidentes',
-                'suprimentos.context_processors.suprimentos_menu_context',
-                'suprimentos.context_processors.suprimentos_notificacoes',
+                'suprimentos.context_processors.suprimentos_contadores',
             ],
             'builtins': [
                 # 'django_components.templatetags.component_tags',

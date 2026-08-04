@@ -77,7 +77,6 @@ class PedidoAdmin(admin.ModelAdmin):
     search_fields = ("numero", "contrato__cm", "contrato__cliente")
     readonly_fields = ("numero", "data_pedido", "valor_total", "estoque_processado")
     inlines = [ItemPedidoInline, AnexoPedidoInline, HistoricoPedidoInline]
-    #date_hierarchy = "data_pedido"
 
     @admin.display(description="Status")
     def status_badge(self, obj):
@@ -88,6 +87,68 @@ class PedidoAdmin(admin.ModelAdmin):
         }
         cor = cores.get(obj.status, "secondary")
         return format_html('<span class="badge bg-{}">{}</span>', cor, obj.get_status_display())
+
+
+# ── Anexos (registro próprio, para auditoria fora do inline) ──
+@admin.register(AnexoPedido)
+class AnexoPedidoAdmin(admin.ModelAdmin):
+    list_display = ("pedido", "arquivo", "descricao", "criado_em")
+    list_filter = ("criado_em",)
+    search_fields = ("pedido__numero", "descricao")
+    date_hierarchy = "criado_em"
+    readonly_fields = ("criado_em",)
+    autocomplete_fields = ("pedido",)
+
+
+@admin.register(AnexoSolicitacao)
+class AnexoSolicitacaoAdmin(admin.ModelAdmin):
+    list_display = ("solicitacao", "arquivo", "descricao", "criado_em")
+    list_filter = ("criado_em",)
+    search_fields = ("solicitacao__numero", "descricao")
+    date_hierarchy = "criado_em"
+    readonly_fields = ("criado_em",)
+    autocomplete_fields = ("solicitacao",)
+
+
+# ── Históricos (auditoria) ─────────────────────────────────────
+@admin.register(HistoricoPedido)
+class HistoricoPedidoAdmin(admin.ModelAdmin):
+    list_display = ("pedido", "versao", "status_anterior", "status_novo", "responsavel", "criado_em")
+    list_filter = ("status_novo", "status_anterior", "criado_em")
+    search_fields = ("pedido__numero", "responsavel__username", "descricao")
+    date_hierarchy = "criado_em"
+    ordering = ("-criado_em",)
+    autocomplete_fields = ("pedido", "responsavel")
+    readonly_fields = [f.name for f in HistoricoPedido._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(HistoricoSolicitacao)
+class HistoricoSolicitacaoAdmin(admin.ModelAdmin):
+    list_display = ("solicitacao", "status_anterior", "status_novo", "responsavel", "criado_em")
+    list_filter = ("status_novo", "status_anterior", "criado_em")
+    search_fields = ("solicitacao__numero", "responsavel__username", "descricao")
+    date_hierarchy = "criado_em"
+    ordering = ("-criado_em",)
+    autocomplete_fields = ("solicitacao", "responsavel")
+    readonly_fields = [f.name for f in HistoricoSolicitacao._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 # ── Solicitação de Compra ─────────────────────────────────────
@@ -125,14 +186,22 @@ class PedidoCompraAdmin(admin.ModelAdmin):
     inlines = [ItemPedidoCompraInline]
 
 
+@admin.register(ItemPedidoCompra)
+class ItemPedidoCompraAdmin(admin.ModelAdmin):
+    list_display = ("pedido_compra", "material", "quantidade", "valor_total", "saldo_receber")
+    list_filter = ("pedido_compra__status",)
+    search_fields = ("material__descricao", "pedido_compra__numero")
+    readonly_fields = ("valor_total", "saldo_receber")
+
+
 @admin.register(EstoqueConsumo)
 class EstoqueConsumoAdmin(admin.ModelAdmin):
     list_display = ("material", "contrato", "tipo", "quantidade", "responsavel", "criado_em")
     list_filter = ("tipo", "filial", "contrato")
     search_fields = ("material__descricao",)
 
-# ── Contrato e Verba Contrato ──────────────────────────────────────────
 
+# ── Contrato e Verba Contrato ──────────────────────────────────
 @admin.register(Contrato)
 class ContratoAdmin(admin.ModelAdmin):
     list_display = ("cm", "cliente", "filial", "ativo", "atualizado_em")
@@ -177,6 +246,3 @@ class VerbaContratoAdmin(admin.ModelAdmin):
         return format_html(
             '<b style="color:{}">R$ {}</b>', cor, f"{obj.saldo_total:.2f}"
         )
-
-
-admin.site.register([AnexoPedido, AnexoSolicitacao, HistoricoPedido, HistoricoSolicitacao, ItemPedidoCompra])

@@ -60,6 +60,8 @@ from .utils.cont_seguranca import validar_acesso_documento
 from cliente.models import Cliente
 from django.db.models import Count, Q, Sum, Avg, F, ExpressionWrapper, DurationField
 
+# Constante para o campo de filial em AvaliacaoQuantitativa
+AVALIACAO_FILIAL_FIELD = 'risco_identificado__pgr_documento__filial'
 
 
 # =============================================================================
@@ -1061,6 +1063,7 @@ class AvaliacaoQuantitativaListView(PGRTecnicoBaseMixin, ListView):
     paginate_by = 20
     permission_required = 'pgr_gestao.view_avaliacaoquantitativa'
     tecnico_scope_lookup = 'risco_identificado__pgr_documento__criado_por'
+    filial_field = 'risco_identificado__pgr_documento__filial'
 
     def get_queryset(self):
         queryset = super().get_queryset().select_related(
@@ -1101,6 +1104,7 @@ class AvaliacaoQuantitativaDetailView(PGRBaseMixin, DetailView):
     template_name = 'pgr_gestao/avaliacao_detail.html'
     context_object_name = 'avaliacao'
     permission_required = 'pgr_gestao.view_avaliacaoquantitativa'
+    filial_field = 'risco_identificado__pgr_documento__filial' 
 
 
 class AvaliacaoQuantitativaCreateView(PGRBaseMixin, PGRRequestFormKwargsMixin, FilialCreateMixin, CreateView):
@@ -1145,6 +1149,7 @@ class AvaliacaoQuantitativaUpdateView(PGRBaseMixin, PGRRequestFormKwargsMixin, U
     form_class = AvaliacaoQuantitativaForm  # ✅ Corrigido (estava referenciando o MODEL)
     template_name = 'pgr_gestao/avaliacao_form.html'
     permission_required = 'pgr_gestao.change_avaliacaoquantitativa'
+    filial_field = 'risco_identificado__pgr_documento__filial'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1391,6 +1396,7 @@ class CronogramaAcaoListView(PGRTecnicoBaseMixin, ListView):
     paginate_by = 20
     permission_required = 'pgr_gestao.view_cronogramaacaopgr'
     tecnico_scope_lookup = 'pgr_documento__criado_por'
+    filial_field = 'pgr_documento__filial'
 
     def get_queryset(self):
         qs = super().get_queryset().select_related('pgr_documento').order_by('-data_proxima_avaliacao')

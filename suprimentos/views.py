@@ -6,7 +6,7 @@ PEDIDO → APROVAR → SOLICITAÇÃO/COTAÇÃO (NxN) → APROVAR COTAÇÃO →
 MONTAR PEDIDO DE COMPRA → ACOMPANHAR ENTREGA → FINALIZADO
 """
 import json
-from multiprocessing import context
+
 from django.core.serializers.json import DjangoJSONEncoder
 from decimal import Decimal, InvalidOperation
 from django.contrib import messages
@@ -23,17 +23,16 @@ from django.views.generic import (
 )
 import openpyxl
 
-from suprimentos.tests.conftest import material, solicitacao
 from collections import OrderedDict
 from .forms import (
     AnexoPedidoForm, CotacaoCabecalhoForm, CotacaoItemValorFormSet, PedidoForm, ItemPedidoFormSet,  AprovarPedidoForm,
-    EntregaPedidoCompraForm, ParceiroForm, MaterialForm, ContratoForm, VerbaContratoForm, MaterialForm
+    EntregaPedidoCompraForm, ParceiroForm, MaterialForm, ContratoForm, VerbaContratoForm,
    
 )
 from .models import (
     AnexoPedido, CategoriaMaterial, HistoricoSolicitacao, Parceiro, Material, Contrato,
     Pedido, HistoricoPedido, SolicitacaoCompra, ItemSolicitacao, Cotacao,
-    PedidoCompra, ItemPedidoCompra, EntregaAnexo, Material,
+    PedidoCompra, ItemPedidoCompra, EntregaAnexo,
     TipoMaterial, UnidadeMedida, VerbaContrato
 )
 from collections import defaultdict
@@ -56,6 +55,9 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.comments import Comment
 import io
 from core.utils import get_filial_ativa
+from django.views.decorators.http import require_POST
+from django.utils.decorators import method_decorator
+
 
 
 logger = logging.getLogger(__name__)
@@ -99,14 +101,6 @@ def _obter_verba_do_mes(sol):
         logger.exception("Falha ao obter verba do mês (contrato=%s)", sol.contrato_id)
         return None, "Não foi possível consultar a verba do contrato."
     return verba, None
-
-
-def _registrar_historico(func, **kwargs):
-    """Wrapper seguro para registro de histórico — nunca quebra o fluxo."""
-    try:
-        func(**kwargs)
-    except Exception:
-        logger.exception("Falha ao registrar histórico (%s)", func.__qualname__)
 
 
 # ═════════════════════════════════════════════════════════════
@@ -412,8 +406,9 @@ class AnexoPedidoUploadView(LoginRequiredMixin, View):
             messages.error(request, "Erro ao enviar anexos. Verifique os arquivos.")
 
         return redirect("suprimentos:pedido_detalhe", pk=pedido.pk)
+    
 
-
+@require_POST
 @login_required
 def pedido_submeter(request, pk):
     """RASCUNHO/REVISAO → PENDENTE (envia para aprovação)."""
@@ -705,7 +700,6 @@ def cotacao_adicionar(request, solicitacao_pk):
     Lança a cotação de UM fornecedor para os itens da solicitação.
     Gera 1 Cotacao por ItemSolicitacao que tiver valor preenchido.
     """
-    arquivo_anexo = cab_form.cleaned_data.get("anexo_cotacao")
     solicitacao = get_object_or_404(SolicitacaoCompra, pk=solicitacao_pk)
     itens = list(
         solicitacao.itens.select_related("material")
@@ -721,6 +715,7 @@ def cotacao_adicionar(request, solicitacao_pk):
 
         if cab_form.is_valid() and formset.is_valid():
             fornecedor = cab_form.cleaned_data["fornecedor"]
+            arquivo_anexo = cab_form.cleaned_data.get("anexo_cotacao")
 
             # Coleta apenas os itens com valor > 0 preenchido
             linhas_validas = [
@@ -736,6 +731,7 @@ def cotacao_adicionar(request, solicitacao_pk):
                 try:
                     with transaction.atomic():
                         criadas = 0
+                        solicitacao_locked: SolicitacaoCompra = SolicitacaoCompra.objects.select_for_update().get(pk=solicitacao.pk)
                         for linha in linhas_validas:
                             item = mapa_itens.get(linha["item_id"])
                             if not item:
@@ -800,16 +796,21 @@ def cotacao_adicionar(request, solicitacao_pk):
     })
 
 
+@require_POST
 @login_required
 @permission_required("suprimentos.pode_cotar", raise_exception=True)
 def cotacao_excluir(request, pk):
     cot = get_object_or_404(Cotacao, pk=pk)
-    sol_pk = cot.item_solicitacao.solicitacao.pk
+    sol = cot.item_solicitacao.solicitacao
+    if sol.status not in (SolicitacaoCompra.StatusChoices.FAZER_COTACAO, SolicitacaoCompra.StatusChoices.COTACAO_ENVIADA):
+        messages.error(request, "Não é possível excluir cotações após o envio para aprovação.")
+        return redirect(sol.get_absolute_url())
     cot.delete()
-    messages.info(request, "Cotação removida.")
-    return redirect("suprimentos:solicitacao_detalhe", pk=sol_pk)
+    messages.success(request, "Cotação excluída.")
+    return redirect(sol.get_absolute_url())
 
 
+@require_POST
 @login_required
 @permission_required("suprimentos.pode_cotar", raise_exception=True)
 def solicitacao_enviar_aprovacao(request, pk):
@@ -817,13 +818,14 @@ def solicitacao_enviar_aprovacao(request, pk):
     sol = get_object_or_404(SolicitacaoCompra, pk=pk)
     if not sol.todos_itens_cotados:
         messages.error(request, "Todos os itens precisam de ao menos 1 cotação.")
-        return redirect(sol.get_absolute_url())
+        return redirect("suprimentos:solicitacao_detalhe", pk=sol.pk)
+
     sol.comprador = request.user
     sol.data_cotacao = timezone.now().date()
     sol.status = SolicitacaoCompra.StatusChoices.EM_APROVACAO
     sol.save()
     messages.success(request, "Cotações enviadas para aprovação.")
-    return redirect(sol.get_absolute_url())
+    return redirect("suprimentos:solicitacao_detalhe", pk=sol.pk)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1304,6 +1306,7 @@ def _render_entrega(request, pc, itens, form):
     }
     return render(request, 'suprimentos/pc_entrega.html', context)
 
+@require_POST
 @login_required
 @permission_required("suprimentos.pode_receber_pedido_compra", raise_exception=True)
 @transaction.atomic
@@ -1332,6 +1335,7 @@ def pc_finalizar(request, pk):
         messages.success(request, "Pedido de Compra recebido.")
     return redirect(pc.get_absolute_url())
 
+@require_POST
 @login_required
 @permission_required("suprimentos.pode_emitir_pedido_compra", raise_exception=True)
 def pc_enviar_fornecedor(request, pk):
@@ -1689,11 +1693,17 @@ class ParceiroUploadMassaView(LoginRequiredMixin, AppPermissionMixin,
     ]
     BOOLEANOS = {"eh_fabricante", "eh_fornecedor", "ativo"}
 
+
     def get(self, request):
         return render(request, self.template_name)
 
     def post(self, request):
         arquivo = request.FILES.get("planilha")
+
+        MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
+        if arquivo.size > MAX_UPLOAD_SIZE:
+            messages.error(request, "Arquivo muito grande (máx. 5MB).")
+            return redirect(...)
 
         if not arquivo:
             messages.error(request, "Selecione um arquivo .xlsx para importar.")
@@ -2028,6 +2038,55 @@ class PedidoCompraImprimirView(LoginRequiredMixin, DetailView):
         ctx["emitido_em"] = timezone.now()
         return ctx
 
+@login_required
+@permission_required("suprimentos.pode_montar_pc", raise_exception=True)
+def montar_pedido_compra_imprimir(request, pk):
+    """Versão para impressão/PDF da prévia de montagem do(s) Pedido(s) de Compra."""
+    sol = get_object_or_404(SolicitacaoCompra, pk=pk)
+
+    itens_aprovados = sol.itens.filter(
+        status=ItemSolicitacao.StatusItem.APROVADO,
+        cotacao_escolhida__isnull=False,
+    ).select_related("cotacao_escolhida__fornecedor", "material")
+
+    if not itens_aprovados.exists():
+        messages.error(request, "Nenhum item aprovado com cotação escolhida.")
+        return redirect(sol.get_absolute_url())
+
+    grupos = {}
+    for item in itens_aprovados:
+        cot = item.cotacao_escolhida
+        forn = cot.fornecedor
+        g = grupos.setdefault(forn.pk, {
+            "fornecedor": forn, "itens": [], "total": Decimal("0.00"),
+            "prazos": [], "pagamentos": set(),
+        })
+        item.valor_cotado = cot.valor_unitario
+        item.total_cotado = cot.valor_total
+        g["itens"].append(item)
+        g["total"] += cot.valor_total
+        if cot.prazo_entrega_dias is not None:
+            g["prazos"].append(cot.prazo_entrega_dias)
+        if cot.condicoes_pagamento:
+            g["pagamentos"].add(cot.condicoes_pagamento.strip())
+
+    grupos_fornecedor = []
+    for g in grupos.values():
+        prazos = g.pop("prazos")
+        pagamentos = g.pop("pagamentos")
+        g["prazo"] = max(prazos) if prazos else None
+        g["pagamento"] = (
+            next(iter(pagamentos)) if len(pagamentos) == 1
+            else "Variadas" if pagamentos else None
+        )
+        grupos_fornecedor.append(g)
+
+    return render(request, "suprimentos/montar_pc_imprimir.html", {
+        "solicitacao": sol,
+        "grupos_fornecedor": sorted(grupos_fornecedor, key=lambda d: d["total"]),
+        "total_geral": sum((g["total"] for g in grupos_fornecedor), Decimal("0.00")),
+        "emitido_em": timezone.now(),
+    })
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 8. MATERIAL
@@ -2147,7 +2206,7 @@ class MaterialCreateView(
         ctx = super().get_context_data(**kwargs)
         ctx["titulo"] = "Novo Material"
         ctx["material_unidades_json"] = {
-            str(m.pk): m.unidade_medida for m in material
+            str(m.pk): m.unidade for m in Material.objects.all()
         }
         return ctx
 
@@ -2251,6 +2310,12 @@ class MaterialUploadMassaView(
         if not arquivo:
             messages.error(request, "Nenhum arquivo enviado.")
             return redirect("suprimentos:material_upload_massa")
+
+        MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
+        if arquivo.size > MAX_UPLOAD_SIZE:
+            messages.error(request, "Arquivo muito grande (máx. 5MB).")
+            return redirect("suprimentos:material_upload_massa")
+
         if not arquivo.name.lower().endswith(".xlsx"):
             messages.error(request, "Envie um arquivo no formato .xlsx.")
             return redirect("suprimentos:material_upload_massa")
@@ -2261,6 +2326,7 @@ class MaterialUploadMassaView(
         except Exception as exc:
             messages.error(request, f"Erro ao abrir a planilha: {exc}")
             return redirect("suprimentos:material_upload_massa")
+
 
         # Filial ativa via mixin global (RequireActiveFilialMixin já garante != None)
         filial = get_filial_ativa(request.user, request)
