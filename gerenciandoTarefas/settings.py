@@ -137,18 +137,6 @@ INSTALLED_APPS = [
     'ltcat',
 ]
 
-# Adicionar storages apenas quando disponível (produção)
-#_storage_provider = config('STORAGE_PROVIDER', default='LOCAL')
-#if _storage_provider == 'GCS':
-#    try:
-#        import storages  # noqa: F401
-#        if 'storages' not in INSTALLED_APPS:
-#            INSTALLED_APPS.append('storages')
-#    except ImportError:
-#        logger.warning(
-#            "⚠️ STORAGE_PROVIDER=GCS mas 'django-storages' não está instalado!"
-#        )
-
 
 # =============================================================================
 # MIDDLEWARE - ADAPTATIVO POR AMBIENTE
@@ -289,51 +277,7 @@ TIME_ZONE = 'America/Sao_Paulo'
 
 
 # =============================================================================
-# GOOGLE CLOUD STORAGE - CONFIGURAÇÃO
-# =============================================================================
-#GS_BUCKET_NAME = config('GS_BUCKET_NAME', default='ctst-bucket-estatico-2026')
-#GS_PROJECT_ID = config('GS_PROJECT_ID', default='ctst-project-2026')
-#GS_CREDENTIALS_PATH = config('GS_CREDENTIALS', default='ctst-storage-key.json')
-
-#STORAGE_PROVIDER = config('STORAGE_PROVIDER', default='LOCAL')
-
-# Carregar credenciais GCS apenas quando necessário
-#GS_CREDENTIALS = None
-#if STORAGE_PROVIDER == 'GCS':
-#    try:
-#        from google.oauth2 import service_account
-#        import json
-
-        # OPÇÃO 1: Credenciais via variável de ambiente (JSON inline) - PRODUÇÃO
-#        gs_credentials_json = os.getenv('GS_CREDENTIALS_JSON', '')
-
-#        if gs_credentials_json:
-#            credentials_info = json.loads(gs_credentials_json)
-#            GS_CREDENTIALS = service_account.Credentials.from_service_account_info(
-#                credentials_info
-#            )
-#            logger.info("✅ Credenciais GCS carregadas via variável de ambiente")
-#        else:
-            # OPÇÃO 2: Fallback para arquivo local (desenvolvimento)
-#            _credentials_file = os.path.join(BASE_DIR, GS_CREDENTIALS_PATH)
-#            if os.path.exists(_credentials_file):
-#                GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
-#                    _credentials_file
-#                )
-#                logger.info("✅ Credenciais GCS carregadas via arquivo local")
-#            else:
-#                logger.warning(f"⚠️ Arquivo de credenciais não encontrado: {_credentials_file}")
-#
-#    except Exception as e:
-#        logger.error(f"❌ Erro ao carregar credenciais GCS: {e}")
-
-#GS_DEFAULT_ACL = None
-#GS_QUERYSTRING_AUTH = False
-#GS_FILE_OVERWRITE = False
-
-
-# =============================================================================
-# ARQUIVOS ESTÁTICOS E MÍDIA - ADAPTATIVO POR AMBIENTE              ← ALTERADO
+# ARQUIVOS ESTÁTICOS E MÍDIA - ADAPTATIVO POR AMBIENTE            
 # =============================================================================
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'

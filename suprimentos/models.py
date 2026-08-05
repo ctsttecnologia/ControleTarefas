@@ -98,6 +98,7 @@ class BaseAnexo(TimestampedModel):
             size = self.arquivo.size
         except (FileNotFoundError, ValueError, OSError):
             return "Arquivo não encontrado"
+
         if size is None:
             return "—"
         if size < 1024:
@@ -106,7 +107,6 @@ class BaseAnexo(TimestampedModel):
             return f"{size / 1024:.1f} KB"
         else:
             return f"{size / (1024 * 1024):.1f} MB"
-
 
 
     def __str__(self) -> str:
