@@ -83,19 +83,24 @@ class BaseAnexo(TimestampedModel):
         return self.extensao == "pdf"
 
     @property
-    def tamanho_humano(self) -> str:
-        try:
-            size = self.arquivo.size
-        except (FileNotFoundError, ValueError):
+    def tamanho_humano(self):
+        if not self.arquivo:
             return "—"
-        for unit in ["B", "KB", "MB", "GB"]:
-            if size < 1024:
-                return f"{size:.1f} {unit}"
-            size /= 1024
-        return f"{size:.1f} TB"
+        try:
+            if not self.arquivo.storage.exists(self.arquivo.name):
+                return "Arquivo não encontrado"
+            size = self.arquivo.size
+        except (FileNotFoundError, ValueError, OSError):
+            return "Arquivo não encontrado"
 
-    def __str__(self) -> str:
-        return self.nome_arquivo or f"Anexo #{self.pk}"
+        if size is None:
+            return "—"
+        if size < 1024:
+            return f"{size} B"
+        elif size < 1024 * 1024:
+            return f"{size / 1024:.1f} KB"
+        else:
+            return f"{size / (1024 * 1024):.1f} MB"
 
 
 class BaseHistorico(TimestampedModel):
