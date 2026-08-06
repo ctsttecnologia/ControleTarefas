@@ -9,7 +9,10 @@ from .models import RelatorioFotografico, FotoRelatorio
 class RelatorioFotograficoForm(forms.ModelForm):
     class Meta:
         model = RelatorioFotografico
-        fields = ['titulo', 'obra_contrato', 'data', 'responsavel', 'status', 'assunto', 'observacoes']
+        fields = [
+            'titulo', 'obra_contrato', 'data', 'responsavel', 'status',
+            'assunto', 'observacoes', 'empresa', 'telefone', 'email',
+        ]
         widgets = {
             'titulo': forms.TextInput(attrs={'class': 'form-control'}),
             'obra_contrato': forms.TextInput(attrs={'class': 'form-control'}),
@@ -18,7 +21,11 @@ class RelatorioFotograficoForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-select'}),
             'assunto': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'empresa': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
         }
+
 
 class FotoRelatorioForm(forms.ModelForm):
     class Meta:

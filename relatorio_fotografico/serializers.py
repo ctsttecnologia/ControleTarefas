@@ -38,6 +38,9 @@ class RelatorioFotograficoSerializer(serializers.ModelSerializer):
     observacoes = serializers.CharField(required=False, allow_blank=True)
     data = serializers.DateField(required=False)
     titulo = serializers.CharField(required=False, allow_blank=True)
+    empresa = serializers.CharField(required=False, allow_blank=True)
+    telefone = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
 
     class Meta:
         model = RelatorioFotografico
@@ -45,7 +48,7 @@ class RelatorioFotograficoSerializer(serializers.ModelSerializer):
             'id', 'titulo', 'obra', 'obra_contrato', 'data', 'assunto',
             'responsavel', 'responsavel_nome', 'filial', 'status',
             'total_folhas', 'total_fotos', 'fotos', 'created_at', 'updated_at',
-            'observacoes',
+            'observacoes', 'empresa', 'telefone', 'email',
         ]
         read_only_fields = [
             'id', 'obra_contrato', 'created_at', 'updated_at',
@@ -80,6 +83,7 @@ class RelatorioFotograficoListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'titulo', 'obra_contrato', 'data', 'assunto', 'status',
             'responsavel_nome', 'total_fotos', 'created_at',
+            'empresa', 'telefone', 'email',
         ]
 
     def get_responsavel_nome(self, obj):

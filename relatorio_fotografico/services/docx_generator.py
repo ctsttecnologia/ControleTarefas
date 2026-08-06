@@ -9,6 +9,7 @@ models.py. Nenhum processamento de imagem é feito neste módulo.
 """
 import io
 import os
+from pydoc import doc
 import requests  # ← novo import
 
 from django.conf import settings
@@ -76,7 +77,7 @@ def _set_cell_border(cell, color="000000", sz=8):
         })
         tc_borders.append(el)
     tc_pr.append(tc_borders)
-
+    doc.add_paragraph()  # espaço após o cabeçalho
 
 def _resolver_caminho_foto(foto):
     """
@@ -102,32 +103,55 @@ def _configurar_secao(doc):
     return section.page_width - section.left_margin - section.right_margin
 
 
-def _adicionar_cabecalho_titulo(doc, largura_util):
-    """Tabela 1x3: logo | título centralizado | espaço vazio (simetria)."""
-    top_table = doc.add_table(rows=1, cols=3)
-    top_table.autofit = False
+def _adicionar_cabecalho_novo(doc, relatorio, largura_util):
+    """Tabela 2 colunas: logo | duas colunas de dados (estilo Cetest)."""
+    table = doc.add_table(rows=1, cols=2)
+    table.autofit = False
 
-    largura_titulo = largura_util - LARGURA_LOGO_COL - LARGURA_VAZIO_COL
+    largura_logo_col = Cm(3.5)
+    largura_dados_col = largura_util - largura_logo_col
 
-    top_table.columns[0].width = LARGURA_LOGO_COL
-    top_table.columns[1].width = largura_titulo
-    top_table.columns[2].width = LARGURA_VAZIO_COL
+    table.columns[0].width = largura_logo_col
+    table.columns[1].width = largura_dados_col
 
-    cel_logo, cel_titulo, cel_vazio = top_table.rows[0].cells
-    cel_logo.width = LARGURA_LOGO_COL
-    cel_titulo.width = largura_titulo
-    cel_vazio.width = LARGURA_VAZIO_COL
+    cel_logo, cel_dados = table.rows[0].cells
+    cel_logo.width = largura_logo_col
+    cel_dados.width = largura_dados_col
 
     logo_path = _resolver_logo_path()
     if logo_path:
         run_logo = cel_logo.paragraphs[0].add_run()
-        run_logo.add_picture(logo_path, width=LARGURA_LOGO_IMG)
+        run_logo.add_picture(logo_path, width=Cm(3))
 
-    p_titulo = cel_titulo.paragraphs[0]
-    p_titulo.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_titulo = p_titulo.add_run('RELATÓRIO FOTOGRÁFICO')
-    run_titulo.bold = True
-    run_titulo.font.size = Pt(16)
+    # Sub-tabela com 2 colunas de dados dentro da célula de dados
+    sub = cel_dados.add_table(rows=4, cols=4)
+    sub.autofit = False
+
+    responsavel_nome = (
+        relatorio.responsavel.get_full_name()
+        or relatorio.responsavel.username
+    )
+    criada_em = relatorio.created_at.strftime('%d/%m/%Y %H:%M')
+    total_itens = relatorio.fotos.count()
+
+    dados = [
+        ("Contato:", responsavel_nome, "Criada:", criada_em),
+        ("Empresa:", relatorio.empresa, "Localização:", str(relatorio.filial)),
+        ("Telefone:", relatorio.telefone, "Título:", relatorio.titulo),
+        ("Email:", relatorio.email, "No. Itens:", str(total_itens)),
+    ]
+
+    for row_idx, (label1, valor1, label2, valor2) in enumerate(dados):
+        celulas = sub.rows[row_idx].cells
+        for i, texto in enumerate([label1, valor1, label2, valor2]):
+            p = celulas[i].paragraphs[0]
+            run = p.add_run(texto or "")
+            run.font.size = Pt(9)
+            if i in (0, 2):
+                run.bold = True
+
+    doc.add_paragraph()  # espaço após o cabeçalho
+
 
 
 def _adicionar_cabecalho_dados(doc, relatorio):
@@ -289,8 +313,7 @@ def gerar_docx_relatorio(relatorio):
 
     largura_util = _configurar_secao(doc)
 
-    _adicionar_cabecalho_titulo(doc, largura_util)
-    _adicionar_cabecalho_dados(doc, relatorio)
+    _adicionar_cabecalho_novo(doc, relatorio, largura_util)
     _adicionar_observacoes(doc, relatorio) 
     doc.add_paragraph()
 

@@ -112,6 +112,9 @@
                 <strong>Data:</strong> {{ relatorio.data|date:"d/m/Y" }} &nbsp;|&nbsp;
                 <strong>Responsável:</strong> {{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }} &nbsp;|&nbsp;
                 <strong>Filial:</strong> {{ relatorio.filial }}
+                {% if relatorio.empresa %} &nbsp;|&nbsp; <strong>Empresa:</strong> {{ relatorio.empresa }}{% endif %}
+                {% if relatorio.telefone %} &nbsp;|&nbsp; <strong>Telefone:</strong> {{ relatorio.telefone }}{% endif %}
+                {% if relatorio.email %} &nbsp;|&nbsp; <strong>Email:</strong> {{ relatorio.email }}{% endif %}
             </div>
             <span class="badge mt-2 {% if relatorio.status == 'finalizado' %}badge-status-finalizado{% else %}{% if relatorio.status == 'pendente' %}badge-status-pendente{% else %}badge-status-rascunho{% endif %}{% endif %}">
                 {{ relatorio.get_status_display }}
