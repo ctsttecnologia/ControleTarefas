@@ -50,7 +50,7 @@ class RelatorioFotograficoViewSet(viewsets.ModelViewSet):
         busca = self.request.query_params.get('q')
         status_ = self.request.query_params.get('status')
         if busca:
-            qs = qs.filter(Q(titulo__icontains=busca) | Q(obra_contrato__icontains=busca))
+            qs = qs.filter(Q(titulo__icontains=busca) | Q(obra_contrato__icontains=busca) | Q(empresa__icontains=busca))
         if status_:
             qs = qs.filter(status=status_)
 

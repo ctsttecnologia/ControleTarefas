@@ -15,8 +15,11 @@ class FotoRelatorioInline(admin.TabularInline):
 class RelatorioFotograficoAdmin(
     ChangeFilialAdminMixin, AdminFilialScopedMixin, admin.ModelAdmin
 ):
-    list_display = ['titulo', 'obra_contrato', 'data', 'responsavel', 'filial', 'status', 'assunto', 'observacoes']
-    list_filter = ['status', 'filial', 'data']
+    list_display = ['titulo', 'obra_contrato', 'data', 'responsavel', 'filial', 
+                    'status', 'assunto', 'observacoes', 'created_at', 'updated_at',
+                    'empresa', 'telefone', 'email'
+                    ]
+    list_filter = ['status', 'filial', 'data', 'responsavel']
     search_fields = ['titulo', 'obra_contrato', 'assunto', 'observacoes']
     inlines = [FotoRelatorioInline]
     autocomplete_fields = ['responsavel', 'filial']

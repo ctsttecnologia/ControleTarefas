@@ -62,6 +62,7 @@
                 <tr>
                     <th>Título</th>
                     <th>Obra/Contrato</th>
+                    <th>Empresa</th>
                     <th>Data</th>
                     <th>Responsável</th>
                     <th>Filial</th>
@@ -79,6 +80,7 @@
                         </a>
                     </td>
                     <td>{{ relatorio.obra_contrato }}</td>
+                    <td>{{ relatorio.empresa|default:"-" }}</td>
                     <td>{{ relatorio.data|date:"d/m/Y" }}</td>
                     <td>{{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }}</td>
                     <td>{{ relatorio.filial }}</td>

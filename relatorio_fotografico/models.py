@@ -2,6 +2,7 @@
 # relatorio_fotografico/models.py
 import math
 from io import BytesIO
+from pyexpat import model
 
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile, UploadedFile
@@ -36,6 +37,10 @@ class RelatorioFotografico(models.Model):
     titulo = models.CharField('Assunto', max_length=200)
     obra_contrato = models.CharField('Obra/Contrato', max_length=150)
     data = models.DateField('Data')
+    empresa = models.CharField('Empresa', max_length=60, blank=True, default='Cetest'
+    )
+    telefone = models.CharField('Telefone', max_length=20, blank=True, default='11 3045-9400')
+    email = models.EmailField('E-mail', blank=True, default='') 
     responsavel = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
