@@ -7,15 +7,110 @@
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
+    /* ============ HEADER ============ */
+    .relatorio-header {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 24px 28px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,.05);
+    }
+
+    .header-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 32px;
+        flex-wrap: wrap;
+    }
+
+    .header-logo {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 130px;
+    }
+    .header-logo img {
+        max-width: 130px;
+        max-height: 65px;
+        object-fit: contain;
+    }
+
+    .header-fields {
+        flex: 1 1 320px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        column-gap: 40px;
+        row-gap: 12px;
+    }
+
+    .field-row {
+        display: flex;
+        gap: 6px;
+        font-size: .92rem;
+    }
+    .field-row .label {
+        font-weight: 700;
+        color: #1f2937;
+        white-space: nowrap;
+    }
+    .field-row .value {
+        color: #374151;
+        word-break: break-word;
+    }
+
+    .header-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid #eee;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge-status-rascunho { background: #6b7280; color: #fff; }
+    .badge-status-pendente { background: #ffc107; color: #000; }
+    .badge-status-finalizado { background: #198754; color: #fff; }
+    .badge-total-folhas { background: #e9ecef; color: #333; }
+
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .header-actions .btn { border-radius: 8px; font-size: .85rem; white-space: nowrap; }
+
+    @media (max-width: 767px) {
+        .relatorio-header { padding: 18px; }
+        .header-top { flex-direction: column; align-items: center; text-align: center; }
+        .header-fields { grid-template-columns: 1fr; text-align: left; }
+        .header-bottom { flex-direction: column; align-items: stretch; }
+        .header-actions .btn { flex: 1 1 auto; }
+    }
+
+    /* ============ CARDS / SEÇÕES ============ */
+    .section-card {
+        border: none;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+    .section-title {
+        font-weight: 600;
+        color: #344054;
+    }
+
     .foto-card {
         border: 1px solid #dee2e6;
-        border-radius: 8px;
+        border-radius: 10px;
         overflow: hidden;
         background: #fff;
         cursor: grab;
-        transition: box-shadow .2s;
+        transition: box-shadow .2s, transform .15s;
     }
-    .foto-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+    .foto-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,.14);
+        transform: translateY(-2px);
+    }
     .foto-card.sortable-ghost { opacity: .4; }
     .foto-card img {
         width: 100%;
@@ -78,10 +173,6 @@
     }
     .foto-legenda-textarea { font-size: .85rem; }
 
-    .badge-status-rascunho { background: #595959; color: #000; }
-    .badge-status-pendente { background: #ffc107; color: #000; }
-    .badge-status-finalizado { background: #198754; }
-
     .spinner-upload { display: none; }
 
     @media print {
@@ -102,52 +193,99 @@
 <div class="container-fluid py-4">
 
     {# ==================== CABEÇALHO ==================== #}
-    <div class="d-flex flex-wrap justify-content-between align-items-start mb-4 gap-2">
-        <div>
-            <h3 class="mb-1">
-                <i class="bi bi-camera-fill me-2"></i>{{ relatorio.titulo }}
-            </h3>
-            <div class="text-muted small">
-                <strong>Obra/Contrato:</strong> {{ relatorio.obra_contrato }} &nbsp;|&nbsp;
-                <strong>Data:</strong> {{ relatorio.data|date:"d/m/Y" }} &nbsp;|&nbsp;
-                <strong>Responsável:</strong> {{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }} &nbsp;|&nbsp;
-                <strong>Filial:</strong> {{ relatorio.filial }}
-                {% if relatorio.empresa %} &nbsp;|&nbsp; <strong>Empresa:</strong> {{ relatorio.empresa }}{% endif %}
-                {% if relatorio.telefone %} &nbsp;|&nbsp; <strong>Telefone:</strong> {{ relatorio.telefone }}{% endif %}
-                {% if relatorio.email %} &nbsp;|&nbsp; <strong>Email:</strong> {{ relatorio.email }}{% endif %}
+    <div class="relatorio-header">
+        <div class="header-top">
+            {% if relatorio.empresa_logo %}
+            <div class="header-logo">
+                <img src="{{ relatorio.empresa_logo.url }}" alt="{{ relatorio.empresa }}">
             </div>
-            <span class="badge mt-2 {% if relatorio.status == 'finalizado' %}badge-status-finalizado{% else %}{% if relatorio.status == 'pendente' %}badge-status-pendente{% else %}badge-status-rascunho{% endif %}{% endif %}">
-                {{ relatorio.get_status_display }}
-            </span>
-            <span class="badge bg-secondary mt-2">{{ total_folhas }} folha{{ total_folhas|pluralize }}</span>
+            {% endif %}
+
+            <div class="header-fields">
+                <div class="field-row">
+                    <span class="label">Contato:</span>
+                    <span class="value">{{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Criada:</span>
+                    <span class="value">{{ relatorio.created_at|date:"d/m/Y H:i" }}</span>
+                </div>
+
+                <div class="field-row">
+                    <span class="label">Empresa:</span>
+                    <span class="value">{{ relatorio.empresa|default:"-" }}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Filial:</span>
+                    <span class="value">{{ relatorio.filial }}</span>
+                </div>
+
+                <div class="field-row">
+                    <span class="label">Telefone:</span>
+                    <span class="value">{{ relatorio.telefone|default:"-" }}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Título:</span>
+                    <span class="value">{{ relatorio.titulo }}</span>
+                </div>
+
+                <div class="field-row">
+                    <span class="label">Email:</span>
+                    <span class="value">{{ relatorio.email|default:"-" }}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Obra/Contrato:</span>
+                    <span class="value">{{ relatorio.obra_contrato }}</span>
+                </div>
+
+                <div class="field-row">
+                    <span class="label">Data:</span>
+                    <span class="value">{{ relatorio.data|date:"d/m/Y" }}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">No. Itens:</span>
+                    <span class="value">{{ total_folhas }}</span>
+                </div>
+            </div>
         </div>
 
-        <div class="d-flex gap-2 flex-wrap">
-            <a href="{% url 'relatorio_fotografico:list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i>Voltar
-            </a>
-            <a href="{% url 'relatorio_fotografico:update' relatorio.pk %}" class="btn btn-outline-secondary">
-                <i class="bi bi-pencil me-1"></i>Editar Dados
-            </a>
-            <a href="{% url 'relatorio_fotografico:export_docx' relatorio.pk %}" class="btn btn-outline-primary">
-                <i class="bi bi-file-earmark-word me-1"></i>Word
-            </a>
-            <a href="{% url 'relatorio_fotografico:export_pdf' relatorio.pk %}?inline=1" target="_blank" class="btn btn-outline-danger">
-                <i class="bi bi-file-earmark-pdf me-1"></i>PDF
-            </a>
-            <button type="button" class="btn btn-outline-danger"
-                    data-bs-toggle="modal" data-bs-target="#modalExcluirRelatorio">
-                <i class="bi bi-trash me-1"></i>Excluir
-            </button>
+        <div class="header-bottom">
+            <div class="badges">
+                <span class="badge {% if relatorio.status == 'finalizado' %}badge-status-finalizado{% else %}{% if relatorio.status == 'pendente' %}badge-status-pendente{% else %}badge-status-rascunho{% endif %}{% endif %}">
+                    <i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>{{ relatorio.get_status_display }}
+                </span>
+                <span class="badge badge-total-folhas">
+                    <i class="bi bi-file-earmark-text me-1"></i>{{ total_folhas }} folha{{ total_folhas|pluralize }}
+                </span>
+            </div>
+
+            <div class="header-actions">
+                <a href="{% url 'relatorio_fotografico:list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Voltar
+                </a>
+                <a href="{% url 'relatorio_fotografico:update' relatorio.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil me-1"></i>Editar
+                </a>
+                <a href="{% url 'relatorio_fotografico:export_docx' relatorio.pk %}" class="btn btn-outline-primary">
+                    <i class="bi bi-file-earmark-word me-1"></i>Word
+                </a>
+                <a href="{% url 'relatorio_fotografico:export_pdf' relatorio.pk %}?inline=1" target="_blank" class="btn btn-outline-danger">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                </a>
+                <button type="button" class="btn btn-danger"
+                        data-bs-toggle="modal" data-bs-target="#modalExcluirRelatorio">
+                    <i class="bi bi-trash me-1"></i>Excluir
+                </button>
+            </div>
         </div>
     </div>
 
     {# ==================== UPLOAD DE FOTOS ==================== #}
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <h6 class="mb-3"><i class="bi bi-cloud-upload me-1"></i>Adicionar Fotos</h6>
+    <div class="card section-card mb-4">
+        <div class="card-body p-4">
+            <h6 class="section-title mb-3"><i class="bi bi-cloud-upload me-1"></i>Adicionar Fotos</h6>
 
-            <div class="row g-2 mb-2">
+            <div class="row g-2 mb-3">
                 <div class="col-md-6">
                     <label class="btn btn-outline-primary w-100 mb-0">
                         <i class="bi bi-images me-1"></i> Escolher da Galeria
@@ -174,12 +312,20 @@
         </div>
     </div>
 
+    {# ==================== DESCRIÇÃO DO RELATÓRIO ==================== #}
+    <div class="card section-card mb-4">
+        <div class="card-body p-4   ">
+            <h6 class="section-title mb-1"><i class="bi bi-cloud-upload me-1"></i>Descrição do Relatório</h6>
+        </div>
+        <span class="value p-4 mb-2">{{ relatorio.observacoes|linebreaksbr }}</span>
+    </div>
+
     {# ==================== GRID DE FOTOS ==================== #}
-    <div class="card shadow-sm">
-        <div class="card-body">
+    <div class="card section-card">
+        <div class="card-body p-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="mb-0"><i class="bi bi-grid-3x3-gap me-1"></i>Fotos do Relatório</h6>
-                <small class="text-muted">Arraste os cards para reordenar</small>
+                <h6 class="section-title mb-0"><i class="bi bi-grid-3x3-gap me-1"></i>Fotos do Relatório</h6>
+                <small class="text-muted"><i class="bi bi-arrows-move me-1"></i>Arraste os cards para reordenar</small>
             </div>
 
             <div id="fotos-grid" class="row g-3" data-relatorio-id="{{ relatorio.pk }}">
@@ -290,7 +436,6 @@
         return csrfToken;
     }
 
-    // Captura a localização atual (timeout curto, não bloqueia o upload)
     function obterLocalizacao() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) return resolve(null);

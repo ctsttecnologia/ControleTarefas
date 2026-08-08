@@ -149,7 +149,7 @@ class FotoRelatorioViewSet(viewsets.ModelViewSet):
     """
     serializer_class = FotoRelatorioSerializer
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]  # ✅ adicionado JSONParser
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser] 
 
     def get_queryset(self):
         user = self.request.user
