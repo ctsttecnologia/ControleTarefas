@@ -1,3 +1,4 @@
+
 {% load static %}
 {% load relatorio_extras %}
 
@@ -104,6 +105,9 @@
         word-wrap: break-word;   /* quebra palavras longas dentro da célula */
         word-break: break-word;
     }
+    .fotos-grid td:empty {
+        border: none;
+    }
     .foto-cell img {
         width: 100%;
         height: 5.8cm;
@@ -195,6 +199,7 @@
         </tr>
     </table>
 
+    {% if linhas %}
     <table class="fotos-grid">
         {% for linha in linhas %}
         <tr>
@@ -208,7 +213,7 @@
         </tr>
         {% endfor %}
     </table>
-
+    {% endif %}
     <div class="rodape-folha">Folha {{ forloop.counter }} de {{ total_folhas }}</div>
 
 </div>
