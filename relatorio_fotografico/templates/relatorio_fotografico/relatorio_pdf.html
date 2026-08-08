@@ -41,7 +41,7 @@
         padding: 1px 0;
         font-size: 10.5px;
         vertical-align: top;
-        border: none;
+        border: 1px solid #000f31bd;   /* grade adicionada */
     }
     .cabecalho-coluna td.label {
         font-weight: 700;
@@ -214,6 +214,7 @@
         {% endfor %}
     </table>
     {% endif %}
+
     <div class="rodape-folha">Folha {{ forloop.counter }} de {{ total_folhas }}</div>
 
 </div>
