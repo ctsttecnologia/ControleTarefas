@@ -148,8 +148,8 @@
                         <td>{{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }}</td>
                     </tr>
                     <tr>
-                        <td class="label">Empresa:</td>
-                        <td>{{ relatorio.empresa }}
+                        <td class="label">Cliente:</td>
+                        <td>{{ relatorio.empresa }}</td>
                     </tr>
                     <tr>
                         <td class="label">Telefone:</td>
@@ -169,7 +169,7 @@
                         <td>{{ relatorio.created_at|date:"D d M H:i Y"|lower }}</td>
                     </tr>
                     <tr>
-                        <td class="label">Localização:</td>
+                        <td class="label">Empresa:</td>
                         <td>{{ relatorio.filial }}</td>
                     </tr>
                     <tr>

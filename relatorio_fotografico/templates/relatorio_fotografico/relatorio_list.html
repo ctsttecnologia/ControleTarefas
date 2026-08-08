@@ -87,8 +87,10 @@
                     <td>
                         {% if relatorio.status == 'finalizado' %}
                             <span class="badge bg-success">Finalizado</span>
+                        {% elif relatorio.status == 'pendente' %}
+                            <span class="badge bg-warning text-dark">Pendente</span>
                         {% else %}
-                            <span class="badge bg-warning text-dark">Rascunho</span>
+                            <span class="badge bg-secondary text-dark">Rascunho</span>
                         {% endif %}
                     </td>
                     <td><span class="badge bg-secondary">{{ relatorio.fotos.count }}</span></td>

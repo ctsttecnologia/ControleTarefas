@@ -6,4 +6,4 @@ class RelatorioFotograficoConfig(AppConfig):
     name = 'relatorio_fotografico'
 
     def ready(self):
-        import relatorio_fotografico.signals  # noqa
+        import relatorio_fotografico.signals  
