@@ -123,8 +123,10 @@ def _adicionar_cabecalho_novo(doc, relatorio, largura_util):
         run_logo = cel_logo.paragraphs[0].add_run()
         run_logo.add_picture(logo_path, width=Cm(3))
 
-    # Sub-tabela com 2 colunas de dados dentro da célula de dados
+    # Sub-tabela com grade (bordas visíveis)
     sub = cel_dados.add_table(rows=4, cols=4)
+    sub.style = 'Table Grid'          # ← grade aplicada
+    sub.alignment = WD_TABLE_ALIGNMENT.LEFT
     sub.autofit = False
 
     responsavel_nome = (
@@ -151,7 +153,6 @@ def _adicionar_cabecalho_novo(doc, relatorio, largura_util):
                 run.bold = True
 
     doc.add_paragraph()  # espaço após o cabeçalho
-
 
 
 def _adicionar_cabecalho_dados(doc, relatorio):
@@ -253,7 +254,7 @@ def _adicionar_observacoes(doc, relatorio):
 def _adicionar_grid_fotos(doc, fotos_pagina, pagina_idx, largura_util):
     """Monta a tabela 3x2 (grid) de fotos de uma página."""
     if not fotos_pagina:
-        return  # nada a desenhar — evita tabela vazia com bordas
+        return  # nenhuma foto → não cria tabela, sem bordas residuais
 
     largura_coluna = int(largura_util / COLUNAS_GRID)
 
@@ -283,6 +284,7 @@ def _adicionar_grid_fotos(doc, fotos_pagina, pagina_idx, largura_util):
     for row in table.rows:
         row.height = ALTURA_LINHA
         row.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+
 
 def _adicionar_rodape(doc):
     """Rodapé fixo, aplicado em todas as seções do documento."""
