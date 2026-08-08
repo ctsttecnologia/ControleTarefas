@@ -17,7 +17,7 @@ def obter_endereco_por_coordenadas(lat, lng, timeout=5):
         resp = requests.get(
             NOMINATIM_URL,
             params={"lat": str(lat), "lon": str(lng), "format": "json"},
-            headers={"User-Agent": "cetest-relatorio-fotografico/1.0"},
+            headers={"User-Agent": "cetest-relatorio-fotografico/1.1.0"},
             timeout=timeout,
         )
         resp.raise_for_status()

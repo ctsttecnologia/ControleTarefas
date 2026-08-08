@@ -252,6 +252,9 @@ def _adicionar_observacoes(doc, relatorio):
 
 def _adicionar_grid_fotos(doc, fotos_pagina, pagina_idx, largura_util):
     """Monta a tabela 3x2 (grid) de fotos de uma página."""
+    if not fotos_pagina:
+        return  # nada a desenhar — evita tabela vazia com bordas
+
     largura_coluna = int(largura_util / COLUNAS_GRID)
 
     table = doc.add_table(rows=LINHAS_GRID, cols=COLUNAS_GRID)
@@ -259,7 +262,6 @@ def _adicionar_grid_fotos(doc, fotos_pagina, pagina_idx, largura_util):
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
 
-    # Fixa a largura de todas as colunas/células (evita caixas desiguais)
     for col in table.columns:
         col.width = largura_coluna
     for row in table.rows:
@@ -278,11 +280,9 @@ def _adicionar_grid_fotos(doc, fotos_pagina, pagina_idx, largura_util):
         else:
             cell.text = ''
 
-    # Trava a altura de todas as linhas desta tabela
     for row in table.rows:
         row.height = ALTURA_LINHA
         row.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
-
 
 def _adicionar_rodape(doc):
     """Rodapé fixo, aplicado em todas as seções do documento."""
