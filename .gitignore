@@ -71,3 +71,5 @@ debug_*.txt
 # Script utilitario de manutencao
 scripts/fix_mojibake.py
 
+# Arquivos de comandos
+.comandos
