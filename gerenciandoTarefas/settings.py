@@ -408,10 +408,9 @@ if IS_DEVELOPMENT:
     MEDIA_URL = '/midia/'
     logger.debug("📁 Usando storage local (Desenvolvimento)")
 else:
-    # ─PRODUÇÃO COM WHITENOISE ──
+    # ── PRODUÇÃO COM WHITENOISE ──
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     STATIC_URL = '/static/'
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     MEDIA_URL = '/midia/'
     logger.debug("📦 Usando WhiteNoise (Produção)")
