@@ -1,4 +1,3 @@
-
 # relatorio_fotografico/services/docx_generator.py
 """
 Gerador de relatório fotográfico em Word (.docx).
@@ -9,11 +8,8 @@ models.py. Nenhum processamento de imagem é feito neste módulo.
 """
 import io
 import os
-from pydoc import doc
 import requests  # ← novo import
-
 from django.conf import settings
-
 from docx import Document
 from docx.shared import Cm, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -63,22 +59,6 @@ def _resolver_logo_path():
     return None
 
 
-def _set_cell_border(cell, color="000000", sz=8):
-    """Aplica bordas manuais em uma célula (não usado no fluxo atual,
-    mantido como utilitário caso a tabela precise de bordas customizadas
-    sem depender do estilo 'Table Grid')."""
-    tc_pr = cell._tc.get_or_add_tcPr()
-    tc_borders = tc_pr.makeelement(qn('w:tcBorders'), {})
-    for edge in ('top', 'left', 'bottom', 'right'):
-        el = tc_borders.makeelement(qn(f'w:{edge}'), {
-            qn('w:val'): 'single',
-            qn('w:sz'): str(sz),
-            qn('w:color'): color,
-        })
-        tc_borders.append(el)
-    tc_pr.append(tc_borders)
-    doc.add_paragraph()  # espaço após o cabeçalho
-
 def _resolver_caminho_foto(foto):
     """
     Retorna um buffer (BytesIO) com o binário da imagem, baixando
@@ -90,7 +70,6 @@ def _resolver_caminho_foto(foto):
     response = requests.get(foto.imagem.url, timeout=10)
     response.raise_for_status()
     return io.BytesIO(response.content)
-
 
 
 def _configurar_secao(doc):
@@ -123,9 +102,8 @@ def _adicionar_cabecalho_novo(doc, relatorio, largura_util):
         run_logo = cel_logo.paragraphs[0].add_run()
         run_logo.add_picture(logo_path, width=Cm(3))
 
-    # Sub-tabela com grade (bordas visíveis)
+    # Sub-tabela sem grade (apenas layout, sem bordas visíveis)
     sub = cel_dados.add_table(rows=4, cols=4)
-    sub.style = 'Table Grid'          # ← grade aplicada
     sub.alignment = WD_TABLE_ALIGNMENT.LEFT
     sub.autofit = False
 
@@ -155,10 +133,10 @@ def _adicionar_cabecalho_novo(doc, relatorio, largura_util):
     doc.add_paragraph()  # espaço após o cabeçalho
 
 
+#    doc.add_paragraph()  # espaço após o cabeçalho
 def _adicionar_cabecalho_dados(doc, relatorio):
     """Tabela 5x2 com dados do relatório (obra, data, assunto, folha, responsável, local, gerado em)."""
     header = doc.add_table(rows=5, cols=2)
-    header.style = 'Table Grid'
     header.alignment = WD_TABLE_ALIGNMENT.CENTER
     header.autofit = False
 
@@ -325,7 +303,6 @@ def gerar_docx_relatorio(relatorio):
     for pagina_idx, fotos_pagina in enumerate(paginas, start=1):
         if pagina_idx > 1:
             _adicionar_titulo_pagina(doc, relatorio, pagina_idx, total_folhas)
-
         _adicionar_grid_fotos(doc, fotos_pagina, pagina_idx, largura_util)
 
     _adicionar_rodape(doc)
@@ -334,6 +311,4 @@ def gerar_docx_relatorio(relatorio):
     doc.save(buffer)
     buffer.seek(0)
     return buffer
-
-
 
