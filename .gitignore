@@ -72,4 +72,4 @@ debug_*.txt
 scripts/fix_mojibake.py
 
 # Arquivos de comandos
-.comandos
+python manage.py collectstatic --noinput --upload-unhashed-files
