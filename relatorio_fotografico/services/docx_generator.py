@@ -17,6 +17,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ROW_HEIGHT_RULE
 from docx.oxml.ns import qn
 
 from ..models import FOTOS_POR_PAGINA
+from docx.oxml import OxmlElement
 
 
 # --- Layout (cabeçalho) ---
@@ -37,9 +38,55 @@ MARGEM_SUPERIOR = Cm(1.2)
 MARGEM_INFERIOR = Cm(1.2)
 
 
-def _resolver_logo_path():
+def _adicionar_capa(doc, relatorio, largura_util):
+    """Página de capa: imagem PNG de fundo + textos sobrepostos ao padrão visual."""
+    logo_path = _resolver_capa_path()
+    if logo_path:
+        p_img = doc.add_paragraph()
+        p_img.paragraph_format.space_after = Pt(0)
+        run_img = p_img.add_run()
+        run_img.add_picture(logo_path, width=largura_util)
+
+    doc.add_paragraph().paragraph_format.space_after = Pt(24)
+
+    # Data (mês/ano)
+    p_data = doc.add_paragraph()
+    p_data.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run_data = p_data.add_run(relatorio.data.strftime('%B %Y').upper())
+    run_data.font.size = Pt(12)
+    run_data.font.bold = True
+    run_data.font.color.rgb = RGBColor(0x0A, 0x4A, 0x75)
+
+    # Empresa
+    p_empresa = doc.add_paragraph()
+    p_empresa.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run_empresa = p_empresa.add_run(f"{relatorio.empresa.upper()} S.A.")
+    run_empresa.font.size = Pt(11)
+    run_empresa.font.bold = True
+    run_empresa.font.color.rgb = RGBColor(0x0A, 0x4A, 0x75)
+
+    doc.add_paragraph().paragraph_format.space_after = Pt(12)
+
+    # Título principal
+    p_titulo = doc.add_paragraph()
+    p_titulo.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run_titulo = p_titulo.add_run('RELATÓRIO\nFOTOGRÁFICO')
+    run_titulo.font.size = Pt(26)
+    run_titulo.font.bold = True
+    run_titulo.font.color.rgb = RGBColor(0x0A, 0x4A, 0x75)
+
+    p_sub = doc.add_paragraph()
+    p_sub.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run_sub = p_sub.add_run(relatorio.obra_contrato)
+    run_sub.font.size = Pt(14)
+    run_sub.font.color.rgb = RGBColor(0x0A, 0x4A, 0x75)
+
+    doc.add_page_break()
+
+
+def _resolver_capa_path():
     """
-    Resolve o caminho físico de static/images/logocetest.png,
+    Resolve o caminho físico de static/images/capa.png,
     funcionando tanto em dev (STATICFILES_DIRS) quanto após
     collectstatic (STATIC_ROOT).
     """
@@ -47,11 +94,33 @@ def _resolver_logo_path():
 
     if getattr(settings, 'STATIC_ROOT', None):
         candidatos.append(
-            os.path.join(settings.STATIC_ROOT, 'images', 'logocetest.png')
+            os.path.join(settings.STATIC_ROOT, 'images', 'capa.png')
         )
 
     for static_dir in getattr(settings, 'STATICFILES_DIRS', []):
-        candidatos.append(os.path.join(static_dir, 'images', 'logocetest.png'))
+        candidatos.append(os.path.join(static_dir, 'images', 'capa.png'))
+
+    for caminho in candidatos:
+        if os.path.exists(caminho):
+            return caminho
+    return None
+
+
+def _resolver_logo_path():
+    """
+    Resolve o caminho físico de static/images/logo.png,
+    funcionando tanto em dev (STATICFILES_DIRS) quanto após
+    collectstatic (STATIC_ROOT).
+    """
+    candidatos = []
+
+    if getattr(settings, 'STATIC_ROOT', None):
+        candidatos.append(
+            os.path.join(settings.STATIC_ROOT, 'images', 'logo.png')
+        )
+
+    for static_dir in getattr(settings, 'STATICFILES_DIRS', []):
+        candidatos.append(os.path.join(static_dir, 'images', 'logo.png'))
 
     for caminho in candidatos:
         if os.path.exists(caminho):
@@ -292,6 +361,8 @@ def gerar_docx_relatorio(relatorio):
     doc = Document()
 
     largura_util = _configurar_secao(doc)
+
+    _adicionar_capa(doc, relatorio, largura_util)  # <-- nova capa
 
     _adicionar_cabecalho_novo(doc, relatorio, largura_util)
     _adicionar_observacoes(doc, relatorio) 

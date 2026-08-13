@@ -10,8 +10,16 @@
     @page {
         size: A4;
         margin: 1.2cm 1.5cm;
-        @bottom-left { content: "Relatório Fotográfico — CETEST"; font-size: 9px; color: #555; }
-  
+        @bottom-left {
+            content: "Relatório Fotográfico — CETEST";
+            font-size: 9px;
+            color: #555;
+        }
+        @bottom-right {
+            content: "Folha " counter(page) " de " counter(pages);
+            font-size: 9px;
+            color: #555;
+        }
     }
     body { font-family: "Helvetica Neue", Arial, sans-serif; color: #0d0b0b; font-size: 11px; }
 
@@ -131,13 +139,77 @@
         page-break-before: always; 
     }
 
-    .rodape-folha {
-        position: fixed; bottom: 0.3cm; right: 0; font-size: 9px;
+    /* ---------- CAPA ---------- */
+    .capa {
+        position: relative;
+        height: 100%;
+        page-break-after: always;
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        background: #ffffff;
+    }
+
+    .capa-grafico {
+        position: relative;
+        width: 100%;
+        height: 10cm;
+        overflow: hidden;
+    }
+
+    .capa-grafico img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .capa-conteudo {
+        padding: 2.5cm 1.8cm 0 1.8cm;
+        text-align: right;
+    }
+
+    .capa-data {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0a4a75;
+        letter-spacing: 1px;
+        margin-bottom: 0.3cm;
+    }
+
+    .capa-empresa {
+        font-size: 12px;
+        font-weight: 600;
+        color: #0a4a75;
+        letter-spacing: 0.5px;
+        margin-bottom: 1cm;
+    }
+
+    .capa-titulo {
+        font-size: 30px;
+        font-weight: 800;
+        color: #0a4a75;
+        line-height: 1.25;
+        margin-bottom: 0.4cm;
+    }
+
+    .capa-subtitulo {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0a4a75;
     }
 </style>
 </head>
 <body>
-
+<div class="capa">
+    <div class="capa-grafico">
+        <img src="{% static 'images/capa.png' %}" alt="">
+    </div>
+    <div class="capa-conteudo">
+        <div class="capa-data">{{ relatorio.data|date:"F Y"|upper }}</div>
+        <div class="capa-empresa">{{ relatorio.empresa|upper }} S.A.</div>
+        <div class="capa-titulo">RELATÓRIO<br>FOTOGRÁFICO</div>
+        <div class="capa-subtitulo">{{ relatorio.obra_contrato }}</div>
+    </div>
+</div>
 {% for linhas in relatorio.paginas_em_linhas %}
 <div class="{% if not forloop.first %}pagina-quebra{% endif %}">
 
@@ -214,8 +286,6 @@
         {% endfor %}
     </table>
     {% endif %}
-
-    <div class="rodape-folha">Folha {{ forloop.counter }} de {{ total_folhas }}</div>
 
 </div>
 {% endfor %}
