@@ -1,0 +1,158 @@
+﻿Deleting 'admin\css\autocomplete.4a81fc4242d0.css'
+Deleting 'admin\css\vendor\select2\LICENSE-SELECT2.f94142512c91.md'
+Deleting 'admin\css\vendor\select2\select2.a2194c262648.css'
+Deleting 'admin\css\vendor\select2\select2.min.9f54e6414f87.css'
+Deleting 'admin\img\gis\move_vertex_off.7a23bf31ef8a.svg'
+Deleting 'admin\img\gis\move_vertex_on.0047eba25b67.svg'
+Deleting 'admin\js\admin\DateTimeShortcuts.9f6e209cebca.js'
+Deleting 'admin\js\admin\RelatedObjectLookups.8609f99b9ab2.js'
+Deleting 'admin\js\vendor\jquery\jquery.0208b96062ba.js'
+Deleting 'admin\js\vendor\jquery\jquery.min.641dd1437010.js'
+Deleting 'admin\js\vendor\jquery\LICENSE.de877aa6d744.txt'
+Deleting 'admin\js\vendor\select2\LICENSE.f94142512c91.md'
+Deleting 'admin\js\vendor\select2\select2.full.c2afdeda3058.js'
+Deleting 'admin\js\vendor\select2\select2.full.min.fcd7500d8e13.js'
+Deleting 'admin\js\vendor\select2\i18n\af.4f6fcd73488c.js'
+Deleting 'admin\js\vendor\select2\i18n\ar.65aa8e36bf5d.js'
+Deleting 'admin\js\vendor\select2\i18n\az.270c257daf81.js'
+Deleting 'admin\js\vendor\select2\i18n\bg.39b8be30d4f0.js'
+Deleting 'admin\js\vendor\select2\i18n\bn.6d42b4dd5665.js'
+Deleting 'admin\js\vendor\select2\i18n\bs.91624382358e.js'
+Deleting 'admin\js\vendor\select2\i18n\ca.a166b745933a.js'
+Deleting 'admin\js\vendor\select2\i18n\cs.4f43e8e7d33a.js'
+Deleting 'admin\js\vendor\select2\i18n\da.766346afe4dd.js'
+Deleting 'admin\js\vendor\select2\i18n\de.8a1c222b0204.js'
+Deleting 'admin\js\vendor\select2\i18n\dsb.56372c92d2f1.js'
+Deleting 'admin\js\vendor\select2\i18n\el.27097f071856.js'
+Deleting 'admin\js\vendor\select2\i18n\en.cf932ba09a98.js'
+Deleting 'admin\js\vendor\select2\i18n\es.66dbc2652fb1.js'
+Deleting 'admin\js\vendor\select2\i18n\et.2b96fd98289d.js'
+Deleting 'admin\js\vendor\select2\i18n\eu.adfe5c97b72c.js'
+Deleting 'admin\js\vendor\select2\i18n\fa.3b5bd1961cfd.js'
+Deleting 'admin\js\vendor\select2\i18n\fi.614ec42aa9ba.js'
+Deleting 'admin\js\vendor\select2\i18n\fr.05e0542fcfe6.js'
+Deleting 'admin\js\vendor\select2\i18n\gl.d99b1fedaa86.js'
+Deleting 'admin\js\vendor\select2\i18n\he.e420ff6cd3ed.js'
+Deleting 'admin\js\vendor\select2\i18n\hi.70640d41628f.js'
+Deleting 'admin\js\vendor\select2\i18n\hr.a2b092cc1147.js'
+Deleting 'admin\js\vendor\select2\i18n\hsb.fa3b55265efe.js'
+Deleting 'admin\js\vendor\select2\i18n\hu.6ec6039cb8a3.js'
+Deleting 'admin\js\vendor\select2\i18n\hy.c7babaeef5a6.js'
+Deleting 'admin\js\vendor\select2\i18n\id.04debded514d.js'
+Deleting 'admin\js\vendor\select2\i18n\is.3ddd9a6a97e9.js'
+Deleting 'admin\js\vendor\select2\i18n\it.be4fe8d365b5.js'
+Deleting 'admin\js\vendor\select2\i18n\ja.170ae885d74f.js'
+Deleting 'admin\js\vendor\select2\i18n\ka.2083264a54f0.js'
+Deleting 'admin\js\vendor\select2\i18n\km.c23089cb06ca.js'
+Deleting 'admin\js\vendor\select2\i18n\ko.e7be6c20e673.js'
+Deleting 'admin\js\vendor\select2\i18n\lt.23c7ce903300.js'
+Deleting 'admin\js\vendor\select2\i18n\lv.08e62128eac1.js'
+Deleting 'admin\js\vendor\select2\i18n\mk.dabbb9087130.js'
+Deleting 'admin\js\vendor\select2\i18n\ms.4ba82c9a51ce.js'
+Deleting 'admin\js\vendor\select2\i18n\nb.da2fce143f27.js'
+Deleting 'admin\js\vendor\select2\i18n\ne.3d79fd3f08db.js'
+Deleting 'admin\js\vendor\select2\i18n\nl.997868a37ed8.js'
+Deleting 'admin\js\vendor\select2\i18n\pl.6031b4f16452.js'
+Deleting 'admin\js\vendor\select2\i18n\ps.38dfa47af9e0.js'
+Deleting 'admin\js\vendor\select2\i18n\pt-BR.e1b294433e7f.js'
+Deleting 'admin\js\vendor\select2\i18n\pt.33b4a3b44d43.js'
+Deleting 'admin\js\vendor\select2\i18n\ro.f75cb460ec3b.js'
+Deleting 'admin\js\vendor\select2\i18n\ru.934aa95f5b5f.js'
+Deleting 'admin\js\vendor\select2\i18n\sk.33d02cef8d11.js'
+Deleting 'admin\js\vendor\select2\i18n\sl.131a78bc0752.js'
+Deleting 'admin\js\vendor\select2\i18n\sq.5636b60d29c9.js'
+Deleting 'admin\js\vendor\select2\i18n\sr-Cyrl.f254bb8c4c7c.js'
+Deleting 'admin\js\vendor\select2\i18n\sr.5ed85a48f483.js'
+Deleting 'admin\js\vendor\select2\i18n\sv.7a9c2f71e777.js'
+Deleting 'admin\js\vendor\select2\i18n\th.f38c20b0221b.js'
+Deleting 'admin\js\vendor\select2\i18n\tk.7c572a68c78f.js'
+Deleting 'admin\js\vendor\select2\i18n\tr.b5a0643d1545.js'
+Deleting 'admin\js\vendor\select2\i18n\uk.8cede7f4803c.js'
+Deleting 'admin\js\vendor\select2\i18n\vi.097a5b75b3e1.js'
+Deleting 'admin\js\vendor\select2\i18n\zh-CN.2cff662ec5f9.js'
+Deleting 'admin\js\vendor\select2\i18n\zh-TW.04554a227c2b.js'
+Deleting 'admin\js\vendor\xregexp\LICENSE.bf79e414957a.txt'
+Deleting 'admin\js\vendor\xregexp\xregexp.efda034b9537.js'
+Deleting 'admin\js\vendor\xregexp\xregexp.min.b0439563a5d3.js'
+Deleting 'css\automovel\automovel_styles.384af09317ad.css'
+Deleting 'css\dp\delete.ec246d904204.css'
+Deleting 'css\ferramentas\ferramentas.8391b0507b3b.css'
+Deleting 'css\home\home.a72a6c36e987.css'
+Deleting 'css\logradouro\base_styles.cb492b7df9b5.css'
+Deleting 'css\seguranca_trabalho\forms.8583471e40e4.css'
+Deleting 'css\suprimentos\suprimentos.a4700f012dfa.css'
+Deleting 'css\tarefas\calendario.3ada2bc4684b.css'
+Deleting 'css\tarefas\criar_tarefa.631b22c8466b.css'
+Deleting 'css\tarefas\dashboard.b5290864dde7.css'
+Deleting 'css\tarefas\detalhe.469bc3b1d257.css'
+Deleting 'css\tarefas\kanban.312ff4f307b5.css'
+Deleting 'css\tarefas\lista_tarefa.1c3553d12a7a.css'
+Deleting 'css\tarefas\relatorioexportacao.76253ab0bfca.css'
+Deleting 'css\treinamentos\detalhe_treinamento_styles.e671276d012b.css'
+Deleting 'css\usuario\lista_usuario.b1c022e59be8.css'
+Deleting 'css\usuario\profile.6f1139759e3c.css'
+Deleting 'ltcat\css\style.3d6294bd0649.css'
+Deleting 'ltcat\js\ltcat.e1c06d85ae7b.js'
+Deleting 'ltcat\js\theme.68b329da9893.js'
+Deleting 'rest_framework\docs\css\base.e630f8f4990e.css'
+Deleting 'rest_framework\docs\css\highlight.e0e4d973c6d7.css'
+Deleting 'rest_framework\docs\css\jquery.json-view.min.a2e6beeb6710.css'
+Deleting 'rest_framework\docs\img\favicon.5195b4d0f3eb.ico'
+Deleting 'rest_framework\docs\img\grid.a4b938cf382b.png'
+Deleting 'rest_framework\docs\js\api.18a5ba8a1bd8.js'
+Deleting 'rest_framework\docs\js\highlight.pack.479b5f21dcba.js'
+Deleting 'rest_framework\docs\js\jquery.json-view.min.b7c2d6981377.js'
+Deleting 'vendor\select2\dist\css\select2.e6de4a7c42df.css'
+Deleting 'vendor\select2\dist\css\select2.min.e71c39430469.css'
+Post-processed 'admin\css\vendor\select2\LICENSE-SELECT2.md' as 'admin/css/vendor/select2/LICENSE-SELECT2.f94142512c91.md'
+Post-processed 'admin\js\vendor\jquery\LICENSE.txt' as 'admin/js/vendor/jquery/LICENSE.de877aa6d744.txt'
+Post-processed 'admin\js\vendor\select2\LICENSE.md' as 'admin/js/vendor/select2/LICENSE.f94142512c91.md'
+Post-processed 'admin\js\vendor\xregexp\LICENSE.txt' as 'admin/js/vendor/xregexp/LICENSE.bf79e414957a.txt'
+Post-processed 'admin\img\gis\move_vertex_off.svg' as 'admin/img/gis/move_vertex_off.7a23bf31ef8a.svg'
+Post-processed 'admin\img\gis\move_vertex_on.svg' as 'admin/img/gis/move_vertex_on.0047eba25b67.svg'
+Post-processed 'rest_framework\docs\img\favicon.ico' as 'rest_framework/docs/img/favicon.5195b4d0f3eb.ico'
+Post-processed 'rest_framework\docs\img\grid.png' as 'rest_framework/docs/img/grid.a4b938cf382b.png'
+python : Post-processing 'admin\css\base.css' failed!
+No linha:1 caractere:1
++ python manage.py collectstatic --noinput --clear --verbosity 3 > coll ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Post-processing...se.css' failed!:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+Traceback (most recent call last):
+  File "C:\Users\esgce\Documents\GitHub\ControleTarefas\manage.py", line 22, in <module>
+    main()
+  File "C:\Users\esgce\Documents\GitHub\ControleTarefas\manage.py", line 18, in main
+    execute_from_command_line(sys.argv)
+  File "C:\Users\esgce\Documents\GitHub\ControleTarefas\venv\Lib\site-packages\django\core\management\__ini
+t__.py", line 442, in execute_from_command_line
+    utility.execute()
+  File "C:\Users\esgce\Documents\GitHub\ControleTarefas\venv\Lib\site-packages\django\core\management\__ini
+t__.py", line 436, in execute
+    self.fetch_command(subcommand).run_from_argv(self.argv)
+  File 
+"C:\Users\esgce\Documents\GitHub\ControleTarefas\venv\Lib\site-packages\django\core\management\base.py", 
+line 412, in run_from_argv
+    self.execute(*args, **cmd_options)
+  File 
+"C:\Users\esgce\Documents\GitHub\ControleTarefas\venv\Lib\site-packages\django\core\management\base.py", 
+line 458, in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\esgce\Documents\GitHub\ControleTarefas\venv\Lib\site-packages\django\contrib\staticfiles\m
+anagement\commands\collectstatic.py", line 209, in handle
+    collected = self.collect()
+                ^^^^^^^^^^^^^^
+  File "C:\Users\esgce\Documents\GitHub\ControleTarefas\venv\Lib\site-packages\django\contrib\staticfiles\m
+anagement\commands\collectstatic.py", line 154, in collect
+    raise processed
+whitenoise.storage.MissingFileError: The file 'admin/img/sorting-icons.svg' could not be found with 
+<whitenoise.storage.CompressedManifestStaticFilesStorage object at 0x0000012EED69A7B0>.
+
+The CSS file 'admin\css\base.css' references a file which could not be found:
+  admin/img/sorting-icons.svg
+
+Please check the URL references in this CSS file, particularly any
+relative paths which might be pointing to the wrong location.
+
