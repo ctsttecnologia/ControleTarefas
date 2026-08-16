@@ -14,6 +14,7 @@ from decouple import config
 from celery.schedules import crontab
 
 from core.upload_config import UPLOAD_CONFIG
+from datetime import timedelta
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -117,6 +118,19 @@ if DEBUG:
     SECURE_PROXY_SSL_HEADER = None
 
 # =============================================================================
+# JWT (JSON Web Token) - Configurações do Simple JWT
+# =============================================================================
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),   # ajuste conforme necessidade
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'UPDATE_LAST_LOGIN': True,
+}
+
+# =============================================================================
 # INSTALLED APPS
 # =============================================================================
 INSTALLED_APPS = [
@@ -129,6 +143,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.humanize',
+    'rest_framework_simplejwt.token_blacklist',
+
 
     # Extensões
     'django_extensions',
