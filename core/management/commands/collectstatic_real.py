@@ -5,4 +5,4 @@ class Command(RealCollectstatic):
     pass
 
 # Para usar: python manage.py collectstatic --noinput
-# python manage.py collectstatic_real --noinput
+# python manage.py collectstatic_real --noinput --clear
