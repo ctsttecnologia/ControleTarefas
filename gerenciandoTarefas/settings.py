@@ -167,7 +167,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'cloudinary_storage',
-    'django.contrib.staticfiles',  # deve vir DEPOIS de cloudinary_storage
+    'django.contrib.staticfiles', 
     'cloudinary',
 
     # Apps Locais
