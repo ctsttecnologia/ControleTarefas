@@ -167,9 +167,9 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'cloudinary_storage',
-    'django.contrib.staticfiles', 
     'cloudinary',
-
+    'django.contrib.staticfiles', 
+    
     # Apps Locais
     'dashboard.apps.DashboardConfig',
     'usuario.apps.UsuarioConfig',
