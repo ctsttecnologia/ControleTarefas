@@ -103,12 +103,21 @@ class RelatorioFotograficoViewSet(viewsets.ModelViewSet):
         return Response({'ok': True, 'fotos': criadas}, status=status.HTTP_201_CREATED)
 
     # --- Reordenar fotos ---
-    @action(detail=True, methods=['post'], url_path='fotos/reordenar')
+    @action(detail=True, methods=['patch'], url_path='fotos/reordenar')
     def reordenar_fotos(self, request, pk=None):
         ids_ordenados = request.data.get('ordem', [])
+        if not isinstance(ids_ordenados, list) or not ids_ordenados:
+            return Response(
+                {'ok': False, 'erro': 'Lista de ordem inválida.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         with transaction.atomic():
-            for i, foto_id in enumerate(ids_ordenados):
-                FotoRelatorio.objects.filter(pk=foto_id, relatorio_id=pk).update(ordem=i + 1)
+            for i, item in enumerate(ids_ordenados):
+                # aceita tanto [{id, ordem}] quanto [id, id, ...]
+                foto_id = item.get('id') if isinstance(item, dict) else item
+                FotoRelatorio.objects.filter(
+                    pk=foto_id, relatorio_id=pk
+                ).update(ordem=i + 1)
         return Response({'ok': True})
 
     # --- Exportar PDF ---
