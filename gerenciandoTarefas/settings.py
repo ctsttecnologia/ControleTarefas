@@ -8,7 +8,7 @@ import sys
 import ssl
 import logging
 from pathlib import Path
-
+import cloudinary
 from dotenv import load_dotenv
 from decouple import config
 from celery.schedules import crontab
