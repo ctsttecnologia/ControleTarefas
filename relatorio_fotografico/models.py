@@ -2,7 +2,6 @@
 # relatorio_fotografico/models.py
 import math
 from io import BytesIO
-from pyexpat import model
 
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile, UploadedFile

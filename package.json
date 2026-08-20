@@ -1,5 +1,12 @@
 {
   "dependencies": {
-    "bootstrap-icons": "^1.13.1"
-  }
+    "bootstrap-icons": "^1.13.1",
+    "expo": "^57.0.14",
+    "expo-router": "~57.0.14",
+    "react": "19.2.3",
+    "react-native": "0.86.2"
+  },
+  "name": "ControleTarefas",
+  "version": "1.0.0",
+  "scripts": {}
 }
