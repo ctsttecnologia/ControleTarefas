@@ -5,9 +5,8 @@ from weasyprint import HTML
 
 
 def _montar_fotos_urls(relatorio):
-    """Dict {foto.id: url} — imagem já padronizada desde o upload."""
     return {
-        foto.id: (foto.imagem.url if foto.imagem else '')
+        foto.id: (foto.imagem.url.replace('http://', 'https://', 1) if foto.imagem else '')
         for foto in relatorio.fotos.all()
     }
 

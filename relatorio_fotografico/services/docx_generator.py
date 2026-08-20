@@ -136,7 +136,8 @@ def _resolver_caminho_foto(foto):
     """
     if not foto.imagem:
         raise ValueError('Foto sem imagem associada.')
-    response = requests.get(foto.imagem.url, timeout=10)
+    url = foto.imagem.url.replace('http://', 'https://', 1)
+    response = requests.get(url, timeout=20)
     response.raise_for_status()
     return io.BytesIO(response.content)
 
@@ -202,51 +203,6 @@ def _adicionar_cabecalho_novo(doc, relatorio, largura_util):
     doc.add_paragraph()  # espaço após o cabeçalho
 
 
-#    doc.add_paragraph()  # espaço após o cabeçalho
-def _adicionar_cabecalho_dados(doc, relatorio):
-    """Tabela 5x2 com dados do relatório (obra, data, assunto, folha, responsável, local, gerado em)."""
-    header = doc.add_table(rows=5, cols=2)
-    header.alignment = WD_TABLE_ALIGNMENT.CENTER
-    header.autofit = False
-
-    for col in header.columns:
-        col.width = Cm(9)  # ajuste conforme a largura útil da página / 2
-
-    header.cell(0, 0).text = f"Obra/Contrato: {relatorio.obra_contrato}"
-    header.cell(0, 1).text = f"Data: {relatorio.data:%d/%m/%Y}"
-
-    header.cell(1, 0).text = f"Assunto: {relatorio.titulo}"
-    header.cell(1, 1).text = f"Folha: 01 de {relatorio.total_folhas:02d}"
-
-    responsavel_nome = (
-        relatorio.responsavel.get_full_name()
-        or relatorio.responsavel.username
-    )
-    header.cell(2, 0).merge(header.cell(2, 1))
-    header.cell(2, 0).text = f"Responsável: {responsavel_nome}"
-
-    local = relatorio.local or "Não informado"
-    header.cell(3, 0).merge(header.cell(3, 1))
-    header.cell(3, 0).text = f"Local: {local}"
-
-    header.cell(4, 0).merge(header.cell(4, 1))
-    header.cell(4, 0).text = f"Gerado em: {relatorio.created_at:%d/%m/%Y}"
-
-    return header
-
-
-def _adicionar_localizacao(doc, relatorio):
-    """Adiciona o campo de localização abaixo do cabeçalho de dados."""
-    if not getattr(relatorio, 'local', None):
-        return
-    p = doc.add_paragraph()
-    run_label = p.add_run('Local: ')
-    run_label.bold = True
-    run_label.font.size = Pt(10)
-    run_value = p.add_run(relatorio.local)
-    run_value.font.size = Pt(10)
-
-
 def _adicionar_titulo_pagina(doc, relatorio, pagina_idx, total_folhas):
     """Cabeçalho de continuação, exibido a partir da 2ª página."""
     doc.add_page_break()
@@ -272,9 +228,10 @@ def _preencher_celula_foto(cell, foto, numero_foto):
             width=LARGURA_IMAGEM,
             height=ALTURA_IMAGEM,
         )
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f'Falha ao baixar foto {foto.id}: {e}')
         paragraph.add_run('[imagem indisponível]')
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     legenda_p = cell.add_paragraph()
     legenda_run = legenda_p.add_run(f"Foto {numero_foto:02d}: {foto.legenda}")
@@ -325,8 +282,6 @@ def _adicionar_grid_fotos(doc, fotos_pagina, pagina_idx, largura_util):
             foto = fotos_pagina[idx]
             numero_foto = idx + 1 + (pagina_idx - 1) * FOTOS_POR_PAGINA
             _preencher_celula_foto(cell, foto, numero_foto)
-        else:
-            cell.text = ''
 
     for row in table.rows:
         row.height = ALTURA_LINHA

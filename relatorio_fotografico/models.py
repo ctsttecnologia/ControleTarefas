@@ -135,6 +135,7 @@ class FotoRelatorio(models.Model):
         'imagem',
         folder='relatorios_fotograficos',
         resource_type='image',
+        type='upload', 
     )
     legenda = models.TextField('Descrição', blank=True)
     ordem = models.PositiveIntegerField('Ordem', default=0)
