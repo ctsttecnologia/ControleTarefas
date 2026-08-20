@@ -592,6 +592,13 @@ _QUIET_LOGGERS = [
     'twisted',
 ]
 
+if 'test' in sys.argv:
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+        
+    }
+
 for _name in _QUIET_LOGGERS:
     logging.getLogger(_name).setLevel(logging.ERROR)
     logging.getLogger(_name).propagate = False
