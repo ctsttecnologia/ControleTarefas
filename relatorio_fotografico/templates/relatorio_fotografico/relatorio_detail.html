@@ -1,0 +1,629 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ relatorio.titulo }}{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<style>
+    /* ============ HEADER ============ */
+    .relatorio-header {
+        background: var(--surface-elevated);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 14px;
+        padding: 24px 28px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,.05);
+        transition: background-color .3s, border-color .3s;
+    }
+
+    [data-bs-theme="dark"] .relatorio-header {
+        box-shadow: 0 2px 12px rgba(0,0,0,.3);
+    }
+
+    .header-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 32px;
+        flex-wrap: wrap;
+    }
+
+    .header-logo {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 130px;
+    }
+    .header-logo img {
+        max-width: 130px;
+        max-height: 65px;
+        object-fit: contain;
+    }
+
+    .header-fields {
+        flex: 1 1 320px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        column-gap: 40px;
+        row-gap: 12px;
+    }
+
+    .field-row {
+        display: flex;
+        gap: 6px;
+        font-size: .92rem;
+    }
+    .field-row .label {
+        font-weight: 700;
+        color: var(--text-strong);
+        white-space: nowrap;
+    }
+    .field-row .value {
+        color: var(--text-soft);
+        word-break: break-word;
+    }
+
+    .header-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid var(--bs-border-color);
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge-status-rascunho { background: #6b7280; color: #fff; }
+    .badge-status-pendente { background: #ffc107; color: #000; }
+    .badge-status-finalizado { background: #198754; color: #fff; }
+    .badge-total-folhas { background: var(--surface-muted); color: var(--bs-body-color); }
+
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .header-actions .btn { border-radius: 8px; font-size: .85rem; white-space: nowrap; }
+
+    @media (max-width: 767px) {
+        .relatorio-header { padding: 18px; }
+        .header-top { flex-direction: column; align-items: center; text-align: center; }
+        .header-fields { grid-template-columns: 1fr; text-align: left; }
+        .header-bottom { flex-direction: column; align-items: stretch; }
+        .header-actions .btn { flex: 1 1 auto; }
+    }
+
+    /* ============ CARDS / SEÇÕES ============ */
+    .section-card {
+        border: none;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.06);
+        background-color: var(--surface-elevated);
+        color: var(--bs-body-color);
+        transition: background-color .3s;
+    }
+    [data-bs-theme="dark"] .section-card {
+        box-shadow: 0 2px 12px rgba(0,0,0,.35);
+    }
+    .section-title {
+        font-weight: 600;
+        color: var(--text-strong);
+    }
+
+    .foto-card {
+        border: 1px solid var(--bs-border-color);
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--surface-elevated);
+        cursor: grab;
+        transition: box-shadow .2s, transform .15s, background-color .3s, border-color .3s;
+    }
+    .foto-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,.14);
+        transform: translateY(-2px);
+    }
+    [data-bs-theme="dark"] .foto-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,.5);
+    }
+    .foto-card.sortable-ghost { opacity: .4; }
+    .foto-card img {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+        display: block;
+    }
+    .foto-card-body { padding: 10px; }
+
+    .foto-wrapper { position: relative; }
+
+    .foto-numero {
+        position: absolute;
+        top: 8px; left: 8px;
+        background: rgba(0,0,0,.65);
+        color: #fff;
+        border-radius: 50%;
+        width: 26px; height: 26px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px; font-weight: 700;
+        z-index: 5;
+    }
+    .foto-remove-btn {
+        position: absolute;
+        top: 8px; right: 8px;
+        z-index: 5;
+    }
+    .foto-geo-badge {
+        position: absolute;
+        bottom: 8px; left: 8px;
+        background: rgba(0,0,0,.65);
+        color: #fff;
+        font-size: 10.5px;
+        padding: 3px 8px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        max-width: 90%;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        z-index: 5;
+    }
+    .foto-geo-badge i { font-size: 11px; }
+
+    .drop-zone {
+        border: 2px dashed var(--bs-border-color);
+        border-radius: 10px;
+        padding: 30px;
+        text-align: center;
+        color: var(--bs-text-muted);
+        transition: all .2s;
+        cursor: pointer;
+    }
+    .drop-zone.dragover {
+        border-color: var(--bs-primary);
+        background: var(--surface-hover);
+        color: var(--bs-primary);
+    }
+
+    .foto-legenda-textarea {
+        font-size: .85rem;
+        background-color: var(--surface-elevated);
+        color: var(--bs-body-color);
+        border-color: var(--bs-border-color);
+    }
+    .foto-legenda-textarea:focus {
+        background-color: var(--surface-elevated);
+        color: var(--bs-body-color);
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), .15);
+    }
+
+    .spinner-upload { display: none; }
+
+    #fotos-empty {
+        color: var(--bs-text-muted);
+    }
+
+    @media print {
+        .btn, .drop-zone, #spinner-upload, .foto-remove-btn, .modal {
+            display: none !important;
+        }
+        textarea.foto-legenda-textarea {
+            pointer-events: none;
+            background: transparent;
+            resize: none;
+            border: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    {# ==================== CABEÇALHO ==================== #}
+    <div class="relatorio-header">
+        <div class="header-top">
+            {% if relatorio.empresa_logo %}
+            <div class="header-logo">
+                <img src="{{ relatorio.empresa_logo.url }}" alt="{{ relatorio.empresa }}">
+            </div>
+            {% endif %}
+
+            <div class="header-fields">
+                <div class="field-row">
+                    <span class="label">Contato:</span>
+                    <span class="value">{{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Criada:</span>
+                    <span class="value">{{ relatorio.created_at|date:"d/m/Y H:i" }}</span>
+                </div>
+
+                <div class="field-row">
+                    <span class="label">Empresa:</span>
+                    <span class="value">{{ relatorio.empresa|default:"-" }}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Filial:</span>
+                    <span class="value">{{ relatorio.filial }}</span>
+                </div>
+
+                <div class="field-row">
+                    <span class="label">Telefone:</span>
+                    <span class="value">{{ relatorio.telefone|default:"-" }}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Título:</span>
+                    <span class="value">{{ relatorio.titulo }}</span>
+                </div>
+
+                <div class="field-row">
+                    <span class="label">Email:</span>
+                    <span class="value">{{ relatorio.email|default:"-" }}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Obra/Contrato:</span>
+                    <span class="value">{{ relatorio.obra_contrato }}</span>
+                </div>
+
+                <div class="field-row">
+                    <span class="label">Data:</span>
+                    <span class="value">{{ relatorio.data|date:"d/m/Y" }}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Nº Página:</span>
+                    <span class="value">{{ total_folhas }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="header-bottom">
+            <div class="badges">
+                <span class="badge {% if relatorio.status == 'finalizado' %}badge-status-finalizado{% else %}{% if relatorio.status == 'pendente' %}badge-status-pendente{% else %}badge-status-rascunho{% endif %}{% endif %}">
+                    <i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>{{ relatorio.get_status_display }}
+                </span>
+                <span class="badge badge-total-folhas">
+                    <i class="bi bi-file-earmark-text me-1"></i>{{ total_folhas }} folha{{ total_folhas|pluralize }}
+                </span>
+            </div>
+
+            <div class="header-actions">
+                <a href="{% url 'relatorio_fotografico:list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Voltar
+                </a>
+                <a href="{% url 'relatorio_fotografico:update' relatorio.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil me-1"></i>Editar
+                </a>
+                <a href="{% url 'relatorio_fotografico:export_docx' relatorio.pk %}" class="btn btn-outline-primary">
+                    <i class="bi bi-file-earmark-word me-1"></i>Word
+                </a>
+                <a href="{% url 'relatorio_fotografico:export_pdf' relatorio.pk %}?inline=1" target="_blank" class="btn btn-outline-danger">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                </a>
+                <button type="button" class="btn btn-danger"
+                        data-bs-toggle="modal" data-bs-target="#modalExcluirRelatorio">
+                    <i class="bi bi-trash me-1"></i>Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {# ==================== UPLOAD DE FOTOS ==================== #}
+    <div class="card section-card mb-4">
+        <div class="card-body p-4">
+            <h6 class="section-title mb-3"><i class="bi bi-cloud-upload me-1"></i>Adicionar Fotos</h6>
+
+            <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                    <label class="btn btn-outline-primary w-100 mb-0">
+                        <i class="bi bi-images me-1"></i> Escolher da Galeria
+                        <input type="file" id="input-galeria" accept="image/*" multiple hidden>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="btn btn-outline-success w-100 mb-0">
+                        <i class="bi bi-camera me-1"></i> Tirar Foto (Câmera)
+                        <input type="file" id="input-camera" accept="image/*" capture="environment" hidden>
+                    </label>
+                </div>
+            </div>
+
+            <div id="drop-zone" class="drop-zone">
+                <i class="bi bi-cloud-arrow-up display-6"></i>
+                <p class="mb-0 mt-2">Ou arraste e solte as imagens aqui</p>
+            </div>
+
+            <div class="spinner-upload text-center mt-3" id="spinner-upload">
+                <div class="spinner-border text-primary" role="status"></div>
+                <span class="ms-2">Enviando fotos...</span>
+            </div>
+        </div>
+    </div>
+
+    {# ==================== DESCRIÇÃO DO RELATÓRIO ==================== #}
+    <div class="card section-card mb-4">
+        <div class="card-body p-4   ">
+            <h6 class="section-title mb-1"><i class="bi bi-cloud-upload me-1"></i>Descrição do Relatório</h6>
+        </div>
+        <span class="value p-4 mb-2">{{ relatorio.observacoes|linebreaksbr }}</span>
+    </div>
+
+    {# ==================== GRID DE FOTOS ==================== #}
+    <div class="card section-card">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="section-title mb-0"><i class="bi bi-grid-3x3-gap me-1"></i>Fotos do Relatório</h6>
+                <small class="text-muted"><i class="bi bi-arrows-move me-1"></i>Arraste os cards para reordenar</small>
+            </div>
+
+            <div id="fotos-grid" class="row g-3" data-relatorio-id="{{ relatorio.pk }}">
+                {% for foto in relatorio.fotos.all %}
+                <div class="col-md-6 foto-item" data-id="{{ foto.id }}">
+                    <div class="foto-card">
+                        <div class="foto-wrapper">
+                            <span class="foto-numero">{{ foto.ordem }}</span>
+                            <button class="btn btn-sm btn-danger foto-remove-btn btn-remove-foto"
+                                    data-id="{{ foto.id }}"
+                                    data-bs-toggle="modal" data-bs-target="#modalExcluirFoto"
+                                    title="Remover">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            <img src="{{ foto.imagem.url }}" alt="Foto {{ foto.ordem }}">
+                            {% if foto.tem_geolocalizacao %}
+                            <span class="foto-geo-badge" title="{{ foto.coordenadas_formatadas }}">
+                                <i class="bi bi-geo-alt-fill"></i>
+                                {% if foto.endereco %}{{ foto.endereco }}{% else %}{{ foto.coordenadas_formatadas }}{% endif %}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="foto-card-body">
+                            <textarea class="form-control foto-legenda-textarea legenda-input"
+                                      data-id="{{ foto.id }}"
+                                      rows="2"
+                                      placeholder="Descrição da foto...">{{ foto.legenda }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if not relatorio.fotos.all %}
+            <div id="fotos-empty" class="text-center text-muted py-5">
+                <i class="bi bi-images display-1"></i>
+                <p class="mt-3">Nenhuma foto adicionada ainda.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+{# ==================== MODAIS ==================== #}
+<div class="modal fade" id="modalExcluirRelatorio" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Excluir Relatório</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja excluir o relatório <strong>{{ relatorio.titulo }}</strong>?
+                <br><span class="text-danger small">Esta ação não pode ser desfeita e todas as fotos serão removidas.</span>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" action="{% url 'relatorio_fotografico:delete' relatorio.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalExcluirFoto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Excluir Foto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja remover esta foto do relatório?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarExcluirFoto">
+                    <i class="bi bi-trash me-1"></i>Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const uploadUrl = "{% url 'relatorio_fotografico:foto_upload' relatorio.pk %}";
+    const reorderUrl = "{% url 'relatorio_fotografico:foto_reorder' relatorio.pk %}";
+    const csrfToken = "{{ csrf_token }}";
+
+    const grid = document.getElementById('fotos-grid');
+    const spinner = document.getElementById('spinner-upload');
+    const emptyMsg = document.getElementById('fotos-empty');
+    let fotoIdParaExcluir = null;
+
+    function getCsrfCookie() {
+        const name = 'csrftoken=';
+        const decoded = decodeURIComponent(document.cookie);
+        for (const part of decoded.split(';')) {
+            const trimmed = part.trim();
+            if (trimmed.indexOf(name) === 0) return trimmed.substring(name.length);
+        }
+        return csrfToken;
+    }
+
+    function obterLocalizacao() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) return resolve(null);
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                () => resolve(null),
+                { timeout: 5000, maximumAge: 60000 }
+            );
+        });
+    }
+
+    function criarCardFoto(foto) {
+        const col = document.createElement('div');
+        col.className = 'col-md-6 foto-item';
+        col.dataset.id = foto.id;
+        const geoBadge = foto.coordenadas
+            ? `<span class="foto-geo-badge" title="${foto.coordenadas}">
+                 <i class="bi bi-geo-alt-fill"></i> ${foto.coordenadas}
+               </span>` : '';
+        col.innerHTML = `
+            <div class="foto-card">
+                <div class="foto-wrapper">
+                    <span class="foto-numero">${foto.ordem}</span>
+                    <button class="btn btn-sm btn-danger foto-remove-btn btn-remove-foto"
+                            data-id="${foto.id}" data-bs-toggle="modal" data-bs-target="#modalExcluirFoto" title="Remover">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    <img src="${foto.url}" alt="Foto ${foto.ordem}">
+                    ${geoBadge}
+                </div>
+                <div class="foto-card-body">
+                    <textarea class="form-control foto-legenda-textarea legenda-input"
+                              data-id="${foto.id}" rows="2"
+                              placeholder="Descrição da foto..."></textarea>
+                </div>
+            </div>`;
+        return col;
+    }
+
+    async function enviarArquivos(fileList) {
+        if (!fileList || fileList.length === 0) return;
+
+        const localizacao = await obterLocalizacao();
+        const formData = new FormData();
+        for (const file of fileList) {
+            formData.append('imagens', file);
+            formData.append('latitudes', localizacao ? localizacao.lat : '');
+            formData.append('longitudes', localizacao ? localizacao.lng : '');
+        }
+
+        spinner.style.display = 'block';
+        try {
+            const resp = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCsrfCookie() },
+                body: formData,
+            });
+            const data = await resp.json();
+            if (data.ok) {
+                if (emptyMsg) emptyMsg.remove();
+                data.fotos.forEach(foto => grid.appendChild(criarCardFoto(foto)));
+                bindEventos();
+            } else {
+                alert('Erro ao enviar fotos: ' + (data.erro || 'desconhecido'));
+            }
+        } catch (e) {
+            alert('Falha na conexão ao enviar fotos.');
+            console.error(e);
+        } finally {
+            spinner.style.display = 'none';
+        }
+    }
+
+    document.getElementById('input-galeria').addEventListener('change', (e) => {
+        enviarArquivos(e.target.files);
+        e.target.value = '';
+    });
+    document.getElementById('input-camera').addEventListener('change', (e) => {
+        enviarArquivos(e.target.files);
+        e.target.value = '';
+    });
+
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        enviarArquivos(e.dataTransfer.files);
+    });
+    dropZone.addEventListener('click', () => document.getElementById('input-galeria').click());
+
+    function bindEventos() {
+        document.querySelectorAll('.btn-remove-foto').forEach(btn => {
+            btn.onclick = function () { fotoIdParaExcluir = this.dataset.id; };
+        });
+
+        document.querySelectorAll('.legenda-input').forEach(textarea => {
+            let timeout;
+            textarea.addEventListener('input', function () {
+                clearTimeout(timeout);
+                const id = this.dataset.id;
+                const legenda = this.value;
+                timeout = setTimeout(async () => {
+                    await fetch(`/relatorio-fotografico/foto/${id}/editar/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCsrfCookie(),
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `legenda=${encodeURIComponent(legenda)}`,
+                    });
+                }, 600);
+            });
+        });
+    }
+
+    document.getElementById('btnConfirmarExcluirFoto').addEventListener('click', async function () {
+        if (!fotoIdParaExcluir) return;
+        const resp = await fetch(`/relatorio-fotografico/foto/${fotoIdParaExcluir}/excluir/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCsrfCookie() },
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            const item = document.querySelector(`.foto-item[data-id="${fotoIdParaExcluir}"]`);
+            if (item) item.remove();
+            if (!grid.querySelector('.foto-item') && !document.getElementById('fotos-empty')) {
+                const div = document.createElement('div');
+                div.id = 'fotos-empty';
+                div.className = 'text-center text-muted py-5';
+                div.innerHTML = '<i class="bi bi-images display-1"></i><p class="mt-3">Nenhuma foto adicionada ainda.</p>';
+                grid.parentNode.appendChild(div);
+            }
+        }
+        fotoIdParaExcluir = null;
+        bootstrap.Modal.getInstance(document.getElementById('modalExcluirFoto')).hide();
+    });
+
+    new Sortable(grid, {
+        animation: 150,
+        handle: '.foto-card',
+        onEnd: async function () {
+            const ids = Array.from(grid.querySelectorAll('.foto-item')).map(el => el.dataset.id);
+            await fetch(reorderUrl, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCsrfCookie(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ordem: ids }),
+            });
+            document.querySelectorAll('.foto-item').forEach((el, idx) => {
+                el.querySelector('.foto-numero').textContent = idx + 1;
+            });
+        },
+    });
+
+    bindEventos();
+})();
+</script>
+{% endblock %}
+
+

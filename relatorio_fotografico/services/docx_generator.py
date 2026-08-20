@@ -1,0 +1,340 @@
+# relatorio_fotografico/services/docx_generator.py
+"""
+Gerador de relatório fotográfico em Word (.docx).
+
+As imagens usadas aqui já estão sanitizadas e padronizadas (tamanho
+fixo, JPEG otimizado) desde o upload — ver `FotoRelatorio.save()` em
+models.py. Nenhum processamento de imagem é feito neste módulo.
+"""
+import io
+import os
+import requests  # ← novo import
+from django.conf import settings
+from docx import Document
+from docx.shared import Cm, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ROW_HEIGHT_RULE
+from docx.oxml.ns import qn
+
+from ..models import FOTOS_POR_PAGINA
+from docx.oxml import OxmlElement
+
+
+# --- Layout (cabeçalho) ---
+LARGURA_LOGO_COL = Cm(3)
+LARGURA_VAZIO_COL = Cm(3)
+LARGURA_LOGO_IMG = Cm(2.5)
+
+# --- Layout (grid de fotos) ---
+LINHAS_GRID = 3
+COLUNAS_GRID = 2
+LARGURA_IMAGEM = Cm(7.5)
+ALTURA_IMAGEM = Cm(5.6)
+ALTURA_LINHA = Cm(6.5)  # imagem + espaço da legenda
+
+MARGEM_ESQUERDA = Cm(1.5)
+MARGEM_DIREITA = Cm(1.5)
+MARGEM_SUPERIOR = Cm(1.2)
+MARGEM_INFERIOR = Cm(1.2)
+
+
+def _adicionar_capa(doc, relatorio, largura_util):
+    """Página de capa: imagem PNG de fundo + textos sobrepostos ao padrão visual."""
+    logo_path = _resolver_capa_path()
+    if logo_path:
+        p_img = doc.add_paragraph()
+        p_img.paragraph_format.space_after = Pt(0)
+        run_img = p_img.add_run()
+        run_img.add_picture(logo_path, width=largura_util)
+
+    doc.add_paragraph().paragraph_format.space_after = Pt(24)
+
+    # Data (mês/ano)
+    p_data = doc.add_paragraph()
+    p_data.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run_data = p_data.add_run(relatorio.data.strftime('%B %Y').upper())
+    run_data.font.size = Pt(12)
+    run_data.font.bold = True
+    run_data.font.color.rgb = RGBColor(0x0A, 0x4A, 0x75)
+
+    # Empresa
+    p_empresa = doc.add_paragraph()
+    p_empresa.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run_empresa = p_empresa.add_run(f"{relatorio.empresa.upper()} S.A.")
+    run_empresa.font.size = Pt(11)
+    run_empresa.font.bold = True
+    run_empresa.font.color.rgb = RGBColor(0x0A, 0x4A, 0x75)
+
+    doc.add_paragraph().paragraph_format.space_after = Pt(12)
+
+    # Título principal
+    p_titulo = doc.add_paragraph()
+    p_titulo.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run_titulo = p_titulo.add_run('RELATÓRIO\nFOTOGRÁFICO')
+    run_titulo.font.size = Pt(26)
+    run_titulo.font.bold = True
+    run_titulo.font.color.rgb = RGBColor(0x0A, 0x4A, 0x75)
+
+    p_sub = doc.add_paragraph()
+    p_sub.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run_sub = p_sub.add_run(relatorio.obra_contrato)
+    run_sub.font.size = Pt(14)
+    run_sub.font.color.rgb = RGBColor(0x0A, 0x4A, 0x75)
+
+    doc.add_page_break()
+
+
+def _resolver_capa_path():
+    """
+    Resolve o caminho físico de static/images/capa.png,
+    funcionando tanto em dev (STATICFILES_DIRS) quanto após
+    collectstatic (STATIC_ROOT).
+    """
+    candidatos = []
+
+    if getattr(settings, 'STATIC_ROOT', None):
+        candidatos.append(
+            os.path.join(settings.STATIC_ROOT, 'images', 'capa.png')
+        )
+
+    for static_dir in getattr(settings, 'STATICFILES_DIRS', []):
+        candidatos.append(os.path.join(static_dir, 'images', 'capa.png'))
+
+    for caminho in candidatos:
+        if os.path.exists(caminho):
+            return caminho
+    return None
+
+
+def _resolver_logo_path():
+    """
+    Resolve o caminho físico de static/images/logo.png,
+    funcionando tanto em dev (STATICFILES_DIRS) quanto após
+    collectstatic (STATIC_ROOT).
+    """
+    candidatos = []
+
+    if getattr(settings, 'STATIC_ROOT', None):
+        candidatos.append(
+            os.path.join(settings.STATIC_ROOT, 'images', 'logo.png')
+        )
+
+    for static_dir in getattr(settings, 'STATICFILES_DIRS', []):
+        candidatos.append(os.path.join(static_dir, 'images', 'logo.png'))
+
+    for caminho in candidatos:
+        if os.path.exists(caminho):
+            return caminho
+    return None
+
+
+def _resolver_caminho_foto(foto):
+    """
+    Retorna um buffer (BytesIO) com o binário da imagem, baixando
+    diretamente do Cloudinary via HTTPS (CloudinaryField não expõe
+    caminho de disco local — apenas .url).
+    """
+    if not foto.imagem:
+        raise ValueError('Foto sem imagem associada.')
+    url = foto.imagem.url.replace('http://', 'https://', 1)
+    response = requests.get(url, timeout=20)
+    response.raise_for_status()
+    return io.BytesIO(response.content)
+
+
+def _configurar_secao(doc):
+    """Define margens e retorna a largura útil da página."""
+    section = doc.sections[0]
+    section.left_margin = MARGEM_ESQUERDA
+    section.right_margin = MARGEM_DIREITA
+    section.top_margin = MARGEM_SUPERIOR
+    section.bottom_margin = MARGEM_INFERIOR
+    return section.page_width - section.left_margin - section.right_margin
+
+
+def _adicionar_cabecalho_novo(doc, relatorio, largura_util):
+    """Tabela 2 colunas: logo | duas colunas de dados (estilo Cetest)."""
+    table = doc.add_table(rows=1, cols=2)
+    table.autofit = False
+
+    largura_logo_col = Cm(3.5)
+    largura_dados_col = largura_util - largura_logo_col
+
+    table.columns[0].width = largura_logo_col
+    table.columns[1].width = largura_dados_col
+
+    cel_logo, cel_dados = table.rows[0].cells
+    cel_logo.width = largura_logo_col
+    cel_dados.width = largura_dados_col
+
+    logo_path = _resolver_logo_path()
+    if logo_path:
+        run_logo = cel_logo.paragraphs[0].add_run()
+        run_logo.add_picture(logo_path, width=Cm(3))
+
+    # Sub-tabela sem grade (apenas layout, sem bordas visíveis)
+    sub = cel_dados.add_table(rows=4, cols=4)
+    sub.alignment = WD_TABLE_ALIGNMENT.LEFT
+    sub.autofit = False
+
+    responsavel_nome = (
+        relatorio.responsavel.get_full_name()
+        or relatorio.responsavel.username
+    )
+    criada_em = relatorio.created_at.strftime('%d/%m/%Y %H:%M')
+    total_itens = relatorio.fotos.count()
+
+    dados = [
+        ("Contato:", responsavel_nome, "Criada:", criada_em),
+        ("Empresa:", relatorio.empresa, "Localização:", str(relatorio.filial)),
+        ("Telefone:", relatorio.telefone, "Título:", relatorio.titulo),
+        ("Email:", relatorio.email, "No. Itens:", str(total_itens)),
+    ]
+
+    for row_idx, (label1, valor1, label2, valor2) in enumerate(dados):
+        celulas = sub.rows[row_idx].cells
+        for i, texto in enumerate([label1, valor1, label2, valor2]):
+            p = celulas[i].paragraphs[0]
+            run = p.add_run(texto or "")
+            run.font.size = Pt(9)
+            if i in (0, 2):
+                run.bold = True
+
+    doc.add_paragraph()  # espaço após o cabeçalho
+
+
+def _adicionar_titulo_pagina(doc, relatorio, pagina_idx, total_folhas):
+    """Cabeçalho de continuação, exibido a partir da 2ª página."""
+    doc.add_page_break()
+    p = doc.add_paragraph()
+    run = p.add_run(
+        f"{relatorio.obra_contrato} — {relatorio.titulo} "
+        f"— Folha {pagina_idx:02d} de {total_folhas:02d}"
+    )
+    run.bold = True
+    run.font.size = Pt(10)
+
+
+def _preencher_celula_foto(cell, foto, numero_foto):
+    """Insere imagem + legenda numerada em uma célula do grid."""
+    paragraph = cell.paragraphs[0]
+    run = paragraph.add_run()
+    try:
+        buffer_imagem = _resolver_caminho_foto(foto)
+        # Largura E altura fixas — imagens já vêm padronizadas em 4:3
+        # desde o upload (ImageOps.fit em FotoRelatorio._padronizar_imagem).
+        run.add_picture(
+            buffer_imagem,
+            width=LARGURA_IMAGEM,
+            height=ALTURA_IMAGEM,
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f'Falha ao baixar foto {foto.id}: {e}')
+        paragraph.add_run('[imagem indisponível]')
+
+    legenda_p = cell.add_paragraph()
+    legenda_run = legenda_p.add_run(f"Foto {numero_foto:02d}: {foto.legenda}")
+    legenda_run.font.size = Pt(9)
+    legenda_p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+
+def _adicionar_observacoes(doc, relatorio):
+    """Observações como parágrafos, fora da tabela de cabeçalho."""
+    if not relatorio.observacoes:
+        return
+
+    p_titulo = doc.add_paragraph()
+    run_titulo = p_titulo.add_run("Observações:")
+    run_titulo.bold = True
+    run_titulo.font.size = Pt(10)
+
+    for linha in relatorio.observacoes.splitlines():
+        p = doc.add_paragraph()
+        run = p.add_run(linha if linha.strip() else " ")
+        run.font.size = Pt(9)
+
+
+def _adicionar_grid_fotos(doc, fotos_pagina, pagina_idx, largura_util):
+    """Monta a tabela 3x2 (grid) de fotos de uma página."""
+    if not fotos_pagina:
+        return  # nenhuma foto → não cria tabela, sem bordas residuais
+
+    largura_coluna = int(largura_util / COLUNAS_GRID)
+
+    table = doc.add_table(rows=LINHAS_GRID, cols=COLUNAS_GRID)
+    table.style = 'Table Grid'
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = False
+
+    for col in table.columns:
+        col.width = largura_coluna
+    for row in table.rows:
+        for cell in row.cells:
+            cell.width = largura_coluna
+
+    for idx in range(LINHAS_GRID * COLUNAS_GRID):
+        row = idx // COLUNAS_GRID
+        col = idx % COLUNAS_GRID
+        cell = table.cell(row, col)
+
+        if idx < len(fotos_pagina):
+            foto = fotos_pagina[idx]
+            numero_foto = idx + 1 + (pagina_idx - 1) * FOTOS_POR_PAGINA
+            _preencher_celula_foto(cell, foto, numero_foto)
+
+    for row in table.rows:
+        row.height = ALTURA_LINHA
+        row.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+
+
+def _adicionar_rodape(doc):
+    """Rodapé fixo, aplicado em todas as seções do documento."""
+    for sec in doc.sections:
+        footer_p = sec.footer.paragraphs[0]
+        footer_p.text = ''
+        footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run_footer = footer_p.add_run('Relatório Fotográfico — CETEST')
+        run_footer.font.size = Pt(9)
+        run_footer.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+
+
+def gerar_docx_relatorio(relatorio):
+    """
+    Gera o relatório em Word (.docx).
+
+    As imagens de cada `FotoRelatorio` já estão sanitizadas e
+    padronizadas (tamanho fixo, JPEG otimizado) desde o upload —
+    são usadas diretamente aqui, sem processamento adicional.
+
+    Args:
+        relatorio: instância de RelatorioFotografico.
+
+    Returns:
+        io.BytesIO: buffer com o conteúdo do .docx gerado.
+    """
+    doc = Document()
+
+    largura_util = _configurar_secao(doc)
+
+    _adicionar_capa(doc, relatorio, largura_util)  # <-- nova capa
+
+    _adicionar_cabecalho_novo(doc, relatorio, largura_util)
+    _adicionar_observacoes(doc, relatorio) 
+    doc.add_paragraph()
+
+    paginas = relatorio.paginas
+    total_folhas = relatorio.total_folhas
+
+    for pagina_idx, fotos_pagina in enumerate(paginas, start=1):
+        if pagina_idx > 1:
+            _adicionar_titulo_pagina(doc, relatorio, pagina_idx, total_folhas)
+        _adicionar_grid_fotos(doc, fotos_pagina, pagina_idx, largura_util)
+
+    _adicionar_rodape(doc)
+
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+

@@ -1,0 +1,296 @@
+
+{% load static %}
+{% load relatorio_extras %}
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<style>
+    @page {
+        size: A4;
+        margin: 1.2cm 1.5cm;
+        @bottom-left {
+            content: "Relatório Fotográfico — CETEST";
+            font-size: 9px;
+            color: #555;
+        }
+        @bottom-right {
+            content: "Folha " counter(page) " de " counter(pages);
+            font-size: 9px;
+            color: #555;
+        }
+    }
+    body { font-family: "Helvetica Neue", Arial, sans-serif; color: #0d0b0b; font-size: 11px; }
+
+    .cabecalho-novo {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+        margin-bottom: 6px;
+    }
+    .cabecalho-novo img {
+        height: 42px;
+        margin-top: 2px;
+    }
+    .cabecalho-info {
+        flex: 1;
+        display: flex;
+        gap: 40px;
+    }
+    .cabecalho-coluna {
+        flex: 1;
+    }
+    .cabecalho-coluna table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .cabecalho-coluna td {
+        padding: 1px 0;
+        font-size: 10.5px;
+        vertical-align: top;
+        border: 1px solid #000f3100;   /* grade adicionada */
+    }
+    .cabecalho-coluna td.label {
+        font-weight: 700;
+        white-space: nowrap;
+        padding-right: 8px;
+        width: 90px;
+    }
+    .cabecalho-topo img { 
+        height: 45px; 
+    }
+    .linha-separadora {
+        width: 100%;
+        height: 1.0px;
+        background-color: #004cff86;
+        margin: 8px 0 10px 0;
+    }
+    .titulo-principal {
+        flex: 1; text-align: center; font-size: 18px; font-weight: 700;
+        letter-spacing: 1px;
+    }
+
+    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    .header-table td {
+        border: 1px solid #fffefe; padding: 6px 10px; font-size: 11px; vertical-align: top;
+    }
+    .header-table td strong { display: block; margin-bottom: 2px; }
+
+    .observacoes-texto {
+    white-space: pre-wrap;      /* preserva quebras E quebra palavras longas */
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-top: 2px;
+    }
+    table {
+        width: 100%;
+        table-layout: fixed;   /* fundamental: impede que célula "estoure" com texto longo */
+        border-collapse: collapse;
+    }
+
+    td {
+        word-break: break-word;
+        overflow-wrap: break-word;
+        vertical-align: top;
+    }
+
+    .fotos-grid {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed; /* força colunas de largura igual, ignorando conteúdo */
+    }
+    .fotos-grid td {
+        border: 1px solid #004cff86;
+        width: 50%;
+        max-width: 50%;
+        vertical-align: top;
+        padding: 6px;
+        height: 6.8cm;
+        overflow: hidden;
+        word-wrap: break-word;   /* quebra palavras longas dentro da célula */
+        word-break: break-word;
+    }
+    .fotos-grid td:empty {
+        border: none;
+    }
+    .foto-cell img {
+        width: 100%;
+        height: 5.8cm;
+        object-fit: cover;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .foto-legenda {
+        font-size: 9px;
+        line-height: 1.25;
+        max-height: 5.4cm;      /* aumentar para acomodar 2-3 linhas */
+        overflow: hidden;
+        word-wrap: break-word;
+        word-break: break-word;
+    }
+    .foto-legenda b { 
+        font-weight: 700; 
+    }
+
+    .pagina-quebra { 
+        page-break-before: always; 
+    }
+
+    /* ---------- CAPA ---------- */
+    .capa {
+        position: relative;
+        height: 100%;
+        page-break-after: always;
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        background: #ffffff;
+    }
+
+    .capa-grafico {
+        position: relative;
+        width: 100%;
+        height: 10cm;
+        overflow: hidden;
+    }
+
+    .capa-grafico img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .capa-conteudo {
+        padding: 2.5cm 1.8cm 0 1.8cm;
+        text-align: right;
+    }
+
+    .capa-data {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0a4a75;
+        letter-spacing: 1px;
+        margin-bottom: 0.3cm;
+    }
+
+    .capa-empresa {
+        font-size: 12px;
+        font-weight: 600;
+        color: #0a4a75;
+        letter-spacing: 0.5px;
+        margin-bottom: 1cm;
+    }
+
+    .capa-titulo {
+        font-size: 30px;
+        font-weight: 800;
+        color: #0a4a75;
+        line-height: 1.25;
+        margin-bottom: 0.4cm;
+    }
+
+    .capa-subtitulo {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0a4a75;
+    }
+</style>
+</head>
+<body>
+<div class="capa">
+    <div class="capa-grafico">
+        <img src="{% static 'images/capa.png' %}" alt="">
+    </div>
+    <div class="capa-conteudo">
+        <div class="capa-data">{{ relatorio.data|date:"F Y"|upper }}</div>
+        <div class="capa-empresa">{{ relatorio.empresa|upper }} S.A.</div>
+        <div class="capa-titulo">RELATÓRIO<br>FOTOGRÁFICO</div>
+        <div class="capa-subtitulo">{{ relatorio.obra_contrato }}</div>
+    </div>
+</div>
+{% for linhas in relatorio.paginas_em_linhas %}
+<div class="{% if not forloop.first %}pagina-quebra{% endif %}">
+
+    <div class="cabecalho-novo">
+    <img src="{% static 'images/logocetest.png' %}" alt="CETEST">
+
+        <div class="cabecalho-info">
+            <div class="cabecalho-coluna">
+                <table>
+                    <tr>
+                        <td class="label">Responsável:</td>
+                        <td>{{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Cliente:</td>
+                        <td>{{ relatorio.empresa }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Telefone:</td>
+                        <td>{{ relatorio.telefone }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Email:</td>
+                        <td>{{ relatorio.email }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="cabecalho-coluna">
+                <table>
+                    <tr>
+                        <td class="label">Criada:</td>
+                        <td>{{ relatorio.created_at|date:"D d M H:i Y"|lower }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Empresa:</td>
+                        <td>{{ relatorio.filial }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Título:</td>
+                        <td>{{ relatorio.titulo }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">No. Itens:</td>
+                        <td>{{ relatorio.fotos.count }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="linha-separadora"></div>
+
+    <table class="header-table">
+        <tr>
+            <td colspan="2">
+                <strong>Observações:</strong>
+                <div class="observacoes-texto">{{ relatorio.observacoes|linebreaksbr }}</div>
+            </td>
+        </tr>
+    </table>
+
+    {% if linhas %}
+    <table class="fotos-grid">
+        {% for linha in linhas %}
+        <tr>
+            {% for foto in linha %}
+            <td class="foto-cell">
+                <img src="{{ fotos_urls|get_item:foto.id }}" alt="{{ foto.legenda }}">
+                <div class="foto-legenda"><b>Foto {{ foto.ordem }}:</b> {{ foto.legenda }}</div>
+            </td>
+            {% endfor %}
+            {% if linha|length < 2 %}<td></td>{% endif %}
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+
+</div>
+{% endfor %}
+
+</body>
+</html>
+
+
