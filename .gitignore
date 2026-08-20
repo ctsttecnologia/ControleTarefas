@@ -73,3 +73,4 @@ scripts/fix_mojibake.py
 
 # Arquivos de comandos
 python manage.py collectstatic --noinput --upload-unhashed-files
+node_modules

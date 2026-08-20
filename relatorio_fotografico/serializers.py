@@ -1,6 +1,7 @@
 
 # relatorio_fotografico/serializers.py
 from rest_framework import serializers
+from twisted.test import obj
 from .models import RelatorioFotografico, FotoRelatorio
 
 
@@ -31,6 +32,7 @@ class RelatorioFotograficoSerializer(serializers.ModelSerializer):
     fotos = FotoRelatorioSerializer(many=True, read_only=True)
     total_folhas = serializers.ReadOnlyField()
     responsavel_nome = serializers.SerializerMethodField()
+    filial_nome = serializers.SerializerMethodField()
     total_fotos = serializers.SerializerMethodField()
 
     obra = serializers.CharField(source='obra_contrato', required=False, allow_blank=True)
@@ -46,7 +48,7 @@ class RelatorioFotograficoSerializer(serializers.ModelSerializer):
         model = RelatorioFotografico
         fields = [
             'id', 'titulo', 'obra', 'obra_contrato', 'data', 'assunto',
-            'responsavel', 'responsavel_nome', 'filial', 'status',
+            'responsavel', 'responsavel_nome', 'filial', 'filial_nome', 'status',
             'total_folhas', 'total_fotos', 'fotos', 'created_at', 'updated_at',
             'observacoes', 'empresa', 'telefone', 'email',
         ]
@@ -60,6 +62,9 @@ class RelatorioFotograficoSerializer(serializers.ModelSerializer):
             return None
         return obj.responsavel.get_full_name() or obj.responsavel.username
 
+    def get_filial_nome(self, obj):
+        return obj.filial.nome if obj.filial else None
+
     def get_total_fotos(self, obj):
         return obj.fotos.count()
 
@@ -72,17 +77,17 @@ class RelatorioFotograficoSerializer(serializers.ModelSerializer):
             attrs['titulo'] = ' - '.join(partes) or 'Relatório Fotográfico'
         return attrs
 
-
 class RelatorioFotograficoListSerializer(serializers.ModelSerializer):
     """Versão leve para listagem (sem carregar todas as fotos)."""
     responsavel_nome = serializers.SerializerMethodField()
+    filial_nome = serializers.SerializerMethodField()
     total_fotos = serializers.SerializerMethodField()
 
     class Meta:
         model = RelatorioFotografico
         fields = [
             'id', 'titulo', 'obra_contrato', 'data', 'assunto', 'status',
-            'responsavel_nome', 'total_fotos', 'created_at',
+            'responsavel_nome', 'filial_nome', 'total_fotos', 'created_at',
             'empresa', 'telefone', 'email',
         ]
 
@@ -90,6 +95,9 @@ class RelatorioFotograficoListSerializer(serializers.ModelSerializer):
         if not obj.responsavel:
             return None
         return obj.responsavel.get_full_name() or obj.responsavel.username
+
+    def get_filial_nome(self, obj):
+        return obj.filial.nome if obj.filial else None
 
     def get_total_fotos(self, obj):
         return obj.fotos.count()
