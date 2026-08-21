@@ -1,7 +1,7 @@
 
 from rest_framework import serializers
 from .models import Tarefas, Comentario, HistoricoStatus
-from usuario.serializers import UserSimpleSerializer # Supondo que você tenha um serializer simples para o usuário
+from usuario.serializers import UserSimpleSerializer
 
 class TarefaSerializer(serializers.ModelSerializer):
     """
