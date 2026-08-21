@@ -148,45 +148,23 @@
     align-items: center;
 }
 
-/* ── Board Layout ── */
+/* ── Board Layout (centralizado com flexbox) ── */
 .kanban-board {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
     gap: 1rem;
-    grid-template-columns: 1fr;
     min-height: calc(100vh - 220px);
-}
-
-@media (min-width: 768px) {
-    .kanban-board {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.85rem;
-    }
-}
-
-@media (min-width: 992px) {
-    .kanban-board {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-@media (min-width: 1200px) {
-    .kanban-board {
-        grid-template-columns: repeat(5, 1fr);
-        gap: 0.75rem;
-    }
-}
-
-@media (min-width: 1600px) {
-    .kanban-board {
-        gap: 1rem;
-        max-width: 1800px;
-    }
+    margin: 0 auto;
+    max-width: 1800px;
 }
 
 /* ── Column ── */
 .kanban-column {
     display: flex;
     flex-direction: column;
+    width: 100%;
     background: var(--kanban-column-bg);
     border-radius: 12px;
     border: 1px solid var(--kanban-column-border);
@@ -195,8 +173,21 @@
     transition: box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
+@media (min-width: 768px) {
+    .kanban-column {
+        width: calc(50% - 0.5rem);
+    }
+}
+
+@media (min-width: 992px) {
+    .kanban-column {
+        width: calc(33.333% - 0.667rem);
+    }
+}
+
 @media (min-width: 1200px) {
     .kanban-column {
+        width: calc(20% - 0.8rem);
         max-height: calc(100vh - 200px);
     }
 }
@@ -204,6 +195,11 @@
 .kanban-column:hover {
     border-color: var(--kanban-column-border-hover);
     box-shadow: 0 2px 8px var(--kanban-column-shadow);
+}
+
+/* Oculta a coluna quando vazia (ex.: "Cancelada" sem tarefas) */
+.kanban-column-hidden {
+    display: none !important;
 }
 
 /* ── Column Header ── */
@@ -239,6 +235,7 @@
 .kanban-dot-em_andamento { background: #3b82f6; }
 .kanban-dot-concluida    { background: #22c55e; }
 .kanban-dot-pausada      { background: #8b5cf6; }
+.kanban-dot-cancelada    { background: #6b7280; }
 
 /* Header color accents (sobrescrevem a borda inferior do header) */
 .kanban-header-pendente     { border-bottom-color: #f59e0b !important; }
@@ -247,6 +244,7 @@
 .kanban-header-em_andamento { border-bottom-color: #3b82f6 !important; }
 .kanban-header-concluida    { border-bottom-color: #22c55e !important; }
 .kanban-header-pausada      { border-bottom-color: #8b5cf6 !important; }
+.kanban-header-cancelada    { border-bottom-color: #6b7280 !important; }
 
 /* ── Count Badge ── */
 .kanban-count {
@@ -526,9 +524,6 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
 
 /* ── Print ── */
 @media print {
-    .kanban-board {
-        grid-template-columns: repeat(5, 1fr) !important;
-    }
     .kanban-actions {
         display: none !important;
     }
@@ -606,8 +601,14 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
 
     <!-- Board -->
     <div class="kanban-board" id="kanbanBoard">
+        {% if colunas|length == 0 %}
+        <div class="kanban-empty">
+            <i class="bi bi-inbox text-muted d-block mb-2" style="font-size: 1.5rem;"></i>
+            <p class="text-muted">Nenhuma tarefa encontrada.</p>
+        </div>
+        {% endif %}
         {% for coluna in colunas %}
-        <div class="kanban-column" data-status="{{ coluna.key }}">
+        <div class="kanban-column {% if coluna.key == 'cancelada' and coluna.tarefas|length == 0 %}kanban-column-hidden{% endif %}" data-status="{{ coluna.key }}">
             <!-- Column Header -->
             <div class="kanban-column-header kanban-header-{{ coluna.key }}">
                 <div class="d-flex align-items-center gap-2">
@@ -667,6 +668,7 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
 </div>
 {% endblock %}
 
+
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script>
@@ -679,6 +681,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // CSRF Token
     const csrfToken = '{{ csrf_token }}';
+
+    // Oculta/exibe a coluna "Cancelada" conforme a quantidade de cards
+    function updateCanceladaVisibility() {
+        document.querySelectorAll('.kanban-column[data-status="cancelada"]').forEach(col => {
+            const hasCards = col.querySelectorAll('.kanban-card').length > 0;
+            col.classList.toggle('kanban-column-hidden', !hasCards);
+        });
+    }
 
     // Atualizar contadores e estados vazios
     function updateColumnCounts() {
@@ -701,6 +711,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.appendChild(emptyDiv);
             }
         });
+        updateCanceladaVisibility();
     }
 
     // Toast de feedback
@@ -735,6 +746,9 @@ document.addEventListener('DOMContentLoaded', () => {
         card.classList.add('kanban-save-error');
         setTimeout(() => card.classList.remove('kanban-save-error'), 2000);
     }
+
+    // Estado inicial: garante que "Cancelada" comece oculta se vazia
+    updateCanceladaVisibility();
 
     // ═══════════════════════════════════════════════════════
     // SORTABLE — Drag & Drop
@@ -847,4 +861,5 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 </style>
 {% endblock %}
+
 
