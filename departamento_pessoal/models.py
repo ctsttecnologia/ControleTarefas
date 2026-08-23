@@ -643,16 +643,20 @@ class Documento(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        Remove arquivo antigo ao substituir e sanitiza imagens anexadas.
+        Herda a filial do Funcionário automaticamente (fonte única de verdade)
+        e remove arquivo antigo ao substituir, sanitizando imagens anexadas.
         """
         from core.upload import delete_old_file, sanitize_image
+
+        # ✅ Herança automática de filial — protege admin, inline, forms e shell
+        if self.funcionario_id and not self.filial_id:
+            self.filial_id = self.funcionario.filial_id
 
         if self.pk:
             delete_old_file(self, "anexo")
 
         super().save(*args, **kwargs)
 
-        # Se o anexo for imagem, sanitiza (strip EXIF, recodifica)
         if self.anexo and self.anexo.name:
             ext = self.anexo.name.rsplit(".", 1)[-1].lower()
             if ext in ("jpg", "jpeg", "png", "webp"):
@@ -703,6 +707,9 @@ class Documento(models.Model):
         # OUTRO — descrição obrigatória
         if self.tipo_documento == "OUTRO" and not self.outro_descricao:
             errors["outro_descricao"] = _('Descrição é obrigatória para tipo "Outro".')
+
+        if not self.filial_id and not self.funcionario_id:
+            errors["filial"] = _("Filial é obrigatória (ou vincule um Funcionário para herdá-la).")
 
         if errors:
             raise ValidationError(errors)

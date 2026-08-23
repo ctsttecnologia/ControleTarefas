@@ -290,7 +290,7 @@
             <div class="row g-3">
                 <div class="col-md-12">
                     <label class="form-label" for="{{ form.usuario.id_for_label }}">
-                        {{ form.usuario.label }}
+                        {{ form.usuario.label }}<span class="required-mark">*</span>
                     </label>
                     {% render_field form.usuario class="form-select" %}
                     {% if form.usuario.help_text %}

@@ -1,0 +1,48 @@
+
+{% load relatorio_tags %}
+{% if status_data or prioridade_data %}
+<div class="rel-card-body" style="border-top: 1px solid var(--rel-divider);">
+    <div class="row g-4">
+
+        {% if status_data %}
+        <div class="col-md-6">
+            <h6 class="rel-analysis-title"><i class="bi bi-pie-chart me-1"></i>Análise por Status</h6>
+            {% for item in status_data %}
+            <div class="rel-analysis-row">
+                <div class="rel-analysis-head">
+                    <span class="rel-badge" style="--badge-bg: {% status_color item.key 'bg' %}; --badge-fg: {% status_color item.key 'fg' %};">
+                        {{ item.label }}
+                    </span>
+                    <span class="rel-analysis-value">{{ item.total }} ({{ item.percentual }}%)</span>
+                </div>
+                <div class="rel-progress-track">
+                    <div class="rel-progress-fill" style="width: {{ item.percentual }}%; --badge-solid: {% status_color item.key 'solid' %};"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if prioridade_data %}
+        <div class="col-md-6">
+            <h6 class="rel-analysis-title"><i class="bi bi-flag me-1"></i>Análise por Prioridade</h6>
+            {% for item in prioridade_data %}
+            <div class="rel-analysis-row">
+                <div class="rel-analysis-head">
+                    <span class="rel-badge" style="--badge-bg: {% priority_color item.key 'bg' %}; --badge-fg: {% priority_color item.key 'fg' %};">
+                        {{ item.label }}
+                    </span>
+                    <span class="rel-analysis-value">{{ item.total }} ({{ item.percentual }}%)</span>
+                </div>
+                <div class="rel-progress-track">
+                    <div class="rel-progress-fill" style="width: {{ item.percentual }}%; --badge-solid: {% priority_color item.key 'solid' %};"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endif %}
+

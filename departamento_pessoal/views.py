@@ -35,6 +35,7 @@ from django.views import View
 from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView,
 )
+from django.contrib.auth.mixins import PermissionRequiredMixin
 
 from core.decorators import app_permission_required
 from core.mixins import (
@@ -180,6 +181,7 @@ class DPBaseMixin(
     AppPermissionMixin,
     DPVisibilityMixin,
     ViewFilialScopedMixin,
+    PermissionRequiredMixin,
 ):
     """
     Mixin base para CBVs do Departamento Pessoal.

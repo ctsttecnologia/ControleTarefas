@@ -24,7 +24,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Case, When, IntegerField
 from django.db.models.functions import TruncWeek
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -51,11 +51,22 @@ from django.http import HttpResponse
 from .utils.excel_styles import (
     aplicar_cabecalho_relatorio, aplicar_estilo_tabela
 )
+from datetime import date
+from django.core.cache import cache
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
 _APP = 'tarefas'
 
+# Ordem de severidade para exibição (não é a ordem alfabética dos choices)
+ORDEM_PRIORIDADE = Case(
+    When(prioridade='alta', then=0),
+    When(prioridade='media', then=1),
+    When(prioridade='normal', then=2),
+    When(prioridade='baixa', then=3),
+    default=4,
+    output_field=IntegerField(),
+)
 
 # =============================================================================
 # HELPER — Filtro de visibilidade reutilizável
@@ -72,8 +83,6 @@ def aplicar_filtro_visibilidade(queryset, user):
     return queryset.filter(
         Q(responsavel=user) | Q(participantes=user) | Q(usuario=user)
     ).distinct()
-
-
 
 class TarefasBaseMixin(
     FuncionarioRequiredMixin,
@@ -109,9 +118,10 @@ class TarefaListView(TarefasBaseMixin, ListView):
         qs = self._get_base_queryset()
 
         # --- Filtros da URL ---
-        status     = self.request.GET.get('status', '')
-        projeto    = self.request.GET.get('projeto', '')
-        query      = self.request.GET.get('q', '')
+        status      = self.request.GET.get('status', '')
+        projeto     = self.request.GET.get('projeto', '')
+        prioridade  = self.request.GET.get('prioridade', '')
+        query       = self.request.GET.get('q', '')
         responsavel = self.request.GET.get('responsavel')
 
         if status:
@@ -120,21 +130,24 @@ class TarefaListView(TarefasBaseMixin, ListView):
         if projeto:
             qs = qs.filter(projeto=projeto)
 
+        if prioridade:
+            qs = qs.filter(prioridade=prioridade)
+
         if responsavel:
             qs = qs.filter(responsavel_id=responsavel)
 
         if query:
             qs = qs.filter(
-                Q(titulo__icontains=query)                         |
-                Q(descricao__icontains=query)                      |
-                Q(projeto__icontains=query)                        |
+                Q(titulo__icontains=query) |
+                Q(descricao__icontains=query) |
+                Q(projeto__icontains=query) |
                 # Responsável
-                Q(responsavel__first_name__icontains=query)        |
-                Q(responsavel__last_name__icontains=query)         |
-                Q(responsavel__username__icontains=query)          |
+                Q(responsavel__first_name__icontains=query) |
+                Q(responsavel__last_name__icontains=query) |
+                Q(responsavel__username__icontains=query) |
                 # Participantes (M2M)
-                Q(participantes__first_name__icontains=query)      |
-                Q(participantes__last_name__icontains=query)       |
+                Q(participantes__first_name__icontains=query) |
+                Q(participantes__last_name__icontains=query) |
                 Q(participantes__username__icontains=query)
             ).distinct()
 
@@ -142,26 +155,31 @@ class TarefaListView(TarefasBaseMixin, ListView):
             qs
             .select_related('usuario', 'responsavel', 'filial')
             .prefetch_related('participantes')
-            .order_by('-prazo', 'prioridade')
+            .annotate(ordem_prioridade=ORDEM_PRIORIDADE)
+            .order_by('-prazo', 'ordem_prioridade')
         )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
         base_qs = self._get_base_queryset()
+        agora = timezone.now()
 
-        # Estatísticas
+        # Estatísticas (cards de resumo)
         context['total_tarefas']      = base_qs.count()
         context['tarefas_concluidas'] = base_qs.filter(status='concluida').count()
         context['tarefas_pendentes']  = base_qs.exclude(
             status__in=['concluida', 'cancelada']
         ).count()
+        context['tarefas_atrasadas'] = base_qs.filter(
+            prazo__lt=agora
+        ).exclude(status__in=['concluida', 'cancelada']).count()
 
         # Opções dos filtros (choices fixos do model)
         context['status_options']     = Tarefas.STATUS_CHOICES
         context['prioridade_options'] = Tarefas.PRIORIDADE_CHOICES
 
-        # 🆕 Opções de projeto — gerado dinamicamente dos valores existentes
+        # Opções de projeto — gerado dinamicamente dos valores existentes
         projetos_distintos = (
             base_qs
             .exclude(projeto__isnull=True)
@@ -181,10 +199,39 @@ class TarefaListView(TarefasBaseMixin, ListView):
         context['responsavel_atual'] = self.request.GET.get('responsavel', '')
         context['status_atual']      = self.request.GET.get('status', '')
         context['projeto_atual']     = self.request.GET.get('projeto', '')
+        context['prioridade_atual']  = self.request.GET.get('prioridade', '')
         context['query_atual']       = self.request.GET.get('q', '')
 
         return context
 
+@require_POST
+def concluir_tarefa_rapido(request, pk):
+    """
+    Ação de 1 clique: marca a tarefa como concluída.
+    Permitido para: superuser, criador ou responsável.
+    """
+    tarefa = get_object_or_404(Tarefas, pk=pk)
+    user = request.user
+
+    pode_concluir = (
+        user.is_superuser
+        or tarefa.usuario_id == user.id
+        or tarefa.responsavel_id == user.id
+    )
+
+    if not pode_concluir:
+        messages.error(request, 'Você não tem permissão para concluir esta tarefa.')
+        return redirect(request.META.get('HTTP_REFERER', 'tarefas:listar_tarefas'))
+
+    if tarefa.status != 'concluida':
+        tarefa.status = 'concluida'
+        tarefa.concluida_em = timezone.now()
+        tarefa.save(update_fields=['status', 'concluida_em'])
+        messages.success(request, f'Tarefa "{tarefa.titulo}" marcada como concluída.')
+    else:
+        messages.info(request, 'Esta tarefa já estava concluída.')
+
+    return redirect(request.META.get('HTTP_REFERER', 'tarefas:listar_tarefas'))
 
 class TarefaDetailView(TarefasBaseMixin, DetailView):
    
@@ -345,9 +392,7 @@ class ConcluirTarefaView(TarefasBaseMixin, View):
 # =============================================================================
 # KANBAN
 # =============================================================================
-
 class KanbanView(TarefasBaseMixin, TemplateView):
-
     """View do Kanban Board."""
     template_name = 'tarefas/kanban_board.html'
 
@@ -386,9 +431,8 @@ class KanbanView(TarefasBaseMixin, TemplateView):
         ctx['status_choices'] = Tarefas.STATUS_CHOICES
         ctx['responsaveis'] = responsaveis
         ctx['responsavel_atual'] = responsavel_id or ''
-        ctx['now'] = timezone.now()
+        ctx['hoje'] = timezone.localdate()  # ✅ date, compatível com data_vencimento
         return ctx
-
 
 @login_required
 @require_POST
@@ -480,11 +524,9 @@ def update_task_status(request):
         'new_status_display': status_validos[new_status],
     })
 
-
 # =============================================================================
 # CALENDÁRIO
 # =============================================================================
-
 class CalendarioTarefasView(TarefasBaseMixin, ListView):
    
     model = Tarefas
@@ -792,31 +834,91 @@ def gerar_xlsx_relatorio(context):
 # =============================================================================
 
 class DashboardAnaliticoView(TarefasBaseMixin, TemplateView):
-    
+
     template_name = 'tarefas/dashboard.html'
+
+    PERIODO_CHOICES = {
+        'hoje': 0,
+        '7d': 7,
+        '30d': 30,
+    }
+
+    def _get_periodo_dias(self):
+        """Lê o período da URL (?periodo=7d) e retorna dias + labels."""
+        periodo = self.request.GET.get('periodo', '30d')
+        if periodo == 'custom':
+            return periodo, None  # tratado separadamente
+        return periodo, self.PERIODO_CHOICES.get(periodo, 30)
+
+    def _get_periodo_datas(self):
+        """Retorna (data_inicio, data_fim, periodo_label) considerando GET."""
+        periodo, dias = self._get_periodo_dias()
+        hoje = timezone.localdate()
+
+        if periodo == 'custom':
+            data_inicio_str = self.request.GET.get('data_inicio')
+            data_fim_str = self.request.GET.get('data_fim')
+            try:
+                data_inicio = date.fromisoformat(data_inicio_str) if data_inicio_str else hoje - timedelta(days=30)
+                data_fim = date.fromisoformat(data_fim_str) if data_fim_str else hoje
+            except ValueError:
+                data_inicio, data_fim = hoje - timedelta(days=30), hoje
+            return data_inicio, data_fim, 'custom'
+
+        if periodo == 'hoje':
+            return hoje, hoje, 'hoje'
+
+        return hoje - timedelta(days=dias), hoje, periodo
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         filial_id = self.request.session.get('active_filial_id')
         agora = timezone.now()
+        hoje = timezone.localdate()
 
-        # ★ Queryset base com filial + visibilidade
+        data_inicio, data_fim, periodo_label = self._get_periodo_datas()
+
+        # ═══════════════════════════════════════════════════════════
+        # QUERYSET BASE — filial + visibilidade
+        # ═══════════════════════════════════════════════════════════
         base_qs = Tarefas.objects.all()
         if filial_id:
             base_qs = base_qs.filter(filial_id=filial_id)
         base_qs = aplicar_filtro_visibilidade(base_qs, user)
 
-        # KPIs
+        # Queryset filtrado pelo período (criadas dentro do range escolhido)
+        periodo_qs = base_qs.filter(
+            data_criacao__date__gte=data_inicio,
+            data_criacao__date__lte=data_fim,
+        )
+
+        # ═══════════════════════════════════════════════════════════
+        # KPIs PRINCIPAIS (sempre sobre o total, não sobre o período)
+        # ═══════════════════════════════════════════════════════════
         total = base_qs.count()
         concluidas = base_qs.filter(status='concluida').count()
         pendentes = base_qs.filter(status='pendente').count()
         em_andamento = base_qs.filter(status='andamento').count()
+        pausadas = base_qs.filter(status='pausada').count()
         atrasadas = base_qs.filter(prazo__lt=agora).exclude(
             status__in=['concluida', 'cancelada']
         ).count()
-        pausadas = base_qs.filter(status='pausada').count()
         taxa_conclusao = round((concluidas / total * 100), 1) if total > 0 else 0
+
+        # KPIs sobre o PERÍODO selecionado (para dar contexto temporal)
+        criadas_periodo = periodo_qs.count()
+        concluidas_periodo = periodo_qs.filter(status='concluida').count()
+        taxa_periodo = round((concluidas_periodo / criadas_periodo * 100), 1) if criadas_periodo > 0 else 0
+
+        # Vence hoje / vence semana
+        fim_semana = hoje + timedelta(days=7)
+        vence_hoje = base_qs.filter(prazo__date=hoje).exclude(
+            status__in=['concluida', 'cancelada']
+        ).count()
+        vence_semana = base_qs.filter(
+            prazo__date__gt=hoje, prazo__date__lte=fim_semana
+        ).exclude(status__in=['concluida', 'cancelada']).count()
 
         context.update({
             'total_tarefas': total,
@@ -826,106 +928,162 @@ class DashboardAnaliticoView(TarefasBaseMixin, TemplateView):
             'tarefas_atrasadas': atrasadas,
             'tarefas_pausadas': pausadas,
             'taxa_conclusao': taxa_conclusao,
+            'vence_hoje': vence_hoje,
+            'vence_semana': vence_semana,
+            'criadas_periodo': criadas_periodo,
+            'concluidas_periodo': concluidas_periodo,
+            'taxa_periodo': taxa_periodo,
+            'periodo_atual': periodo_label,
+            'data_inicio': data_inicio,
+            'data_fim': data_fim,
         })
 
-        # Dados por status e prioridade (para gráficos)
-        status_counts = (
-            base_qs.values('status')
-            .annotate(total=Count('id'))
-            .order_by('status')
-        )
-        prioridade_counts = (
-            base_qs.values('prioridade')
-            .annotate(total=Count('id'))
-            .order_by('prioridade')
-        )
+        # ═══════════════════════════════════════════════════════════
+        # CACHE — dados de gráficos (pesados) por filial+usuário+período
+        # ═══════════════════════════════════════════════════════════
+        visibilidade_key = 'all' if (user.is_superuser or user.has_perm('tarefas.view_all_tarefas')) else f'user{user.pk}'
+        cache_key = f'dash_charts_{filial_id}_{visibilidade_key}_{data_inicio}_{data_fim}'
+        charts_data = cache.get(cache_key)
 
-        status_labels = dict(Tarefas.STATUS_CHOICES)
-        prioridade_labels = dict(Tarefas.PRIORIDADE_CHOICES)
+        if charts_data is None:
+            status_labels = dict(Tarefas.STATUS_CHOICES)
+            prioridade_labels = dict(Tarefas.PRIORIDADE_CHOICES)
 
-        context['status_data'] = [
-            {'status': status_labels.get(s['status'], s['status']), 'total': s['total']}
-            for s in status_counts
-        ]
-        context['prioridade_data'] = [
-            {'prioridade': prioridade_labels.get(p['prioridade'], p['prioridade']), 'total': p['total']}
-            for p in prioridade_counts
-        ]
+            status_counts = (
+                base_qs.values('status')
+                .annotate(total=Count('id'))
+                .order_by('status')
+            )
+            prioridade_counts = (
+                base_qs.values('prioridade')
+                .annotate(total=Count('id'))
+                .order_by('prioridade')
+            )
 
-        # Tarefas recentes
-        context['tarefas_recentes'] = base_qs.select_related(
-            'responsavel'
-        ).order_by('-data_criacao')[:5]
+            status_data = [
+                {
+                    'status': status_labels.get(s['status'], s['status']),
+                    'status_key': s['status'],
+                    'total': s['total'],
+                }
+                for s in status_counts
+            ]
+            prioridade_data = [
+                {
+                    'prioridade': prioridade_labels.get(p['prioridade'], p['prioridade']),
+                    'prioridade_key': p['prioridade'],
+                    'total': p['total'],
+                }
+                for p in prioridade_counts
+            ]
 
-        # Performance dos usuários
-        usuarios = User.objects.filter(is_active=True)
-        if filial_id:
-            usuarios = usuarios.filter(filiais_permitidas__id=filial_id)
+            # Tendência semanal (últimas 6 semanas)
+            six_weeks_ago = agora - timedelta(weeks=6)
+            criadas_qs = (
+                base_qs.filter(data_criacao__gte=six_weeks_ago)
+                .annotate(semana=TruncWeek('data_criacao'))
+                .values('semana')
+                .annotate(total=Count('id'))
+                .order_by('semana')
+            )
+            concluidas_qs = (
+                base_qs.filter(concluida_em__gte=six_weeks_ago, status='concluida')
+                .annotate(semana=TruncWeek('concluida_em'))
+                .values('semana')
+                .annotate(total=Count('id'))
+                .order_by('semana')
+            )
 
-        thirty_days_ago = agora - timedelta(days=30)
-        usuarios_performance = []
-        for usuario in usuarios:
-            ativas = base_qs.filter(
-                responsavel=usuario,
-                status__in=['pendente', 'andamento', 'atrasada']
-            ).count()
-            concluidas_user = base_qs.filter(
-                responsavel=usuario,
-                status='concluida',
-                concluida_em__gte=thirty_days_ago
-            ).count()
-            if ativas > 0 or concluidas_user > 0:
-                usuarios_performance.append({
-                    'username': usuario.get_full_name() or usuario.username,
-                    'tarefas_ativas': ativas,
-                    'tarefas_concluidas_30d': concluidas_user,
-                })
-        context['usuarios_performance'] = usuarios_performance
+            dados_criadas = {item['semana'].date(): item['total'] for item in criadas_qs}
+            dados_concluidas = {item['semana'].date(): item['total'] for item in concluidas_qs}
 
-        # Gráfico de tendência (últimas 6 semanas)
-        six_weeks_ago = agora - timedelta(weeks=6)
+            semana_inicio = hoje - timedelta(weeks=5)
+            current_week = semana_inicio - timedelta(days=semana_inicio.weekday())
 
-        criadas_qs = (
-            base_qs.filter(data_criacao__gte=six_weeks_ago)
-            .annotate(semana=TruncWeek('data_criacao'))
-            .values('semana')
-            .annotate(total=Count('id'))
-            .order_by('semana')
-        )
-        concluidas_qs = (
-            base_qs.filter(concluida_em__gte=six_weeks_ago, status='concluida')
-            .annotate(semana=TruncWeek('concluida_em'))
-            .values('semana')
-            .annotate(total=Count('id'))
-            .order_by('semana')
-        )
+            tendencia_labels, criadas_list, concluidas_list = [], [], []
+            while current_week <= hoje:
+                tendencia_labels.append(current_week)
+                criadas_list.append(dados_criadas.get(current_week, 0))
+                concluidas_list.append(dados_concluidas.get(current_week, 0))
+                current_week += timedelta(weeks=1)
 
-        dados_criadas = {item['semana'].date(): item['total'] for item in criadas_qs}
-        dados_concluidas = {item['semana'].date(): item['total'] for item in concluidas_qs}
+            charts_data = {
+                'tendencia_labels': tendencia_labels,
+                'tendencia_criadas': criadas_list,
+                'tendencia_concluidas': concluidas_list,
+                'status_data': status_data,
+                'prioridade_data': prioridade_data,
+                'taxa_conclusao': taxa_conclusao,
+            }
+            cache.set(cache_key, charts_data, 60 * 8)  # 8 minutos
 
-        hoje = agora.date()
-        semana_inicio = hoje - timedelta(weeks=5)
-        current_week = semana_inicio - timedelta(days=semana_inicio.weekday())
-
-        labels, criadas_list, concluidas_list = [], [], []
-        while current_week <= hoje:
-            labels.append(current_week)
-            criadas_list.append(dados_criadas.get(current_week, 0))
-            concluidas_list.append(dados_concluidas.get(current_week, 0))
-            current_week += timedelta(weeks=1)
-
-        charts_data = {
-            'tendencia_labels': labels,
-            'tendencia_criadas': criadas_list,
-            'tendencia_concluidas': concluidas_list,
-            'performance_equipe': usuarios_performance,
-            'status_data': context['status_data'],
-            'prioridade_data': context['prioridade_data'],
-        }
+        context['status_data'] = charts_data['status_data']
+        context['prioridade_data'] = charts_data['prioridade_data']
         context['charts_data_json'] = json.dumps(charts_data, cls=DjangoJSONEncoder)
 
-        return context
+        # ═══════════════════════════════════════════════════════════
+        # TAREFAS RECENTES
+        # ═══════════════════════════════════════════════════════════
+        context['tarefas_recentes'] = base_qs.select_related(
+            'responsavel', 'responsavel__funcionario'
+        ).order_by('-data_criacao')[:5]
 
+        # ═══════════════════════════════════════════════════════════
+        # PERFORMANCE DA EQUIPE — otimizado (sem N+1)
+        # ═══════════════════════════════════════════════════════════
+        thirty_days_ago = agora - timedelta(days=30)
+
+        usuarios_qs = User.objects.filter(is_active=True)
+        if filial_id:
+            usuarios_qs = usuarios_qs.filter(filiais_permitidas__id=filial_id)
+        usuarios_qs = usuarios_qs.select_related('funcionario').distinct()
+
+        ativas_por_user = dict(
+            base_qs.filter(status__in=['pendente', 'andamento', 'atrasada'])
+            .values('responsavel_id')
+            .annotate(total=Count('id'))
+            .values_list('responsavel_id', 'total')
+        )
+        concluidas_por_user = dict(
+            base_qs.filter(status='concluida', concluida_em__gte=thirty_days_ago)
+            .values('responsavel_id')
+            .annotate(total=Count('id'))
+            .values_list('responsavel_id', 'total')
+        )
+
+        usuarios_performance = []
+        for usuario in usuarios_qs:
+            ativas = ativas_por_user.get(usuario.pk, 0)
+            concluidas_user = concluidas_por_user.get(usuario.pk, 0)
+
+            if ativas == 0 and concluidas_user == 0:
+                continue
+
+            funcionario = getattr(usuario, 'funcionario', None)
+            foto_url = (
+                funcionario.foto_3x4.url
+                if funcionario and funcionario.foto_3x4
+                else None
+            )
+            nome = usuario.get_full_name() or usuario.username
+            produtividade = round((concluidas_user / ativas * 100), 1) if ativas > 0 else None
+
+            usuarios_performance.append({
+                'id': usuario.pk,
+                'username': nome,
+                'foto_url': foto_url,
+                'tarefas_ativas': ativas,
+                'tarefas_concluidas_30d': concluidas_user,
+                'produtividade': produtividade,
+            })
+
+        usuarios_performance.sort(key=lambda u: u['tarefas_concluidas_30d'], reverse=True)
+
+        context['usuarios_performance'] = usuarios_performance
+        context['ranking_top5'] = usuarios_performance[:5]
+        context['hoje'] = hoje
+
+        return context
 
 # =============================================================================
 # ADMIN (SUPERUSER)

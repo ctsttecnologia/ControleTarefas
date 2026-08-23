@@ -1,300 +1,12 @@
 
 <!-- templates/tarefas/relatorio_tarefas.html -->
-{% extends 'base.html' %}
-{% load static %}
+{% extends "base.html" %}
+{% load static relatorio_tags %}
 
 {% block title %}Relatório de Tarefas{% endblock %}
 
 {% block extra_css %}
-<style>
-/* =============================================================================
-   RELATÓRIO DE TAREFAS — Tema Claro / Escuro
-   ============================================================================= */
-
-:root,
-[data-bs-theme="light"] {
-    --rel-bg: #f4f6fb;
-    --rel-card-bg: #ffffff;
-    --rel-card-border: #e2e6ee;
-    --rel-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    --rel-text: #1a1a2e;
-    --rel-text-muted: #6b7280;
-    --rel-divider: #edf0f5;
-    --rel-hover-bg: #f8f9fc;
-    --rel-table-header-bg: #f8f9fc;
-    --rel-offcanvas-bg: #ffffff;
-    --rel-offcanvas-border: #e2e6ee;
-}
-
-[data-bs-theme="dark"] {
-    --rel-bg: #13131f;
-    --rel-card-bg: #1e1e2e;
-    --rel-card-border: #2e2e44;
-    --rel-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    --rel-text: #e2e4f0;
-    --rel-text-muted: #8b8ea8;
-    --rel-divider: #2e2e44;
-    --rel-hover-bg: #252536;
-    --rel-table-header-bg: #252536;
-    --rel-offcanvas-bg: #1e1e2e;
-    --rel-offcanvas-border: #2e2e44;
-}
-
-.rel-wrapper { padding: 1rem; min-height: calc(100vh - 60px); }
-@media (min-width: 768px) { .rel-wrapper { padding: 1.5rem 2rem; } }
-
-.rel-header {
-    display: flex; flex-wrap: wrap; justify-content: space-between;
-    align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;
-}
-
-.rel-title { font-size: 1.4rem; font-weight: 700; color: var(--rel-text); margin-bottom: 0.15rem; }
-.rel-subtitle { font-size: 0.85rem; color: var(--rel-text-muted); margin: 0; }
-.rel-actions { display: flex; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; }
-
-/* Cards */
-.rel-card {
-    background: var(--rel-card-bg); border: 1px solid var(--rel-card-border);
-    border-radius: 12px; box-shadow: var(--rel-card-shadow); overflow: hidden; margin-bottom: 1rem;
-}
-.rel-card-header {
-    padding: 0.75rem 1.15rem; border-bottom: 1px solid var(--rel-divider);
-    display: flex; justify-content: space-between; align-items: center;
-}
-.rel-card-title { font-size: 0.85rem; font-weight: 700; color: var(--rel-text); margin: 0; }
-.rel-card-body { padding: 1.15rem; }
-
-/* Table */
-.rel-table { width: 100%; border-collapse: collapse; }
-.rel-table thead th {
-    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-    color: var(--rel-text-muted); padding: 0.7rem 0.85rem;
-    border-bottom: 2px solid var(--rel-divider); background: var(--rel-table-header-bg); white-space: nowrap;
-}
-.rel-table tbody td {
-    font-size: 0.82rem; color: var(--rel-text); padding: 0.65rem 0.85rem;
-    border-bottom: 1px solid var(--rel-divider); vertical-align: middle;
-}
-.rel-table tbody tr:hover { background: var(--rel-hover-bg); }
-.rel-table tbody tr:last-child td { border-bottom: none; }
-.rel-table-title { font-weight: 600; color: var(--rel-text); }
-
-/* Badges */
-.rel-badge {
-    font-size: 0.65rem; font-weight: 700; padding: 0.2em 0.6em; border-radius: 6px;
-    text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap;
-}
-.rel-badge-pendente  { background: rgba(245,158,11,0.12); color: #d97706; }
-.rel-badge-atrasada  { background: rgba(239,68,68,0.12);  color: #dc2626; }
-.rel-badge-andamento { background: rgba(59,130,246,0.12);  color: #2563eb; }
-.rel-badge-concluida { background: rgba(34,197,94,0.12);   color: #16a34a; }
-.rel-badge-pausada   { background: rgba(139,92,246,0.12);  color: #7c3aed; }
-.rel-badge-cancelada { background: rgba(100,116,139,0.12); color: #475569; }
-
-.rel-count {
-    background: #6366f1; color: #fff; font-size: 0.68rem; font-weight: 700;
-    padding: 0.2em 0.6em; border-radius: 999px; min-width: 1.5rem; text-align: center;
-}
-
-/* Charts Grid */
-.rel-charts-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
-@media (min-width: 768px) { .rel-charts-grid { grid-template-columns: repeat(2, 1fr); } }
-.rel-chart-container { position: relative; height: 280px; width: 100%; }
-
-/* Offcanvas */
-.rel-offcanvas { background: var(--rel-offcanvas-bg) !important; border-left: 1px solid var(--rel-offcanvas-border) !important; }
-.rel-offcanvas .offcanvas-header { border-bottom: 1px solid var(--rel-divider); }
-.rel-offcanvas .offcanvas-title { font-size: 1rem; font-weight: 700; color: var(--rel-text); }
-.rel-offcanvas .form-label {
-    font-size: 0.75rem; font-weight: 600; color: var(--rel-text-muted);
-    text-transform: uppercase; letter-spacing: 0.04em;
-}
-.rel-offcanvas .form-select,
-.rel-offcanvas .form-control {
-    background: var(--rel-card-bg); border-color: var(--rel-card-border);
-    color: var(--rel-text); font-size: 0.85rem; border-radius: 8px;
-}
-.rel-offcanvas .form-select:focus,
-.rel-offcanvas .form-control:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
-.rel-offcanvas hr { border-color: var(--rel-divider); }
-.rel-section-label { font-size: 0.78rem; font-weight: 700; color: var(--rel-text); margin-bottom: 0.85rem; }
-
-/* Export Buttons */
-.rel-export-btn {
-    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-    padding: 0.55rem 1rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
-    border: none; transition: all 0.15s ease; width: 100%; cursor: pointer; text-decoration: none;
-}
-.rel-export-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-.rel-export-pdf  { background: #ef4444; color: #fff; }
-.rel-export-docx { background: #3b82f6; color: #fff; }
-.rel-export-csv  { background: #22c55e; color: #fff; }
-.rel-export-pdf:hover  { background: #dc2626; color: #fff; }
-.rel-export-docx:hover { background: #2563eb; color: #fff; }
-.rel-export-csv:hover  { background: #16a34a; color: #fff; }
-
-/* Quick Export Bar */
-.rel-quick-export {
-    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
-    padding: 0.85rem 1.15rem; border-top: 1px solid var(--rel-divider);
-    background: var(--rel-card-bg);
-}
-.rel-quick-export-label {
-    font-size: 0.72rem; font-weight: 700; color: var(--rel-text-muted);
-    text-transform: uppercase; letter-spacing: 0.04em; margin-right: 0.5rem;
-}
-.rel-quick-btn {
-    display: inline-flex; align-items: center; gap: 0.35rem;
-    padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
-    border: 1px solid var(--rel-card-border); background: var(--rel-card-bg);
-    color: var(--rel-text); text-decoration: none; transition: all 0.15s ease; cursor: pointer;
-}
-.rel-quick-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-.rel-quick-btn--pdf:hover  { color: #ef4444; border-color: #ef4444; }
-.rel-quick-btn--docx:hover { color: #3b82f6; border-color: #3b82f6; }
-.rel-quick-btn--csv:hover  { color: #22c55e; border-color: #22c55e; }
-
-/* Active Filter Tags */
-.rel-filter-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
-.rel-filter-tag {
-    display: inline-flex; align-items: center; gap: 0.3rem;
-    font-size: 0.72rem; font-weight: 600; background: rgba(99,102,241,0.1);
-    color: #6366f1; padding: 0.25em 0.65em; border-radius: 6px;
-}
-.rel-filter-tag a { color: #6366f1; text-decoration: none; font-weight: 800; margin-left: 0.2rem; }
-.rel-filter-tag a:hover { color: #ef4444; }
-
-/* Empty */
-.rel-empty { text-align: center; padding: 3rem 1rem; color: var(--rel-text-muted); font-size: 0.85rem; }
-
-/* Mobile */
-@media (max-width: 767.98px) {
-    .rel-wrapper { padding: 0.75rem; }
-    .rel-title { font-size: 1.15rem; }
-    .rel-chart-container { height: 220px; }
-    .rel-table thead { display: none; }
-    .rel-table, .rel-table tbody, .rel-table tr, .rel-table td { display: block; width: 100%; }
-    .rel-table tbody tr { padding: 0.75rem; border-bottom: 1px solid var(--rel-divider); }
-    .rel-table tbody td { padding: 0.2rem 0; border: none; }
-    .rel-table tbody td::before {
-        content: attr(data-label); font-size: 0.63rem; font-weight: 700;
-        text-transform: uppercase; color: var(--rel-text-muted); display: block; margin-bottom: 0.1rem;
-    }
-}
-
-@media print {
-    /* Ocultar elementos interativos */
-    .rel-actions,
-    .rel-offcanvas,
-    .rel-quick-export,
-    .rel-filter-tags,
-    .offcanvas-backdrop {
-        display: none !important;
-    }
-
-    /* Cards sem sombra */
-    .rel-card {
-        box-shadow: none;
-        border: 1px solid #ccc;
-        break-inside: avoid;
-        page-break-inside: avoid;
-    }
-
-    /* Grid dos gráficos */
-    .rel-charts-grid {
-        display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 1rem !important;
-        break-inside: avoid;
-        page-break-inside: avoid;
-        margin-top: 1rem;
-    }
-
-    /* Container do gráfico */
-    .rel-chart-container {
-        height: auto !important;
-        min-height: 200px;
-        position: relative;
-    }
-
-    .rel-chart-container canvas {
-        display: none !important;
-    }
-
-    .rel-chart-container .print-chart-img {
-        display: block !important;
-        width: 100% !important;
-        height: auto !important;
-        max-height: 280px;
-        object-fit: contain;
-    }
-
-    .rel-card-body { padding: 0.5rem !important; }
-
-    body, .rel-wrapper {
-        background: #fff !important;
-        color: #000 !important;
-    }
-
-    .rel-card-header, .rel-card-title { color: #000 !important; }
-
-    /* Sem scroll na impressão — mostra tudo */
-    .rel-table-scroll {
-        max-height: none !important;
-        overflow: visible !important;
-    }
-    .rel-table-sticky thead th {
-        position: static !important;
-    }
-}
-
-/* ============================================================ */
-/* ⬇️ FORA do @media print — este CSS roda na TELA NORMAL ⬇️    */
-/* ============================================================ */
-
-/* ===== Scroll vertical da tabela ===== */
-.rel-table-scroll {
-    max-height: 60vh;
-    overflow-y: auto;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--rel-text-muted) transparent;
-}
-
-.rel-table-scroll::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
-.rel-table-scroll::-webkit-scrollbar-track {
-    background: transparent;
-}
-.rel-table-scroll::-webkit-scrollbar-thumb {
-    background: var(--rel-card-border);
-    border-radius: 5px;
-}
-.rel-table-scroll::-webkit-scrollbar-thumb:hover {
-    background: var(--rel-text-muted);
-}
-
-/* Cabeçalho fixo enquanto rola */
-.rel-table-sticky thead th {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    background: var(--rel-table-header-bg);
-    box-shadow: 0 1px 0 var(--rel-divider);
-}
-
-/* Mobile: sem altura limite */
-@media (max-width: 767.98px) {
-    .rel-table-scroll {
-        max-height: none;
-        overflow: visible;
-    }
-}
-
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/tarefas/relatorios.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -324,30 +36,7 @@
         </div>
     </div>
 
-    <!-- Active Filters -->
-    {% if current_filters.status or current_filters.responsavel %}
-    <div class="rel-filter-tags">
-        {% if current_filters.status %}
-        <span class="rel-filter-tag">
-            <i class="bi bi-funnel-fill"></i>
-            Status: {{ current_filters.status }}
-            <a href="{% url 'tarefas:relatorio_tarefas' %}{% if current_filters.responsavel %}?responsavel={{ current_filters.responsavel }}{% endif %}" title="Remover filtro">&times;</a>
-        </span>
-        {% endif %}
-        {% if current_filters.responsavel %}
-        <span class="rel-filter-tag">
-            <i class="bi bi-person-fill"></i>
-            Responsável:
-            {% for user in responsaveis %}
-                {% if user.pk|stringformat:"d" == current_filters.responsavel %}
-                    {{ user.get_full_name|default:user.username }}
-                {% endif %}
-            {% endfor %}
-            <a href="{% url 'tarefas:relatorio_tarefas' %}{% if current_filters.status %}?status={{ current_filters.status }}{% endif %}" title="Remover filtro">&times;</a>
-        </span>
-        {% endif %}
-    </div>
-    {% endif %}
+    {% include 'tarefas/partials/_filter_tags.html' %}
 
     <!-- Tabela -->
     <div class="rel-card">
@@ -372,18 +61,20 @@
                 <tbody>
                     {% for tarefa in tarefas %}
                     <tr>
-                        <td data-label="Título">
-                            <span class="rel-table-title">{{ tarefa.titulo }}</span>
-                        </td>
+                        <td data-label="Título"><span class="rel-table-title">{{ tarefa.titulo }}</span></td>
                         <td data-label="Responsável">
                             {% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}
                         </td>
                         <td data-label="Status">
-                            <span class="rel-badge rel-badge-{{ tarefa.status }}">
+                            <span class="rel-badge" style="--badge-bg: {% status_color tarefa.status 'bg' %}; --badge-fg: {% status_color tarefa.status 'fg' %};">
                                 {{ tarefa.get_status_display }}
                             </span>
                         </td>
-                        <td data-label="Prioridade">{{ tarefa.get_prioridade_display }}</td>
+                        <td data-label="Prioridade">
+                            <span class="rel-badge" style="--badge-bg: {% priority_color tarefa.prioridade 'bg' %}; --badge-fg: {% priority_color tarefa.prioridade 'fg' %};">
+                                {{ tarefa.get_prioridade_display }}
+                            </span>
+                        </td>
                         <td data-label="Projeto">{{ tarefa.projeto|default:"—" }}</td>
                         <td data-label="Criação">{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
                         <td data-label="Prazo">{{ tarefa.prazo|date:"d/m/Y"|default:"—" }}</td>
@@ -402,24 +93,7 @@
             </table>
         </div>
 
-        <!-- Quick Export Bar -->
-        {% if tarefas %}
-        <div class="rel-quick-export">
-            <span class="rel-quick-export-label"><i class="bi bi-download me-1"></i>Exportar:</span>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf&{{ request.GET.urlencode }}" class="btn btn-danger">
-                <i class="bi bi-file-pdf"></i> PDF
-            </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=xlsx&{{ request.GET.urlencode }}" class="btn btn-success">
-                <i class="bi bi-file-excel"></i> Excel
-            </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx&{{ request.GET.urlencode }}" class="btn btn-primary">
-                <i class="bi bi-file-word"></i> Word
-            </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv&{{ request.GET.urlencode }}" class="btn btn-secondary">
-                <i class="bi bi-filetype-csv"></i> CSV
-            </a>
-        </div>
-        {% endif %}
+        {% include 'tarefas/partials/_quick_export.html' %}
     </div>
 
     <!-- Gráficos -->
@@ -450,18 +124,14 @@
 <!-- Offcanvas: Filtros e Exportação -->
 <div class="offcanvas offcanvas-end rel-offcanvas" tabindex="-1" id="offcanvasFilters">
     <div class="offcanvas-header">
-        <h5 class="offcanvas-title">
-            <i class="bi bi-sliders me-2"></i>Filtros e Exportação
-        </h5>
+        <h5 class="offcanvas-title"><i class="bi bi-sliders me-2"></i>Filtros e Exportação</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
 
-        <!-- Filtros -->
         <form method="get">
             <div class="rel-section-label"><i class="bi bi-funnel me-1"></i> Filtrar</div>
 
-            <!-- Status -->
             <div class="mb-3">
                 <label for="status" class="form-label">Status</label>
                 <select name="status" id="status" class="form-select form-select-sm">
@@ -472,7 +142,6 @@
                 </select>
             </div>
 
-            <!-- ═══ RESPONSÁVEL (NOVO) ═══ -->
             <div class="mb-3">
                 <label for="responsavel" class="form-label">Responsável</label>
                 <select name="responsavel" id="responsavel" class="form-select form-select-sm">
@@ -484,7 +153,6 @@
                     {% endfor %}
                 </select>
             </div>
-            <!-- ═══ FIM ═══ -->
 
             <div class="d-grid gap-2 mb-4">
                 <button type="submit" class="btn btn-sm btn-primary">
@@ -498,37 +166,21 @@
 
         <hr>
 
-        <!-- Exportação -->
         <div class="rel-section-label"><i class="bi bi-download me-1"></i> Exportar</div>
-        <div class="d-grid gap-2">
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf&{{ request.GET.urlencode }}"
-            class="btn btn-danger">
-                <i class="bi bi-file-pdf"></i> PDF
+        <div class="rel-export-grid">
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf&{{ request.GET.urlencode }}" class="rel-export-btn rel-export-btn--pdf">
+                <i class="bi bi-file-earmark-pdf"></i> PDF
             </a>
-
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=xlsx&{{ request.GET.urlencode }}"
-            class="btn btn-success">
-                <i class="bi bi-file-excel"></i> Excel
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=xlsx&{{ request.GET.urlencode }}" class="rel-export-btn rel-export-btn--xlsx">
+                <i class="bi bi-file-earmark-excel"></i> Excel
             </a>
-
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx&{{ request.GET.urlencode }}"
-            class="btn btn-primary">
-                <i class="bi bi-file-word"></i> Word
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx&{{ request.GET.urlencode }}" class="rel-export-btn rel-export-btn--docx">
+                <i class="bi bi-file-earmark-word"></i> Word
             </a>
-
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv&{{ request.GET.urlencode }}"
-            class="btn btn-secondary">
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv&{{ request.GET.urlencode }}" class="rel-export-btn rel-export-btn--csv">
                 <i class="bi bi-filetype-csv"></i> CSV
             </a>
         </div>
-
-        <hr>
-
-        <!-- Link para Gerador 
-        <a href="{% url 'tarefas:gerar_relatorio' %}" class="btn btn-sm btn-outline-secondary w-100">
-            <i class="bi bi-file-earmark-plus me-1"></i> Gerador Avançado
-        </a>
-        -->
     </div>
 </div>
 {% endblock %}
@@ -556,7 +208,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     const prioColors = { 'alta': '#ef4444', 'media': '#f59e0b', 'baixa': '#22c55e' };
 
-    // ═══ Status Chart (Doughnut) ═══
     const statusCtx = document.getElementById('statusChart');
     if (statusCtx && statusData.length) {
         new Chart(statusCtx, {
@@ -575,10 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 maintainAspectRatio: false,
                 cutout: '60%',
                 plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { usePointStyle: true, padding: 14, font: { size: 11 } }
-                    },
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14, font: { size: 11 } } },
                     tooltip: {
                         callbacks: {
                             label: function(ctx) {
@@ -592,7 +240,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ═══ Priority Chart (Bar) ═══
     const prioCtx = document.getElementById('priorityChart');
     if (prioCtx && priorityData.length) {
         new Chart(prioCtx, {
@@ -630,7 +277,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ═══ PRINT: Canvas → Imagem ═══
     window.addEventListener('beforeprint', function() {
         document.querySelectorAll('.rel-chart-container canvas').forEach(function(canvas) {
             if (canvas.parentNode.querySelector('.print-chart-img')) return;
@@ -640,12 +286,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 img.className = 'print-chart-img';
                 img.style.cssText = 'width:100%; height:auto; display:none;';
                 canvas.parentNode.appendChild(img);
-            } catch(e) {
-                console.error('Erro ao converter gráfico para imagem:', e);
-            }
+            } catch(e) { console.error('Erro ao converter gráfico para imagem:', e); }
         });
     });
 });
 </script>
 {% endblock %}
+
 

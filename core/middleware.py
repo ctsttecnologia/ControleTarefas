@@ -3,7 +3,8 @@ import threading
 
 from django.conf import settings
 from django.db import close_old_connections
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.urls import reverse, resolve, Resolver404
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -105,4 +106,74 @@ class DBConnectionMiddleware:
     def __call__(self, request):
         close_old_connections()
         return self.get_response(request)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# MIDDLEWARE — Exige vínculo Funcionário
+# ════════════════════════════════════════════════════════════════════════════
+
+class ExigeFuncionarioMiddleware:
+    """
+    Garante que todo usuário autenticado tenha um Funcionario vinculado
+    antes de acessar o sistema.
+
+    Superusuários e usuários com permissão de RH global
+    ('departamento_pessoal.view_all_departamento_pessoal') são isentos,
+    pois precisam acessar o sistema justamente para fazer esse vínculo.
+
+    Deve ser registrado APÓS AuthenticationMiddleware no settings.py.
+    """
+
+    ROTAS_LIVRES = {
+        'usuario:login',
+        'usuario:logout',
+        'usuario:pendente_vinculo',
+        'usuario:password_reset',
+        'usuario:password_reset_done',
+        'usuario:password_reset_confirm',
+        'usuario:password_reset_complete',
+        'departamento_pessoal:lista_funcionarios',
+        'departamento_pessoal:funcionario_create',
+        'departamento_pessoal:detalhe_funcionario',
+        'departamento_pessoal:editar_funcionario',
+    }
+
+    PREFIXOS_LIVRES = (
+        '/admin/',
+        '/static/',
+        '/media/',
+    )
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        user = getattr(request, 'user', None)
+
+        if (
+            user
+            and user.is_authenticated
+            and not user.is_superuser
+            and not user.has_perm('departamento_pessoal.view_all_departamento_pessoal')
+            and not hasattr(user, 'funcionario')
+        ):
+            if not self._rota_liberada(request):
+                return redirect('usuario:pendente_vinculo')
+
+        return self.get_response(request)
+
+    def _rota_liberada(self, request):
+        path = request.path
+
+        if any(path.startswith(prefixo) for prefixo in self.PREFIXOS_LIVRES):
+            return True
+
+        try:
+            match = resolve(path)
+            view_name = f"{match.namespace}:{match.url_name}" if match.namespace else match.url_name
+        except Resolver404:
+            return True
+
+        return view_name in self.ROTAS_LIVRES
+
 
