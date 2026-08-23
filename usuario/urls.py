@@ -5,7 +5,7 @@ from django.urls import path
 from usuario.views import (
     # Autenticação e Perfil
     CustomLoginView, CustomLogoutView, ProfileView,
-    CustomPasswordChangeView, SelecionarFilialView,
+    CustomPasswordChangeView, SelecionarFilialView, PendenteVinculoView,
 
     # Usuários
     UserListView, UserCreateView, UserUpdateView,
@@ -32,6 +32,7 @@ urlpatterns = [
     # ===========================================================
     path('login/',  CustomLoginView.as_view(),  name='login'),
     path('logout/', CustomLogoutView.as_view(), name='logout'),
+    path('pendente-vinculo/', PendenteVinculoView.as_view(), name='pendente_vinculo'),
 
     # ===========================================================
     # 👤 PERFIL DO USUÁRIO LOGADO

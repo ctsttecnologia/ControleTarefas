@@ -1,0 +1,19 @@
+
+{% if tarefas %}
+<div class="rel-quick-export">
+    <span class="rel-quick-export-label"><i class="bi bi-download me-1"></i>Exportar:</span>
+    <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf&{{ request.GET.urlencode }}" class="rel-quick-btn rel-quick-btn--pdf">
+        <i class="bi bi-file-earmark-pdf"></i> PDF
+    </a>
+    <a href="{% url 'tarefas:exportar_relatorio' %}?formato=xlsx&{{ request.GET.urlencode }}" class="rel-quick-btn rel-quick-btn--xlsx">
+        <i class="bi bi-file-earmark-excel"></i> Excel
+    </a>
+    <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx&{{ request.GET.urlencode }}" class="rel-quick-btn rel-quick-btn--docx">
+        <i class="bi bi-file-earmark-word"></i> Word
+    </a>
+    <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv&{{ request.GET.urlencode }}" class="rel-quick-btn rel-quick-btn--csv">
+        <i class="bi bi-filetype-csv"></i> CSV
+    </a>
+</div>
+{% endif %}
+

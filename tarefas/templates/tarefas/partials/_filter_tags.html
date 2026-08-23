@@ -1,0 +1,30 @@
+
+{% load relatorio_tags %}
+{% if current_filters.status or current_filters.prioridade or current_filters.responsavel %}
+<div class="rel-filter-tags">
+    {% if current_filters.status %}
+    <span class="rel-filter-tag">
+        <i class="bi bi-funnel-fill"></i> Status: {{ current_filters.status }}
+        <a href="?{% if current_filters.prioridade %}prioridade={{ current_filters.prioridade }}&{% endif %}{% if current_filters.responsavel %}responsavel={{ current_filters.responsavel }}{% endif %}" title="Remover">&times;</a>
+    </span>
+    {% endif %}
+
+    {% if current_filters.prioridade %}
+    <span class="rel-filter-tag">
+        <i class="bi bi-flag-fill"></i> Prioridade: {{ current_filters.prioridade }}
+        <a href="?{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.responsavel %}responsavel={{ current_filters.responsavel }}{% endif %}" title="Remover">&times;</a>
+    </span>
+    {% endif %}
+
+    {% if current_filters.responsavel %}
+    <span class="rel-filter-tag">
+        <i class="bi bi-person-fill"></i> Responsável:
+        {% for user in responsaveis %}
+            {% if user.pk|stringformat:"d" == current_filters.responsavel %}{{ user.get_full_name|default:user.username }}{% endif %}
+        {% endfor %}
+        <a href="?{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.prioridade %}prioridade={{ current_filters.prioridade }}{% endif %}" title="Remover">&times;</a>
+    </span>
+    {% endif %}
+</div>
+{% endif %}
+

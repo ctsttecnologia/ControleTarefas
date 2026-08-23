@@ -753,54 +753,43 @@ class FuncionarioRequiredMixin(LoginRequiredMixin):
     """
     Garante que o usuário autenticado possua um Funcionario vinculado.
 
-    - Superusers passam direto (não precisam de Funcionario)
-    - Usuários comuns sem Funcionario → tela amigável (core:sem_funcionario)
-    - Salva o funcionario em request.funcionario para uso posterior
+    Exceções (não precisam de Funcionario):
+        - Superusers
+        - Usuários com permissão 'departamento_pessoal.view_all_departamento_pessoal' (RH),
+          pois precisam acessar o módulo justamente para fazer vínculos de outros usuários.
 
-    Uso:
-        class MinhaView(FuncionarioRequiredMixin, ListView):
-            modulo_nome = 'Automóvel'  # opcional, exibido na tela amigável
-            ...
+    - Usuários comuns sem Funcionario → tela amigável (usuario:pendente_vinculo)
+    - Salva o funcionario em request.funcionario para uso posterior
     """
 
-    modulo_nome = ''  # Nome do módulo exibido na tela amigável (override por view)
+    modulo_nome = ''
 
     def dispatch(self, request, *args, **kwargs):
-        # 1. Não autenticado → LoginRequiredMixin cuida
         if not request.user.is_authenticated:
             return super().dispatch(request, *args, **kwargs)
 
-        # 2. Superuser → bypass
-        if request.user.is_superuser:
-            request.funcionario = getattr(request.user, 'funcionario', None)
+        user = request.user
+
+        # Superuser ou RH global → bypass
+        if user.is_superuser or user.has_perm('departamento_pessoal.view_all_departamento_pessoal'):
+            request.funcionario = getattr(user, 'funcionario', None)
             return super().dispatch(request, *args, **kwargs)
 
-        # 3. Usuário comum → exige Funcionario vinculado
         try:
-            request.funcionario = request.user.funcionario
+            request.funcionario = user.funcionario
         except ObjectDoesNotExist:
             return self._redirect_sem_funcionario(request)
 
         return super().dispatch(request, *args, **kwargs)
 
     def _redirect_sem_funcionario(self, request):
-        """Redireciona para a tela amigável de 'sem funcionário vinculado'."""
         messages.warning(
             request,
             "Seu usuário ainda não possui funcionário vinculado. "
             "Entre em contato com o Departamento Pessoal."
         )
-        try:
-            url = reverse('core:sem_funcionario')
-            modulo = getattr(self, 'modulo_nome', '')
-            if modulo:
-                url += f'?modulo={modulo}'
-            return redirect(url)
-        except NoReverseMatch:
-            try:
-                return redirect('core:home')
-            except NoReverseMatch:
-                return redirect('/')
+        return redirect('usuario:pendente_vinculo')
+
 
 
 # =============================================================================

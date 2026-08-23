@@ -44,6 +44,9 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api/update-status/', views.UpdateTaskStatusView.as_view(), name='api_update_task_status'),
 
+    # --- Concluir Tarefa Rápido ---
+    path('tarefas/<int:pk>/concluir-rapido/', views.concluir_tarefa_rapido, name='concluir_tarefa_rapido'),
+
     
 ]
 

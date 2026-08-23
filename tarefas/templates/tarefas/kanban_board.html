@@ -403,15 +403,24 @@
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    font-size: 0.6rem;
-    font-weight: 700;
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    background: #6366f1;
-    flex-shrink: 0;
 }
+
+.kanban-avatar-img {
+    object-fit: cover;
+}
+
+.kanban-avatar-fallback {
+    background: #6366f1;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
 
 /* ── Empty State ── */
 .kanban-empty {
@@ -623,38 +632,7 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
             <!-- Cards Container -->
             <div class="kanban-cards" id="col-{{ coluna.key }}">
                 {% for tarefa in coluna.tarefas %}
-                <div class="kanban-card" data-task-id="{{ tarefa.pk }}" data-bs-toggle="tooltip" title="Clique para detalhes">
-                    <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="text-decoration-none">
-                        <div class="kanban-card-title">{{ tarefa.titulo }}</div>
-                    </a>
-
-                    {% if tarefa.descricao %}
-                    <div class="kanban-card-desc">{{ tarefa.descricao|truncatechars:80 }}</div>
-                    {% endif %}
-
-                    <div class="kanban-card-footer">
-                        {% if tarefa.data_vencimento %}
-                        <span class="kanban-card-date {% if tarefa.data_vencimento < now %}overdue{% endif %}">
-                            <i class="bi bi-calendar-event"></i>
-                            {{ tarefa.data_vencimento|date:"d/m/y" }}
-                        </span>
-                        {% endif %}
-
-                        <div class="d-flex align-items-center gap-1">
-                            {% if tarefa.prioridade %}
-                            <span class="kanban-badge kanban-badge-{{ tarefa.prioridade|lower }}">
-                                {{ tarefa.get_prioridade_display }}
-                            </span>
-                            {% endif %}
-
-                            {% if tarefa.responsavel %}
-                            <span class="kanban-avatar" title="{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}">
-                                {{ tarefa.responsavel.first_name|make_list|first|default:"?" }}{{ tarefa.responsavel.last_name|make_list|first|default:"" }}
-                            </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+                    {% include 'tarefas/_task_card.html' %}
                 {% empty %}
                 <div class="kanban-empty">
                     <i class="bi bi-inbox text-muted d-block mb-2" style="font-size: 1.5rem;"></i>

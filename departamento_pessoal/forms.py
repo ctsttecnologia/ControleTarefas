@@ -88,7 +88,7 @@ class FuncionarioForm(forms.ModelForm):
         request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
 
-        # ✅ Usa o usuário do request (Django), não do Streamlit
+        # ✅ Usa o usuário do request (Django)
         user = request.user if request and hasattr(request, 'user') else None
 
         # Se usuário tem permissão global, mostra todos

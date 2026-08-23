@@ -212,6 +212,7 @@ MIDDLEWARE.extend([
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.ExigeFuncionarioMiddleware',
     'core.middleware.CurrentFilialMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -245,6 +246,7 @@ TEMPLATES = [
                 'notifications.context_processors.notification_processor',
                 'gestao_riscos.context_processors.dias_sem_acidentes',
                 'suprimentos.context_processors.suprimentos_contadores',
+                'tarefas.context_processors.status_colors',
             ],
         },
     },
@@ -604,3 +606,9 @@ for _name in _QUIET_LOGGERS:
     logging.getLogger(_name).propagate = False
 
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
