@@ -206,7 +206,23 @@
                     <div class="col-12 col-md-3">
                         <label class="filter-label" for="filtroQuery">Buscar</label>
                         <input type="text" name="q" id="filtroQuery" class="form-control form-control-sm"
-                               placeholder="Título, descrição, projeto..." value="{{ query_atual|default:'' }}">
+                            placeholder="Título, descrição, projeto..." value="{{ query_atual|default:'' }}">
+                    </div>
+
+                    <!-- PERÍODO DE DATA -->
+                    <div class="col-12 col-md-3">
+                        <label class="filter-label" for="filtroDataInicio">
+                            <i class="bi bi-calendar3 me-1"></i>Período
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <input type="date" name="data_inicio" id="filtroDataInicio"
+                                class="form-control form-control-sm"
+                                value="{{ data_inicio_atual|default:'' }}">
+                            <span class="input-group-text">até</span>
+                            <input type="date" name="data_fim" id="filtroDataFim"
+                                class="form-control form-control-sm"
+                                value="{{ data_fim_atual|default:'' }}">
+                        </div>
                     </div>
 
                     <!-- STATUS -->
@@ -263,8 +279,8 @@
                             <i class="bi bi-funnel me-1"></i> Filtrar
                         </button>
                         <a href="{% url 'tarefas:listar_tarefas' %}"
-                           class="btn btn-sm btn-outline-secondary"
-                           title="Limpar filtros">
+                        class="btn btn-sm btn-outline-secondary"
+                        title="Limpar filtros">
                             <i class="bi bi-x-lg"></i>
                         </a>
                     </div>

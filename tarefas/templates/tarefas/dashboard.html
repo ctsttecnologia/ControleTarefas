@@ -379,6 +379,14 @@
     font-size: 0.8rem; font-weight: 800; padding: 0.2em 0.6em;
     border-radius: 6px; flex-shrink: 0;
 }
+.ranking-tasks {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+    cursor: help;
+}
+
 
 /* ── Skeleton de Gráficos ── */
 .chart-skeleton {
@@ -537,6 +545,7 @@
                 {% for u in ranking_top5 %}
                 <div class="ranking-item">
                     <span class="ranking-pos ranking-pos--{{ forloop.counter }}">{{ forloop.counter }}</span>
+
                     {% if u.foto_url %}
                     <img src="{{ u.foto_url }}" alt="{{ u.username }}" class="dash-avatar dash-avatar-img dash-avatar-lg">
                     {% else %}
@@ -544,10 +553,21 @@
                         {{ u.username|slice:":1"|upper }}
                     </span>
                     {% endif %}
+
                     <div class="ranking-info">
                         <div class="ranking-name">{{ u.username }}</div>
                         <div class="ranking-meta">{{ u.tarefas_ativas }} ativa{{ u.tarefas_ativas|pluralize }}</div>
+                        {% if u.tarefas_concluidas_titulos %}
+                        <div class="ranking-meta ranking-tasks" title="{{ u.tarefas_concluidas_titulos|join:', ' }}">
+                            <i class="bi bi-check2-circle me-1"></i>
+                            {{ u.tarefas_concluidas_titulos|join:", " }}
+                            {% if u.tarefas_concluidas_extra %}
+                                <span class="text-muted">+{{ u.tarefas_concluidas_extra }}</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
                     </div>
+
                     <span class="ranking-badge">{{ u.tarefas_concluidas_30d }}</span>
                 </div>
                 {% endfor %}
@@ -558,7 +578,7 @@
         </div>
     </div>
 
-        <!-- Gráficos -->
+    <!-- Gráficos -->
     <div class="charts-grid">
         <!-- Tendência Semanal -->
         <div class="dash-card">
@@ -687,17 +707,12 @@
                             <td class="text-center fw-semibold">{{ u.tarefas_ativas }}</td>
                             <td class="text-center fw-semibold text-success">{{ u.tarefas_concluidas_30d }}</td>
                             <td class="text-center">
-                                {% widthratio u.tarefas_concluidas_30d u.tarefas_ativas 100 as prod %}
-                                {% if u.tarefas_ativas > 0 %}
                                 <div class="d-flex align-items-center justify-content-center gap-2">
                                     <div class="progress" style="width:80px;height:6px;">
-                                        <div class="progress-bar bg-primary" style="width:{% widthratio u.tarefas_concluidas_30d u.tarefas_ativas 100 %}%"></div>
+                                        <div class="progress-bar bg-primary" style="width:{{ u.produtividade }}%"></div>
                                     </div>
-                                    <small class="text-muted">{% widthratio u.tarefas_concluidas_30d u.tarefas_ativas 100 %}%</small>
+                                    <small class="text-muted">{{ u.produtividade }}%</small>
                                 </div>
-                                {% else %}
-                                <small class="text-muted">—</small>
-                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

@@ -123,6 +123,8 @@ class TarefaListView(TarefasBaseMixin, ListView):
         prioridade  = self.request.GET.get('prioridade', '')
         query       = self.request.GET.get('q', '')
         responsavel = self.request.GET.get('responsavel')
+        data_inicio = self.request.GET.get('data_inicio')
+        data_fim = self.request.GET.get('data_fim')
 
         if status:
             qs = qs.filter(status=status)
@@ -135,6 +137,12 @@ class TarefaListView(TarefasBaseMixin, ListView):
 
         if responsavel:
             qs = qs.filter(responsavel_id=responsavel)
+
+        if data_inicio:
+            qs = qs.filter(prazo__gte=data_inicio)
+
+        if data_fim:
+            qs = qs.filter(prazo__lte=data_fim)
 
         if query:
             qs = qs.filter(
@@ -201,6 +209,8 @@ class TarefaListView(TarefasBaseMixin, ListView):
         context['projeto_atual']     = self.request.GET.get('projeto', '')
         context['prioridade_atual']  = self.request.GET.get('prioridade', '')
         context['query_atual']       = self.request.GET.get('q', '')
+        context['data_inicio_atual'] = self.request.GET.get('data_inicio', '')
+        context['data_fim_atual']    = self.request.GET.get('data_fim', '')
 
         return context
 
@@ -1066,7 +1076,10 @@ class DashboardAnaliticoView(TarefasBaseMixin, TemplateView):
                 else None
             )
             nome = usuario.get_full_name() or usuario.username
-            produtividade = round((concluidas_user / ativas * 100), 1) if ativas > 0 else None
+
+            # Produtividade = % de tarefas concluídas em relação ao total trabalhado (ativas + concluídas)
+            total_trabalhado = ativas + concluidas_user
+            produtividade = round((concluidas_user / total_trabalhado * 100), 1) if total_trabalhado > 0 else 0
 
             usuarios_performance.append({
                 'id': usuario.pk,
@@ -1079,8 +1092,31 @@ class DashboardAnaliticoView(TarefasBaseMixin, TemplateView):
 
         usuarios_performance.sort(key=lambda u: u['tarefas_concluidas_30d'], reverse=True)
 
+        ranking_top5 = usuarios_performance[:5]
+        
+        # Busca os títulos das tarefas concluídas (30d) apenas dos usuários do Top 5
+        top5_ids = [u['id'] for u in ranking_top5]
+        tarefas_concluidas_por_user = {}
+        if top5_ids:
+            tarefas_concluidas_qs = (
+                base_qs.filter(
+                    responsavel_id__in=top5_ids,
+                    status='concluida',
+                    concluida_em__gte=thirty_days_ago,
+                )
+                .values('responsavel_id', 'titulo')
+                .order_by('-concluida_em')
+            )
+            for item in tarefas_concluidas_qs:
+                tarefas_concluidas_por_user.setdefault(item['responsavel_id'], []).append(item['titulo'])
+
+        for u in ranking_top5:
+            titulos = tarefas_concluidas_por_user.get(u['id'], [])
+            u['tarefas_concluidas_titulos'] = titulos[:3]  # mostra até 3 no tooltip/descrição
+            u['tarefas_concluidas_extra'] = max(len(titulos) - 3, 0)
+
         context['usuarios_performance'] = usuarios_performance
-        context['ranking_top5'] = usuarios_performance[:5]
+        context['ranking_top5'] = ranking_top5
         context['hoje'] = hoje
 
         return context
