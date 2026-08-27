@@ -23,6 +23,13 @@
     --card-link-hover-color: #1cfbff;
 }
 
+/* --- Blend mode adaptado ao tema (GIF com fundo branco) --- */
+[data-bs-theme="dark"] .card-icon-wrapper img,
+[data-bs-theme="dark"] .card-icon {
+    mix-blend-mode: screen; /* remove fundo branco do GIF sobre fundo escuro */
+}
+
+
 /* --- Estrutura Principal do Card --- */
 .profile-card {
     background-color: var(--card-bg-color);
@@ -31,9 +38,9 @@
     box-shadow: 0 4px 20px var(--card-shadow-color);
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
-    
+
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    
+
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -91,27 +98,46 @@
 
 /* --- Ícone (Canto Inferior Direito) --- */
 .card-icon-wrapper {
-    margin-left: auto;   /* Empurra para a direita */
+    margin-left: auto;    /* Empurra para a direita */
     align-self: flex-end; /* Empurra para baixo */
-    padding-left: 1rem; /* Espaço para não colar nos links */
+    padding-left: 1rem;   /* Espaço para não colar nos links */
 }
 
+.card-icon-wrapper img,
 .card-icon {
     width: 60px; /* Tamanho do ícone */
     height: auto;
-    opacity: 0.7;
+    opacity: 0.20;             /* Transparência base do GIF/ícone */
+    mix-blend-mode: multiply;  /* Remove fundo branco do GIF em fundo claro */
+    /* Se o card estiver em fundo escuro, troque para: mix-blend-mode: screen; */
     transition: opacity 0.3s ease;
 }
 
+.profile-card:hover .card-icon-wrapper img,
 .profile-card:hover .card-icon {
-    opacity: 1;
+    opacity: 0.7; /* Realce sutil no hover, sem ficar 100% opaco */
+}
+
+/* --- Partículas de fundo --- */
+#particles-js {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 0;
+}
+
+.container {
+    position: relative;
+    z-index: 1;
 }
 
 /* --- Responsividade para Telas Pequenas --- */
 @media (max-width: 576px) {
     .card-body-section {
         flex-direction: column; /* Empilha os itens */
-        align-items: center; /* Centraliza tudo */
+        align-items: center;    /* Centraliza tudo */
         text-align: center;
     }
 
@@ -122,8 +148,9 @@
 
     .card-icon-wrapper {
         margin: 1.5rem 0 0 0; /* Reseta margens e adiciona espaço no topo */
-        align-self: center; /* Garante a centralização */
+        align-self: center;   /* Garante a centralização */
         padding-left: 0;
     }
 }
+
 
