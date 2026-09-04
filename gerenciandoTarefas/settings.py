@@ -8,6 +8,7 @@ import sys
 import ssl
 import logging
 from pathlib import Path
+
 import cloudinary
 from dotenv import load_dotenv
 from decouple import config
@@ -46,8 +47,26 @@ TESTING = 'test' in sys.argv or 'pytest' in sys.modules
 # SEGURANÇA
 # =============================================================================
 SECRET_KEY = config('SECRET_KEY')
-FERNET_KEYS = config('FERNET_KEYS')
+# ============================================================
+# CRIPTOGRAFIA DE CAMPOS SENSÍVEIS
+# ============================================================
+# Este projeto utiliza DUAS bibliotecas de criptografia distintas,
+# cada uma responsável por campos específicos. NÃO remover nenhuma
+# das duas sem antes verificar todos os usos no código.
+
+# Usada pela lib "django-cryptography" (django_cryptography.fields.encrypt)
+# Responsável por: campo `numero` em departamento_pessoal.Documento
+CRYPTOGRAPHY_KEY = config('CRYPTOGRAPHY_KEY', default=SECRET_KEY)
+
+# Usada pela lib "django-encrypted-model-fields" (EncryptedCharField)
+# Responsável por: campo `imei` em controle_de_telefone.models
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
+
+# [REMOVIDO em 04/09/2026] FERNET_KEYS não é mais utilizada.
+# Era usada pelo módulo core/encryption.py (código morto, arquivado
+# em _deprecated_backup/). Não recriar sem necessidade real.
+
+
 
 DEBUG = config('DEBUG', default=IS_DEVELOPMENT, cast=bool)
 
@@ -144,7 +163,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.humanize',
     'rest_framework_simplejwt.token_blacklist',
-
+    'simple_history',
 
     # Extensões
     'django_extensions',
@@ -202,6 +221,7 @@ MIDDLEWARE = [
     'core.middleware.DBConnectionMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 if IS_PRE_PRODUCTION:

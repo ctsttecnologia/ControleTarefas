@@ -45,6 +45,14 @@ class ClienteChoiceField(forms.ModelChoiceField):
         return obj.nome_com_filial
 
 class FuncionarioForm(forms.ModelForm):
+    def __init__(self, *args, request=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.request = request
+        if request and not (
+            request.user.is_superuser
+            or request.user.has_perm('departamento_pessoal.view_salario')
+        ):
+            self.fields.pop('salario', None)
 
     funcao = forms.ModelChoiceField(
         queryset=Funcao.objects.filter(ativo=True),

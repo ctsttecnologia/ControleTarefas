@@ -2,6 +2,7 @@
 {% extends "departamento_pessoal/_base_dp.html" %}
 {% load secure_url %}
 {% load static %}
+{% load mascarar_documento %}
 
 {% block title %}{{ funcionario.nome_completo }} - Detalhes{% endblock %}
 
@@ -164,10 +165,11 @@
                             
                             <dt class="col-sm-5">Salário</dt>
                             <dd class="col-sm-7">
-                                {% if perms.departamento_pessoal.view_salario or user.is_superuser %}
-                                <span class="{% if funcionario.salario > 0 %}text-success{% else %}text-danger{% endif %}">
-                                    R$ {{ funcionario.salario|floatformat:2|default:"0,00" }}
-                                </span>
+                                {% load dp_extras %}
+                                {% if request.user|pode_ver_salario %}
+                                <td>{{ funcionario.salario }}</td>
+                                {% else %}
+                                <td>••••••</td>
                                 {% endif %}
                             </dd>
                         </dl>
@@ -205,7 +207,11 @@
                                 <i class="bi bi-file-earmark me-1" style="color: var(--dp-primary-light);"></i>
                                 {{ doc.get_tipo_documento_display }}
                             </td>
-                            <td><code>{{ doc.numero|default:"-" }}</code></td>
+                            <td>
+                                <code>
+                                    {{ doc.numero|mascarar_documento:doc.tipo_documento|default:"-" }}
+                                </code>
+                            </td>
                             <td class="text-center">
                                 {% if doc.anexo %}
                                     {% secure_url doc "anexo" as anexo_url %}

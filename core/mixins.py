@@ -71,35 +71,41 @@ class AdminFilialScopedMixin:
 
 
 class ViewFilialScopedMixin:
-    
+    """
+    Mixin que filtra o queryset da view pela filial ativa do usuário.
+    Usa core.utils.get_filial_ativa() como fonte única de verdade,
+    garantindo consistência com todas as outras views/mixins do sistema.
+    """
+
     filial_field = 'filial'
 
     def get_filial_ativa(self):
         """
-        Retorna a instância de Filial ativa na sessão, ou None.
-        Disponibiliza o método para qualquer view que herde deste mixin.
+        Retorna a instância de Filial ativa, ou None.
+        Delega para core.utils.get_filial_ativa() (fonte única de verdade),
+        evitando divergência entre views que usam chaves de sessão diferentes.
         """
         request = getattr(self, 'request', None)
         if request is None:
             return None
 
-        filial_id = request.session.get('active_filial_id')
-        if not filial_id:
-            return None
-
         # Import lazy para evitar import circular
-        try:
-            from usuario.models import Filial
-        except ImportError:
-            return None
+        from core.utils import get_filial_ativa
 
-        return Filial.objects.filter(pk=filial_id).first()
+        return get_filial_ativa(request.user, request)
 
     def get_queryset(self):
         qs = super().get_queryset()
-        filial = get_filial_ativa(self.request.user, self.request)
+
+        # Superuser e administrador veem tudo, sem filtro de filial
+        from core.utils import usuario_ve_todas_filiais
+        if usuario_ve_todas_filiais(self.request.user):
+            return qs
+
+        filial = self.get_filial_ativa()
         if filial is None:
             return qs.none()
+
         return qs.filter(**{self.filial_field: filial})
 
 class TecnicoScopeMixin:

@@ -1,5 +1,6 @@
 {% extends "departamento_pessoal/_base_dp.html" %}
 {% load static %}
+{% load dp_extras %}
 
 {% block title %}Dashboard - Departamento Pessoal{% endblock %}
 
@@ -11,9 +12,12 @@
         <p>Visão geral dos colaboradores e estatísticas</p>
     </div>
     <div class="d-flex gap-2 mt-3 mt-md-0">
+        {% if perms.departamento_pessoal.view_funcionario or user.is_superuser %}
         <a href="{% url 'departamento_pessoal:exportar_pdf' %}" class="btn btn-header">
             <i class="bi bi-file-earmark-pdf me-1"></i> Relatório PDF
         </a>
+        {% endif %}
+
         {% if perms.departamento_pessoal.add_funcionario or user.is_superuser %}
         <a href="{% url 'departamento_pessoal:funcionario_create' %}" class="btn btn-header-primary">
             <i class="bi bi-plus-circle me-1"></i> Novo Funcionário
@@ -57,22 +61,20 @@
             </div>
         </div>
     </div>
+
+    {% if request.user|pode_ver_salario %}
     <div class="col-sm-6 col-xl-3">
         <div class="kpi-card kpi-info">
             <div class="kpi-icon bg-info-soft">
                 <i class="bi bi-currency-dollar"></i>
             </div>
             <div>
-
-            {% if request.user.is_staff %}
-            <div>
                 <div class="kpi-value">R$ {{ salario_medio|floatformat:0|default:"0" }}</div>
                 <div class="kpi-label">Salário Médio</div>
             </div>
-            {% endif %}
-
         </div>
     </div>
+    {% endif %}
 </div>
 
 <!-- Gráficos e Tabela -->
@@ -101,75 +103,79 @@
         </div>
     </div>
 
-        <!-- Últimos Funcionários -->
-        <div class="col-12">
-            <div class="content-card">
-                <div class="content-card-header">
-                    <h5><i class="bi bi-clock-history me-2"></i>Últimas Admissões</h5>
-                    <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-sm btn-outline-primary" style="border-radius: 50px;">
-                        Ver Todos
-                    </a>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-modern">
-                        <thead>
-                            <tr>
-                                <th>Funcionário</th>
-                                <th>Cargo</th>
-                                <th>Departamento</th>
-                                <th>Admissão</th>
-                                <th>Status</th>
-                                <th class="text-end">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for func in ultimos_funcionarios %}
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <img src="https://ui-avatars.com/api/?name={{ func.nome_completo|urlencode }}&background=3b82f6&color=fff&size=36&bold=true" 
-                                            class="rounded-circle" width="36" height="36">
-                                        <div>
-                                            <div class="fw-semibold">{{ func.nome_completo }}</div>
-                                            <small class="text-muted">{{ func.matricula }}</small>
-                                        </div>
+    <!-- Últimos Funcionários -->
+    <div class="col-12">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5><i class="bi bi-clock-history me-2"></i>Últimas Admissões</h5>
+                {% if perms.departamento_pessoal.view_funcionario or user.is_superuser %}
+                <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-sm btn-outline-primary" style="border-radius: 50px;">
+                    Ver Todos
+                </a>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table table-modern">
+                    <thead>
+                        <tr>
+                            <th>Funcionário</th>
+                            <th>Cargo</th>
+                            <th>Departamento</th>
+                            <th>Admissão</th>
+                            <th>Status</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for func in ultimos_funcionarios %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="https://ui-avatars.com/api/?name={{ func.nome_completo|urlencode }}&background=3b82f6&color=fff&size=36&bold=true"
+                                        class="rounded-circle" width="36" height="36">
+                                    <div>
+                                        <div class="fw-semibold">{{ func.nome_completo }}</div>
+                                        <small class="text-muted">{{ func.matricula }}</small>
                                     </div>
-                                </td>
-                                <td>{{ func.cargo.nome|default:"-" }}</td>
-                                <td>{{ func.departamento.nome|default:"-" }}</td>
-                                <td>{{ func.data_admissao|date:"d/m/Y" }}</td>
-                                <td>
-                                    {% if func.status == 'ATIVO' %}
-                                        <span class="badge-status bg-success-soft text-success">Ativo</span>
-                                    {% elif func.status == 'INATIVO' %}
-                                        <span class="badge-status bg-danger-soft text-danger">Inativo</span>
-                                    {% else %}
-                                        <span class="badge-status bg-warning-soft text-warning">{{ func.get_status_display }}</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end">
-                                    <a href="{% url 'departamento_pessoal:detalhe_funcionario' func.pk %}" 
-                                    class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="6">
-                                    <div class="empty-state py-4">
-                                        <i class="bi bi-inbox display-4 text-muted"></i>
-                                        <p class="text-muted mt-2 mb-0">Nenhuma admissão recente</p>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                </div>
+                            </td>
+                            <td>{{ func.cargo.nome|default:"-" }}</td>
+                            <td>{{ func.departamento.nome|default:"-" }}</td>
+                            <td>{{ func.data_admissao|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if func.status == 'ATIVO' %}
+                                    <span class="badge-status bg-success-soft text-success">Ativo</span>
+                                {% elif func.status == 'INATIVO' %}
+                                    <span class="badge-status bg-danger-soft text-danger">Inativo</span>
+                                {% else %}
+                                    <span class="badge-status bg-warning-soft text-warning">{{ func.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if perms.departamento_pessoal.detalhe_funcionario or user.is_superuser %}
+                                <a href="{% url 'departamento_pessoal:detalhe_funcionario' func.pk %}"
+                                class="btn btn-sm btn-outline-secondary" title="Ver Detalhes do Funcionário">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state py-4">
+                                    <i class="bi bi-inbox display-4 text-muted"></i>
+                                    <p class="text-muted mt-2 mb-0">Nenhuma admissão recente</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -182,10 +188,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gráfico de Departamentos
     const deptLabels = JSON.parse(document.getElementById('department-labels').textContent);
     const deptData = JSON.parse(document.getElementById('department-data').textContent);
-    
+
     if (deptData.length > 0) {
         new Chart(document.getElementById('departmentChart'), {
             type: 'doughnut',
@@ -209,10 +214,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Gráfico de Status
     const statusLabels = JSON.parse(document.getElementById('status-labels').textContent);
     const statusData = JSON.parse(document.getElementById('status-data').textContent);
-    
+
     if (statusData.length > 0) {
         new Chart(document.getElementById('statusChart'), {
             type: 'bar',
@@ -239,3 +243,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+

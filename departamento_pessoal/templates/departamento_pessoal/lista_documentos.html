@@ -1,6 +1,8 @@
 ﻿
 {% extends "departamento_pessoal/_base_dp.html" %}
 {% load secure_url %}
+{% load mascarar_documento %}
+
 
 {% block title %}Documentos - Departamento Pessoal{% endblock %}
 
@@ -97,7 +99,11 @@
                                 </span>
                                 {{ doc.get_tipo_documento_display }}
                             </td>
-                            <td><code>{{ doc.numero|default:"-" }}</code></td>
+                            <td>
+                                <code>
+                                    {{ doc.numero|mascarar_documento:doc.tipo_documento|default:"-" }}
+                                </code>
+                            </td>
                             <td>
                                 {% if doc.data_emissao %}
                                     {{ doc.data_emissao|date:"d/m/Y" }}
