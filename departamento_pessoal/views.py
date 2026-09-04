@@ -50,6 +50,7 @@ from .forms import (
 )
 from .models import Cargo, Cliente, Departamento, Documento, Filial, Funcionario
 from .services.importacao_massa import gerar_planilha_modelo, processar_planilha
+from django_ratelimit.decorators import ratelimit
 
 logger = logging.getLogger(__name__)
 
@@ -101,24 +102,34 @@ class FilialAtivaMixin:
     """
 
     def get_filial_ativa(self):
-        """Retorna a filial ativa do usuário ou None."""
+        """Retorna a filial ativa do usuário, validando vínculo real."""
+        user = self.request.user
         filial_id = self.request.session.get('active_filial_id')
-        if filial_id:
+
+        # Superuser pode alternar livremente entre filiais
+        if user.is_superuser and filial_id:
             try:
                 return Filial.objects.get(pk=filial_id)
             except Filial.DoesNotExist:
                 pass
 
-        user = self.request.user
-        filial_ativa = getattr(user, 'filial_ativa', None)
-        if filial_ativa:
-            return filial_ativa
-
+        # Usuário comum: SÓ pode usar active_filial_id se corresponder
+        # à filial do seu próprio registro de Funcionario
         try:
             funcionario = Funcionario.objects.select_related('filial').get(usuario=user)
-            return funcionario.filial
         except Funcionario.DoesNotExist:
             return None
+
+        if filial_id and str(funcionario.filial_id) != str(filial_id):
+            # Sessão manipulada — força a filial real e loga o incidente
+            logger.warning(
+                "Tentativa de troca de filial não autorizada. user=%s session_filial=%s real_filial=%s",
+                user.id, filial_id, funcionario.filial_id,
+            )
+            self.request.session['active_filial_id'] = funcionario.filial_id
+
+        return funcionario.filial
+
 
     def get_filial_ativa_id(self):
         filial = self.get_filial_ativa()
@@ -171,6 +182,13 @@ class DPVisibilityMixin(FilialAtivaMixin):
         # Models auxiliares (Departamento, Cargo) → vê todos da filial
         return queryset
 
+    def pode_ver_tudo(self):
+        user = self.request.user
+        return (
+            user.is_superuser
+            or user.has_perm(f'{APP_LABEL}.view_all_departamento_pessoal')
+        )
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MIXIN BASE — TODAS AS CBVs DO MÓDULO
@@ -213,6 +231,7 @@ class UploadFuncionariosView(DPBaseMixin, View):
             'filial_ativa': self.get_filial_ativa(),
         })
 
+    @ratelimit(key='user', rate='5/h', method='POST', block=True)
     def post(self, request, *args, **kwargs):
         form = self.form_class(request.POST, request.FILES)
         if not form.is_valid():
@@ -318,9 +337,13 @@ class UploadFuncionariosView(DPBaseMixin, View):
                         linha_erro['Erro'] = f"Linha {linha_num}, {e}"
                         linhas_erro.append(linha_erro)
                     except Exception as e:
-                        logger.exception(f"Erro inesperado na linha {linha_num}")
+                        logger.exception(
+                            "Erro inesperado na linha %s do upload (funcionario: %s)",
+                            linha_num,
+                            row.get('matricula', '???'),  # só a matrícula, nunca a linha inteira
+                        )
                         linha_erro = row.to_dict()
-                        linha_erro['Erro'] = f"Linha {linha_num}: Erro inesperado — {e}"
+                        linha_erro['Erro'] = f"Linha {linha_num}: Erro inesperado — {type(e).__name__}"
                         linhas_erro.append(linha_erro)
 
                 if linhas_erro:
@@ -490,6 +513,7 @@ class UploadFuncionariosView(DPBaseMixin, View):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @app_permission_required(APP_LABEL)
+@ratelimit(key='user', rate='10/h', block=True)
 def baixar_modelo_funcionarios(request):
     """Gera planilha modelo .xlsx com formatação profissional."""
     df_modelo = pd.DataFrame(columns=COLUNAS_ESPERADAS)
@@ -543,6 +567,7 @@ def baixar_modelo_funcionarios(request):
 
 
 @app_permission_required(APP_LABEL)
+@ratelimit(key='user', rate='10/h', block=True)
 def baixar_relatorio_erros(request):
     """Gera Excel com as linhas que continham erros durante o último upload."""
     linhas_erro = request.session.pop('upload_erros', [])
@@ -984,7 +1009,7 @@ class PainelDPView(DPBaseMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
+        
         filial = self.get_filial_ativa()
         if not filial and not self.request.user.is_superuser:
             context['permission_denied'] = True
@@ -1101,6 +1126,8 @@ class PainelDPView(DPBaseMixin, TemplateView):
         context['genero_data'] = [g['total'] for g in dist_genero]
 
         context['titulo_pagina'] = 'Painel de Controle DP - Analytics'
+
+        context['pode_ver_tudo'] = self.pode_ver_tudo()
         return context
 
 
@@ -1297,4 +1324,14 @@ def importacao_massa_funcionarios_view(request):
         'departamento_pessoal/importacao_massa.html',
         {'form': form},
     )
+
+class FuncionarioHistoricoView(DPBaseMixin, DetailView):
+    permission_required = f'{APP_LABEL}.view_all_departamento_pessoal'
+    model = Funcionario
+    template_name = 'departamento_pessoal/historico_funcionario.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['historico'] = self.object.history.all().select_related('history_user')
+        return context
 

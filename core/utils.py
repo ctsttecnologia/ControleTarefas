@@ -43,7 +43,7 @@ def redirect_sem_funcionario(request, modulo: str = ''):
         except NoReverseMatch:
             return redirect('/')
 
-# core/utils.py  (ou no topo de suprimentos/views.py)
+# ou no topo de suprimentos/views.py
 
 def usuario_ve_todas_filiais(user):
     """
@@ -126,3 +126,11 @@ def queryset_da_filial(queryset, user, request=None, campo_filial='filial'):
         return queryset.filter(**{campo_filial: filial})
 
     return queryset.none()
+
+# departamento_pessoal
+def mascarar_cpf(cpf: str) -> str:
+    if not cpf or len(cpf) < 11:
+        return cpf or ''
+    digits = ''.join(filter(str.isdigit, cpf))
+    return f"***.{digits[3:6]}.***-{digits[9:11]}"
+
