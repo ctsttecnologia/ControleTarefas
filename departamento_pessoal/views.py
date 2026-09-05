@@ -988,7 +988,7 @@ class DocumentoUpdateView(DPBaseMixin, _DocumentoFilialScopedMixin, UpdateView):
 class DocumentoDeleteView(DPBaseMixin, _DocumentoFilialScopedMixin, DeleteView):
     permission_required = f'{APP_LABEL}.delete_documento'
     model = Documento
-    template_name = 'departamento_pessoal/documento_confirm_delete.html'
+    template_name = 'departamento_pessoal/confirm_delete.html'
     context_object_name = 'documento'
 
     def get_success_url(self):
