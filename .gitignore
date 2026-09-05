@@ -20,6 +20,18 @@ __pycache__/
 .env
 scripts  
 
+.expo/
+android/
+logs/
+*.txt.bak
+.env.dev
+.env.prod.backup
+_deprecated_backup/
+.debug/
+.vscode/
+.vs/
+
+
 # Scripts temporários de debug
 check_*.py
 debug_*.py
@@ -74,3 +86,5 @@ scripts/fix_mojibake.py
 # Arquivos de comandos
 python manage.py collectstatic --noinput --upload-unhashed-files
 node_modules
+
+
