@@ -24,7 +24,6 @@ from usuario.models import Filial
 from cliente.models import Cliente
 
 from django_cryptography.fields import encrypt
-
 from simple_history.models import HistoricalRecords
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -264,6 +263,7 @@ class Funcionario(models.Model):
             ("view_all_departamento_pessoal", "Pode ver todos os dados do DP (global)"),
             ("view_salario", "Pode ver salario"),
             ("view_documento_completo", "Pode ver número completo de documentos sensíveis"),
+            ("view_botoes", "Pode ver botoes"),
         ]
 
     def __str__(self):

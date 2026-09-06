@@ -6,112 +6,184 @@
     <title>Relatório de Funcionários</title>
     <style>
         @page {
-            size: A4;
-            margin: 1.5cm;
+            size: A4 landscape;
+            margin: 1.3cm;
             @bottom-center {
                 content: "Página " counter(page) " de " counter(pages);
                 font-family: 'Helvetica', 'Arial', sans-serif;
-                font-size: 10pt;
+                font-size: 9pt;
                 color: #555;
             }
         }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             color: #333;
-            font-size: 11pt;
-            line-height: 1.4;
+            font-size: 9.5pt;
+            line-height: 1.35;
         }
         .header {
-            text-align: center;
-            border-bottom: 2px solid #0d6efd;
-            padding-bottom: 15px;
-            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #1F4E78;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
         }
-        .header h1 {
+        .header-info h1 {
             margin: 0;
-            font-size: 22pt;
-            color: #212529;
+            font-size: 20pt;
+            color: #1F4E78;
         }
-        .header p {
-            margin: 5px 0 0;
-            font-size: 10pt;
+        .header-info p {
+            margin: 4px 0 0;
+            font-size: 9pt;
             color: #6c757d;
         }
+        .header-filial {
+            text-align: right;
+            font-size: 9pt;
+            color: #495057;
+        }
+        .header-filial strong {
+            color: #1F4E78;
+            font-size: 11pt;
+        }
         .summary {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .summary-box {
+            flex: 1;
             background-color: #f8f9fa;
-            padding: 10px 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            font-size: 10pt;
+            border: 1px solid #dee2e6;
+            border-left: 4px solid #1F4E78;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 9pt;
+        }
+        .summary-box strong {
+            display: block;
+            font-size: 13pt;
+            color: #1F4E78;
         }
         .report-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 5px;
         }
         .report-table th,
         .report-table td {
             border: 1px solid #dee2e6;
-            padding: 10px 8px;
+            padding: 6px 5px;
             text-align: left;
+            font-size: 8.5pt;
         }
         .report-table th {
-            background-color: #0d6efd;
+            background-color: #1F4E78;
             color: #fff;
             font-weight: 600;
-            font-size: 10pt;
+            font-size: 8.5pt;
+            text-align: center;
         }
-        .report-table tr:nth-child(even) {
-            background-color: #f8f9fa;
+        .report-table tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
         }
-        .report-table tr:hover {
-            background-color: #e9ecef;
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 8pt;
+            font-weight: bold;
         }
+        .badge-ativo { background-color: #C6EFCE; color: #006100; }
+        .badge-inativo { background-color: #FFC7CE; color: #9C0006; }
+        .badge-ferias { background-color: #FFEB9C; color: #9C6500; }
+        .badge-afastado { background-color: #D9D9D9; color: #595959; }
+
         .footer {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             text-align: center;
-            font-size: 9pt;
+            font-size: 8pt;
             color: #6c757d;
-            padding: 10px 0;
+            padding: 6px 0;
             border-top: 1px solid #dee2e6;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Relatório de Colaboradores Ativos</h1>
-        <p>Documento gerado em: {{ data_emissao }}</p>
+        <div class="header-info">
+            <h1>Relatório de Colaboradores Ativos</h1>
+            <p>Documento gerado em: {{ data_emissao }}</p>
+        </div>
+        {% if filial_ativa %}
+        <div class="header-filial">
+            Filial<br>
+            <strong>{{ filial_ativa }}</strong>
+        </div>
+        {% endif %}
     </div>
 
     <div class="summary">
-        <strong>Total de colaboradores:</strong> {{ funcionarios|length }}
+        <div class="summary-box">
+            Total de Colaboradores
+            <strong>{{ total_funcionarios }}</strong>
+        </div>
     </div>
 
     <table class="report-table">
         <thead>
             <tr>
-                <th style="width: 5%;">#</th>
-                <th style="width: 35%;">Nome Completo</th>
-                <th style="width: 20%;">Cargo</th>
-                <th style="width: 20%;">Departamento</th>
-                <th style="width: 20%;">Data de Admissão</th>
+                <th>#</th>
+                <th>Matrícula</th>
+                <th>Nome Completo</th>
+                <th>Cargo</th>
+                <th>Função (SST)</th>
+                <th>Departamento</th>
+                <th>Cliente/Contrato</th>
+                <th>Admissão</th>
+                <th>Tempo (anos)</th>
+                <th>Idade</th>
+                <th>Telefone</th>
+                <th>Status</th>
             </tr>
         </thead>
         <tbody>
             {% for funcionario in funcionarios %}
             <tr>
-                <td>{{ forloop.counter }}</td>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td>{{ funcionario.matricula }}</td>
                 <td>{{ funcionario.nome_completo }}</td>
                 <td>{{ funcionario.cargo.nome|default:'-' }}</td>
+                <td>{{ funcionario.funcao.nome|default:'-' }}</td>
                 <td>{{ funcionario.departamento.nome|default:'-' }}</td>
-                <td>{{ funcionario.data_admissao|date:"d/m/Y" }}</td>
+                <td>{{ funcionario.cliente.nome|default:'-' }}</td>
+                <td class="text-center">{{ funcionario.data_admissao|date:"d/m/Y" }}</td>
+                <td class="text-center">{{ funcionario.tempo_empresa|default:'-' }}</td>
+                <td class="text-center">{{ funcionario.idade|default:'-' }}</td>
+                <td>{{ funcionario.telefone|default:'-' }}</td>
+                <td class="text-center">
+                    {% if funcionario.status == 'ATIVO' %}
+                        <span class="badge badge-ativo">Ativo</span>
+                    {% elif funcionario.status == 'INATIVO' %}
+                        <span class="badge badge-inativo">Inativo</span>
+                    {% elif funcionario.status == 'FERIAS' %}
+                        <span class="badge badge-ferias">Férias</span>
+                    {% elif funcionario.status == 'AFASTADO' %}
+                        <span class="badge badge-afastado">Afastado</span>
+                    {% endif %}
+                </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" style="text-align: center; padding: 30px; color: #6c757d;">
+                <td colspan="12" style="text-align: center; padding: 30px; color: #6c757d;">
                     Nenhum funcionário encontrado.
                 </td>
             </tr>
@@ -124,3 +196,4 @@
     </div>
 </body>
 </html>
+
