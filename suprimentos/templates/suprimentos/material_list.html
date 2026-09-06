@@ -24,6 +24,7 @@
         background-color: var(--surface-elevated);
         box-shadow: -4px 0 8px rgba(0, 0, 0, 0.04);
     }
+
     .table-scroll-wrapper thead th:last-child {
         background-color: var(--surface-muted); z-index: 3;
     }
@@ -33,6 +34,7 @@
         background-color: var(--surface-elevated);
         box-shadow: 4px 0 8px rgba(0, 0, 0, 0.04);
     }
+
     .table-scroll-wrapper thead th:first-child {
         background-color: var(--surface-muted); z-index: 3;
     }
@@ -94,7 +96,32 @@
         color: #ffda6a !important;
         border-color: var(--bs-border-color) !important;
     }
+
+    /* ═══════════════════════════════════════════════════════════════
+       Ajustes específicos para TEMA ESCURO
+    ═══════════════════════════════════════════════════════════════ */
+    [data-bs-theme="dark"] .table-scroll-wrapper {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-bs-theme="dark"] .table-scroll-wrapper th:last-child,
+    [data-bs-theme="dark"] .table-scroll-wrapper td:last-child {
+        box-shadow: -4px 0 8px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-bs-theme="dark"] .table-scroll-wrapper th:first-child,
+    [data-bs-theme="dark"] .table-scroll-wrapper td:first-child {
+        box-shadow: 4px 0 8px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Badge "N/C" no dark — melhora contraste */
+    [data-bs-theme="dark"] .badge.bg-light.text-warning {
+        background-color: var(--surface-subtle) !important;
+        color: #ffda6a !important;
+        border-color: var(--bs-border-color) !important;
+    }
 </style>
+
 
 <div class="container-fluid mt-4">
 

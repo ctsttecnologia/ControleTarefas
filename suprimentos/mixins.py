@@ -9,7 +9,6 @@ from py_serializable import logger
 
 from . import permissions as perms
 
-
 class _SuperuserBypassMixin(UserPassesTestMixin):
     """
     Base interna: superuser SEMPRE passa.
@@ -49,7 +48,6 @@ class _SuperuserBypassMixin(UserPassesTestMixin):
             logger.warning("Falha ao redirecionar para %s", self.redirect_url_no_permission, exc_info=True)
             return redirect('/')
 
-
 class CoordenadorOuSuperiorMixin(_SuperuserBypassMixin):
     """Coordenador, Comprador, Gerente ou Superuser."""
     def _extra_test(self):
@@ -60,12 +58,10 @@ class CoordenadorOuSuperiorMixin(_SuperuserBypassMixin):
             or perms.is_gerente(u)
         )
 
-
 class SuprimentosOuSuperiorMixin(_SuperuserBypassMixin):
     """Bloqueia coordenador — usado em telas de Solicitação."""
     def _extra_test(self):
         return perms.pode_ver_solicitacao(self.request.user)
-
 
 class GerenteApenasMixin(_SuperuserBypassMixin):
     """Apenas Gerente ou Superuser."""

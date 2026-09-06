@@ -119,3 +119,55 @@ def suprimentos_contadores(request):
             "is_comprador_global": False,
         }
 
+def suprimentos_notificacoes(request):
+    """
+    Disponibiliza contadores de pendências do módulo suprimentos
+    para TODOS os templates (badge no menu).
+    """
+    if not request.user.is_authenticated:
+        return {}
+    
+    user = request.user
+    is_aprovador = user.groups.filter(name='Aprovadores').exists() or user.is_superuser
+    is_comprador = user.groups.filter(name='Compradores').exists() or user.is_superuser
+    
+    # Status que demandam ação do usuário conforme perfil
+    status_pendentes = []
+    
+    if is_comprador:
+        status_pendentes += ['FAZER_COTACAO', 'CRIAR_PEDIDO_CT', 
+                             'ENVIAR_PEDIDO', 'ENTREGA_PENDENTE']
+    
+    if is_aprovador:
+        status_pendentes += ['COTACAO_ENVIADA', 'EM_APROVACAO']
+    
+    if not status_pendentes:
+        return {'solicitacoes_pendentes_count': 0}
+    
+    count = SolicitacaoCompra.objects.filter(status__in=status_pendentes).count()
+    
+    return {
+        'solicitacoes_pendentes_count': count,
+        'is_aprovador_global': is_aprovador,
+        'is_comprador_global': is_comprador,
+    }
+
+def suprimentos_badges(request):
+    """Disponibiliza contadores de Solicitações pendentes no menu lateral."""
+    if not request.user.is_authenticated:
+        return {}
+    
+    qs = SolicitacaoCompra.objects.exclude(status__in=['CONCLUIDO', 'CANCELADO'])
+    
+    if not request.user.is_superuser:
+        filial = getattr(request.user, 'filial_ativa', None)
+        if filial:
+            qs = qs.filter(contrato__filial=filial)
+    
+    return {
+        'badge_solicitacoes_pendentes': qs.count(),
+        'badge_solicitacoes_cotacao': qs.filter(status='FAZER_COTACAO').count(),
+        'badge_solicitacoes_aprovacao': qs.filter(
+            status__in=['COTACAO_ENVIADA', 'EM_APROVACAO']
+        ).count(),
+    }

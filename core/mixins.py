@@ -20,25 +20,6 @@ from .forms import ChangeFilialForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse, NoReverseMatch
-from django.contrib.auth.mixins import UserPassesTestMixin
-
-
-
-class RequireActiveFilialMixin:
-    """
-    Garante que o usuário tenha uma filial ativa antes de acessar a view.
-    Caso contrário, redireciona com mensagem.
-    """
-    filial_required_redirect_url = "usuario:selecionar_filial"  # ajuste se necessário
-    filial_required_message = "Selecione uma filial para continuar."
-
-    def dispatch(self, request, *args, **kwargs):
-        filial = get_filial_ativa(request.user, request)
-        if filial is None:
-            messages.warning(request, self.filial_required_message)
-            return redirect(self.filial_required_redirect_url)
-        request.filial_ativa = filial  # disponibiliza na view
-        return super().dispatch(request, *args, **kwargs)
 
 # =============================================================================
 # == MIXINS DE PERMISSÃO E ESCOPO (ARQUITETURA DE 3 NÍVEIS)
@@ -72,41 +53,19 @@ class AdminFilialScopedMixin:
 
 class ViewFilialScopedMixin:
     """
-    Mixin que filtra o queryset da view pela filial ativa do usuário.
-    Usa core.utils.get_filial_ativa() como fonte única de verdade,
-    garantindo consistência com todas as outras views/mixins do sistema.
+    NÍVEL 2 (Horizontal/Filial) - Para Views:
+    Filtra o queryset chamando o método 'for_request(request)' 
+    do manager do modelo.
+
+    IMPORTANTE: O modelo desta View DEVE usar o 'FilialManager'.
     """
-
-    filial_field = 'filial'
-
-    def get_filial_ativa(self):
-        """
-        Retorna a instância de Filial ativa, ou None.
-        Delega para core.utils.get_filial_ativa() (fonte única de verdade),
-        evitando divergência entre views que usam chaves de sessão diferentes.
-        """
-        request = getattr(self, 'request', None)
-        if request is None:
-            return None
-
-        # Import lazy para evitar import circular
-        from core.utils import get_filial_ativa
-
-        return get_filial_ativa(request.user, request)
 
     def get_queryset(self):
         qs = super().get_queryset()
+        if hasattr(qs, 'for_request'):
+            return qs.for_request(self.request)
+        return qs
 
-        # Superuser e administrador veem tudo, sem filtro de filial
-        from core.utils import usuario_ve_todas_filiais
-        if usuario_ve_todas_filiais(self.request.user):
-            return qs
-
-        filial = self.get_filial_ativa()
-        if filial is None:
-            return qs.none()
-
-        return qs.filter(**{self.filial_field: filial})
 
 class TecnicoScopeMixin:
     """
@@ -244,6 +203,25 @@ class AppPermissionMixin(PermissionRequiredMixin):
             ),
         }, status=403)
 
+# =============================================================================
+# == MIXIN DE ACESSO AO MONITORAMENTO
+# =============================================================================
+
+class MonitoramentoAccessMixin:
+    """
+    Mixin que controla o acesso ao painel de monitoramento.
+    Acesso permitido para: superusers, staff, ou usuários com
+    permissão específica de monitoramento.
+    """
+
+    @staticmethod
+    def user_can_monitor(user):
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_superuser or user.is_staff:
+            return True
+        return user.has_perm('core.view_monitoramento')
+
 
 # =============================================================================
 # == MIXINS UTILITÁRIOS
@@ -335,6 +313,36 @@ class ChangeFilialAdminMixin:
 
     change_filial_action.short_description = "Alterar filial dos itens selecionados"
 
+
+class RequireActiveFilialMixin:
+    """
+    Garante que há uma filial ativa na sessão antes de executar a view.
+
+    Se não houver, redireciona o usuário para o perfil com mensagem
+    solicitando a seleção de filial.
+
+    Útil em views de criação de objetos que DEPENDEM da filial ativa
+    para determinar escopo (ex: criação de tarefa, cliente, etc.).
+
+    Ex:
+        class CriarTarefaView(AppPermissionMixin,
+                              RequireActiveFilialMixin,
+                              CreateView):
+            ...
+    """
+    active_filial_redirect_url = 'usuario:profile'
+    active_filial_message = (
+        "Selecione uma filial ativa no menu superior antes de continuar."
+    )
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.session.get('active_filial_id'):
+            # Superusers podem operar em "Todas as Filiais"
+            if not request.user.is_superuser:
+                messages.warning(request, self.active_filial_message)
+                return redirect(self.active_filial_redirect_url)
+
+        return super().dispatch(request, *args, **kwargs)
 
 class AtividadeLogMixin:
     """
@@ -794,76 +802,17 @@ class FuncionarioRequiredMixin(LoginRequiredMixin):
             "Seu usuário ainda não possui funcionário vinculado. "
             "Entre em contato com o Departamento Pessoal."
         )
-        return redirect('usuario:pendente_vinculo')
-
-
-
-# =============================================================================
-# == MIXIN DE ACESSO AO MONITORAMENTO
-# =============================================================================
-
-class MonitoramentoAccessMixin(UserPassesTestMixin):
-    """
-    Mixin que garante acesso ao painel de monitoramento.
-    Acesso: superuser ou membros do grupo 'Administrador'.
-    """
-
-    raise_exception = False  # redireciona para login em vez de 403
-
-    def test_func(self):
-        return self.user_can_monitor(self.request.user)
-
-    @staticmethod
-    def user_can_monitor(user):
-        if not user.is_authenticated:
-            return False
-        if user.is_superuser:
-            return True
-        return user.groups.filter(name='Administrador').exists()
-
-
-
-class SolicitacaoFilialGuardMixin:
-    """
-    Captura SolicitacaoForaDaFilialError levantada por _get_sol_seguro()
-    e redireciona o usuário com uma mensagem amigável, em vez de
-    estourar erro 500.
-
-    ⚠️ Importante:
-    - Deve vir ANTES de View na ordem de herança (MRO), para que o
-      dispatch deste mixin envolva o dispatch real da view.
-    - Funciona tanto para GET quanto POST, pois envolve o dispatch().
-
-    Uso:
-        class SolicitacaoCotacaoView(
-            LoginRequiredMixin, AppPermissionMixin,
-            SolicitacaoFilialGuardMixin, View,
-        ):
-            ...
-    """
-
-    # URL de fallback caso a solicitação esteja fora da filial ativa
-    redirect_url_name = 'suprimentos:solicitacao_list'
-
-    def dispatch(self, request, *args, **kwargs):
-        # import local evita import circular (suprimentos importa core)
-        from suprimentos.views import SolicitacaoForaDaFilialError
         try:
-            return super().dispatch(request, *args, **kwargs)
-        except SolicitacaoForaDaFilialError as exc:
-            sol = exc.solicitacao
-            filial_correta = getattr(
-                getattr(sol, 'contrato', None), 'filial', None
-            )
-            filial_ativa = getattr(request.user, 'filial_ativa', None)
+            url = reverse('core:sem_funcionario')
+            modulo = getattr(self, 'modulo_nome', '')
+            if modulo:
+                url += f'?modulo={modulo}'
+            return redirect(url)
+        except NoReverseMatch:
+            try:
+                return redirect('core:home')
+            except NoReverseMatch:
+                return redirect('/')
 
-            messages.warning(
-                request,
-                f'A solicitação <strong>{sol.numero}</strong> pertence à filial '
-                f'<strong>{filial_correta.nome if filial_correta else "—"}</strong>, '
-                f'mas sua filial ativa é '
-                f'<strong>{filial_ativa.nome if filial_ativa else "—"}</strong>. '
-                f'Troque de filial na barra superior para acessá-la.',
-                extra_tags='safe',
-            )
-            return redirect(self.redirect_url_name)
+# Alias público
+sanitize_image = _sanitize_image

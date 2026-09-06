@@ -1,5 +1,4 @@
 # suprimentos/permissions.py
-
 # Nomes canônicos de grupos — usar SEMPRE estas constantes, nunca strings soltas
 GRUPO_GERENCIA = ["Gerência", "Gerencia", "Admin"]
 GRUPO_COMPRADOR = ["Comprador", "Suprimentos", "Compradores"]

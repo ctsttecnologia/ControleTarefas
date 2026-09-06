@@ -49,12 +49,10 @@ class ParceiroForm(BootstrapMixin, forms.ModelForm):
             "observacoes": forms.Textarea(attrs={"rows": 3}),
         }
 
-
 class ContratoForm(BootstrapMixin, forms.ModelForm):
     class Meta:
         model = Contrato
         fields = ["cm", "cliente", "filial", "ativo"]
-
 
 # ═════════════════════════════════════════════════════════════
 # 1. PEDIDO + ITENS
@@ -70,7 +68,6 @@ class PedidoForm(BootstrapMixin, forms.ModelForm):
             "data_necessaria": forms.DateInput(attrs={"type": "date"}),
             "observacao": forms.Textarea(attrs={"rows": 3}),
         }
-
 
 class ItemPedidoForm(BootstrapMixin, forms.ModelForm):
     class Meta:
@@ -90,7 +87,6 @@ ItemPedidoFormSet = inlineformset_factory(
     extra=1,
     can_delete=True,
 )
-
 
 # ═════════════════════════════════════════════════════════════
 # 2. APROVAR PEDIDO (não-ModelForm — decisão livre)
@@ -124,7 +120,6 @@ class AprovarPedidoForm(forms.Form):
 # ═════════════════════════════════════════════════════════════
 # 3. COTAÇÃO (NxN por item)
 # ═════════════════════════════════════════════════════════════
-
 class CotacaoCabecalhoForm(forms.Form):
     """Dados COMUNS do fornecedor — aplicados a todos os itens cotados."""
     fornecedor = forms.ModelChoiceField(

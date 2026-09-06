@@ -525,7 +525,7 @@ class EmpresaDetailView(PGRBaseMixin, DetailView):
     permission_required = 'pgr_gestao.view_empresa'
 
 
-class EmpresaCreateView(PGRBaseMixin, FilialCreateMixin, CreateView):
+class EmpresaCreateView(PGRBaseMixin, PGRRequestFormKwargsMixin, FilialCreateMixin, CreateView):
     model = Empresa
     form_class = EmpresaForm
     template_name = 'pgr_gestao/empresa_form.html'
@@ -653,7 +653,9 @@ class PGRDocumentoDetailView(PGRTecnicoBaseMixin, DetailView):
         if formset.is_valid():
             formset.save()
             return redirect(reverse('pgr_gestao:documento_detail', kwargs={'pk': self.object.pk}))
-        return self.render_to_response(self.get_context_data(form=formset))
+        context = self.get_context_data()
+        context['responsaveis_formset'] = formset  # sobrescreve o recriado
+        return self.render_to_response(context)
 
 
 class PGRDocumentoCreateView(PGRBaseMixin, PGRRequestFormKwargsMixin, CreateView):
@@ -838,7 +840,7 @@ class GESDetailView(PGRTecnicoBaseMixin, DetailView):
         return context
 
 
-class GESCreateView(PGRBaseMixin, FilialCreateMixin, CreateView):
+class GESCreateView(PGRBaseMixin, PGRRequestFormKwargsMixin, FilialCreateMixin, CreateView):
     model = GESGrupoExposicao
     form_class = GESGrupoExposicaoForm
     template_name = 'pgr_gestao/ges_form.html'
@@ -1013,11 +1015,64 @@ class RiscoIdentificadoCreateView(PGRBaseMixin, PGRRequestFormKwargsMixin, Filia
         return super().form_valid(form)
 
     def _calcular_classificacao_risco(self, gravidade, exposicao, severidade):
-        matriz = {
-            'A': 'negligenciavel', 'B': 'marginal', 'C': 'moderado',
-            'D': 'muito_grave', 'E': 'critico'
+        """
+        Calcula a classificação do risco combinando Gravidade x Exposição
+        (índice numérico) com a Severidade categórica (letra A-E), seguindo
+        a lógica de matriz de risco (GES).
+
+        - gravidade: int (escala numérica, ex.: 1 a 5)
+        - exposicao: int (escala numérica, ex.: 1 a 5)
+        - severidade: str, letra 'A' a 'E' (categoria de referência)
+
+        Regra: o índice numérico (gravidade x exposicao) determina a faixa
+        de risco; a letra de severidade funciona como piso mínimo de
+        classificação (nunca resulta em classificação mais branda do que
+        a severidade indicada).
+        """
+        # Mapa de severidade -> classificação mínima garantida
+        matriz_severidade = {
+            'A': 'negligenciavel',
+            'B': 'marginal',
+            'C': 'moderado',
+            'D': 'muito_grave',
+            'E': 'critico',
         }
-        return matriz.get(severidade, 'moderado')
+
+        # Ordem de "gravidade" das classificações, do menor para o maior
+        ordem_classificacao = [
+            'negligenciavel', 'marginal', 'moderado', 'muito_grave', 'critico'
+        ]
+
+        try:
+            gravidade = int(gravidade)
+            exposicao = int(exposicao)
+        except (TypeError, ValueError):
+            gravidade = 0
+            exposicao = 0
+
+        indice_risco = gravidade * exposicao
+
+        # Faixas do índice numérico (ajuste os limites conforme sua escala real)
+        if indice_risco <= 4:
+            classificacao_numerica = 'negligenciavel'
+        elif indice_risco <= 12:
+            classificacao_numerica = 'marginal'
+        elif indice_risco <= 30:
+            classificacao_numerica = 'moderado'
+        elif indice_risco <= 60:
+            classificacao_numerica = 'muito_grave'
+        else:
+            classificacao_numerica = 'critico'
+
+        classificacao_severidade = matriz_severidade.get(severidade, 'moderado')
+
+        # Regra de segurança: prevalece a classificação MAIS SEVERA entre
+        # o índice numérico e a categoria informada.
+        idx_numerica = ordem_classificacao.index(classificacao_numerica)
+        idx_severidade = ordem_classificacao.index(classificacao_severidade)
+
+        return ordem_classificacao[max(idx_numerica, idx_severidade)]
+
 
     def get_success_url(self):
         return reverse_lazy('pgr_gestao:risco_detail', kwargs={'pk': self.object.pk})
@@ -1200,7 +1255,7 @@ AcompanhamentoFormSet = inlineformset_factory(
 )
 
 
-class PlanoAcaoPGRListView(PGRTecnicoBaseMixin, ListView):
+class PlanoAcaoPGRListView(PGRTecnicoBaseMixin, PGRRequestFormKwargsMixin, ListView):
     model = PlanoAcaoPGR
     template_name = 'pgr_gestao/plano_acao_list.html'
     context_object_name = 'planos'
@@ -1313,8 +1368,15 @@ class PlanoAcaoPGRCreateView(PGRBaseMixin, FilialCreateMixin, CreateView):
         return data
 
     def form_valid(self, form):
+        context = self.get_context_data()
+        formset = context['formset']
         form.instance.criado_por = self.request.user
-        return super().form_valid(form)
+        self.object = form.save()
+        if formset.is_valid():
+            formset.instance = self.object
+            formset.save()
+            return redirect(self.get_success_url())
+        return self.form_invalid(form)
 
     def get_success_url(self):
         return reverse_lazy('pgr_gestao:plano_acao_detail', kwargs={'pk': self.object.pk})
@@ -1338,8 +1400,15 @@ class PlanoAcaoPGRUpdateView(PGRBaseMixin, UpdateView):
         return data
 
     def form_valid(self, form):
+        context = self.get_context_data()
+        formset = context['formset']
         messages.success(self.request, 'Plano de ação atualizado com sucesso!')
-        return super().form_valid(form)
+        self.object = form.save()
+        if formset.is_valid():
+            formset.instance = self.object
+            formset.save()
+            return redirect(self.get_success_url())
+        return self.form_invalid(form)
 
 
 @funcionario_required
@@ -1448,7 +1517,7 @@ class CronogramaAcaoDetailView(PGRBaseMixin, DetailView):
         return context
 
 
-class CronogramaAcaoCreateView(PGRBaseMixin, SuccessMessageMixin, FilialCreateMixin, CreateView):
+class CronogramaAcaoCreateView(PGRBaseMixin, PGRRequestFormKwargsMixin, SuccessMessageMixin, FilialCreateMixin, CreateView):
     model = CronogramaAcaoPGR
     form_class = CronogramaAcaoPGRForm
     template_name = 'pgr_gestao/cronograma_form.html'
@@ -1460,7 +1529,8 @@ class CronogramaAcaoCreateView(PGRBaseMixin, SuccessMessageMixin, FilialCreateMi
         initial = super().get_initial()
         pgr_pk = self.kwargs.get('pgr_pk')
         if pgr_pk:
-            initial['pgr_documento'] = pgr_pk
+            pgr = get_object_or_404(PGRDocumento.objects.for_request(self.request), pk=pgr_pk)
+            initial['pgr_documento'] = pgr
             ultimo = CronogramaAcaoPGR.objects.filter(
                 pgr_documento_id=pgr_pk
             ).order_by('-numero_item').first()
@@ -1580,7 +1650,7 @@ class ProfissionalResponsavelListView(PGRBaseMixin, ListView):
         return queryset.order_by('nome_completo')
 
 
-class ProfissionalResponsavelCreateView(PGRBaseMixin, FilialCreateMixin, CreateView):
+class ProfissionalResponsavelCreateView(PGRBaseMixin, PGRRequestFormKwargsMixin, FilialCreateMixin, CreateView):
     model = ProfissionalResponsavel
     form_class = ProfissionalResponsavelForm
     template_name = 'pgr_gestao/profissional_form.html'
@@ -1618,7 +1688,7 @@ class ProfissionalResponsavelDeleteView(PGRBaseMixin, DeleteView):
 # LOCAL DE PRESTAÇÃO DE SERVIÇOS
 # =============================================================================
 
-class LocalPrestacaoCreateView(PGRBaseMixin, FilialCreateMixin, CreateView):
+class LocalPrestacaoCreateView(PGRBaseMixin, PGRRequestFormKwargsMixin, FilialCreateMixin, CreateView):
     model = LocalPrestacaoServico
     form_class = LocalPrestacaoServicoForm
     template_name = 'pgr_gestao/local_prestacao_form.html'
@@ -1965,6 +2035,7 @@ def verificar_conformidade_pgr(request, pk):
 # =============================================================================
 
 @funcionario_required
+@permission_required('pgr_gestao.view_localprestacaoservico', raise_exception=True)
 def get_locais_prestacao_ajax(request, empresa_id):
     """Retorna locais de prestação de uma empresa via AJAX."""
     locais = LocalPrestacaoServico.objects.for_request(request).filter(
@@ -1972,8 +2043,8 @@ def get_locais_prestacao_ajax(request, empresa_id):
     ).values('id', 'razao_social')
     return JsonResponse(list(locais), safe=False)
 
-
 @funcionario_required
+@permission_required('pgr_gestao.view_gesgrupoexposicao', raise_exception=True)
 def get_ges_ajax(request, pgr_id):
     """Retorna GES de um documento PGR via AJAX."""
     ges = GESGrupoExposicao.objects.for_request(request).filter(
@@ -1981,8 +2052,8 @@ def get_ges_ajax(request, pgr_id):
     ).values('id', 'codigo', 'nome')
     return JsonResponse(list(ges), safe=False)
 
-
 @funcionario_required
+@permission_required('pgr_gestao.view_pgrdocumento', raise_exception=True)
 def dashboard_stats_ajax(request):
     """Retorna estatísticas para o dashboard via AJAX — filtrado por filial."""
     docs_qs = PGRDocumento.objects.for_request(request)
@@ -2003,14 +2074,6 @@ def dashboard_stats_ajax(request):
         ).count(),
     }
     return JsonResponse(stats)
-
-
-@funcionario_required
-def load_locais_prestacao(request, empresa_id):
-    """Carrega locais de prestação filtrados por filial."""
-    locais = LocalPrestacaoServico.objects.for_request(request).filter(empresa_id=empresa_id)
-    data = list(locais.values('id', 'razao_social'))
-    return JsonResponse(data, safe=False)
 
 
 # =============================================================================

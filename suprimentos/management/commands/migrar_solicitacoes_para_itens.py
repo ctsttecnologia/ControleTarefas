@@ -50,7 +50,6 @@ class Command(BaseCommand):
                 quantidade=item_ped.quantidade,
                 valor_unitario_estimado=item_ped.valor_unitario,
             )
-
             if sol.fornecedor and sol.valor_pedido:
                 Cotacao.objects.create(
                     item_solicitacao=item_sol,

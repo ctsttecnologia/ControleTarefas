@@ -20,7 +20,6 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-
 # =============================================================================
 # HELPERS
 # =============================================================================
@@ -144,7 +143,6 @@ def gerar_recorrencias_pendentes():
 def enviar_lembretes_prazo():
     """
     Envia lembretes para tarefas com prazo próximo, conforme campo `dias_lembrete`.
-
     Lógica:
     - Para cada tarefa ativa com dias_lembrete > 0
     - Calcula data alvo do lembrete = prazo - dias_lembrete dias
@@ -154,7 +152,6 @@ def enviar_lembretes_prazo():
     from notifications.services import notificar_lembrete_tarefa_prazo
 
     agora = timezone.now()
-
     candidatas = Tarefas.objects.filter(
         dias_lembrete__gt=0,
         prazo__isnull=False,
@@ -228,7 +225,6 @@ def avisar_recorrencias_proximas_fim():
     """
     Verifica tarefas-RAIZ recorrentes cujo `data_fim_recorrencia` está próximo
     e ainda não foram avisadas.
-
     Usa o campo `dias_aviso_fim_recorrencia` de cada tarefa (configurável).
     """
     from .models import Tarefas

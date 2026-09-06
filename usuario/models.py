@@ -80,8 +80,13 @@ class Usuario(AbstractUser):
     def __str__(self):
         return self.get_full_name() or self.username
     
-    # ---------- Perfis hierárquicos ----------
-    
+    # Propriedade para verificar se o usuário pertence ao grupo 'Gerente'
+        # ---------- Perfis hierárquicos ----------
+    @property
+    def is_administrador(self) -> bool:
+        # Superusuário OU pertence ao grupo Administrador
+        return self.is_superuser or self.groups.filter(name=GRUPO_ADMINISTRADOR).exists()
+
     @property
     def is_gerente(self) -> bool:
         return self.groups.filter(name=GRUPO_GERENTE).exists()
@@ -132,13 +137,8 @@ class Usuario(AbstractUser):
     def pertence_ao_grupo(self, nome_grupo: str) -> bool:
         """Verifica pertencimento a qualquer grupo pelo nome."""
         return self.groups.filter(name=nome_grupo).exists()
-    
-    # Propriedade para verificar se o usuário é Administrador
-    @property
-    def is_administrador(self):
-        # Verifica se é um Superusuário OU se pertence ao grupo 'Administrador'
-        return self.is_superuser or self.groups.filter(name=GRUPO_ADMINISTRADOR).exists()
 
+   
     
 class GroupCardPermissions(models.Model):
     # A Foreign Key para o modelo de grupo do Django
