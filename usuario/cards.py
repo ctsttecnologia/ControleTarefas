@@ -64,7 +64,7 @@ ALL_CARDS = [
         'permission': 'suprimentos.view_pedido',
         'icon': 'images/suprimentos.gif',
         'links': [
-            {'url': 'suprimentos:dashboard', 'text': 'Suprimentos', 'permission': 'suprimentos.view_pedido'},
+            {'url': 'suprimentos:dashboard', 'text': 'Painel', 'permission': 'suprimentos.view_pedido'},
         ]
     },
     {
@@ -113,6 +113,7 @@ ALL_CARDS = [
         'links': [
             {'url': 'tarefas:dashboard', 'text': 'Tarefas', 'permission': 'tarefas.view_dashboard'},
             {'url': 'ferramentas:dashboard', 'text': 'Ferramentas', 'permission': 'ferramentas.view_dashboard'},
+            {'url': 'relatorio_fotografico:list', 'text': 'Relatórios Fotográficos', 'permission': 'relatorio_fotografico.view_list'},
         ]
     },
     {

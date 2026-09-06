@@ -1,0 +1,8 @@
+{
+  "android": {
+    "package": "com.esgemerson.controletarefas"
+  },
+  "plugins": [
+    "expo-router"
+  ]
+}

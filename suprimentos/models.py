@@ -12,12 +12,14 @@ Inclui:
 """
 
 import os
+
 import uuid
 from decimal import Decimal
 from pathlib import Path
-
+from venv import logger
+from django.db.models import Sum, F
 from django.conf import settings
-from django.core.validators import MinValueValidator
+from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.db import models, transaction
 from django.urls import reverse
 from django.utils import timezone
@@ -28,21 +30,13 @@ from core.upload import make_upload_path
 from core.validators import SecureFileValidator
 from logradouro.models import Logradouro
 from usuario.models import Filial
+from suprimentos.utils import _registrar_historico
+from django.db.models import Max
 
 
 # ═════════════════════════════════════════════════════════════════════════════
 # MODELOS ABSTRATOS 
 # ═════════════════════════════════════════════════════════════════════════════
-
-class StatusSolicitacao(models.TextChoices):
-    PENDENTE = "PENDENTE", "Pendente"  # antigo
-    AGUARDANDO_COTACAO = "AGUARDANDO_COTACAO", "Aguardando Cotação"  # 🆕
-    EM_COTACAO = "EM_COTACAO", "Em Cotação"  # 🆕
-    COTADO = "COTADO", "Cotado (aguardando aprovação)"  # 🆕
-    APROVADO = "APROVADO", "Aprovado"
-    PEDIDOS_EMITIDOS = "PEDIDOS_EMITIDOS", "Pedidos de Compra Emitidos"  # 🆕
-    CONCLUIDO = "CONCLUIDO", "Concluído"
-    CANCELADO = "CANCELADO", "Cancelado"
 
 class TimestampedModel(models.Model):
     """Adiciona criado_em / atualizado_em automáticos."""
@@ -109,10 +103,6 @@ class BaseAnexo(TimestampedModel):
             return f"{size / (1024 * 1024):.1f} MB"
 
 
-    def __str__(self) -> str:
-        return self.nome_arquivo or f"Anexo #{self.pk}"
-
-
 class BaseHistorico(TimestampedModel):
     """Comportamento comum de histórico/auditoria.
     
@@ -145,13 +135,14 @@ class TipoMaterial(models.TextChoices):
     ESCRITORIO = "ESCRITORIO", "Escritório"
     CREME = "CREME", "Creme"
     EPI = "EPI", "EPI"
-    PRODUTO_QUIMICO = "PRODUTO_QUIMICO", "Produto Químico"
-    AR_CONDICIONADO = "AR_CONDICIONADO", "Ar Condicionado"
+    PRODUTO_QUIMICO = "PRODUTO QUIMICO", "Produto Químico"
+    AR_CONDICIONADO = "AR CONDICIONADO", "Ar Condicionado"
     PISCINA = "PISCINA", "Piscina"
+    INFORMATICA = "INFORMATICA", "Informática"
 
 
 class UnidadeMedida(models.TextChoices):
-    PC = "PC", "Peça"
+    PÇ = "PÇ", "Peça"
     PAR = "PAR", "Par"
     LATA = "LATA", "Lata"
     ROLO = "ROLO", "Rolo"
@@ -163,9 +154,65 @@ class UnidadeMedida(models.TextChoices):
     FRASCO = "FRASCO", "Frasco"
     POTE = "POTE", "Pote"
     KG = "KG", "Kg"
+    METRO = "METRO", "Metro"
     LITRO = "LITRO", "Litro"
     CARTELA = "CARTELA", "Cartela"
     UNID = "UNID", "Unidade"
+    TON = "TON", "Tonelada"
+    
+
+class TipoObra(models.TextChoices):
+    CM = "CM", "Contrato de Manutenção"
+    CR = "CR", "Contrato de Reforma"
+    VE = "VE", "Venda"
+
+
+class TipoNotaFiscal(models.TextChoices):
+    MATERIAL = "MATERIAL", "Material"
+    SERVICO = "SERVICO", "Serviço"
+    MATERIAL_SERVICO = "MATERIAL_SERVICO", "Material/Serviço"
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# PARCEIRO
+# ═════════════════════════════════════════════════════════════════════════════
+
+class Parceiro(models.Model):
+    razao_social = models.CharField(max_length=255, verbose_name=_("Razão Social"), blank=True)
+    nome_fantasia = models.CharField(max_length=255, verbose_name=_("Nome Fantasia / Nome do Fabricante"))
+    cnpj = models.CharField(max_length=18, unique=True, null=True, blank=True, verbose_name=_("CNPJ"))
+    inscricao_estadual = models.CharField(max_length=20, blank=True, verbose_name=_("Inscrição Estadual"))
+    contato = models.CharField(max_length=100, blank=True, verbose_name=_("Pessoa de Contato"))
+    telefone = models.CharField(max_length=20, blank=True, verbose_name=_("Telefone"))
+    celular = models.CharField(max_length=20, blank=True, verbose_name=_("Celular"))
+    email = models.EmailField(blank=True, verbose_name=_("E-mail"))
+    site = models.URLField(blank=True, verbose_name=_("Site"))
+    endereco = models.ForeignKey(
+        Logradouro, on_delete=models.PROTECT,
+        related_name="parceiros", verbose_name=_("Endereço"),
+        null=True, blank=True,
+    )
+    observacoes = models.TextField(blank=True, verbose_name=_("Observações"))
+    eh_fabricante = models.BooleanField(default=False, verbose_name=_("É Fabricante?"))
+    eh_fornecedor = models.BooleanField(default=False, verbose_name=_("É Fornecedor?"))
+    ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
+    filial = models.ForeignKey(
+        Filial, on_delete=models.PROTECT,
+        related_name="parceiros", verbose_name=_("Filial"),
+        null=True, blank=True,
+    )
+    objects = FilialManager()
+
+    class Meta:
+        verbose_name = _("Parceiro")
+        verbose_name_plural = _("Parceiros")
+        ordering = ["nome_fantasia"]
+
+    def __str__(self):
+        return self.nome_fantasia or self.razao_social
+
+    def get_absolute_url(self):
+        return reverse("suprimentos:parceiro_detail", kwargs={"pk": self.pk})
 
 
 class TipoObra(models.TextChoices):
@@ -248,7 +295,7 @@ class Material(models.Model):
     unidade = models.CharField(
         _("Unidade"), max_length=20,
         choices=UnidadeMedida.choices,
-        default=UnidadeMedida.PC,
+        default=UnidadeMedida.PÇ,
     )
     valor_unitario = models.DecimalField(
         _("Valor Unitário (R$)"), max_digits=10, decimal_places=2,
@@ -476,22 +523,23 @@ class VerbaContrato(models.Model):
         return self.verba_epi + self.verba_consumo + self.verba_ferramenta
 
     def _soma_itens(self, classificacao):
-        """Soma valor_total dos itens aprovados/entregues no mês."""
-        from django.db.models import Sum
-
-        total = ItemPedido.objects.filter(
-            pedido__contrato=self.contrato,
-            pedido__status__in=[
-                Pedido.StatusChoices.APROVADO,
-                Pedido.StatusChoices.ENTREGUE,
-                Pedido.StatusChoices.RECEBIDO,
+        """Soma valor_total dos itens de PCs (emitidos/entregues/recebidos) no mês, para este contrato."""
+        total = ItemPedidoCompra.objects.filter(
+            pedido_compra__solicitacao__contrato=self.contrato,
+            pedido_compra__status__in=[
+                PedidoCompra.StatusPC.EMITIDO,
+                PedidoCompra.StatusPC.ENVIADO_FORNECEDOR,
+                PedidoCompra.StatusPC.ENTREGA_PARCIAL,
+                PedidoCompra.StatusPC.ENTREGUE,
+                PedidoCompra.StatusPC.RECEBIDO,
             ],
-            pedido__data_pedido__year=self.ano,
-            pedido__data_pedido__month=self.mes,
+            pedido_compra__data_emissao__year=self.ano,
+            pedido_compra__data_emissao__month=self.mes,
             material__classificacao=classificacao,
         ).aggregate(t=Sum("valor_total"))["t"]
         return total or Decimal("0.00")
-    
+
+
     @property
     def compra_epi(self):
         return self._soma_itens(CategoriaMaterial.EPI)
@@ -584,7 +632,7 @@ class Pedido(TimestampedModel):
         choices=TipoObra.choices,
         default=TipoObra.CM,
     )
-
+    
     data_necessaria = models.DateField(
         _("Data Necessária para Entrega"),
         null=True, blank=True,
@@ -747,18 +795,11 @@ class Pedido(TimestampedModel):
     def gerar_solicitacao_compra(self, usuario, usar_novo_fluxo=True):
         from decimal import Decimal
         from django.core.exceptions import ValidationError
-        from django.db import transaction
 
         if self.status != self.StatusChoices.APROVADO:
             raise ValidationError(
                 f"Pedido {self.numero} precisa estar APROVADO para gerar "
                 f"solicitação. Status atual: {self.get_status_display()}."
-            )
-
-        if getattr(self, "solicitacao_gerada_id", None):
-            raise ValidationError(
-                f"Pedido {self.numero} já possui SolicitacaoCompra vinculada "
-                f"(ID #{self.solicitacao_gerada_id})."
             )
 
         itens_pedido = list(self.itens.select_related("material").all())
@@ -767,7 +808,7 @@ class Pedido(TimestampedModel):
                 f"Pedido {self.numero} não possui itens para gerar solicitação."
             )
 
-        # 🆕 Resumo dos itens (já que Pedido não tem mais esses campos)
+        # ── Resumo dos itens (Pedido não tem mais esses campos) ──
         primeiro = itens_pedido[0]
         descricao_resumo = (
             f"{len(itens_pedido)} item(ns): "
@@ -779,48 +820,76 @@ class Pedido(TimestampedModel):
         )
         qtd_total = sum((i.quantidade for i in itens_pedido), 0)
 
-        with transaction.atomic():
-            status_inicial = SolicitacaoCompra.StatusChoices.FAZER_COTACAO
+        # ═══════════════════════════════════════════════════════════
+        # ✅ REAPROVEITAMENTO: já existe solicitação para este pedido?
+        # ═══════════════════════════════════════════════════════════
+        solicitacao_existente = SolicitacaoCompra.objects.filter(pedido=self).first()
+        if solicitacao_existente:
+            S = SolicitacaoCompra.StatusChoices
+            status_valido = solicitacao_existente.status in {c[0] for c in S.choices}
 
-            solicitacao = SolicitacaoCompra.objects.create(
-                pedido=self,
-                filial=self.filial,
-                solicitante=self.solicitante,
-                contrato=self.contrato,
-                tipo_obra=self.tipo_obra,
-                descricao_material=descricao_resumo,           # ✅ resumo dos itens
-                quantidade=qtd_total,                          # ✅ soma das quantidades
-                unidade_medida=primeiro.unidade_medida,        # ✅ unidade do 1º item
-                tipo_insumo=primeiro.material.tipo,            # ✅ tipo via material
-                data_necessaria=self.data_necessaria,
-                aprovador_inicial=self.aprovador,
-                data_aprovacao_inicial=self.data_aprovacao,
-                status=status_inicial,
-                usa_novo_fluxo=usar_novo_fluxo,
-                observacoes=f"Gerada automaticamente a partir do Pedido {self.numero}.",
+            # Status FAZER_COTACAO (normal) OU status corrompido/órfão
+            # (ex.: "PENDENTE_COTACAO" vindo do enum errado) → ressincroniza.
+            pode_ressincronizar = (
+                not status_valido
+                or solicitacao_existente.status == S.FAZER_COTACAO
             )
 
-            itens_criados = 0
-            if usar_novo_fluxo:
-                for item_pedido in itens_pedido:
-                    if item_pedido.material_id is None:
-                        raise ValidationError(
-                            f"Item do Pedido {self.numero} sem Material vinculado."
-                        )
-                    ItemSolicitacao.objects.create(
-                        solicitacao=solicitacao,
-                        item_pedido_origem=item_pedido,
-                        material=item_pedido.material,
-                        quantidade=item_pedido.quantidade,
-                        valor_unitario_estimado=(
-                            item_pedido.valor_unitario or Decimal("0.00")
-                        ),
-                        observacao=item_pedido.observacao or "",
-                        status=ItemSolicitacao.StatusItem.PENDENTE_COTACAO,
-                    )
-                    itens_criados += 1
+            if pode_ressincronizar:
+                # Se o status estava corrompido, normaliza para FAZER_COTACAO
+                if solicitacao_existente.status != S.FAZER_COTACAO:
+                    solicitacao_existente.status = S.FAZER_COTACAO
 
-            self.solicitacao_gerada = solicitacao
+                # Atualiza o cabeçalho com os dados do pedido (possivelmente revisado)
+                solicitacao_existente.filial = self.filial
+                solicitacao_existente.solicitante = self.solicitante
+                solicitacao_existente.contrato = self.contrato
+                solicitacao_existente.tipo_obra = self.tipo_obra
+                solicitacao_existente.descricao_material = descricao_resumo
+                solicitacao_existente.quantidade = qtd_total
+                solicitacao_existente.unidade_medida = primeiro.unidade_medida
+                solicitacao_existente.tipo_insumo = primeiro.material.tipo
+                solicitacao_existente.data_necessaria = self.data_necessaria
+                solicitacao_existente.aprovador_inicial = self.aprovador
+                solicitacao_existente.data_aprovacao_inicial = self.data_aprovacao
+                solicitacao_existente.usa_novo_fluxo = usar_novo_fluxo
+                solicitacao_existente.save()
+
+                # Ressincroniza os itens com o pedido revisado
+                itens_criados = 0
+                if usar_novo_fluxo:
+                    solicitacao_existente.itens.all().delete()
+                    for item_pedido in itens_pedido:
+                        if item_pedido.material_id is None:
+                            raise ValidationError(
+                                f"Item do Pedido {self.numero} sem Material vinculado."
+                            )
+                        ItemSolicitacao.objects.create(
+                            solicitacao=solicitacao_existente,
+                            item_pedido_origem=item_pedido,
+                            material=item_pedido.material,
+                            quantidade=item_pedido.quantidade,
+                            valor_unitario_estimado=(
+                                item_pedido.valor_unitario or Decimal("0.00")
+                            ),
+                            observacao=item_pedido.observacao or "",
+                            status=ItemSolicitacao.StatusItem.PENDENTE_COTACAO,
+                        )
+                        itens_criados += 1
+                descricao_hist = (
+                    f"Solicitação de Compra {solicitacao_existente.numero} "
+                    f"reaproveitada e ressincronizada ({itens_criados} item(ns))."
+                )
+            else:
+                # Cotação realmente em andamento: não mexe nos itens.
+                descricao_hist = (
+                    f"Solicitação de Compra {solicitacao_existente.numero} "
+                    f"reaproveitada (cotação em andamento — itens preservados)."
+                )
+
+            # Revincula e ajusta o status do pedido
+            if self.solicitacao_gerada_id != solicitacao_existente.pk:
+                self.solicitacao_gerada = solicitacao_existente
             self.status = self.StatusChoices.SOLICITACAO_GERADA
             self.save(update_fields=[
                 "solicitacao_gerada", "status", "atualizado_em"
@@ -829,10 +898,7 @@ class Pedido(TimestampedModel):
             try:
                 HistoricoPedido.registrar(
                     pedido=self,
-                    descricao=(
-                        f"Solicitação de Compra {solicitacao.numero} gerada "
-                        f"({itens_criados} item(ns))."
-                    ),
+                    descricao=descricao_hist,
                     responsavel=usuario,
                     status_anterior=self.StatusChoices.APROVADO,
                     status_novo=self.StatusChoices.SOLICITACAO_GERADA,
@@ -840,63 +906,73 @@ class Pedido(TimestampedModel):
             except Exception:
                 pass
 
-        return solicitacao
+            return solicitacao_existente
 
 
-    @property
-    def resumo_tributario(self):
-        valor_produtos = Decimal("0.00")
-        total_impostos = Decimal("0.00")
-        total_creditos = Decimal("0.00")
-        custo_real = Decimal("0.00")
-        total_nfe = Decimal("0.00")
-        itens_com_grupo = 0
-        total_itens = 0
+        # ═══════════════════════════════════════════════════════════
+        # CRIAÇÃO NORMAL (primeira vez)
+        # ═══════════════════════════════════════════════════════════
+        status_inicial = SolicitacaoCompra.StatusChoices.FAZER_COTACAO
 
-        for item in self.itens.select_related(
-            "material__grupo_tributario"
-        ).all():
-            total_itens += 1
-            valor_item = item.quantidade * item.valor_unitario
-            valor_produtos += valor_item
+        solicitacao = SolicitacaoCompra.objects.create(
+            pedido=self,
+            filial=self.filial,
+            solicitante=self.solicitante,
+            contrato=self.contrato,
+            tipo_obra=self.tipo_obra,
+            descricao_material=descricao_resumo,
+            quantidade=qtd_total,
+            unidade_medida=primeiro.unidade_medida,
+            tipo_insumo=primeiro.material.tipo,
+            data_necessaria=self.data_necessaria,
+            aprovador_inicial=self.aprovador,
+            data_aprovacao_inicial=self.data_aprovacao,
+            status=status_inicial,
+            usa_novo_fluxo=usar_novo_fluxo,
+            observacoes=f"Gerada automaticamente a partir do Pedido {self.numero}.",
+        )
 
-            if item.material.grupo_tributario:
-                itens_com_grupo += 1
-                try:
-                    calc = item.calcular_impostos()
-                    total_impostos += calc.get(
-                        "total_impostos", Decimal("0.00")
+        itens_criados = 0
+        if usar_novo_fluxo:
+            for item_pedido in itens_pedido:
+                if item_pedido.material_id is None:
+                    raise ValidationError(
+                        f"Item do Pedido {self.numero} sem Material vinculado."
                     )
-                    total_creditos += calc.get(
-                        "total_creditos", Decimal("0.00")
-                    )
-                    custo_real += calc.get("custo_real", Decimal("0.00"))
-                    total_nfe += calc.get("total_nfe", Decimal("0.00"))
-                except Exception:
-                    custo_real += valor_item
-                    total_nfe += valor_item
-            else:
-                custo_real += valor_item
-                total_nfe += valor_item
+                ItemSolicitacao.objects.create(
+                    solicitacao=solicitacao,
+                    item_pedido_origem=item_pedido,
+                    material=item_pedido.material,
+                    quantidade=item_pedido.quantidade,
+                    valor_unitario_estimado=(
+                        item_pedido.valor_unitario or Decimal("0.00")
+                    ),
+                    observacao=item_pedido.observacao or "",
+                    status=ItemSolicitacao.StatusItem.PENDENTE_COTACAO,
+                )
+                itens_criados += 1
 
-        pct = Decimal("0.00")
-        if valor_produtos > 0:
-            pct = ((total_creditos / valor_produtos) * 100).quantize(
-                Decimal("0.01")
+        self.solicitacao_gerada = solicitacao
+        self.status = self.StatusChoices.SOLICITACAO_GERADA
+        self.save(update_fields=[
+            "solicitacao_gerada", "status", "atualizado_em"
+        ])
+
+        try:
+            HistoricoPedido.registrar(
+                pedido=self,
+                descricao=(
+                    f"Solicitação de Compra {solicitacao.numero} gerada "
+                    f"({itens_criados} item(ns))."
+                ),
+                responsavel=usuario,
+                status_anterior=self.StatusChoices.APROVADO,
+                status_novo=self.StatusChoices.SOLICITACAO_GERADA,
             )
+        except Exception:
+            pass
 
-        return {
-            "valor_produtos": valor_produtos,
-            "total_impostos": total_impostos,
-            "total_creditos": total_creditos,
-            "total_nfe": total_nfe,
-            "custo_real": custo_real,
-            "percentual_economia": pct,
-            "itens_com_grupo": itens_com_grupo,
-            "total_itens": total_itens,
-            "cobertura_tributaria": f"{itens_com_grupo}/{total_itens}",
-        }
-
+        return solicitacao
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 4b. ANEXOS DO PEDIDO
@@ -923,6 +999,11 @@ class AnexoPedido(BaseAnexo):
         null=True,
         related_name='anexos_pedido_enviados',
         verbose_name='Enviado por',
+    )
+
+    observacao = models.CharField(
+        _("Observação"), max_length=255, blank=True, default="",
+        help_text=_("Descrição opcional do anexo."),
     )
     
     class Meta(BaseAnexo.Meta):
@@ -1089,6 +1170,7 @@ class ItemPedido(models.Model):
             self.total_creditos = calc.get("total_creditos", Decimal("0.00"))
             self.custo_real = calc.get("custo_real", Decimal("0.00"))
         except Exception:
+            logger.exception("Falha ao calcular impostos do item (material=%s)", self.material_id)
             self.total_impostos = Decimal("0.00")
             self.total_creditos = Decimal("0.00")
             self.custo_real = Decimal("0.00")
@@ -1101,29 +1183,44 @@ class ItemPedido(models.Model):
 
     def __str__(self):
         unidade = self.get_unidade_medida_display() if self.unidade_medida else ""
-        return f"{self.quantidade}x {self.material.descricao}"
+        return f"{self.quantidade}x {self.material.descricao}, {unidade} — R$ {self.valor_total:.2f}"
 
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 6. SOLICITAÇÃO DE COMPRA — WORKFLOW PÓS-APROVAÇÃO
 # ═════════════════════════════════════════════════════════════════════════════
 
-class SolicitacaoCompra(models.Model):
+class SolicitacaoCompra(TimestampedModel):
     """
-    Solicitação de compra — gerada automaticamente quando um Pedido é APROVADO.
-    Workflow: Fazer Cotação → Cotação Enviada → Criar Pedido/CT →
-              Em Aprovação → Enviar Pedido → Entrega Pendente → Concluído
+    Fluxo:
+      APROVAR PEDIDO → SOLICITAÇÃO DE COTAÇÃO → APROVAR COTAÇÃO →
+      MONTAR PEDIDO DE COMPRA → ACOMPANHAR ENTREGA → FINALIZAR
     """
 
     class StatusChoices(models.TextChoices):
-        FAZER_COTACAO = "FAZER_COTACAO", "Fazer Cotação"
+        # 1) Cotação (NxN) — supr. lança preços por fornecedor
+        FAZER_COTACAO   = "FAZER_COTACAO",   "Fazer Cotação"
         COTACAO_ENVIADA = "COTACAO_ENVIADA", "Cotação Enviada"
-        CRIAR_PEDIDO_CT = "CRIAR_PEDIDO_CT", "Criar Pedido/CT"
-        EM_APROVACAO = "EM_APROVACAO", "Em Aprovação"
-        ENVIAR_PEDIDO = "ENVIAR_PEDIDO", "Enviar Pedido"
-        ENTREGA_PENDENTE = "ENTREGA_PENDENTE", "Entrega Pendente"
-        CONCLUIDO = "CONCLUIDO", "Concluído"
-        CANCELADO = "CANCELADO", "Cancelado"
+        # 2) Aprovação da cotação (gerente + verba)
+        EM_APROVACAO    = "EM_APROVACAO",    "Em Aprovação"
+        APROVADO        = "APROVADO",        "Aprovado"
+        # 3) Montar Pedido de Compra
+        ENVIAR_PEDIDO   = "ENVIAR_PEDIDO",   "Pronto p/ Pedido de Compra"
+        PEDIDO_GERADO   = "PEDIDO_GERADO",   "Pedido de Compra Gerado"
+        # 4) Pós-compra
+        EM_ENTREGA      = "EM_ENTREGA",      "Acompanhar Entrega"
+        FINALIZADO      = "FINALIZADO",      "Finalizado"
+        CANCELADO       = "CANCELADO",       "Cancelado"
+
+
+    # Flag para indicar que esta solicitação já usa o novo fluxo
+    usa_novo_fluxo = models.BooleanField(
+        _("Usa novo fluxo (v2)"),
+        default=False,
+        help_text=_(
+            "Marca se esta solicitação usa o fluxo com ItemSolicitacao+Cotacao+PedidoCompra."
+        ),
+    )
 
     # ═══════════════════════════════════════════════════════════════════════
     # CAMPOS DEPRECATED (manter até Fase 5 — migração de dados completa)
@@ -1267,7 +1364,7 @@ class SolicitacaoCompra(models.Model):
     data_criacao_pedido = models.DateField(
         _("Data Criação do Pedido"), null=True, blank=True,
     )
-    numero_pedido_sienge = models.CharField(
+    numero_pedido = models.CharField(
         _("Nº do Pedido"), max_length=50, blank=True, default="",
     )
     fornecedor = models.ForeignKey(
@@ -1328,7 +1425,13 @@ class SolicitacaoCompra(models.Model):
         verbose_name_plural = _("Solicitações de Compra")
         ordering = ["-criado_em"]
         permissions = [
-            ("pode_executar_cotacao", "Pode executar cotações (Comprador)"),
+            ("pode_executar_cotacao", "Pode executar cotações de compra"),
+            ("pode_montar_pc", "Pode montar pedido de compra"),
+            ("pode_enviar_pc", "Pode enviar pedido de compra"),
+            ("pode_aprovar_pc", "Pode aprovar pedido de compra"),
+            ("pode_entregar_pc", "Pode entregar pedido de compra"),
+            ("pode_concluir_pc", "Pode concluir pedido de compra"),
+            ("pode_cancelar_pc", "Pode cancelar pedido de compra"),
         ]
 
     def __str__(self):
@@ -1340,26 +1443,48 @@ class SolicitacaoCompra(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        if not self.numero:
-            hoje = timezone.now()
-            prefix = f"SOL-{hoje.strftime('%Y%m')}"
-            ultimo = (
-                SolicitacaoCompra.objects.filter(
-                    numero__startswith=prefix
+        if not self.pk and not self.numero:
+            with transaction.atomic():
+                # Lock nas linhas do ano/filial para impedir números duplicados
+                # em requisições concorrentes
+                ano = timezone.now().year
+                qs = SolicitacaoCompra.objects.select_for_update().filter(
+                    numero__startswith=f"SOL-{ano}-"
                 )
-                .order_by("-numero")
-                .first()
-            )
-            seq = int(ultimo.numero.split("-")[-1]) + 1 if ultimo else 1
-            self.numero = f"{prefix}-{seq:04d}"
-        
-        # Sincroniza campo antigo ↔ novo durante a transição
-        if self.numero_pedido_sienge and not self.numero_pedido:
-            self.numero_pedido = self.numero_pedido_sienge
-        elif self.numero_pedido and not self.numero_pedido_sienge:
-            self.numero_pedido_sienge = self.numero_pedido
-        
+                if getattr(self, "filial_id", None):
+                    qs = qs.filter(filial_id=self.filial_id)
+
+                ultimo = qs.aggregate(max_num=Max("numero"))["max_num"]
+                if ultimo:
+                    seq = int(ultimo.split("-")[-1]) + 1
+                else:
+                    seq = 1
+
+                self.numero = f"SOL-{ano}-{seq:05d}"
+                super().save(*args, **kwargs)
+                return
+
         super().save(*args, **kwargs)
+
+    def _gerar_numero(self):
+        import re
+        hoje = timezone.now()
+        prefix = f"SOL-{hoje.strftime('%Y%m')}-"
+        for _ in range(5):
+            with transaction.atomic():
+                ultimo = (
+                    SolicitacaoCompra._base_manager
+                    .select_for_update()
+                    .filter(numero__startswith=prefix)
+                    .order_by("-numero")
+                    .first()
+                )
+                seq = int(ultimo.numero.split("-")[-1]) + 1 if ultimo else 1
+                candidato = f"{prefix}{seq:04d}"
+                if not SolicitacaoCompra._base_manager.filter(numero=candidato).exists():
+                    return candidato
+        return f"{prefix}{int(hoje.timestamp()) % 10000:04d}"
+
 
     # ── Verificação de Verba ─────────────────────────────────────────────────
 
@@ -1396,6 +1521,46 @@ class SolicitacaoCompra(models.Model):
                 f"(Verba: R$ {getattr(verba, campo_verba):.2f})"
             )
         return True, "Dentro da verba."
+    
+    def sincronizar_status_entrega(self, responsavel=None):
+        """
+        Sincroniza o status da solicitação com base nos PCs:
+        - todos RECEBIDO  → FINALIZADO
+        - algum em curso   → EM_ENTREGA
+        Idempotente: só grava se houver mudança real.
+        """
+        PC = PedidoCompra.StatusPC
+        S = self.StatusChoices
+
+        pcs = self.pedidos_compra.exclude(status=PC.CANCELADO)
+        if not pcs.exists():
+            return
+
+        todos_recebidos = not pcs.exclude(status=PC.RECEBIDO).exists()
+
+        if todos_recebidos:
+            novo = S.FINALIZADO
+        else:
+            # algum PC já saiu de EMITIDO (foi enviado/parcial/entregue)
+            em_andamento = pcs.exclude(status=PC.EMITIDO).exists()
+            novo = S.EM_ENTREGA if em_andamento else S.PEDIDO_GERADO
+
+        if self.status != novo:
+            anterior = self.status
+            self.status = novo
+            if novo == S.FINALIZADO:
+                self.data_entrega_efetiva = timezone.now().date()
+                self.save(update_fields=["status", "data_entrega_efetiva", "atualizado_em"])
+            else:
+                self.save(update_fields=["status", "atualizado_em"])
+            _registrar_historico(  # mova esse helper p/ um utils se preferir
+                HistoricoSolicitacao.registrar,
+                solicitacao=self,
+                descricao=f"Status sincronizado pelos PCs: {anterior} → {novo}",
+                responsavel=responsavel,
+                status_anterior=anterior,
+                status_novo=novo,
+            )
 
     # ── Properties ───────────────────────────────────────────────────────────
     @property
@@ -1405,50 +1570,85 @@ class SolicitacaoCompra(models.Model):
 
     @property
     def status_badge_class(self):
-        """Classe CSS do badge conforme status."""
+        S = self.StatusChoices
         mapa = {
-            "FAZER_COTACAO": "info",
-            "COTACAO_ENVIADA": "warning text-dark",
-            "CRIAR_PEDIDO_CT": "primary",
-            "EM_APROVACAO": "warning text-dark",
-            "ENVIAR_PEDIDO": "info",
-            "ENTREGA_PENDENTE": "secondary",
-            "CONCLUIDO": "success",
-            "CANCELADO": "dark",
+            S.FAZER_COTACAO:   "info",
+            S.COTACAO_ENVIADA: "warning text-dark",
+            S.EM_APROVACAO:    "warning text-dark",
+            S.APROVADO:        "primary",
+            S.ENVIAR_PEDIDO:   "primary",
+            S.PEDIDO_GERADO:   "primary",
+            S.EM_ENTREGA:      "secondary",
+            S.FINALIZADO:      "success",
+            S.CANCELADO:       "dark",
         }
         return mapa.get(self.status, "secondary")
 
     @property
     def etapa_atual(self):
-        """Retorna número da etapa atual (1 a 8) baseado no status."""
+        S = self.StatusChoices
         mapa = {
-            "FAZER_COTACAO": 1,
-            "COTACAO_ENVIADA": 2,
-            "CRIAR_PEDIDO_CT": 3,
-            "EM_APROVACAO": 4,
-            "ENVIAR_PEDIDO": 5,
-            "ENTREGA_PENDENTE": 6,
-            "CONCLUIDO": 8,
-            "CANCELADO": 0,
+            S.FAZER_COTACAO:   1,
+            S.COTACAO_ENVIADA: 2,
+            S.EM_APROVACAO:    3,
+            S.APROVADO:        4,
+            S.ENVIAR_PEDIDO:   5,
+            S.EM_ENTREGA:      7,
+            S.FINALIZADO:      8,
+            S.CANCELADO:       0,
         }
         etapa = mapa.get(self.status, 1)
-        if self.status == "ENTREGA_PENDENTE" and self.data_entrega_efetiva:
+        if self.status == S.EM_ENTREGA and self.data_entrega_efetiva:
             etapa = 7
         return etapa
 
+
     @property
     def dias_em_aberto(self):
-        """Dias desde a criação."""
-        if self.status in ("CONCLUIDO", "CANCELADO"):
+        if self.status in (self.StatusChoices.FINALIZADO, self.StatusChoices.CANCELADO):
             return 0
         delta = timezone.now().date() - self.criado_em.date()
         return delta.days
 
     @property
     def pode_cancelar(self):
-        """Pode cancelar se não estiver concluído ou já cancelado."""
-        return self.status not in ("CONCLUIDO", "CANCELADO")
+        return self.status not in (
+            self.StatusChoices.FINALIZADO,
+            self.StatusChoices.CANCELADO,
+        )
+    
+    @property
+    def todos_itens_cotados(self) -> bool:
+        """True se todos os itens têm ao menos 1 cotação."""
+        itens = self.itens.all()
+        if not itens:
+            return False
+        return all(item.tem_cotacoes for item in itens)
 
+    @property
+    def valor_cotado(self):
+        """Soma do menor total de cada item (menor preço cotado)."""
+        return sum(
+            (it.menor_cotacao.valor_total
+             for it in self.itens.all() if it.menor_cotacao),
+            Decimal("0.00"),
+        )
+
+    @property
+    def valor_estimado(self):
+        """
+        Soma do valor estimado dos itens.
+        Se o item não tiver valor_estimado próprio, usa a menor cotação
+        como referência (fallback), para nunca zerar à toa.
+        """
+        total = Decimal("0.00")
+        for it in self.itens.all():
+            est = getattr(it, "valor_estimado", None)
+            if est:
+                total += est
+            elif it.menor_cotacao:
+                total += it.menor_cotacao.valor_total
+        return total
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 6b. ANEXOS DA SOLICITAÇÃO
@@ -1522,6 +1722,35 @@ class AnexoSolicitacao(BaseAnexo):
         super().delete(*args, **kwargs)
 
 
+class EntregaAnexo(models.Model):
+    """Anexos (notas fiscais / comprovantes) de cada recebimento do PC."""
+    pedido_compra = models.ForeignKey(
+        "PedidoCompra",
+        on_delete=models.CASCADE,
+        related_name="anexos_entrega",   # usado nas views: pc.anexos_entrega.all()
+    )
+    arquivo = models.FileField(
+        upload_to=make_upload_path('suprimentos_entregas'),
+        validators=[SecureFileValidator('suprimentos_entregas')],
+    )
+    nota_fiscal = models.CharField("Nota Fiscal", max_length=60, blank=True)
+    enviado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="anexos_entrega_enviados",
+    )
+    enviado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-enviado_em"]
+        verbose_name = "Anexo de Entrega"
+        verbose_name_plural = "Anexos de Entrega"
+
+    def __str__(self):
+        return f"Anexo PC {self.pedido_compra_id} — NF {self.nota_fiscal or 's/ NF'}"
+
+
 class HistoricoSolicitacao(BaseHistorico):
     """Registro de cada alteração na solicitação (versionamento)."""
 
@@ -1537,7 +1766,7 @@ class HistoricoSolicitacao(BaseHistorico):
     descricao = models.TextField(_("Descrição das Alterações"))
     responsavel = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, related_name="historicos_solic_responsavel",
+        null=True, blank=True, related_name="historicos_solic_responsavel",
         verbose_name=_("Responsável"),
     )
     status_anterior = models.CharField(_("Status Anterior"), max_length=25, blank=True, default="")
@@ -1766,6 +1995,10 @@ class ItemSolicitacao(TimestampedModel):
     @property
     def tem_cotacoes(self) -> bool:
         return self.cotacoes.exists()
+    
+    @property
+    def tem_cotacao(self):
+        return self.cotacoes.exists()
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1814,12 +2047,16 @@ class Cotacao(TimestampedModel):
         _("Observações"),
         blank=True, default="",
     )
-    anexo_cotacao = models.ForeignKey(
-        "AnexoSolicitacao",
-        on_delete=models.SET_NULL,
+    anexo_cotacao = models.FileField(
+        upload_to="cotacoes/%Y/%m/",
         null=True, blank=True,
-        related_name="cotacoes_vinculadas",
-        verbose_name=_("Anexo (PDF da cotação)"),
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=["pdf", "doc", "docx", "xls", "xlsx"],
+                message=_("Formato de arquivo inválido. Permitidos: PDF, DOC, DOCX, XLS, XLSX."),
+            ),
+        ],
+        verbose_name=_("Anexo da Cotação"),
     )
     criado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -1845,6 +2082,11 @@ class Cotacao(TimestampedModel):
             models.Index(fields=["item_solicitacao", "valor_unitario"]),
             models.Index(fields=["fornecedor"]),
         ]
+        permissions = [
+            ("pode_cotar", "Pode lançar cotações"),
+            ("pode_aprovar_cotacao", "Pode aprovar cotações"),
+        ]
+
 
     def __str__(self):
         return (
@@ -1868,8 +2110,8 @@ class Cotacao(TimestampedModel):
 
     @property
     def is_escolhida(self) -> bool:
-        """Retorna True se esta foi a cotação aprovada pelo gerente."""
-        return self.item_solicitacao.cotacao_escolhida_id == self.pk
+        """DEPRECATED na Interpretação 2 — sempre False."""
+        return False
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1886,6 +2128,7 @@ class PedidoCompra(TimestampedModel):
         RASCUNHO = "RASCUNHO", "Rascunho"
         EMITIDO = "EMITIDO", "Emitido"
         ENVIADO_FORNECEDOR = "ENVIADO_FORNECEDOR", "Enviado ao Fornecedor"
+        ENTREGA_PARCIAL    = "ENTREGA_PARCIAL", "Entrega Parcial"
         ENTREGUE = "ENTREGUE", "Entregue"
         RECEBIDO = "RECEBIDO", "Recebido"
         CANCELADO = "CANCELADO", "Cancelado"
@@ -2001,13 +2244,15 @@ class PedidoCompra(TimestampedModel):
         permissions = [
             ("pode_emitir_pedido_compra", "Pode emitir Pedido de Compra"),
             ("pode_receber_pedido_compra", "Pode dar entrada em Pedido de Compra"),
+            ("pode_cancelar_pedido_compra", "Pode cancelar Pedido de Compra"),
+            ("pode_visualizar_pedido_compra", "Pode visualizar Pedido de Compra"),
         ]
 
     def __str__(self):
         return f"PC {self.numero} — {self.fornecedor.nome_fantasia}"
 
     def get_absolute_url(self):
-        return reverse("suprimentos:pedido_compra_detalhe", kwargs={"pk": self.pk})
+        return reverse("suprimentos:pc_detalhe", kwargs={"pk": self.pk})
 
     def save(self, *args, **kwargs):
         # Geração de número interno automático
@@ -2033,7 +2278,32 @@ class PedidoCompra(TimestampedModel):
         self.valor_total = total
         self.save(update_fields=["valor_total", "atualizado_em"])
         return total
+    
+    def atualizar_status_entrega(self):
+        """Atualiza o status com base no total recebido vs. pedido."""
+        # 🔑 ItemPedidoCompra direto, ignorando qualquer cache de prefetch
+        agg = ItemPedidoCompra.objects.filter(pedido_compra=self).aggregate(
+            total_pedido=Sum("quantidade"),
+            total_receb=Sum("quantidade_recebida"),
+        )
+        total_pedido = agg["total_pedido"] or Decimal("0")
+        total_receb = agg["total_receb"] or Decimal("0")
 
+        if total_pedido <= 0:
+            return
+
+        if total_receb <= 0:
+            self.status = self.StatusPC.ENVIADO_FORNECEDOR
+        elif total_receb < total_pedido:
+            self.status = self.StatusPC.ENTREGA_PARCIAL
+        else:
+            self.status = self.StatusPC.ENTREGUE
+            if not self.data_entrega_efetiva:
+                self.data_entrega_efetiva = timezone.now().date()
+
+        self.save(update_fields=["status", "data_entrega_efetiva", "atualizado_em"])
+
+    # ✅ AGORA com 4 espaços — métodos REAIS da classe
     @property
     def total_itens(self) -> int:
         return self.itens.count()
@@ -2047,7 +2317,11 @@ class PedidoCompra(TimestampedModel):
         """True se a data prevista já passou e ainda não foi entregue."""
         if not self.data_entrega_prevista:
             return False
-        if self.status in (self.StatusPC.ENTREGUE, self.StatusPC.RECEBIDO, self.StatusPC.CANCELADO):
+        if self.status in (
+            self.StatusPC.ENTREGUE,
+            self.StatusPC.RECEBIDO,
+            self.StatusPC.CANCELADO,
+        ):
             return False
         return timezone.now().date() > self.data_entrega_prevista
 
@@ -2062,7 +2336,6 @@ class ItemPedidoCompra(TimestampedModel):
     Os valores são SNAPSHOT da cotação no momento da emissão do PC
     (não muda mesmo se a cotação original for editada depois).
     """
-
     pedido_compra = models.ForeignKey(
         PedidoCompra,
         on_delete=models.CASCADE,
@@ -2149,3 +2422,24 @@ class ItemPedidoCompra(TimestampedModel):
     @property
     def recebimento_completo(self) -> bool:
         return self.quantidade_recebida >= self.quantidade
+    
+    
+    @property
+    def qtd_entregue(self):
+        """Quantidade já recebida deste item."""
+        return self.quantidade_recebida or Decimal("0")
+
+    @property
+    def saldo(self):
+        """Quantidade ainda pendente de recebimento."""
+        return (self.quantidade or Decimal("0")) - (self.quantidade_recebida or Decimal("0"))
+
+    @property
+    def progresso_pct(self):
+        if not self.quantidade:
+            return Decimal("0")
+        recebida = self.quantidade_recebida or Decimal("0")
+        return (recebida / self.quantidade * 100).quantize(Decimal("0.1"))
+
+    
+    

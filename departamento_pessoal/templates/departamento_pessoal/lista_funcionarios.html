@@ -16,7 +16,7 @@
         <p>Relação de funcionários cadastrados na empresa.</p>
     </div>
     <div class="d-flex gap-2 mt-3 mt-md-0 flex-wrap">
-        {% if perms.departamento_pessoal.view_cargo or user.is_superuser %}
+        {% if perms.departamento_pessoal.view_botoes or user.is_superuser %}
         <a href="{% url 'departamento_pessoal:exportar_excel' %}" class="btn btn-header">
             <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
         </a>

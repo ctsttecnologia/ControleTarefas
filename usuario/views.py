@@ -27,7 +27,7 @@ from django.views import View
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.generic import (
-    CreateView, DeleteView, DetailView, FormView, ListView, UpdateView,
+    CreateView, DeleteView, DetailView, FormView, ListView, TemplateView, UpdateView,
 )
 from django.views.generic.detail import SingleObjectMixin
 
@@ -44,6 +44,8 @@ from usuario.mixins import (
 )
 from usuario.models import Filial, Group, GroupCardPermissions, Usuario
 from usuario.services.excel_export import gerar_excel_usuarios
+from django.views.generic import ListView
+from urllib.parse import urlencode
 
 
 # Logger de auditoria
@@ -271,6 +273,13 @@ class UserListView(AppPermissionMixin,
                 Q(email__icontains=search)
             )
         return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        context['query_string'] = params.urlencode()
+        return context
 
 
 @method_decorator(never_cache, name='dispatch')
@@ -666,6 +675,21 @@ class FilialDeleteView(AppPermissionMixin, _SuperuserOnlyMixin, DeleteView):
                 'registros associados a ela.'
             )
             return redirect('usuario:filial_lista')
+        
+# =============================================================================
+# PENDENTE DE VÍNCULO COM FUNCIONÁRIO
+# =============================================================================
+class PendenteVinculoView(LoginRequiredMixin, TemplateView):
+    """
+    Exibida quando o usuário logado não possui um Funcionario vinculado.
+    Bloqueia o uso do sistema até que o RH conclua o vínculo.
+    """
+    template_name = "usuario/pendente_vinculo.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = "Cadastro Pendente"
+        return context
 
 
 # =============================================================================

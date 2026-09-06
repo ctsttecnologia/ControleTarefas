@@ -1,0 +1,225 @@
+
+{% extends "suprimentos/base_suprimentos.html" %}
+{% load static %}
+{% block title %}Pedido de Compra · {{ pc.pk }}{% endblock %}
+
+{% block sup_content %}
+<div class="container py-4">
+
+  {# ─── Cabeçalho ─── #}
+
+   <div class="sup-page-head">
+        <h2 class="sup-page-title">
+            <i class="bi bi-receipt me-1"></i> Pedido de Compra - {{ pc.pk }}
+        </h2>   
+        <div class="sup-page-actions">
+            
+            <a href="{% url 'suprimentos:pc_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i> Voltar à Lista
+            </a>
+        </div>
+    </div>
+    <small class="text-muted">{{ pc.fornecedor }} · {{ pc.filial }}</small>
+    <hr>
+    <div class="d-flex gap-2">
+      {% if pc.status == "ENTREGUE" or pc.status == "RECEBIDO" %}
+        <span class="badge bg-success fs-6">{{ pc.get_status_display }}</span>
+      {% elif pc.status == "ENTREGA_PARCIAL" %}
+        <span class="badge bg-warning text-dark fs-6">{{ pc.get_status_display }}</span>
+      {% elif pc.status == "CANCELADO" %}
+        <span class="badge bg-dark fs-6">{{ pc.get_status_display }}</span>
+      {% else %}
+        <span class="badge bg-secondary fs-6">{{ pc.get_status_display }}</span>
+      {% endif %}
+
+      {% if pc.status != "RECEBIDO" and pc.status != "CANCELADO" %}
+        <a href="{% url 'suprimentos:pc_acompanhar_entrega' pc.pk %}" class="btn btn-primary btn-sm">
+          <i class="bi bi-truck me-1"></i> Receber Entrega
+        </a>
+      {% endif %}
+    </div>
+  {# ─── Resumo / KPIs ─── #}
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <small class="text-muted">Data Emissão</small>
+          <div class="fw-semibold">{{ pc.data_emissao|date:"d/m/Y" }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <small class="text-muted">Entrega Prevista</small>
+          <div class="fw-semibold">{{ pc.data_entrega_prevista|date:"d/m/Y"|default:"—" }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <small class="text-muted">Entrega Efetiva</small>
+          <div class="fw-semibold">{{ pc.data_entrega_efetiva|date:"d/m/Y"|default:"—" }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <small class="text-muted">Valor Total</small>
+          <div class="fw-semibold">R$ {{ valor_total|floatformat:2 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ─── Barra de progresso geral ─── #}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      {% widthratio total_recebido total_pedido 100 as progresso_geral %}
+      <div class="d-flex justify-content-between mb-1">
+        <span class="fw-semibold">Progresso da Entrega</span>
+        <span class="text-muted">
+          {{ total_recebido|floatformat:2 }} / {{ total_pedido|floatformat:2 }}
+          ({{ progresso_geral }}%)
+        </span>
+      </div>
+      <div class="progress" style="height: 14px;">
+        <div class="progress-bar
+              {% if total_saldo <= 0 and total_pedido > 0 %}bg-success{% elif total_recebido > 0 %}bg-warning{% else %}bg-secondary{% endif %}"
+            role="progressbar"
+            style="width: {{ progresso_geral }}%;"
+            aria-valuenow="{{ progresso_geral }}" aria-valuemin="0" aria-valuemax="100">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ─── Itens do pedido ─── #}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold">
+      <i class="bi bi-box-seam me-1"></i> Itens do Pedido
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Material</th>
+            <th class="text-end">Qtd. Pedida</th>
+            <th class="text-end">Recebida</th>
+            <th class="text-end">Saldo</th>
+            <th class="text-end">Vlr. Unit.</th>
+            <th style="width:160px">Progresso</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in itens %}
+          <tr>
+            <td>
+              {{ item.material.descricao }}<br>
+              <small class="text-muted">{{ item.material.codigo }}</small>
+            </td>
+            <td class="text-end">{{ item.quantidade|floatformat:2 }}</td>
+            <td class="text-end">{{ item.quantidade_recebida|default:0|floatformat:2 }}</td>
+            <td class="text-end fw-semibold
+                {% if item.saldo <= 0 %}text-success{% else %}text-warning{% endif %}">
+              {{ item.saldo|floatformat:2 }}
+            </td>
+            <td class="text-end">R$ {{ item.valor_unitario|default:0|floatformat:2 }}</td>
+            <td>
+              {% widthratio item.quantidade_recebida item.quantidade 100 as pct_calc %}
+              <div class="progress" style="height: 10px;" title="{{ pct_calc }}%">
+                <div class="progress-bar
+                      {% if item.saldo <= 0 %}bg-success{% else %}bg-warning{% endif %}"
+                    role="progressbar"
+                    style="width: {{ pct_calc }}%;"
+                    aria-valuenow="{{ pct_calc }}" aria-valuemin="0" aria-valuemax="100">
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-3">Sem itens.</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light fw-semibold">
+          <tr>
+            <td>Totais</td>
+            <td class="text-end">{{ total_pedido|floatformat:2 }}</td>
+            <td class="text-end">{{ total_recebido|floatformat:2 }}</td>
+            <td class="text-end">{{ total_saldo|floatformat:2 }}</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  {# ─── Timeline de Entregas / Anexos ─── #}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold">
+      <i class="bi bi-clock-history me-1"></i> Histórico de Entregas / Notas Fiscais
+    </div>
+    <div class="card-body">
+      {% if entregas %}
+        {% for nota, lista in entregas.items %}
+        <div class="border-start border-3 border-primary ps-3 mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">
+              <i class="bi bi-file-earmark-text me-1"></i>
+              NF: {{ nota }}
+            </h6>
+            <span class="badge bg-light text-dark">
+              {{ lista|length }} anexo(s)
+            </span>
+          </div>
+          <div class="list-group">
+            {% for anexo in lista %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <a href="{{ anexo.arquivo.url }}" target="_blank" class="text-decoration-none">
+                  <i class="bi bi-paperclip me-1"></i>
+                  {{ anexo.arquivo.name|cut:"entregas/" }}
+                </a>
+                <br>
+                <small class="text-muted">
+                  Enviado por {{ anexo.enviado_por|default:"—" }}
+                  em {{ anexo.created_at|date:"d/m/Y H:i" }}
+                </small>
+              </div>
+              <a href="{{ anexo.arquivo.url }}" download class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-download"></i>
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted text-center mb-0 py-3">
+          <i class="bi bi-inbox me-1"></i> Nenhuma entrega registrada ainda.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ─── Observações ─── #}
+  {% if pc.observacoes %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold">
+      <i class="bi bi-chat-left-text me-1"></i> Observações
+    </div>
+    <div class="card-body">
+      <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit;">{{ pc.observacoes }}</pre>
+    </div>
+  </div>
+  {% endif %}
+
+    <a href="{% url 'suprimentos:pc_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+
+</div>
+{% endblock %}
+

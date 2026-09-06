@@ -1,14 +1,14 @@
 
 # suprimentos/signals.py
-
 from decimal import Decimal
 import logging
 from django.db.models import F
-from django.db.models.signals import pre_save
+from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.utils import timezone
-from django.db.models.signals import post_save
 from django.db import transaction
+
+from suprimentos.services import gerar_solicitacoes_do_pedido
 from .models import ItemPedido, Pedido, EstoqueConsumo, CategoriaMaterial
 from .models import Pedido, SolicitacaoCompra, ItemSolicitacao
 
@@ -17,73 +17,11 @@ logger = logging.getLogger(__name__)
 
 def _gerar_solicitacao_do_pedido(pedido):
     """
-    Gera UMA SolicitacaoCompra (consolidada) com N ItemSolicitacao
-    a partir de um Pedido aprovado.
+    Wrapper fino sobre o service público — ponto único usado pelo signal.
+    Mantido como função de módulo para facilitar mock em testes
+    (patch("suprimentos.signals._gerar_solicitacao_do_pedido")).
     """
-
-    # Idempotência: já existe solicitação para esse pedido?
-    if SolicitacaoCompra.objects.filter(pedido=pedido).exists():
-        logger.info(f"⏭️ Pedido {pedido.numero} já tem solicitação. Pulando.")
-        return
-
-    itens_pedido = pedido.itens.select_related('material').all()
-    if not itens_pedido.exists():
-        logger.warning(f"⚠️ Pedido {pedido.numero} sem itens. Abortando.")
-        return
-
-    logger.info(f"🛒 Gerando solicitação de cotação para pedido {pedido.numero}...")
-
-    try:
-        with transaction.atomic():
-            # 1️⃣ Cabeçalho da solicitação
-            solicitacao = SolicitacaoCompra.objects.create(
-                pedido=pedido,
-                contrato=pedido.contrato,
-                filial=pedido.filial,
-                tipo_obra=getattr(pedido, 'tipo_obra', '') or '',
-                solicitante=pedido.solicitante,
-                aprovador_inicial=pedido.aprovador,
-                data_aprovacao_inicial=pedido.data_aprovacao or timezone.now(),
-                data_necessaria=pedido.data_necessaria,
-                status='PENDENTE_COTACAO',
-            )
-
-            # 2️⃣ Itens (1 por item do pedido, com rastreabilidade)
-            itens_criados = []
-            for item_ped in itens_pedido:
-                item_sol = ItemSolicitacao.objects.create(
-                    solicitacao=solicitacao,
-                    item_pedido_origem=item_ped,    # 🔗 rastreabilidade
-                    material=item_ped.material,
-                    quantidade=item_ped.quantidade,
-                    valor_unitario_estimado=item_ped.valor_unitario or 0,
-                    observacao=item_ped.observacao or '',
-                    status='AGUARDANDO_COTACAO',    # ⚠️ ajuste se o choice for outro
-                )
-                itens_criados.append(item_sol)
-
-            logger.info(
-                f"  ✅ {solicitacao.numero} criada com {len(itens_criados)} item(ns)."
-            )
-
-        # 3️⃣ Notificação (fora da transação para não travar o commit)
-        try:
-            from notifications.services import notificar_solicitacao_criada
-            notificar_solicitacao_criada(solicitacao)
-            logger.info(f"  🔔 Compradores notificados.")
-        except ImportError:
-            logger.debug("  ℹ️ Serviço de notificação não disponível.")
-        except Exception as e:
-            logger.warning(f"  ⚠️ Falha ao notificar: {e}")
-
-        return solicitacao
-
-    except Exception as e:
-        logger.error(
-            f"❌ Erro ao gerar solicitação do pedido {pedido.numero}: {e}",
-            exc_info=True,
-        )
-        return None
+    return gerar_solicitacoes_do_pedido(pedido)
 
 
 @receiver(post_save, sender=Pedido)
@@ -91,45 +29,51 @@ def pedido_aprovado_criar_solicitacao(sender, instance, created, **kwargs):
     """Dispara criação da solicitação quando Pedido vira APROVADO."""
     if created:
         return
-    if instance.status != 'APROVADO':
+    if instance.status != Pedido.StatusChoices.APROVADO:
         return
 
-    # Espera o commit para garantir que os itens já foram salvos
-    transaction.on_commit(lambda: _gerar_solicitacao_do_pedido(instance))
+    def _criar():
+        # Recarrega para garantir estado atual e evitar instância stale
+        pedido = Pedido.objects.get(pk=instance.pk)
+        if pedido.status != Pedido.StatusChoices.APROVADO:
+            return
+        try:
+            _gerar_solicitacao_do_pedido(pedido)
+        except Exception as e:
+            logger.error(
+                "Erro ao gerar solicitação do pedido %s: %s",
+                pedido.numero, e, exc_info=True,
+            )
+
+    transaction.on_commit(_criar)
 
 
 @receiver(pre_save, sender=Pedido)
 def pedido_recebido_gerar_entrada_estoque(sender, instance, **kwargs):
     """
     Quando um pedido muda para RECEBIDO, gera entrada automática no estoque:
-    - EPI       → MovimentacaoEstoque (seguranca_trabalho)
-    - CONSUMO   → EstoqueConsumo (suprimentos)
+    - EPI        → MovimentacaoEstoque (seguranca_trabalho)
+    - CONSUMO    → EstoqueConsumo (suprimentos)
     - FERRAMENTA → Ferramenta.quantidade (ferramentas)
 
     A flag `estoque_processado` evita dupla entrada.
     """
-    # Só processa pedidos já existentes
     if not instance.pk:
         return
 
-    # Já processou estoque? Não faz de novo
     if instance.estoque_processado:
         return
 
-    # Busca status anterior no banco
     try:
         pedido_anterior = Pedido.objects.only('status', 'estoque_processado').get(pk=instance.pk)
     except Pedido.DoesNotExist:
         return
 
-    # Só processa na transição ENTREGUE → RECEBIDO
     if (pedido_anterior.status != Pedido.StatusChoices.ENTREGUE
             or instance.status != Pedido.StatusChoices.RECEBIDO):
         return
 
-    logger.info(
-        f"📦 Pedido {instance.numero} RECEBIDO — gerando entrada no estoque..."
-    )
+    logger.info(f"📦 Pedido {instance.numero} RECEBIDO — gerando entrada no estoque...")
 
     itens = instance.itens.select_related(
         'material',
@@ -158,7 +102,7 @@ def pedido_recebido_gerar_entrada_estoque(sender, instance, **kwargs):
             elif classificacao == CategoriaMaterial.FERRAMENTA:
                 _entrada_ferramenta(item, material, filial, instance)
                 entradas_ok += 1
-            # ═══ NOVO: Recalcular tributação ao receber ═══
+
             if material.grupo_tributario and item.custo_real == Decimal('0.00'):
                 calc = item.calcular_impostos()
                 ItemPedido.objects.filter(pk=item.pk).update(
@@ -172,15 +116,13 @@ def pedido_recebido_gerar_entrada_estoque(sender, instance, **kwargs):
                     f"(créditos R$ {calc['total_creditos']})"
                 )
 
-
         except Exception as e:
             entradas_erro += 1
             logger.error(
-                f"  ❌ Erro ao dar entrada do item '{material.descricao}' "
-                f"(pedido {instance.numero}): {e}"
+                "Erro ao processar estoque do pedido %s: %s",
+                instance.numero, e, exc_info=True,
             )
 
-    # Marca como processado para evitar dupla entrada
     instance.estoque_processado = True
 
     logger.info(
@@ -212,10 +154,7 @@ def _entrada_epi(item, material, filial, pedido, responsavel_id):
         filial=filial,
         data=timezone.now(),
     )
-    logger.info(
-        f"  ✅ EPI: +{item.quantidade} '{equipamento.nome}' "
-        f"(Equipamento #{equipamento.pk})"
-    )
+    logger.info(f"  ✅ EPI: +{item.quantidade} '{equipamento.nome}' (Equipamento #{equipamento.pk})")
 
 
 def _entrada_consumo(item, material, filial, pedido, responsavel_id):
@@ -230,10 +169,7 @@ def _entrada_consumo(item, material, filial, pedido, responsavel_id):
         justificativa=f"Entrada automática — Pedido {pedido.numero}",
         filial=filial,
     )
-    logger.info(
-        f"  ✅ CONSUMO: +{item.quantidade} '{material.descricao}' "
-        f"(Contrato {pedido.contrato.cm})"
-    )
+    logger.info(f"  ✅ CONSUMO: +{item.quantidade} '{material.descricao}' (Contrato {pedido.contrato.cm})")
 
 
 def _entrada_ferramenta(item, material, filial, pedido):
@@ -252,8 +188,6 @@ def _entrada_ferramenta(item, material, filial, pedido):
     Ferramenta.objects.filter(pk=ferramenta.pk).update(
         quantidade=F('quantidade') + item.quantidade
     )
-    logger.info(
-        f"  ✅ FERRAMENTA: +{item.quantidade} '{ferramenta.nome}' "
-        f"(Ferramenta #{ferramenta.pk})"
-    )
+    logger.info(f"  ✅ FERRAMENTA: +{item.quantidade} '{ferramenta.nome}' (Ferramenta #{ferramenta.pk})")
+
 

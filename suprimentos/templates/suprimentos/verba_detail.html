@@ -1,0 +1,174 @@
+
+{% extends "suprimentos/base_suprimentos.html" %}
+{% load static %}
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block sup_content %}
+<div class="container py-3" style="max-width: 860px;">
+
+  <!-- ── Cabeçalho ── -->
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h4 class="mb-0">{{ titulo_pagina }}</h4>
+      <small class="text-muted">
+        Contrato {{ verba.contrato.cm }} · Competência {{ verba.mes|stringformat:"02d" }}/{{ verba.ano }}
+      </small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'suprimentos:verba_update' verba.pk %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-pencil"></i> Editar
+      </a>
+      <a href="{% url 'suprimentos:verba_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Cards de resumo (mês atual) ── -->
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-4">
+      <div class="card shadow-sm h-100 border-0 bg-light">
+        <div class="card-body py-3">
+          <div class="text-muted small text-uppercase fw-semibold">Verba Total</div>
+          <div class="fs-5 fw-bold">R$ {{ verba.verba_total|floatformat:2 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="card shadow-sm h-100 border-0 bg-light">
+        <div class="card-body py-3">
+          <div class="text-muted small text-uppercase fw-semibold">Comprado</div>
+          <div class="fs-5 fw-bold text-primary">R$ {{ verba.compra_total|floatformat:2 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="card shadow-sm h-100 border-0 bg-light">
+        <div class="card-body py-3">
+          <div class="text-muted small text-uppercase fw-semibold">Saldo</div>
+          <div class="fs-5 fw-bold {% if verba.saldo_total < 0 %}text-danger{% else %}text-success{% endif %}">
+            R$ {{ verba.saldo_total|floatformat:2 }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Verba do mês atual ── -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-calendar-check"></i> Mês atual — {{ verba.mes|stringformat:"02d" }}/{{ verba.ano }}</span>
+      <span class="badge {% if pct_total > 100 %}bg-danger{% elif pct_total >= 80 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+        {{ pct_total }}% usado
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Categoria</th>
+              <th class="text-end">Verba</th>
+              <th class="text-end">Comprado</th>
+              <th class="text-end">Saldo</th>
+              <th style="min-width: 150px;">% Usado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in linhas %}
+            <tr>
+              <td class="fw-semibold">{{ l.label }}</td>
+              <td class="text-end">R$ {{ l.verba|floatformat:2 }}</td>
+              <td class="text-end">R$ {{ l.compra|floatformat:2 }}</td>
+              <td class="text-end {% if l.saldo < 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                R$ {{ l.saldo|floatformat:2 }}
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="height: 8px;">
+                    <div class="progress-bar {% if l.pct > 100 %}bg-danger{% elif l.pct >= 80 %}bg-warning{% else %}bg-success{% endif %}"
+                         role="progressbar"
+                         style="width: {% if l.pct > 100 %}100{% else %}{{ l.pct }}{% endif %}%;"
+                         aria-valuenow="{{ l.pct }}" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                  </div>
+                  <small class="text-muted" style="min-width: 42px;">{{ l.pct }}%</small>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-3">Nenhuma categoria cadastrada.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-light fw-bold">
+            <tr>
+              <td>Total</td>
+              <td class="text-end">R$ {{ verba.verba_total|floatformat:2 }}</td>
+              <td class="text-end">R$ {{ verba.compra_total|floatformat:2 }}</td>
+              <td class="text-end {% if verba.saldo_total < 0 %}text-danger{% else %}text-success{% endif %}">
+                R$ {{ verba.saldo_total|floatformat:2 }}
+              </td>
+              <td><small class="text-muted">{{ pct_total }}% usado</small></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Verba do mês anterior ── -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-white fw-bold text-muted">
+      <i class="bi bi-clock-history"></i> Mês anterior — {{ mes_anterior }}
+    </div>
+    <div class="card-body">
+      {% if verba_anterior %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Categoria</th>
+              <th class="text-end">Verba</th>
+              <th class="text-end">Comprado</th>
+              <th class="text-end">Saldo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in linhas_anterior %}
+            <tr>
+              <td class="fw-semibold">{{ l.label }}</td>
+              <td class="text-end">R$ {{ l.verba|floatformat:2 }}</td>
+              <td class="text-end">R$ {{ l.compra|floatformat:2 }}</td>
+              <td class="text-end {% if l.saldo < 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                R$ {{ l.saldo|floatformat:2 }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-light fw-bold">
+            <tr>
+              <td>Total</td>
+              <td class="text-end">R$ {{ verba_anterior.verba_total|floatformat:2 }}</td>
+              <td class="text-end">R$ {{ verba_anterior.compra_total|floatformat:2 }}</td>
+              <td class="text-end {% if verba_anterior.saldo_total < 0 %}text-danger{% else %}text-success{% endif %}">
+                R$ {{ verba_anterior.saldo_total|floatformat:2 }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted mb-0">
+        <i class="bi bi-info-circle"></i>
+        Nenhuma verba cadastrada para o mês anterior ({{ mes_anterior }}).
+      </p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+

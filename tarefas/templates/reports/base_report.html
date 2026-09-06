@@ -12,7 +12,7 @@
            ========================================================== */
 
         @page {
-            size: A4 landscape;          /* ✅ era só "A4" — agora paisagem */
+            size: A4 landscape;
             margin: 1.2cm 1.5cm 1.5cm 1.5cm;
 
             @bottom-center {
@@ -27,7 +27,7 @@
 
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 9pt;              /* pode reduzir um pouco mais */
+            font-size: 9pt;
             color: #1a1a2e;
             line-height: 1.4;
             margin: 0;
@@ -113,7 +113,7 @@
         .report-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8.5pt;            /* tabela mais compacta */
+            font-size: 8.5pt;
         }
 
         .report-table thead th {
@@ -150,22 +150,51 @@
             font-weight: bold;
         }
 
-        /* ===== BARRA DE PROGRESSO ===== */
-        .progress-bar {
+        /* ===== BARRA DE PROGRESSO (genérica via CSS var) ===== */
+        .rel-progress-track {
             width: 100%;
             height: 8px;
             background: #e9ecef;
             border-radius: 4px;
             overflow: hidden;
         }
-        .progress-fill {
+        .rel-progress-fill {
             height: 8px;
-            background: #0D6EFD;   /* azul padrão */
             border-radius: 4px;
             display: block;
+            background: var(--badge-solid, #0D6EFD);
         }
 
-        /* ===== BADGES (paleta sincronizada com tela web) ===== */
+        /* Compatibilidade retroativa (caso algum template ainda use .progress-bar/.progress-fill) */
+        .progress-bar { width: 100%; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 8px; background: #0D6EFD; border-radius: 4px; display: block; }
+        .progress-pendente   { background: #f59e0b; }
+        .progress-andamento  { background: #3b82f6; }
+        .progress-concluida  { background: #22c55e; }
+        .progress-atrasada   { background: #ef4444; }
+        .progress-cancelada  { background: #64748b; }
+        .progress-pausada    { background: #8b5cf6; }
+        .progress-alta       { background: #ef4444; }
+        .progress-media      { background: #f59e0b; }
+        .progress-baixa      { background: #22c55e; }
+
+        /* ===== BADGES ===== */
+        .rel-badge {
+            display: inline-block;
+            padding: 2px 9px;
+            border-radius: 10px;
+            font-size: 7.5pt;
+            font-weight: bold;
+            line-height: 1.4;
+            text-align: center;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            background: var(--badge-bg, rgba(100,116,139,0.12));
+            color: var(--badge-fg, #475569);
+        }
+
+        /* Compatibilidade retroativa (badges sólidos antigos) */
         .badge {
             display: inline-block;
             padding: 2px 9px;
@@ -179,33 +208,21 @@
             letter-spacing: 0.02em;
             color: #fff;
         }
-
-        /* Status */
-        .badge-pendente   { background: #f59e0b; }   /* laranja */
-        .badge-andamento  { background: #3b82f6; }   /* azul */
+        .badge-pendente   { background: #f59e0b; }
+        .badge-andamento  { background: #3b82f6; }
         .badge-concluida,
-        .badge-concluido  { background: #22c55e; }   /* verde */
-        .badge-atrasada   { background: #ef4444; }   /* vermelho */
-        .badge-cancelada  { background: #64748b; }   /* cinza */
-        .badge-pausada    { background: #8b5cf6; }   /* roxo */
-
-        /* Prioridade */
-        .badge-alta       { background: #ef4444; }   /* vermelho */
-        .badge-media      { background: #f59e0b; }   /* laranja */
-        .badge-baixa      { background: #22c55e; }   /* verde */
-        .badge-urgente    { background: #dc2626; }   /* vermelho escuro */
-        .progress-pendente   { background: #f59e0b; }
-        .progress-andamento  { background: #3b82f6; }
-        .progress-concluida  { background: #22c55e; }
-        .progress-atrasada   { background: #ef4444; }
-        .progress-cancelada  { background: #64748b; }
-        .progress-alta       { background: #ef4444; }
-        .progress-media      { background: #f59e0b; }
-        .progress-baixa      { background: #22c55e; }
-
+        .badge-concluido  { background: #22c55e; }
+        .badge-atrasada   { background: #ef4444; }
+        .badge-cancelada  { background: #64748b; }
+        .badge-pausada    { background: #8b5cf6; }
+        .badge-alta       { background: #ef4444; }
+        .badge-media      { background: #f59e0b; }
+        .badge-baixa      { background: #22c55e; }
+        .badge-urgente    { background: #dc2626; }
 
         /* ===== ESTADO VAZIO ===== */
-        .empty-state {
+        .empty-state,
+        .rel-empty {
             text-align: center;
             padding: 20px;
             color: #6b7280;
@@ -218,10 +235,9 @@
         .rel-table-scroll {
             max-height: 480px;
             overflow-y: auto;
-            /* Sombra no rodapé indicando scroll */
             background:
-                linear-gradient(var(--rel-card-bg) 30%, transparent),
-                linear-gradient(transparent, var(--rel-card-bg) 70%) 0 100%,
+                linear-gradient(var(--rel-card-bg, #fff) 30%, transparent),
+                linear-gradient(transparent, var(--rel-card-bg, #fff) 70%) 0 100%,
                 radial-gradient(farthest-side at 50% 0, rgba(0,0,0,0.1), transparent),
                 radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,0.1), transparent) 0 100%;
             background-repeat: no-repeat;

@@ -1,13 +1,13 @@
-#suprimentos/mixins.py
+# suprimentos/mixins.py
 """Mixins para aplicar permissões nas Views."""
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.views import redirect_to_login
 from django.shortcuts import redirect
+from py_serializable import logger
 
 from . import permissions as perms
-
 
 class _SuperuserBypassMixin(UserPassesTestMixin):
     """
@@ -45,8 +45,8 @@ class _SuperuserBypassMixin(UserPassesTestMixin):
         try:
             return redirect(self.redirect_url_no_permission)
         except Exception:
+            logger.warning("Falha ao redirecionar para %s", self.redirect_url_no_permission, exc_info=True)
             return redirect('/')
-
 
 class CoordenadorOuSuperiorMixin(_SuperuserBypassMixin):
     """Coordenador, Comprador, Gerente ou Superuser."""
@@ -54,16 +54,14 @@ class CoordenadorOuSuperiorMixin(_SuperuserBypassMixin):
         u = self.request.user
         return (
             perms.is_coordenador(u)
-            or perms.is_comprador(u)
+            or perms.is_suprimentos(u)
             or perms.is_gerente(u)
         )
-
 
 class SuprimentosOuSuperiorMixin(_SuperuserBypassMixin):
     """Bloqueia coordenador — usado em telas de Solicitação."""
     def _extra_test(self):
         return perms.pode_ver_solicitacao(self.request.user)
-
 
 class GerenteApenasMixin(_SuperuserBypassMixin):
     """Apenas Gerente ou Superuser."""

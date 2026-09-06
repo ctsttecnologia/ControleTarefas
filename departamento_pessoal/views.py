@@ -10,7 +10,7 @@ Convenções:
 
 import io
 import logging
-from datetime import timedelta
+from datetime import date, timedelta
 from io import BytesIO
 
 import pandas as pd
@@ -35,6 +35,7 @@ from django.views import View
 from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView,
 )
+from django.contrib.auth.mixins import PermissionRequiredMixin
 
 from core.decorators import app_permission_required
 from core.mixins import (
@@ -49,6 +50,7 @@ from .forms import (
 )
 from .models import Cargo, Cliente, Departamento, Documento, Filial, Funcionario
 from .services.importacao_massa import gerar_planilha_modelo, processar_planilha
+from django_ratelimit.decorators import ratelimit
 
 logger = logging.getLogger(__name__)
 
@@ -100,24 +102,34 @@ class FilialAtivaMixin:
     """
 
     def get_filial_ativa(self):
-        """Retorna a filial ativa do usuário ou None."""
+        """Retorna a filial ativa do usuário, validando vínculo real."""
+        user = self.request.user
         filial_id = self.request.session.get('active_filial_id')
-        if filial_id:
+
+        # Superuser pode alternar livremente entre filiais
+        if user.is_superuser and filial_id:
             try:
                 return Filial.objects.get(pk=filial_id)
             except Filial.DoesNotExist:
                 pass
 
-        user = self.request.user
-        filial_ativa = getattr(user, 'filial_ativa', None)
-        if filial_ativa:
-            return filial_ativa
-
+        # Usuário comum: SÓ pode usar active_filial_id se corresponder
+        # à filial do seu próprio registro de Funcionario
         try:
             funcionario = Funcionario.objects.select_related('filial').get(usuario=user)
-            return funcionario.filial
         except Funcionario.DoesNotExist:
             return None
+
+        if filial_id and str(funcionario.filial_id) != str(filial_id):
+            # Sessão manipulada — força a filial real e loga o incidente
+            logger.warning(
+                "Tentativa de troca de filial não autorizada. user=%s session_filial=%s real_filial=%s",
+                user.id, filial_id, funcionario.filial_id,
+            )
+            self.request.session['active_filial_id'] = funcionario.filial_id
+
+        return funcionario.filial
+
 
     def get_filial_ativa_id(self):
         filial = self.get_filial_ativa()
@@ -170,6 +182,13 @@ class DPVisibilityMixin(FilialAtivaMixin):
         # Models auxiliares (Departamento, Cargo) → vê todos da filial
         return queryset
 
+    def pode_ver_tudo(self):
+        user = self.request.user
+        return (
+            user.is_superuser
+            or user.has_perm(f'{APP_LABEL}.view_all_departamento_pessoal')
+        )
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MIXIN BASE — TODAS AS CBVs DO MÓDULO
@@ -180,6 +199,7 @@ class DPBaseMixin(
     AppPermissionMixin,
     DPVisibilityMixin,
     ViewFilialScopedMixin,
+    PermissionRequiredMixin,
 ):
     """
     Mixin base para CBVs do Departamento Pessoal.
@@ -211,6 +231,7 @@ class UploadFuncionariosView(DPBaseMixin, View):
             'filial_ativa': self.get_filial_ativa(),
         })
 
+    @ratelimit(key='user', rate='5/h', method='POST', block=True)
     def post(self, request, *args, **kwargs):
         form = self.form_class(request.POST, request.FILES)
         if not form.is_valid():
@@ -316,9 +337,13 @@ class UploadFuncionariosView(DPBaseMixin, View):
                         linha_erro['Erro'] = f"Linha {linha_num}, {e}"
                         linhas_erro.append(linha_erro)
                     except Exception as e:
-                        logger.exception(f"Erro inesperado na linha {linha_num}")
+                        logger.exception(
+                            "Erro inesperado na linha %s do upload (funcionario: %s)",
+                            linha_num,
+                            row.get('matricula', '???'),  # só a matrícula, nunca a linha inteira
+                        )
                         linha_erro = row.to_dict()
-                        linha_erro['Erro'] = f"Linha {linha_num}: Erro inesperado — {e}"
+                        linha_erro['Erro'] = f"Linha {linha_num}: Erro inesperado — {type(e).__name__}"
                         linhas_erro.append(linha_erro)
 
                 if linhas_erro:
@@ -488,6 +513,7 @@ class UploadFuncionariosView(DPBaseMixin, View):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @app_permission_required(APP_LABEL)
+@ratelimit(key='user', rate='10/h', block=True)
 def baixar_modelo_funcionarios(request):
     """Gera planilha modelo .xlsx com formatação profissional."""
     df_modelo = pd.DataFrame(columns=COLUNAS_ESPERADAS)
@@ -541,6 +567,7 @@ def baixar_modelo_funcionarios(request):
 
 
 @app_permission_required(APP_LABEL)
+@ratelimit(key='user', rate='10/h', block=True)
 def baixar_relatorio_erros(request):
     """Gera Excel com as linhas que continham erros durante o último upload."""
     linhas_erro = request.session.pop('upload_erros', [])
@@ -961,7 +988,7 @@ class DocumentoUpdateView(DPBaseMixin, _DocumentoFilialScopedMixin, UpdateView):
 class DocumentoDeleteView(DPBaseMixin, _DocumentoFilialScopedMixin, DeleteView):
     permission_required = f'{APP_LABEL}.delete_documento'
     model = Documento
-    template_name = 'departamento_pessoal/documento_confirm_delete.html'
+    template_name = 'departamento_pessoal/confirm_delete.html'
     context_object_name = 'documento'
 
     def get_success_url(self):
@@ -982,7 +1009,7 @@ class PainelDPView(DPBaseMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
+        
         filial = self.get_filial_ativa()
         if not filial and not self.request.user.is_superuser:
             context['permission_denied'] = True
@@ -1099,6 +1126,8 @@ class PainelDPView(DPBaseMixin, TemplateView):
         context['genero_data'] = [g['total'] for g in dist_genero]
 
         context['titulo_pagina'] = 'Painel de Controle DP - Analytics'
+
+        context['pode_ver_tudo'] = self.pode_ver_tudo()
         return context
 
 
@@ -1122,34 +1151,173 @@ class _BaseExportView(DPBaseMixin, View):
 
 class ExportarFuncionariosExcelView(_BaseExportView):
     def get(self, request, *args, **kwargs):
-        funcionarios = self.get_scoped_queryset().all()
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
 
-        data = [
-            {
-                'Matrícula': f.matricula,
-                'Nome Completo': f.nome_completo,
-                'Cargo': f.cargo.nome if f.cargo else '-',
-                'Departamento': f.departamento.nome if f.departamento else '-',
-                'Data de Admissão': f.data_admissao.strftime('%d/%m/%Y') if f.data_admissao else '-',
-                'Status': f.get_status_display(),
-            }
-            for f in funcionarios
-        ]
-        df = pd.DataFrame(data)
-
-        response = HttpResponse(
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        funcionarios = (
+            self.get_scoped_queryset()
+            .select_related("cargo", "departamento", "funcao", "cliente", "filial")
+            .all()
         )
-        response['Content-Disposition'] = 'attachment; filename="relatorio_funcionarios.xlsx"'
-        df.to_excel(response, index=False)
-        return response
 
+        colunas = [
+            ("Matrícula", 15),
+            ("Nome Completo", 32),
+            ("Sexo", 12),
+            ("Data de Nascimento", 16),
+            ("Idade", 8),
+            ("Email Pessoal", 28),
+            ("Telefone", 16),
+            ("Cargo", 26),
+            ("Função (SST)", 22),
+            ("Departamento", 22),
+            ("Cliente/Contrato", 24),
+            ("Filial", 20),
+            ("Data de Admissão", 16),
+            ("Data de Demissão", 16),
+            ("Tempo de Empresa (anos)", 12),
+            ("Salário", 14),
+            ("Status", 14),
+        ]
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Funcionários"
+
+        # ── Estilos ──────────────────────────────────────────────────────────
+        header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+        header_font = Font(color="FFFFFF", bold=True, size=11, name="Calibri")
+        header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        thin = Side(style="thin", color="B7B7B7")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+        status_fill = {
+            "Ativo": PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid"),
+            "Inativo": PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid"),
+            "Férias": PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid"),
+            "Afastado": PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid"),
+        }
+        status_font = {
+            "Ativo": Font(color="006100", bold=True),
+            "Inativo": Font(color="9C0006", bold=True),
+            "Férias": Font(color="9C6500", bold=True),
+            "Afastado": Font(color="595959", bold=True),
+        }
+
+        # ── Cabeçalho ────────────────────────────────────────────────────────
+        for col_idx, (titulo, largura) in enumerate(colunas, start=1):
+            cell = ws.cell(row=1, column=col_idx, value=titulo)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_align
+            cell.border = border
+            ws.column_dimensions[get_column_letter(col_idx)].width = largura
+
+        ws.row_dimensions[1].height = 28
+        ws.freeze_panes = "A2"
+
+        hoje = date.today()
+
+        def calc_tempo_empresa(admissao, demissao):
+            if not admissao:
+                return None
+            fim = demissao or hoje
+            dias = (fim - admissao).days
+            return round(dias / 365.25, 1)
+
+        # ── Linhas de dados ──────────────────────────────────────────────────
+        linha = 2
+        for f in funcionarios:
+            status_display = f.get_status_display()
+
+            valores = [
+                f.matricula,
+                f.nome_completo,
+                f.get_sexo_display() if f.sexo else "-",
+                f.data_nascimento.strftime("%d/%m/%Y") if f.data_nascimento else "-",
+                f.idade if f.idade is not None else "-",
+                f.email_pessoal or "-",
+                f.telefone or "-",
+                f.cargo.nome if f.cargo else "-",
+                f.funcao.nome if getattr(f, "funcao", None) else "-",
+                f.departamento.nome if f.departamento else "-",
+                f.cliente.nome if getattr(f, "cliente", None) else "-",
+                f.filial.nome if getattr(f, "filial", None) else "-",
+                f.data_admissao.strftime("%d/%m/%Y") if f.data_admissao else "-",
+                f.data_demissao.strftime("%d/%m/%Y") if f.data_demissao else "-",
+                calc_tempo_empresa(f.data_admissao, f.data_demissao) or "-",
+                float(f.salario) if f.salario is not None else 0,
+                status_display,
+            ]
+
+            for col_idx, valor in enumerate(valores, start=1):
+                cell = ws.cell(row=linha, column=col_idx, value=valor)
+                cell.border = border
+                cell.alignment = Alignment(vertical="center")
+
+                # Coluna Salário → formato moeda
+                if col_idx == 16:
+                    cell.number_format = 'R$ #,##0.00'
+                    cell.alignment = Alignment(horizontal="right", vertical="center")
+
+                # Coluna Idade / Tempo de Empresa → centralizado
+                if col_idx in (5, 15):
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
+
+                # Coluna Status → cor condicional
+                if col_idx == 17 and status_display in status_fill:
+                    cell.fill = status_fill[status_display]
+                    cell.font = status_font[status_display]
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
+
+            # Zebra striping (linhas pares levemente cinza)
+            if linha % 2 == 0:
+                for col_idx in range(1, len(colunas) + 1):
+                    c = ws.cell(row=linha, column=col_idx)
+                    if not c.fill or c.fill.start_color.rgb in (None, "00000000"):
+                        c.fill = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
+
+            linha += 1
+
+        # ── Rodapé com totais ────────────────────────────────────────────────
+        total_linha = linha + 1
+        ws.cell(row=total_linha, column=1, value="Total de Funcionários:").font = Font(bold=True)
+        ws.cell(row=total_linha, column=2, value=funcionarios.count()).font = Font(bold=True)
+
+        ws.auto_filter.ref = f"A1:{get_column_letter(len(colunas))}{linha - 1}"
+
+        # ── Resposta HTTP ────────────────────────────────────────────────────
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = 'attachment; filename="relatorio_funcionarios.xlsx"'
+        wb.save(response)
+        return response
 
 class ExportarFuncionariosPDFView(_BaseExportView):
     def get(self, request, *args, **kwargs):
-        funcionarios = self.get_scoped_queryset().filter(status='ATIVO')
+        funcionarios = (
+            self.get_scoped_queryset()
+            .filter(status='ATIVO')
+            .select_related("cargo", "departamento", "funcao", "cliente", "filial")
+        )
+
+        hoje = date.today()
+
+        def calc_tempo_empresa(admissao):
+            if not admissao:
+                return None
+            dias = (hoje - admissao).days
+            return round(dias / 365.25, 1)
+
+        # Pré-calcula campos derivados para uso no template
+        for f in funcionarios:
+            f.tempo_empresa = calc_tempo_empresa(f.data_admissao)
+
         context = {
             'funcionarios': funcionarios,
+            'total_funcionarios': funcionarios.count(),
             'data_emissao': timezone.now().strftime('%d/%m/%Y às %H:%M'),
             'filial_ativa': self.get_filial_ativa(),
         }
@@ -1163,7 +1331,6 @@ class ExportarFuncionariosPDFView(_BaseExportView):
         response = HttpResponse(pdf_file, content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="relatorio_funcionarios.pdf"'
         return response
-
 
 class ExportarFuncionariosWordView(_BaseExportView):
     def get(self, request, *args, **kwargs):
@@ -1295,4 +1462,14 @@ def importacao_massa_funcionarios_view(request):
         'departamento_pessoal/importacao_massa.html',
         {'form': form},
     )
+
+class FuncionarioHistoricoView(DPBaseMixin, DetailView):
+    permission_required = f'{APP_LABEL}.view_all_departamento_pessoal'
+    model = Funcionario
+    template_name = 'departamento_pessoal/historico_funcionario.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['historico'] = self.object.history.all().select_related('history_user')
+        return context
 

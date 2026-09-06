@@ -1,147 +1,25 @@
 <!-- templates/tarefas/relatorio_display.html -->
 {% extends 'base.html' %}
-{% load static %}
+{% load static relatorio_tags %}
 
 {% block title %}Resultado do Relatório{% endblock %}
 
 {% block extra_css %}
-<style>
-:root,
-[data-bs-theme="light"] {
-    --rd-card-bg: #ffffff; --rd-card-border: #e2e6ee; --rd-card-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    --rd-text: #1a1a2e; --rd-text-muted: #6b7280; --rd-divider: #edf0f5;
-    --rd-hover-bg: #f8f9fc; --rd-table-header-bg: #f8f9fc;
-}
-[data-bs-theme="dark"] {
-    --rd-card-bg: #1e1e2e; --rd-card-border: #2e2e44; --rd-card-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    --rd-text: #e2e4f0; --rd-text-muted: #8b8ea8; --rd-divider: #2e2e44;
-    --rd-hover-bg: #252536; --rd-table-header-bg: #252536;
-}
-
-.rd-wrapper { padding: 1rem; }
-@media (min-width: 768px) { .rd-wrapper { padding: 1.5rem 2rem; } }
-
-.rd-header {
-    display: flex; flex-wrap: wrap; justify-content: space-between;
-    align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;
-}
-.rd-title { font-size: 1.4rem; font-weight: 700; color: var(--rd-text); margin-bottom: 0.15rem; }
-.rd-subtitle { font-size: 0.85rem; color: var(--rd-text-muted); margin: 0; }
-.rd-actions { display: flex; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; }
-
-.rd-card {
-    background: var(--rd-card-bg); border: 1px solid var(--rd-card-border);
-    border-radius: 12px; box-shadow: var(--rd-card-shadow); overflow: hidden;
-}
-.rd-card-header {
-    padding: 0.75rem 1.15rem; border-bottom: 1px solid var(--rd-divider);
-    display: flex; justify-content: space-between; align-items: center;
-}
-.rd-card-title { font-size: 0.85rem; font-weight: 700; color: var(--rd-text); margin: 0; }
-.rd-count {
-    background: #6366f1; color: #fff; font-size: 0.68rem; font-weight: 700;
-    padding: 0.2em 0.6em; border-radius: 999px;
-}
-
-.rd-table { width: 100%; border-collapse: collapse; }
-.rd-table thead th {
-    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-    color: var(--rd-text-muted); padding: 0.7rem 0.85rem;
-    border-bottom: 2px solid var(--rd-divider); background: var(--rd-table-header-bg);
-}
-.rd-table tbody td {
-    font-size: 0.82rem; color: var(--rd-text); padding: 0.65rem 0.85rem;
-    border-bottom: 1px solid var(--rd-divider); vertical-align: middle;
-}
-.rd-table tbody tr:hover { background: var(--rd-hover-bg); }
-.rd-table tbody tr:last-child td { border-bottom: none; }
-
-.rd-badge {
-    font-size: 0.65rem; font-weight: 700; padding: 0.2em 0.6em; border-radius: 6px; text-transform: uppercase;
-}
-.rd-badge-pendente  { background: rgba(245,158,11,0.12); color: #d97706; }
-.rd-badge-atrasada  { background: rgba(239,68,68,0.12);  color: #dc2626; }
-.rd-badge-andamento { background: rgba(59,130,246,0.12);  color: #2563eb; }
-.rd-badge-concluida { background: rgba(34,197,94,0.12);   color: #16a34a; }
-.rd-badge-pausada   { background: rgba(139,92,246,0.12);  color: #7c3aed; }
-.rd-badge-cancelada { background: rgba(100,116,139,0.12); color: #475569; }
-
-.rd-export-bar {
-    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
-    padding: 0.85rem 1.15rem; border-top: 1px solid var(--rd-divider);
-}
-.rd-export-label {
-    font-size: 0.72rem; font-weight: 700; color: var(--rd-text-muted);
-    text-transform: uppercase; letter-spacing: 0.04em; margin-right: 0.5rem;
-}
-.rd-export-btn {
-    display: inline-flex; align-items: center; gap: 0.35rem;
-    padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
-    border: 1px solid var(--rd-card-border); background: var(--rd-card-bg);
-    color: var(--rd-text); text-decoration: none; transition: all 0.15s ease;
-}
-.rd-export-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-.rd-export-btn--pdf:hover  { color: #ef4444; border-color: #ef4444; }
-.rd-export-btn--docx:hover { color: #3b82f6; border-color: #3b82f6; }
-.rd-export-btn--csv:hover  { color: #22c55e; border-color: #22c55e; }
-
-/* Filter Tags */
-.rd-filter-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
-.rd-filter-tag {
-    display: inline-flex; align-items: center; gap: 0.3rem;
-    font-size: 0.72rem; font-weight: 600; background: rgba(99,102,241,0.1);
-    color: #6366f1; padding: 0.25em 0.65em; border-radius: 6px;
-}
-.rd-filter-tag a { color: #6366f1; text-decoration: none; font-weight: 800; margin-left: 0.2rem; }
-.rd-filter-tag a:hover { color: #ef4444; }
-
-/* Filter Bar */
-.rd-filter-bar {
-    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
-    padding: 0.85rem 1.15rem; border-bottom: 1px solid var(--rd-divider);
-    background: var(--rd-table-header-bg);
-}
-.rd-filter-bar label {
-    font-size: 0.72rem; font-weight: 700; color: var(--rd-text-muted);
-    text-transform: uppercase; letter-spacing: 0.04em; margin-right: 0.25rem;
-}
-.rd-filter-select {
-    font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--rd-card-border);
-    padding: 0.3rem 0.6rem; background: var(--rd-card-bg); color: var(--rd-text);
-    min-width: 160px;
-}
-.rd-filter-select:focus {
-    border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); outline: none;
-}
-
-.rd-empty { text-align: center; padding: 3rem 1rem; color: var(--rd-text-muted); font-size: 0.85rem; }
-
-@media (max-width: 767.98px) {
-    .rd-wrapper { padding: 0.75rem; }
-    .rd-title { font-size: 1.15rem; }
-    .rd-filter-bar { flex-direction: column; align-items: stretch; }
-    .rd-filter-select { min-width: 100%; }
-}
-
-@media print {
-    .rd-actions, .rd-export-bar, .rd-filter-tags, .rd-filter-bar { display: none !important; }
-    .rd-card { box-shadow: none; border: 1px solid #ccc; }
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/tarefas/relatorios.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="rd-wrapper">
+<div class="rel-wrapper">
 
     <!-- Header -->
-    <div class="rd-header">
+    <div class="rel-header">
         <div>
-            <h1 class="rd-title"><i class="bi bi-file-earmark-text me-2"></i>Resultado do Relatório</h1>
-            <p class="rd-subtitle">
+            <h1 class="rel-title"><i class="bi bi-file-earmark-text me-2"></i>Resultado do Relatório</h1>
+            <p class="rel-subtitle">
                 {{ total_tarefas|default:0 }} tarefa{{ total_tarefas|pluralize:"s" }} encontrada{{ total_tarefas|pluralize:"s" }}
             </p>
         </div>
-        <div class="rd-actions">
+        <div class="rel-actions">
             <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-printer me-1"></i><span class="d-none d-sm-inline">Imprimir</span>
             </button>
@@ -154,57 +32,22 @@
         </div>
     </div>
 
-    <!-- Active Filter Tags -->
-    {% if current_filters.status or current_filters.prioridade or current_filters.responsavel %}
-    <div class="rd-filter-tags">
-        {% if current_filters.status %}
-        <span class="rd-filter-tag">
-            <i class="bi bi-funnel-fill"></i>
-            Status: {{ current_filters.status }}
-            <a href="?{% if current_filters.prioridade %}prioridade={{ current_filters.prioridade }}&{% endif %}{% if current_filters.responsavel %}responsavel={{ current_filters.responsavel }}{% endif %}" title="Remover">&times;</a>
-        </span>
-        {% endif %}
-        {% if current_filters.prioridade %}
-        <span class="rd-filter-tag">
-            <i class="bi bi-flag-fill"></i>
-            Prioridade: {{ current_filters.prioridade }}
-            <a href="?{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.responsavel %}responsavel={{ current_filters.responsavel }}{% endif %}" title="Remover">&times;</a>
-        </span>
-        {% endif %}
-        {% if current_filters.responsavel %}
-        <span class="rd-filter-tag">
-            <i class="bi bi-person-fill"></i>
-            Responsável:
-            {% for user in responsaveis %}
-                {% if user.pk|stringformat:"d" == current_filters.responsavel %}
-                    {{ user.get_full_name|default:user.username }}
-                {% endif %}
-            {% endfor %}
-            <a href="?{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.prioridade %}prioridade={{ current_filters.prioridade }}{% endif %}" title="Remover">&times;</a>
-        </span>
-        {% endif %}
-    </div>
-    {% endif %}
+    {% include 'tarefas/partials/_filter_tags.html' %}
 
     <!-- Card -->
-    <div class="rd-card">
-        <div class="rd-card-header">
-            <h6 class="rd-card-title"><i class="bi bi-table me-2"></i>Resultados</h6>
-            <span class="rd-count">{{ total_tarefas|default:0 }}</span>
+    <div class="rel-card">
+        <div class="rel-card-header">
+            <h6 class="rel-card-title"><i class="bi bi-table me-2"></i>Resultados</h6>
+            <span class="rel-count">{{ total_tarefas|default:0 }}</span>
         </div>
 
-        <!-- ═══ BARRA DE FILTRO POR RESPONSÁVEL ═══ -->
-        <form method="get" class="rd-filter-bar">
-            <!-- Preservar filtros existentes -->
-            {% if current_filters.status %}
-            <input type="hidden" name="status" value="{{ current_filters.status }}">
-            {% endif %}
-            {% if current_filters.prioridade %}
-            <input type="hidden" name="prioridade" value="{{ current_filters.prioridade }}">
-            {% endif %}
+        <!-- Barra de filtro por responsável -->
+        <form method="get" class="rel-quick-export" style="border-top:none; border-bottom:1px solid var(--rel-divider); background:var(--rel-table-header-bg);">
+            {% if current_filters.status %}<input type="hidden" name="status" value="{{ current_filters.status }}">{% endif %}
+            {% if current_filters.prioridade %}<input type="hidden" name="prioridade" value="{{ current_filters.prioridade }}">{% endif %}
 
-            <label for="responsavel"><i class="bi bi-person me-1"></i>Responsável:</label>
-            <select name="responsavel" id="responsavel" class="rd-filter-select" onchange="this.form.submit()">
+            <label for="responsavel" class="rel-quick-export-label"><i class="bi bi-person me-1"></i>Responsável:</label>
+            <select name="responsavel" id="responsavel" class="form-select form-select-sm" style="max-width:220px;" onchange="this.form.submit()">
                 <option value="">Todos os responsáveis</option>
                 {% for user in responsaveis %}
                 <option value="{{ user.pk }}" {% if current_filters.responsavel == user.pk|stringformat:"d" %}selected{% endif %}>
@@ -220,9 +63,9 @@
             </a>
             {% endif %}
         </form>
-  
-        <div class="table-responsive">
-            <table class="rd-table">
+
+        <div class="rel-table-scroll">
+            <table class="rel-table">
                 <thead>
                     <tr>
                         <th>Título</th>
@@ -236,21 +79,25 @@
                 <tbody>
                     {% for tarefa in tarefas %}
                     <tr>
-                        <td><strong>{{ tarefa.titulo }}</strong></td>
-                        <td>{% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}</td>
-                        <td>
-                            <span class="rd-badge rd-badge-{{ tarefa.status }}">
+                        <td data-label="Título"><span class="rel-table-title">{{ tarefa.titulo }}</span></td>
+                        <td data-label="Responsável">{% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}</td>
+                        <td data-label="Status">
+                            <span class="rel-badge" style="--badge-bg: {% status_color tarefa.status 'bg' %}; --badge-fg: {% status_color tarefa.status 'fg' %};">
                                 {{ tarefa.get_status_display }}
                             </span>
                         </td>
-                        <td>{{ tarefa.get_prioridade_display }}</td>
-                        <td>{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
-                        <td>{{ tarefa.prazo|date:"d/m/Y"|default:"—" }}</td>
+                        <td data-label="Prioridade">
+                            <span class="rel-badge" style="--badge-bg: {% priority_color tarefa.prioridade 'bg' %}; --badge-fg: {% priority_color tarefa.prioridade 'fg' %};">
+                                {{ tarefa.get_prioridade_display }}
+                            </span>
+                        </td>
+                        <td data-label="Criação">{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
+                        <td data-label="Prazo">{{ tarefa.prazo|date:"d/m/Y"|default:"—" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="6">
-                            <div class="rd-empty">
+                            <div class="rel-empty">
                                 <i class="bi bi-inbox d-block mb-2" style="font-size:2rem;opacity:0.4;"></i>
                                 Nenhuma tarefa encontrada para os filtros selecionados.
                             </div>
@@ -261,101 +108,8 @@
             </table>
         </div>
 
-        <!-- ═══ ANÁLISE POR STATUS E PRIORIDADE ═══ -->
-        {% if status_data or prioridade_data %}
-        <div style="padding: 1.15rem; border-top: 1px solid var(--rd-divider);">
-            <div class="row g-4">
-
-                {% if status_data %}
-                <div class="col-md-6">
-                    <h6 style="font-size: 0.78rem; font-weight: 700; margin-bottom: 0.75rem;">
-                        <i class="bi bi-pie-chart me-1"></i>Análise por Status
-                    </h6>
-                    {% for item in status_data %}
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="rd-badge rd-badge-{{ item.key }}">{{ item.label }}</span>
-                            <span style="font-size: 0.78rem; font-weight: 600;">{{ item.total }} ({{ item.percentual }}%)</span>
-                        </div>
-                        <div style="background: var(--rd-divider); border-radius: 4px; height: 6px;">
-                            <div style="
-                                height: 100%; border-radius: 4px; width: {{ item.percentual }}%;
-                                background:
-                                    {% if item.key == 'concluida' %}#22c55e
-                                    {% elif item.key == 'andamento' %}#3b82f6
-                                    {% elif item.key == 'pendente' %}#f59e0b
-                                    {% elif item.key == 'pausada' %}#8b5cf6
-                                    {% elif item.key == 'atrasada' %}#ef4444
-                                    {% elif item.key == 'cancelada' %}#6b7280
-                                    {% else %}#9ca3af{% endif %};
-                            "></div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                {% if prioridade_data %}
-                <div class="col-md-6">
-                    <h6 style="font-size: 0.78rem; font-weight: 700; margin-bottom: 0.75rem;">
-                        <i class="bi bi-flag me-1"></i>Análise por Prioridade
-                    </h6>
-                    {% for item in prioridade_data %}
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span style="
-                                font-size: 0.7rem; font-weight: 700; padding: 0.2em 0.6em;
-                                border-radius: 6px; text-transform: uppercase;
-                                background:
-                                    {% if item.key == 'alta' %}rgba(239,68,68,0.12)
-                                    {% elif item.key == 'media' %}rgba(245,158,11,0.12)
-                                    {% elif item.key == 'baixa' %}rgba(34,197,94,0.12)
-                                    {% else %}rgba(100,116,139,0.12){% endif %};
-                                color:
-                                    {% if item.key == 'alta' %}#dc2626
-                                    {% elif item.key == 'media' %}#d97706
-                                    {% elif item.key == 'baixa' %}#16a34a
-                                    {% else %}#475569{% endif %};
-                            ">{{ item.label }}</span>
-                            <span style="font-size: 0.78rem; font-weight: 600;">{{ item.total }} ({{ item.percentual }}%)</span>
-                        </div>
-                        <div style="background: var(--rd-divider); border-radius: 4px; height: 6px;">
-                            <div style="
-                                height: 100%; border-radius: 4px; width: {{ item.percentual }}%;
-                                background:
-                                    {% if item.key == 'alta' %}#ef4444
-                                    {% elif item.key == 'media' %}#f59e0b
-                                    {% elif item.key == 'baixa' %}#22c55e
-                                    {% else %}#9ca3af{% endif %};
-                            "></div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Export Bar -->
-        {% if tarefas %}
-        <div class="rd-export-bar">
-            <span class="rd-export-label"><i class="bi bi-download me-1"></i>Exportar:</span>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.prioridade %}&prioridade={{ current_filters.prioridade }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
-               class="rd-export-btn rd-export-btn--pdf">
-                <i class="bi bi-file-earmark-pdf"></i> PDF
-            </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.prioridade %}&prioridade={{ current_filters.prioridade }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
-               class="rd-export-btn rd-export-btn--docx">
-                <i class="bi bi-file-earmark-word"></i> Word
-            </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.prioridade %}&prioridade={{ current_filters.prioridade }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
-               class="rd-export-btn rd-export-btn--csv">
-                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
-            </a>
-        </div>
-        {% endif %}
+        {% include 'tarefas/partials/_status_priority_analysis.html' %}
+        {% include 'tarefas/partials/_quick_export.html' %}
     </div>
 </div>
 {% endblock %}

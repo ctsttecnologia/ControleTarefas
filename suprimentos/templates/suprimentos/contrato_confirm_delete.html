@@ -1,0 +1,39 @@
+
+{% extends "suprimentos/base_suprimentos.html" %}
+{% load static %}
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block sup_content %}
+<div class="sup-page-head">
+    <h2 class="sup-page-title">
+        <i class="bi bi-exclamation-triangle me-2 text-danger"></i>Excluir Contrato
+    </h2>
+</div>
+
+<div class="mx-auto" style="max-width: 500px;">
+    <div class="card sup-card shadow-sm border-danger">
+        <div class="card-body">
+            <p class="mb-3">
+                Tem certeza que deseja excluir o contrato
+                <strong>CM {{ contrato.cm }} — {{ contrato.cliente }}</strong>?
+            </p>
+            <p class="text-danger small">
+                <i class="bi bi-exclamation-circle me-1"></i>
+                Esta ação também removerá todas as verbas mensais vinculadas e não pode ser desfeita.
+            </p>
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'suprimentos:contrato_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i> Confirmar Exclusão
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock sup_content %}
+

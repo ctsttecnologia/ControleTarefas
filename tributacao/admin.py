@@ -66,8 +66,8 @@ class CSTAdmin(admin.ModelAdmin):
 
 @admin.register(GrupoTributario)
 class GrupoTributarioAdmin(admin.ModelAdmin):
-    list_display = ("nome", "natureza", "cfop", "ncm", "filial", "ativo")
-    search_fields = ("nome",)
+    list_display = ("codigo", "nome", "natureza", "cfop", "ncm", "filial", "ativo")
+    search_fields = ("codigo", "nome")
     list_filter = ("natureza", "ativo", "filial")
     inlines = [TributacaoFederalInline, TributacaoEstadualInline]
 
@@ -78,7 +78,7 @@ class TributacaoFederalAdmin(admin.ModelAdmin):
         "grupo", "aliquota_ipi", "aliquota_pis", "gera_credito_pis",
         "aliquota_cofins", "gera_credito_cofins",
     )
-    search_fields = ("grupo__nome",)
+    search_fields = ("grupo__codigo", "grupo__nome")
 
 
 @admin.register(TributacaoEstadual)
@@ -87,6 +87,6 @@ class TributacaoEstadualAdmin(admin.ModelAdmin):
         "grupo", "uf_origem", "uf_destino", "aliquota_icms",
         "permite_credito", "tem_st", "ativo",
     )
-    search_fields = ("grupo__nome",)
+    search_fields = ("grupo__codigo", "grupo__nome")
     list_filter = ("uf_origem", "uf_destino", "permite_credito", "tem_st", "ativo")
 

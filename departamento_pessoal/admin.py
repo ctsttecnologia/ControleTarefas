@@ -86,11 +86,27 @@ class FuncionarioAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Mod
     )
     readonly_fields = ('idade', 'filial')
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'usuario':
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+
+            funcionario_atual_id = request.resolver_match.kwargs.get('object_id')
+
+            vinculados = Funcionario.objects.filter(usuario__isnull=False)
+            if funcionario_atual_id:
+                vinculados = vinculados.exclude(pk=funcionario_atual_id)
+
+            qs = User.objects.exclude(
+                pk__in=vinculados.values_list('usuario_id', flat=True)
+            )
+            kwargs['queryset'] = qs.order_by('username')
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 # ─────────────────────────────────────────────
 # Documento (admin dedicado)
 # ─────────────────────────────────────────────
-
 @admin.register(Documento)
 class DocumentoAdmin(AdminFilialScopedMixin, admin.ModelAdmin):
     """Admin completo para gerenciar documentos individualmente."""

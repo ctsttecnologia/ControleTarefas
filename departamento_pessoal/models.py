@@ -10,6 +10,7 @@ Arquitetura de Filial:
 """
 
 from datetime import date
+import hashlib
 
 from django.conf import settings
 from django.db import models
@@ -22,6 +23,8 @@ from core.validators import SecureFileValidator, SecureImageValidator
 from usuario.models import Filial
 from cliente.models import Cliente
 
+from django_cryptography.fields import encrypt
+from simple_history.models import HistoricalRecords
 
 # ═════════════════════════════════════════════════════════════════════════════
 # DEPARTAMENTO
@@ -241,6 +244,11 @@ class Funcionario(models.Model):
         help_text=_("Imagem JPG, PNG ou WebP (máx. 4 MB)."),
     )
 
+    history = HistoricalRecords(
+        excluded_fields=[],  # nada excluído — precisamos rastrear salario, dados pessoais
+        cascade_delete_history=True,
+    )
+
     # ── Metadados ────────────────────────────────────────────────────────────
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -253,7 +261,6 @@ class Funcionario(models.Model):
         ordering = ["nome_completo"]
         permissions = [
             ("view_all_departamento_pessoal", "Pode ver todos os dados do DP (global)"),
-            ("view_salario", "Pode ver salario"),
         ]
 
     def __str__(self):
@@ -372,6 +379,8 @@ class Documento(models.Model):
     # CAMPOS COMUNS A TODOS OS TIPOS
     # ═════════════════════════════════════════════════════════════════════════
 
+    history = HistoricalRecords()
+
     funcionario = models.ForeignKey(
         "departamento_pessoal.Funcionario",
         on_delete=models.PROTECT,
@@ -384,13 +393,14 @@ class Documento(models.Model):
         max_length=20,
         choices=TIPO_CHOICES,
     )
-    numero = models.CharField(
+    numero = encrypt(models.CharField(
         _("Número do Documento"),
         max_length=50,
         blank=True,
         null=True,
         help_text=_("Número principal do documento"),
-    )
+    ))
+    numero_hash = models.CharField(max_length=64, blank=True, null=True, editable=False, db_index=True)
     data_emissao = models.DateField(
         _("Data de Emissão"),
         blank=True,
@@ -633,7 +643,7 @@ class Documento(models.Model):
         db_table = "departamento_pessoal_documento"
         verbose_name = _("Documento")
         verbose_name_plural = _("Documentos")
-        unique_together = ("funcionario", "tipo_documento", "numero")
+        unique_together = ("funcionario", "tipo_documento", "numero_hash")
         ordering = ["funcionario__nome_completo", "tipo_documento"]
 
     def __str__(self):
@@ -643,20 +653,28 @@ class Documento(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        Remove arquivo antigo ao substituir e sanitiza imagens anexadas.
+        Herda a filial do Funcionário automaticamente (fonte única de verdade)
+        e remove arquivo antigo ao substituir, sanitizando imagens anexadas.
         """
         from core.upload import delete_old_file, sanitize_image
+
+        # ✅ Herança automática de filial — protege admin, inline, forms e shell
+        if self.funcionario_id and not self.filial_id:
+            self.filial_id = self.funcionario.filial_id
 
         if self.pk:
             delete_old_file(self, "anexo")
 
         super().save(*args, **kwargs)
 
-        # Se o anexo for imagem, sanitiza (strip EXIF, recodifica)
         if self.anexo and self.anexo.name:
             ext = self.anexo.name.rsplit(".", 1)[-1].lower()
             if ext in ("jpg", "jpeg", "png", "webp"):
                 sanitize_image(self.anexo.path)
+
+        if self.numero:
+            self.numero_hash = hashlib.sha256(self.numero.encode()).hexdigest()
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         """Remove arquivo físico ao excluir o registro."""
@@ -703,6 +721,9 @@ class Documento(models.Model):
         # OUTRO — descrição obrigatória
         if self.tipo_documento == "OUTRO" and not self.outro_descricao:
             errors["outro_descricao"] = _('Descrição é obrigatória para tipo "Outro".')
+
+        if not self.filial_id and not self.funcionario_id:
+            errors["filial"] = _("Filial é obrigatória (ou vincule um Funcionário para herdá-la).")
 
         if errors:
             raise ValidationError(errors)

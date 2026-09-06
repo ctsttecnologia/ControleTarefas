@@ -20,24 +20,6 @@ from .forms import ChangeFilialForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse, NoReverseMatch
-from django.contrib.auth.mixins import UserPassesTestMixin
-
-
-class RequireActiveFilialMixin:
-    """
-    Garante que o usuário tenha uma filial ativa antes de acessar a view.
-    Caso contrário, redireciona com mensagem.
-    """
-    filial_required_redirect_url = "usuario:selecionar_filial"  # ajuste se necessário
-    filial_required_message = "Selecione uma filial para continuar."
-
-    def dispatch(self, request, *args, **kwargs):
-        filial = get_filial_ativa(request.user, request)
-        if filial is None:
-            messages.warning(request, self.filial_required_message)
-            return redirect(self.filial_required_redirect_url)
-        request.filial_ativa = filial  # disponibiliza na view
-        return super().dispatch(request, *args, **kwargs)
 
 # =============================================================================
 # == MIXINS DE PERMISSÃO E ESCOPO (ARQUITETURA DE 3 NÍVEIS)
@@ -72,47 +54,18 @@ class AdminFilialScopedMixin:
 class ViewFilialScopedMixin:
     """
     NÍVEL 2 (Horizontal/Filial) - Para Views:
-    Filtra o queryset pela filial ativa da sessão.
+    Filtra o queryset chamando o método 'for_request(request)' 
+    do manager do modelo.
 
-    Estratégia (em ordem de prioridade):
-      1. Se o manager do model tiver 'for_request(request)', usa-o.
-      2. Caso contrário, lê 'active_filial_id' da sessão e filtra
-         pelo campo 'filial' do model (se existir).
+    IMPORTANTE: O modelo desta View DEVE usar o 'FilialManager'.
     """
-
-    """
-    Restringe o queryset da view à filial ativa do usuário.
-    Espera que o model tenha um campo FK `filial`.
-    """
-    filial_field = 'filial'
-
-    def get_filial_ativa(self):
-        """
-        Retorna a instância de Filial ativa na sessão, ou None.
-        Disponibiliza o método para qualquer view que herde deste mixin.
-        """
-        request = getattr(self, 'request', None)
-        if request is None:
-            return None
-
-        filial_id = request.session.get('active_filial_id')
-        if not filial_id:
-            return None
-
-        # Import lazy para evitar import circular
-        try:
-            from usuario.models import Filial
-        except ImportError:
-            return None
-
-        return Filial.objects.filter(pk=filial_id).first()
 
     def get_queryset(self):
         qs = super().get_queryset()
-        filial = get_filial_ativa(self.request.user, self.request)
-        if filial is None:
-            return qs.none()
-        return qs.filter(**{self.filial_field: filial})
+        if hasattr(qs, 'for_request'):
+            return qs.for_request(self.request)
+        return qs
+
 
 class TecnicoScopeMixin:
     """
@@ -124,7 +77,6 @@ class TecnicoScopeMixin:
         class MinhaView(AppPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, ListView):
             ...
     """
-
     tecnico_scope_lookup = None
     _TECNICO_CACHE_ATTR = '_tecnico_group_cache'
 
@@ -503,7 +455,7 @@ def _sanitize_image(uploaded_file):
 
         # Re-salva SEM metadados
         output = io.BytesIO()
-        img.save(output, format=img_format)
+        img.save(output, format=img_format, exif=b'')  # força remoção
         output.seek(0)
 
         return InMemoryUploadedFile(
@@ -766,38 +718,36 @@ class FuncionarioRequiredMixin(LoginRequiredMixin):
     """
     Garante que o usuário autenticado possua um Funcionario vinculado.
 
-    - Superusers passam direto (não precisam de Funcionario)
-    - Usuários comuns sem Funcionario → tela amigável (core:sem_funcionario)
-    - Salva o funcionario em request.funcionario para uso posterior
+    Exceções (não precisam de Funcionario):
+        - Superusers
+        - Usuários com permissão 'departamento_pessoal.view_all_departamento_pessoal' (RH),
+          pois precisam acessar o módulo justamente para fazer vínculos de outros usuários.
 
-    Uso:
-        class MinhaView(FuncionarioRequiredMixin, ListView):
-            modulo_nome = 'Automóvel'  # opcional, exibido na tela amigável
-            ...
+    - Usuários comuns sem Funcionario → tela amigável (usuario:pendente_vinculo)
+    - Salva o funcionario em request.funcionario para uso posterior
     """
 
-    modulo_nome = ''  # Nome do módulo exibido na tela amigável (override por view)
+    modulo_nome = ''
 
     def dispatch(self, request, *args, **kwargs):
-        # 1. Não autenticado → LoginRequiredMixin cuida
         if not request.user.is_authenticated:
             return super().dispatch(request, *args, **kwargs)
 
-        # 2. Superuser → bypass
-        if request.user.is_superuser:
-            request.funcionario = getattr(request.user, 'funcionario', None)
+        user = request.user
+
+        # Superuser ou RH global → bypass
+        if user.is_superuser or user.has_perm('departamento_pessoal.view_all_departamento_pessoal'):
+            request.funcionario = getattr(user, 'funcionario', None)
             return super().dispatch(request, *args, **kwargs)
 
-        # 3. Usuário comum → exige Funcionario vinculado
         try:
-            request.funcionario = request.user.funcionario
+            request.funcionario = user.funcionario
         except ObjectDoesNotExist:
             return self._redirect_sem_funcionario(request)
 
         return super().dispatch(request, *args, **kwargs)
 
     def _redirect_sem_funcionario(self, request):
-        """Redireciona para a tela amigável de 'sem funcionário vinculado'."""
         messages.warning(
             request,
             "Seu usuário ainda não possui funcionário vinculado. "
@@ -818,28 +768,3 @@ class FuncionarioRequiredMixin(LoginRequiredMixin):
 
 # Alias público
 sanitize_image = _sanitize_image
-
-# core/mixins.py (ou onde está o TarefaAccessMixin)
-
-# =============================================================================
-# == MIXIN DE ACESSO AO MONITORAMENTO
-# =============================================================================
-
-class MonitoramentoAccessMixin(UserPassesTestMixin):
-    """
-    Mixin que garante acesso ao painel de monitoramento.
-    Acesso: superuser ou membros do grupo 'Administrador'.
-    """
-
-    raise_exception = False  # redireciona para login em vez de 403
-
-    def test_func(self):
-        return self.user_can_monitor(self.request.user)
-
-    @staticmethod
-    def user_can_monitor(user):
-        if not user.is_authenticated:
-            return False
-        if user.is_superuser:
-            return True
-        return user.groups.filter(name='Administrador').exists()

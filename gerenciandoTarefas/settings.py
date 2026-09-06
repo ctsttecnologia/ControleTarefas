@@ -1,19 +1,21 @@
-#-- Active: 1779136437007@@127.0.0.1@3306@dbcetest3
+
 """
 Django settings for gerenciandoTarefas 1.02 por Emerson Goncalves.
 """
 
 import os
-from dotenv import load_dotenv
 import sys
 import ssl
+import logging
 from pathlib import Path
+
+import cloudinary
+from dotenv import load_dotenv
 from decouple import config
 from celery.schedules import crontab
-import logging
-from core.upload_config import UPLOAD_CONFIG
 
-UPLOAD_CONFIG = UPLOAD_CONFIG
+from core.upload_config import UPLOAD_CONFIG
+from datetime import timedelta
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -21,34 +23,73 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # =============================================================================
-# DETECÇÃO AUTOMÁTICA DE AMBIENTE - CORRIGIDO
+# DETECÇÃO DE AMBIENTE — fonte da verdade: variável ENVIRONMENT
 # =============================================================================
 IS_WINDOWS = sys.platform == 'win32'
-IS_RUNSERVER = 'runserver' in sys.argv or any('uvicorn' in arg for arg in sys.argv)
-IS_UVICORN = any('uvicorn' in arg for arg in sys.argv)
-IS_DEVELOPMENT = IS_WINDOWS and (IS_RUNSERVER or IS_UVICORN)
+
+_env_name = config('ENVIRONMENT', default='').lower()
+
+if _env_name:
+    # Fonte explícita e confiável
+    IS_DEVELOPMENT = _env_name in ('dev', 'development', 'local')
+else:
+    # Fallback: detecção antiga por sys.argv
+    IS_RUNSERVER = 'runserver' in sys.argv or any('uvicorn' in a for a in sys.argv)
+    IS_DEVELOPMENT = IS_WINDOWS and IS_RUNSERVER
+
 IS_PRE_PRODUCTION = not IS_DEVELOPMENT
+
+TESTING = 'test' in sys.argv or 'pytest' in sys.modules
+
+
 
 # =============================================================================
 # SEGURANÇA
 # =============================================================================
 SECRET_KEY = config('SECRET_KEY')
-FERNET_KEYS = config('FERNET_KEYS')
+# ============================================================
+# CRIPTOGRAFIA DE CAMPOS SENSÍVEIS
+# ============================================================
+# Este projeto utiliza DUAS bibliotecas de criptografia distintas,
+# cada uma responsável por campos específicos. NÃO remover nenhuma
+# das duas sem antes verificar todos os usos no código.
+
+# Usada pela lib "django-cryptography" (django_cryptography.fields.encrypt)
+# Responsável por: campo `numero` em departamento_pessoal.Documento
+CRYPTOGRAPHY_KEY = config('CRYPTOGRAPHY_KEY', default=SECRET_KEY)
+
+# Usada pela lib "django-encrypted-model-fields" (EncryptedCharField)
+# Responsável por: campo `imei` em controle_de_telefone.models
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
+
+# [REMOVIDO em 04/09/2026] FERNET_KEYS não é mais utilizada.
+# Era usada pelo módulo core/encryption.py (código morto, arquivado
+# em _deprecated_backup/). Não recriar sem necessidade real.
+
+
 
 DEBUG = config('DEBUG', default=IS_DEVELOPMENT, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
 
-# CSRF Origins - adaptativo por ambiente
+# CSRF/CORS Origins - adaptativo por ambiente
 if IS_DEVELOPMENT:
     CSRF_TRUSTED_ORIGINS = [
         'http://127.0.0.1:8000',
         'http://localhost:8000',
+        'http://10.0.2.2:8000',
+    ]
+    CORS_ALLOWED_ORIGINS = [
+        'http://127.0.0.1:8000',
+        'http://localhost:8000',
+        'http://10.0.2.2:8000',
     ]
 else:
     CSRF_TRUSTED_ORIGINS = [
         'https://www.cetestgerenciandotarefas.com.br',
+        'https://cetestgerenciandotarefas.com.br',
+    ]
+    CORS_ALLOWED_ORIGINS = [
         'https://cetestgerenciandotarefas.com.br',
     ]
 
@@ -73,16 +114,44 @@ else:
     SECURE_HSTS_SECONDS = 0
     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
     SECURE_HSTS_PRELOAD = False
-    
 
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
+SECURE_REFERRER_POLICY = 'same-origin'
 X_FRAME_OPTIONS = 'DENY'
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 14  # 14 dias
 
+# =============================================================================
+# TRAVA DE SEGURANÇA — em DEBUG, nunca forçar HTTPS (evita travar dev local)
+# =============================================================================
+if DEBUG:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+    SECURE_PROXY_SSL_HEADER = None
 
+# =============================================================================
+# JWT (JSON Web Token) - Configurações do Simple JWT
+# =============================================================================
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),   # ajuste conforme necessidade
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'UPDATE_LAST_LOGIN': True,
+}
+
+# =============================================================================
+# INSTALLED APPS
+# =============================================================================
 INSTALLED_APPS = [
     'daphne',
     'channels',
@@ -92,18 +161,17 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
     'django.contrib.humanize',
-    
+    'rest_framework_simplejwt.token_blacklist',
+    'simple_history',
+
     # Extensões
-    #'django_components',
     'django_extensions',
     'django_bootstrap5',
     'django_htmx',
     'django_select2',
-    'rest_framework',
     'rest_framework.authtoken',
-    'dj_rest_auth', 
+    'dj_rest_auth',
     'widget_tweaks',
     'crispy_forms',
     'crispy_bootstrap5',
@@ -112,10 +180,18 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'notifications.apps.NotificationsConfig',
     'dal',
-    'dal_select2',                                       
+    'dal_select2',
+
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
+    'cloudinary_storage',
+    'cloudinary',
+    'django.contrib.staticfiles', 
+    
     # Apps Locais
     'dashboard.apps.DashboardConfig',
-    'usuario.apps.UsuarioConfig', 
+    'usuario.apps.UsuarioConfig',
     'home',
     'logradouro',
     'cliente',
@@ -135,8 +211,8 @@ INSTALLED_APPS = [
     'api',
     'pgr_gestao.apps.PgrGestaoConfig',
     'ltcat',
+    'relatorio_fotografico',
 ]
-
 
 # =============================================================================
 # MIDDLEWARE - ADAPTATIVO POR AMBIENTE
@@ -144,6 +220,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'core.middleware.DBConnectionMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 if IS_PRE_PRODUCTION:
@@ -154,16 +232,16 @@ MIDDLEWARE.extend([
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.ExigeFuncionarioMiddleware',
     'core.middleware.CurrentFilialMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware', 
+    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
     'core.middleware.MaintenanceModeMiddleware',
 ])
 
 MAINTENANCE_MODE = False
-
-APPEND_SLASH = True 
+APPEND_SLASH = True
 
 # =============================================================================
 # URLs E TEMPLATES
@@ -173,7 +251,7 @@ ROOT_URLCONF = 'gerenciandoTarefas.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')], 
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -191,14 +269,15 @@ TEMPLATES = [
                 'suprimentos.context_processors.suprimentos_notificacoes',
             ],
             'builtins': [
-                # 'django_components.templatetags.component_tags',
+                'suprimentos.context_processors.suprimentos_contadores',
+                'tarefas.context_processors.status_colors',
             ],
         },
     },
 ]
 
 DEFAULT_CHARSET = 'utf-8'
-FILE_CHARSET = 'utf-8'  # Django < 4.0
+FILE_CHARSET = 'utf-8'  
 DEFAULT_CONTENT_TYPE = 'text/html'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
@@ -225,18 +304,16 @@ DATABASES = {
             'read_timeout': 30,
             'write_timeout': 30,
             'charset': 'utf8mb4',
-            # Reconecta automaticamente (PyMySQL)
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         }
     }
 }
 
-if 'test' in sys.argv:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': ':memory:',
-        }
+# Testes usam SQLite em memória (rápido e isolado do banco real)
+if TESTING:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
     }
 
 # =============================================================================
@@ -259,45 +336,30 @@ LOGOUT_REDIRECT_URL = 'usuario:login'
 # =============================================================================
 LANGUAGE_CODE = 'pt-br'
 USE_I18N = True
-USE_L10N = True
-USE_TZ = False
+USE_TZ = True
 TIME_ZONE = 'America/Sao_Paulo'
 
-{
-    "files.encoding": "utf8",
-    "files.autoGuessEncoding": False,
-    "files.eol": "\n",
-    "[python]": {
-        "files.encoding": "utf8"
-    },
-    "[html]": {
-        "files.encoding": "utf8"
-    }
-}
-
-
 # =============================================================================
-# ARQUIVOS ESTÁTICOS E MÍDIA - ADAPTATIVO POR AMBIENTE            
+# ARQUIVOS ESTÁTICOS E MÍDIA - ADAPTATIVO POR AMBIENTE
 # =============================================================================
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_ROOT = BASE_DIR / 'midia'
 
-#if STORAGE_PROVIDER == 'GCS':
-    # ── PRODUÇÃO COM GOOGLE CLOUD STORAGE ──
-    # ⚠️ DESATIVADO TEMPORARIAMENTE - usando local até separar buckets
-    # STATICFILES_STORAGE = 'storage_backends.StaticStorage'
-    # STATIC_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/static/'
-    # DEFAULT_FILE_STORAGE = 'storage_backends.MediaStorage'
-    # MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/media/'
-    # logger.info(f"☁️ Usando Google Cloud Storage: {GS_BUCKET_NAME}")
 
-    # ── TEMPORÁRIO: servindo local com WhiteNoise ──
-    #STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    #STATIC_URL = '/static/'
-    #DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    #MEDIA_URL = '/midia/'
-    #logger.info("📦 GCS temporariamente desativado - usando WhiteNoise + local")
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
+    'API_KEY': config('CLOUDINARY_API_KEY', default=''),
+    'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
+    'SECURE': True,
+}
+
+cloudinary.config(
+    cloud_name=CLOUDINARY_STORAGE['CLOUD_NAME'],
+    api_key=CLOUDINARY_STORAGE['API_KEY'],
+    api_secret=CLOUDINARY_STORAGE['API_SECRET'],
+    secure=True,
+)
 
 if IS_DEVELOPMENT:
     # ── DESENVOLVIMENTO LOCAL ──
@@ -307,12 +369,12 @@ if IS_DEVELOPMENT:
     MEDIA_URL = '/midia/'
     logger.debug("📁 Usando storage local (Desenvolvimento)")
 else:
-    # ── PRÉ-PRODUÇÃO / PRODUÇÃO COM WHITENOISE ──
+    # ── PRODUÇÃO COM WHITENOISE + CLOUDINARY ──
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     STATIC_URL = '/static/'
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     MEDIA_URL = '/midia/'
-    logger.debug("📦 Usando WhiteNoise (Produção)")
+    logger.debug("📦 Usando WhiteNoise + Cloudinary (Produção)")
 
 # =============================================================================
 # ARQUIVOS PRIVADOS (sendfile2 - mantém local em qualquer ambiente)
@@ -323,14 +385,12 @@ SENDFILE_ROOT = PRIVATE_MEDIA_ROOT
 SENDFILE_URL = '/private'
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 30 * 1024 * 1024
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 
 # =============================================================================
 # E-MAIL
 # =============================================================================
-
 FORCE_REAL_EMAIL = config('FORCE_REAL_EMAIL', default=False, cast=bool)
 
 # Backend por ambiente
@@ -347,20 +407,19 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
-
+# Contexto SSL seguro por padrão (NÃO desabilitar check_hostname/verify_mode
+# — isso abriria brecha para ataques MITM)
 EMAIL_SSL_CONTEXT = ssl.create_default_context()
-EMAIL_SSL_CONTEXT.check_hostname = False
-EMAIL_SSL_CONTEXT.verify_mode = ssl.CERT_REQUIRED
 
 EMAIL_NOTIFICACAO_PGR = config('EMAIL_NOTIFICACAO_PGR', default='esg@cetestsp.com.br')
 EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO', default='esg@cetestsp.com.br')
-
 
 # =============================================================================
 # REST FRAMEWORK
 # =============================================================================
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
@@ -382,11 +441,7 @@ TAREFAS_MAX_RECORRENCIAS_POR_EXECUCAO = 50
 # =============================================================================
 # CELERY - CONFIGURAÇÃO ADAPTATIVA
 # =============================================================================
-if IS_DEVELOPMENT:
-    REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
-else:
-    REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
-
+REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
@@ -394,12 +449,17 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
-CELERY_ENABLE_UTC = False  # ✅ CORRIGIDO: usar TZ local
-CELERY_WORKER_CONCURRENCY = 2 if IS_DEVELOPMENT else 4  # ✅ Reduzido pra container all-in-one
+CELERY_ENABLE_UTC = False  # usar TZ local
+CELERY_WORKER_CONCURRENCY = 2 if IS_DEVELOPMENT else 4  # Reduzido pra container all-in-one
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 
-# ✅ Adicionar: timeout e segurança
+# Adicionar: timeout e segurança
+CELERY_ENABLE_UTC = False  # usa TZ local
+CELERY_WORKER_CONCURRENCY = 2 if IS_DEVELOPMENT else 4  # reduzido pra container all-in-one
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
+
 CELERY_TASK_TIME_LIMIT = 30 * 60        # 30min hard limit
 CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60   # 25min soft limit
 CELERY_TASK_ACKS_LATE = True
@@ -446,24 +506,27 @@ CELERY_BEAT_SCHEDULE = {
 # =============================================================================
 # CHANNELS (WebSocket) - CONFIGURAÇÃO ADAPTATIVA
 # =============================================================================
+REDIS_HOST = config('REDIS_HOST', default='127.0.0.1')
+REDIS_PORT = config('REDIS_PORT', default=6380, cast=int)
+
 if IS_DEVELOPMENT:
     CHANNEL_LAYERS = {
         'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [('127.0.0.1', 6380)],
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [(REDIS_HOST, REDIS_PORT)],
+            },
         },
     },
-    }
-    logger.debug("Usando InMemory para WebSockets (Desenvolvimento)")
+    logger.debug("Usando Redis para WebSockets (Desenvolvimento)")
 else:
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                "hosts": [("127.0.0.1", 6379)],
-                "capacity": 1500,
-                "expiry": 10,
+                'hosts': [(REDIS_HOST, REDIS_PORT)],
+                'capacity': 1500,
+                'expiry': 10,
             },
         },
     }
@@ -480,7 +543,6 @@ CHAT_CONFIG = {
 # =============================================================================
 # LOGGING - CONFIGURAÇÃO ADAPTATIVA E SEGURA
 # =============================================================================
-
 LOGS_DIR = BASE_DIR / 'logs'
 if IS_PRE_PRODUCTION:
     try:
@@ -488,7 +550,6 @@ if IS_PRE_PRODUCTION:
         logger.debug(f"Diretório de logs criado/verificado: {LOGS_DIR}")
     except Exception as e:
         logger.debug(f"Erro ao criar diretório de logs: {e}")
-
 
 LOGGING = {
     'version': 1,
@@ -518,6 +579,7 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,           # evita propagação para o root
+            'propagate': False,
         },
         'django.request': {
             'handlers': ['console'],
@@ -528,13 +590,29 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,           # não propaga para 'django'
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
         },
         'fontTools': {
             'handlers': ['console'],
             'level': 'WARNING',
+<<<<<<< HEAD
             'propagate': False,           # boa prática
         },
         # ... seus outros loggers — adiciona propagate: False em todos
+=======
+            'propagate': False,
+        },
+        'suprimentos': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if IS_DEVELOPMENT else 'INFO',
+            'propagate': False,
+        },
+>>>>>>> main
     },
 }
 
@@ -554,14 +632,10 @@ if IS_PRE_PRODUCTION and LOGS_DIR.exists():
 else:
     logger.debug("Logging apenas no console (Desenvolvimento)")
 
-
-TESTING = 'test' in sys.argv or 'pytest' in sys.modules
-
 # ══════════════════════════════════════════════════════════════════════
+# Silenciar loggers verbosos de libs de terceiros
 # (necessário porque Daphne/fontTools inicializam antes do LOGGING dict)
 # ══════════════════════════════════════════════════════════════════════
-import logging as _logging
-
 _QUIET_LOGGERS = [
     'fontTools', 'fontTools.subset', 'fontTools.ttLib',
     'fontTools.ttLib.tables', 'fontTools.misc',
@@ -573,13 +647,21 @@ _QUIET_LOGGERS = [
     'twisted',
 ]
 
+if 'test' in sys.argv:
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+        
+    }
+
 for _name in _QUIET_LOGGERS:
-    _logging.getLogger(_name).setLevel(_logging.ERROR)
-    _logging.getLogger(_name).propagate = False
-    _logging.getLogger().setLevel(_logging.WARNING)
-    _logging.getLogger('django').setLevel(_logging.INFO)
-    _logging.getLogger('django.server').setLevel(_logging.WARNING)
-    _logging.getLogger('suprimentos').setLevel(_logging.DEBUG)
+    logging.getLogger(_name).setLevel(logging.ERROR)
+    logging.getLogger(_name).propagate = False
 
 
-
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}

@@ -1,5 +1,6 @@
 
 {% extends "reports/base_report.html" %}
+{% load relatorio_tags %}
 
 {% block titulo %}Relatório de Tarefas{% endblock %}
 {% block report_title %}Relatório de Tarefas{% endblock %}
@@ -48,12 +49,14 @@
             <tbody>
                 {% for item in analise_status %}
                 <tr>
-                    <td class="text-center">  {# ✅ adicionado text-center #}
-                        <span class="badge badge-{{ item.slug }}">{{ item.label }}</span>
+                    <td class="text-center">
+                        <span class="rel-badge" style="--badge-bg: {% status_color item.slug 'bg' %}; --badge-fg: {% status_color item.slug 'fg' %};">
+                            {{ item.label }}
+                        </span>
                     </td>
                     <td>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: {{ item.percentual }}%;"></div>
+                        <div class="rel-progress-track">
+                            <div class="rel-progress-fill" style="width: {{ item.percentual }}%; --badge-solid: {% status_color item.slug 'solid' %};"></div>
                         </div>
                     </td>
                     <td class="text-center fw-bold">{{ item.quantidade }} ({{ item.percentual }}%)</td>
@@ -78,12 +81,13 @@
                 {% for item in analise_prioridade %}
                 <tr>
                     <td>
-                        <span class="badge badge-{{ item.slug }}">{{ item.label }}</span>
+                        <span class="rel-badge" style="--badge-bg: {% priority_color item.slug 'bg' %}; --badge-fg: {% priority_color item.slug 'fg' %};">
+                            {{ item.label }}
+                        </span>
                     </td>
                     <td>
-                        <div class="progress-bar">
-                            <!--<div class="progress-fill" style="width: {{ item.percentual }}%; background: {{ item.cor }};"></div>-->
-                            <div class="progress-fill progress-{{ item.slug }}" style="width: {{ item.percentual }}%;"></div>
+                        <div class="rel-progress-track">
+                            <div class="rel-progress-fill" style="width: {{ item.percentual }}%; --badge-solid: {% priority_color item.slug 'solid' %};"></div>
                         </div>
                     </td>
                     <td class="text-center fw-bold">{{ item.quantidade }} ({{ item.percentual }}%)</td>
@@ -118,10 +122,14 @@
                     <td>{{ t.titulo }}</td>
                     <td>{{ t.responsavel.get_full_name|default:"—" }}</td>
                     <td class="text-center">
-                        <span class="badge badge-{{ t.status }}">{{ t.get_status_display }}</span>
+                        <span class="rel-badge" style="--badge-bg: {% status_color t.status 'bg' %}; --badge-fg: {% status_color t.status 'fg' %};">
+                            {{ t.get_status_display }}
+                        </span>
                     </td>
                     <td class="text-center">
-                        <span class="badge badge-{{ t.prioridade }}">{{ t.get_prioridade_display }}</span>
+                        <span class="rel-badge" style="--badge-bg: {% priority_color t.prioridade 'bg' %}; --badge-fg: {% priority_color t.prioridade 'fg' %};">
+                            {{ t.get_prioridade_display }}
+                        </span>
                     </td>
                     <td>{{ t.projeto|default:"—" }}</td>
                     <td class="text-center">{{ t.data_criacao|date:"d/m/Y" }}</td>
@@ -131,7 +139,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="10" class="empty-state">Nenhuma tarefa encontrada.</td>
+                    <td colspan="10" class="rel-empty">Nenhuma tarefa encontrada.</td>
                 </tr>
                 {% endfor %}
             </tbody>

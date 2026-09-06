@@ -1,0 +1,139 @@
+
+<!-- suprimentos/templates/suprimentos/parceiro_upload_massa.html -->
+{% extends "suprimentos/base_suprimentos.html" %}
+{% load static %}
+{% block title %}Importar Parceiros{% endblock %}
+
+{% block sup_content %}
+<div class="container-fluid py-4 px-lg-5">
+
+    {# ══════════════════════════════════════════════ #}
+    {# CABEÇALHO                                      #}
+    {# ══════════════════════════════════════════════ #}
+
+    <div class="sup-page-head">
+        <h2 class="sup-page-title">
+            <i class="bi bi-upload text-success me-2"></i>
+            Importação em Massa — Parceiros 
+        </h2>   
+        <div class="sup-page-actions">
+            <a href="{% url 'suprimentos:parceiro_upload_massa' %}" class="btn btn-outline-secondary mt-1" title="Planilha para Importação de Fornecedores e Fabricantes">
+                <i class="bi bi-plus-circle me-2"></i> Importação
+            </a>
+            <a href="{% url 'suprimentos:parceiro_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i> Voltar à Lista
+            </a>
+        </div>
+    </div>
+    <small class="text-muted">
+        Cadastre múltiplos parceiros de uma vez através de planilha Excel.
+    </small>
+    <hr>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row g-4">
+
+        {# ══════════════════════════════════════════════ #}
+        {# CARD — DOWNLOAD DO MODELO                     #}
+        {# ══════════════════════════════════════════════ #}
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="text-center mb-4">
+                        <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width: 64px; height: 64px;">
+                            <i class="bi bi-file-earmark-spreadsheet text-success" style="font-size: 1.8rem;"></i>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold text-center mb-3">1. Baixe o Modelo</h5>
+                    <p class="text-muted text-center mb-4">
+                        Baixe a planilha modelo com os cabeçalhos corretos, validações e a lista de
+                        <strong>parceiros já cadastrados</strong> na sua filial na aba de referência.
+                    </p>
+
+                    <ul class="list-unstyled small text-muted mb-4">
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Cabeçalhos pré-definidos com dicas</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Dropdowns Sim/Não para fabricante, fornecedor e ativo</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Aba de referência com parceiros existentes</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Campos de CNPJ, IE, contato e telefones</li>
+                        <li><i class="bi bi-check-circle text-success me-2"></i>Aba de instruções detalhadas</li>
+                    </ul>
+
+                    <div class="mt-auto text-center">
+                        <a href="{% url 'suprimentos:parceiro_modelo_download' %}"
+                           class="btn btn-success px-4">
+                            <i class="bi bi-download me-2"></i>Baixar Modelo .xlsx
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ══════════════════════════════════════════════ #}
+        {# CARD — UPLOAD                                 #}
+        {# ══════════════════════════════════════════════ #}
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="text-center mb-4">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width: 64px; height: 64px;">
+                            <i class="bi bi-cloud-arrow-up text-primary" style="font-size: 1.8rem;"></i>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold text-center mb-3">2. Envie a Planilha Preenchida</h5>
+                    <p class="text-muted text-center mb-4">
+                        Após preencher o modelo, faça o upload para processamento automático.
+                    </p>
+
+                    <form method="post"
+                          action="{% url 'suprimentos:parceiro_upload_massa' %}"
+                          enctype="multipart/form-data"
+                          novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label for="planilha" class="form-label fw-semibold">
+                                Arquivo da planilha (.xlsx)
+                            </label>
+                            <input type="file" name="planilha" id="planilha"
+                                   class="form-control" accept=".xlsx" required>
+                            <div class="form-text">Apenas arquivos Excel no formato .xlsx.</div>
+                        </div>
+
+                        <div class="alert alert-warning d-flex align-items-start gap-2 mb-4" role="alert">
+                            <i class="bi bi-info-circle-fill mt-1"></i>
+                            <div class="small">
+                                <strong>Importante:</strong>
+                                <ul class="mb-0 mt-1 ps-3">
+                                    <li>O campo <strong>nome_fantasia</strong> é obrigatório.</li>
+                                    <li>Se o <strong>CNPJ</strong> já existir nesta filial, o cadastro será atualizado.</li>
+                                    <li>Apague a <strong>linha de exemplo</strong> antes de importar seus dados reais.</li>
+                                    <li>Os parceiros serão vinculados à <strong>sua filial ativa</strong>.</li>
+                                    <li>Erros em uma linha não impedem o processamento das demais.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-auto">
+                            <button type="submit" class="btn btn-primary px-5" id="btn-processar">
+                                <i class="bi bi-gear me-2"></i>Processar Planilha
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock sup_content %}
+
+

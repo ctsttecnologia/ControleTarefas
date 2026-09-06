@@ -249,4 +249,11 @@ UPLOAD_CONFIG = {
         'max_size_mb': 2,
         'allowed_types': {**MIME_IMAGES},
     },
+
+    'relatorio_fotografico': {
+        'max_size_mb': 8,
+        'allowed_types': {**MIME_IMAGES},
+    },
+
 }
+
