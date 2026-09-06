@@ -445,12 +445,6 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
-CELERY_ENABLE_UTC = False  # usar TZ local
-CELERY_WORKER_CONCURRENCY = 2 if IS_DEVELOPMENT else 4  # Reduzido pra container all-in-one
-CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
-
-# Adicionar: timeout e segurança
 CELERY_ENABLE_UTC = False  # usa TZ local
 CELERY_WORKER_CONCURRENCY = 2 if IS_DEVELOPMENT else 4  # reduzido pra container all-in-one
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
@@ -473,31 +467,23 @@ CELERY_BEAT_SCHEDULE = {
     },
 
     # ─── App Tarefas — Recorrência e Lembretes ────────────────
-    # Marca tarefas vencidas como atrasadas — diariamente 00:30
     'tarefas-marcar-atrasadas': {
         'task': 'tarefas.marcar_tarefas_atrasadas',
         'schedule': crontab(hour=0, minute=30),
     },
-
-    # Fallback de geração de recorrências — diariamente 02:00
     'tarefas-gerar-recorrencias-pendentes': {
         'task': 'tarefas.gerar_recorrencias_pendentes',
         'schedule': crontab(hour=2, minute=0),
     },
-
-    # Lembretes de prazo das tarefas — diariamente 08:00
     'tarefas-enviar-lembretes-prazo': {
         'task': 'tarefas.enviar_lembretes_prazo',
         'schedule': crontab(hour=8, minute=0),
     },
-
-    # Aviso de fim de recorrência — semanalmente segunda 09:00
     'tarefas-avisar-recorrencias-proximas-fim': {
         'task': 'tarefas.avisar_recorrencias_proximas_fim',
         'schedule': crontab(hour=9, minute=0, day_of_week='monday'),
     },
 }
-
 
 # =============================================================================
 # CHANNELS (WebSocket) - CONFIGURAÇÃO ADAPTATIVA
@@ -534,7 +520,6 @@ CHAT_CONFIG = {
     'AUTO_RECONNECT': True,
     'RECONNECT_INTERVAL': 3000,
 }
-
 
 # =============================================================================
 # LOGGING - CONFIGURAÇÃO ADAPTATIVA E SEGURA
@@ -574,12 +559,12 @@ LOGGING = {
         'django': {
             'handlers': ['console'],
             'level': 'INFO',
-            'propagate': False,           # evita propagação para o root
+            'propagate': False,
         },
         'django.request': {
             'handlers': ['console'],
             'level': 'WARNING',
-            'propagate': False,           # ESTA É A CORREÇÃO PRINCIPAL!
+            'propagate': False,
         },
         'django.server': {
             'handlers': ['console'],
@@ -589,11 +574,6 @@ LOGGING = {
         'fontTools': {
             'handlers': ['console'],
             'level': 'WARNING',
-            'propagate': False,           # boa prática
-        },
-        'weasyprint': {
-            'handlers': ['console'],
-            'level': 'WARNING',
             'propagate': False,
         },
         'suprimentos': {
@@ -601,7 +581,7 @@ LOGGING = {
             'level': 'DEBUG' if IS_DEVELOPMENT else 'INFO',
             'propagate': False,
         },
-    }
+    },
 }
 
 if IS_PRE_PRODUCTION and LOGS_DIR.exists():
@@ -612,8 +592,7 @@ if IS_PRE_PRODUCTION and LOGS_DIR.exists():
             'formatter': 'verbose',
         }
         LOGGING['loggers']['django']['handlers'].append('file')
-        if 'root' in LOGGING:
-            LOGGING['root']['handlers'].append('file')
+        LOGGING['root']['handlers'].append('file')
         logger.debug("Logging em arquivo ativado para pré-produção")
     except Exception as e:
         logger.debug(f"Não foi possível configurar logging em arquivo: {e}")
@@ -635,7 +614,7 @@ _QUIET_LOGGERS = [
     'twisted',
 ]
 
-if TESTING:
+if 'test' in sys.argv:
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
         "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},

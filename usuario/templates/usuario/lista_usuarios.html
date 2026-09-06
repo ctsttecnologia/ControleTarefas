@@ -25,8 +25,7 @@
 
             <!-- Botão de Exportação Excel -->
             <a href="{% url 'usuario:usuario_exportar_excel' %}{% if request.GET.q %}?q={{ request.GET.q }}{% endif %}" 
-            class="btn btn-outline-success align-self-start" 
-            title="Exportar para Excel (formatado para impressão)">
+            class="btn btn-outline-success align-self-start" title="Exportar para Excel">
                 <i class="bi bi-file-earmark-spreadsheet me-3"></i> Exportar Excel
             </a>    
             {% if user.is_superuser or user.is_gerente or user.is_administrador %}

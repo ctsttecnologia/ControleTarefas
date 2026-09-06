@@ -2,6 +2,7 @@
 # suprimentos/signals.py
 from decimal import Decimal
 import logging
+
 from django.db.models import F
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
@@ -10,7 +11,6 @@ from django.db import transaction
 
 from suprimentos.services import gerar_solicitacoes_do_pedido
 from .models import ItemPedido, Pedido, EstoqueConsumo, CategoriaMaterial
-from .models import Pedido, SolicitacaoCompra, ItemSolicitacao
 
 logger = logging.getLogger(__name__)
 

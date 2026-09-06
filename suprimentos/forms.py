@@ -88,6 +88,13 @@ ItemPedidoFormSet = inlineformset_factory(
     can_delete=True,
 )
 
+ItemPedidoFormSet = inlineformset_factory(
+    Pedido, ItemPedido,
+    form=ItemPedidoForm,
+    extra=1,
+    can_delete=True,
+)
+
 # ═════════════════════════════════════════════════════════════
 # 2. APROVAR PEDIDO (não-ModelForm — decisão livre)
 # ═════════════════════════════════════════════════════════════

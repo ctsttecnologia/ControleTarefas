@@ -80,13 +80,8 @@ class Usuario(AbstractUser):
     def __str__(self):
         return self.get_full_name() or self.username
     
-    # Propriedade para verificar se o usuário pertence ao grupo 'Gerente'
-        # ---------- Perfis hierárquicos ----------
-    @property
-    def is_administrador(self) -> bool:
-        # Superusuário OU pertence ao grupo Administrador
-        return self.is_superuser or self.groups.filter(name=GRUPO_ADMINISTRADOR).exists()
-
+    # ---------- Perfis hierárquicos ----------
+    
     @property
     def is_gerente(self) -> bool:
         return self.groups.filter(name=GRUPO_GERENTE).exists()

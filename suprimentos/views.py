@@ -2031,6 +2031,13 @@ class PedidoCompraImprimirView(LoginRequiredMixin, DetailView):
     template_name = "suprimentos/pc_imprimir.html"
     context_object_name = "pc"
 
+    def form_valid(self, form):
+        # FilialCreateMixin atribui form.instance.filial_id automaticamente
+        response = super().form_valid(form)
+        if self.success_message:
+            messages.success(self.request, self.success_message)
+        return response
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["itens"] = self.object.itens.select_related("material", "cotacao")
@@ -2635,7 +2642,6 @@ class VerbaContratoCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
         ctx["titulo_pagina"] = "Nova Verba Mensal"
         return ctx
 
-    @transaction.atomic
     def form_valid(self, form):
         messages.success(self.request, "Verba mensal cadastrada com sucesso!")
         return super().form_valid(form)
@@ -2648,49 +2654,6 @@ class VerbaContratoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Updat
     permission_required = "suprimentos.change_verbacontrato"
     success_url = reverse_lazy("suprimentos:verba_list")
 
-    # ───────────────────────────────────────────────────────────
-    # Helpers de permissão (centralizados)
-    # ───────────────────────────────────────────────────────────
-    def _eh_aprovador(self, user, pedido):
-        """Retorna True se o usuário pode aprovar este pedido."""
-        if not user.is_authenticated:
-            return False
-        if user.is_superuser:
-            return True
-        if user.has_perm('suprimentos.aprovar_pedido'):
-            return True
-        nomes_grupos = set(user.groups.values_list('name', flat=True))
-        if nomes_grupos & {'Gerente', 'Aprovador Suprimentos', 'Diretoria'}:
-            return True
-        return False
-
-    def _eh_solicitante(self, user, pedido):
-        return user.is_authenticated and (
-            user == pedido.solicitante or user.is_superuser
-        )
-
-    def _get_solicitacao(self, pedido):
-        """
-        Resolve a SolicitacaoCompra vinculada ao pedido, tentando:
-          1) FK direta: pedido.solicitacao_gerada
-          2) Relação reversa: pedido.solicitacao  (OneToOne reversa)
-        Retorna None se nenhuma existir.
-        """
-        # 1) FK direta (mais confiável)
-        if getattr(pedido, 'solicitacao_gerada_id', None):
-            try:
-                return pedido.solicitacao_gerada
-            except Exception:
-                pass
-
-        # 2) Relação reversa OneToOne — precisa de try/except
-        #    porque acessar levanta RelatedObjectDoesNotExist
-        try:
-            return pedido.solicitacao
-        except Exception:
-            return None
-
-    # ───────────────────────────────────────────────────────────
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["titulo_pagina"] = f"Editar Verba {self.object.mes:02d}/{self.object.ano}"

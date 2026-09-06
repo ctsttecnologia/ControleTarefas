@@ -25,7 +25,8 @@ urlpatterns = [
     path("cotacoes/<int:pk>/excluir/", views.cotacao_excluir, name="cotacao_excluir"),
     path("solicitacoes/<int:pk>/enviar-aprovacao/", views.solicitacao_enviar_aprovacao, name="solicitacao_enviar_aprovacao"),
     path("solicitacao/<int:solicitacao_pk>/cotacao/adicionar/", views.cotacao_adicionar, name="cotacao_adicionar"),
-    path("solicitacoes/<int:pk>/montar-pc/imprimir/", views.montar_pedido_compra_imprimir,name="montar_pedido_compra_imprimir",),
+    path( "solicitacoes/<int:pk>/montar-pc/imprimir/", views.montar_pedido_compra_imprimir,name="montar_pedido_compra_imprimir",),
+
 
     # ── 4. Aprovar Cotação ─────────────────────────────────
     path("solicitacoes/<int:pk>/aprovar-cotacao/", views.cotacao_aprovar, name="cotacao_aprovar"),

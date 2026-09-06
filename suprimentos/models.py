@@ -215,60 +215,6 @@ class Parceiro(models.Model):
         return reverse("suprimentos:parceiro_detail", kwargs={"pk": self.pk})
 
 
-class TipoObra(models.TextChoices):
-    CM = "CM", "CM - Contrato de Manutenção"
-    CR = "CR", "CR - Contrato de Reforma"
-    VE = "VE", "VE - Venda"
-
-
-class TipoNotaFiscal(models.TextChoices):
-    MATERIAL = "MATERIAL", "Material"
-    SERVICO = "SERVICO", "Serviço"
-    MATERIAL_SERVICO = "MATERIAL_SERVICO", "Material/Serviço"
-
-
-# ═════════════════════════════════════════════════════════════════════════════
-# PARCEIRO
-# ═════════════════════════════════════════════════════════════════════════════
-
-class Parceiro(models.Model):
-    razao_social = models.CharField(max_length=255, verbose_name=_("Razão Social"), blank=True)
-    nome_fantasia = models.CharField(max_length=255, verbose_name=_("Nome Fantasia / Nome do Fabricante"))
-    cnpj = models.CharField(max_length=18, unique=True, null=True, blank=True, verbose_name=_("CNPJ"))
-    inscricao_estadual = models.CharField(max_length=20, blank=True, verbose_name=_("Inscrição Estadual"))
-    contato = models.CharField(max_length=100, blank=True, verbose_name=_("Pessoa de Contato"))
-    telefone = models.CharField(max_length=20, blank=True, verbose_name=_("Telefone"))
-    celular = models.CharField(max_length=20, blank=True, verbose_name=_("Celular"))
-    email = models.EmailField(blank=True, verbose_name=_("E-mail"))
-    site = models.URLField(blank=True, verbose_name=_("Site"))
-    endereco = models.ForeignKey(
-        Logradouro, on_delete=models.PROTECT,
-        related_name="parceiros", verbose_name=_("Endereço"),
-        null=True, blank=True,
-    )
-    observacoes = models.TextField(blank=True, verbose_name=_("Observações"))
-    eh_fabricante = models.BooleanField(default=False, verbose_name=_("É Fabricante?"))
-    eh_fornecedor = models.BooleanField(default=False, verbose_name=_("É Fornecedor?"))
-    ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
-    filial = models.ForeignKey(
-        Filial, on_delete=models.PROTECT,
-        related_name="parceiros", verbose_name=_("Filial"),
-        null=True, blank=True,
-    )
-    objects = FilialManager()
-
-    class Meta:
-        verbose_name = _("Parceiro")
-        verbose_name_plural = _("Parceiros")
-        ordering = ["nome_fantasia"]
-
-    def __str__(self):
-        return self.nome_fantasia or self.razao_social
-
-    def get_absolute_url(self):
-        return reverse("suprimentos:parceiro_detail", kwargs={"pk": self.pk})
-
-
 # ═════════════════════════════════════════════════════════════════════════════
 # 1. CATÁLOGO DE MATERIAIS
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1214,34 +1160,6 @@ class SolicitacaoCompra(TimestampedModel):
 
 
     # Flag para indicar que esta solicitação já usa o novo fluxo
-    usa_novo_fluxo = models.BooleanField(
-        _("Usa novo fluxo (v2)"),
-        default=False,
-        help_text=_(
-            "Marca se esta solicitação usa o fluxo com ItemSolicitacao+Cotacao+PedidoCompra."
-        ),
-    )
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # CAMPOS DEPRECATED (manter até Fase 5 — migração de dados completa)
-    # ═══════════════════════════════════════════════════════════════════════
-    # NOTA: numero_pedido_sienge será renomeado para numero_pedido.
-    # Por enquanto, ambos coexistem. O método save() sincroniza os dois.
-    # ═══════════════════════════════════════════════════════════════════════
-
-    # 🆕 Novo campo (substitui numero_pedido_sienge)
-    numero_pedido = models.CharField(
-        _("Nº do Pedido (Externo)"),
-        max_length=50,
-        blank=True,
-        default="",
-        help_text=_(
-            "Nº do pedido no sistema externo. "
-            "DEPRECATED na SolicitacaoCompra — usar PedidoCompra.numero_pedido."
-        ),
-    )
-
-    # 🆕 Flag para indicar que esta solicitação já usa o novo fluxo
     usa_novo_fluxo = models.BooleanField(
         _("Usa novo fluxo (v2)"),
         default=False,

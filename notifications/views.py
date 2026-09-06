@@ -16,9 +16,6 @@ from .models import Notificacao
 MAX_DROPDOWN = 8
 logger = logging.getLogger(__name__)
 
-MAX_DROPDOWN = 8
-
-logger = logging.getLogger(__name__)
 
 @login_required
 def notificacao_list(request):

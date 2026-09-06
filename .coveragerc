@@ -23,11 +23,5 @@ omit =
 
 [report]
 show_missing = True
-skip_covered = False
-precision = 1
-
-[html]
-directory = htmlcov
-
 skip_covered = True
 fail_under = 0

@@ -30,9 +30,6 @@ class HistoricoPedidoInline(admin.TabularInline):
     readonly_fields = ("versao", "descricao", "responsavel", "status_anterior", "status_novo", "criado_em")
     can_delete = False
 
-    def has_add_permission(self, request, obj=None):
-        return False
-
 
 class ItemSolicitacaoInline(admin.TabularInline):
     model = ItemSolicitacao
@@ -44,9 +41,6 @@ class CotacaoInline(admin.TabularInline):
     model = Cotacao
     extra = 0
     readonly_fields = ("valor_total", "is_menor_preco")
-
-    def has_add_permission(self, request, obj=None):
-        return False
 
 
 class ItemPedidoCompraInline(admin.TabularInline):
@@ -62,7 +56,6 @@ class ParceiroAdmin(admin.ModelAdmin):
     list_filter = ("eh_fornecedor", "eh_fabricante", "ativo", "filial")
     search_fields = ("nome_fantasia", "razao_social", "cnpj")
     list_per_page = 30
-    
 
 
 # ── Material ──────────────────────────────────────────────────
@@ -83,7 +76,6 @@ class PedidoAdmin(admin.ModelAdmin):
     search_fields = ("numero", "contrato__cm", "contrato__cliente")
     readonly_fields = ("numero", "data_pedido", "valor_total", "estoque_processado")
     inlines = [ItemPedidoInline, AnexoPedidoInline, HistoricoPedidoInline]
-    
 
     @admin.display(description="Status")
     def status_badge(self, obj):
@@ -138,10 +130,6 @@ class HistoricoPedidoAdmin(admin.ModelAdmin):
         return False
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-# HISTÓRICO DA SOLICITAÇÃO (admin standalone)
-# ═════════════════════════════════════════════════════════════════════════════
-
 @admin.register(HistoricoSolicitacao)
 class HistoricoSolicitacaoAdmin(admin.ModelAdmin):
     list_display = ("solicitacao", "status_anterior", "status_novo", "responsavel", "criado_em")
@@ -169,10 +157,6 @@ class SolicitacaoCompraAdmin(admin.ModelAdmin):
     list_filter = ("status", "tipo_obra", "filial", "usa_novo_fluxo")
     search_fields = ("numero", "descricao_material", "contrato__cm")
     readonly_fields = ("numero", "criado_em", "atualizado_em")
-    autocomplete_fields = [
-        'contrato', 'aprovador_inicial', 'comprador',
-        'aprovador_cotacao', 'aprovador_pedido', 'fornecedor',
-    ]
     inlines = [ItemSolicitacaoInline]
 
 

@@ -5,7 +5,6 @@
 import pytest
 from django.contrib.auth.models import Group
 from usuario.models import Filial, GroupCardPermissions, Usuario
-from django.contrib.auth.models import Group
 
 from core.constants import (
     GRUPO_ADMINISTRADOR, GRUPO_GERENTE, GRUPO_COORDENADOR,
@@ -27,7 +26,7 @@ class TestPropriedadesPerfil:
         (GRUPO_GESTAO_QUALIDADE,     "is_da_qualidade"),   # ✅ nome real
         (GRUPO_SST_SEGURANCA,        "is_do_sst"),         # ✅ nome real
         (GRUPO_DEPARTAMENTO_PESSOAL, "is_do_dp"),          # ✅ nome real
-
+        # ❌ linha de GRUPOS_SETOR removida (não é um grupo nem tem propriedade)
     ])
     def test_propriedade_true_quando_no_grupo(self, usuario_comum, constante, propriedade):
         grupo = Group.objects.create(name=constante)

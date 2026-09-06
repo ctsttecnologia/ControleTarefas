@@ -38,6 +38,23 @@ def _garantir_aware(dt):
 
 
 # =============================================================================
+# HELPERS
+# =============================================================================
+
+def _garantir_aware(dt):
+    """
+    Garante datetime 'aware' quando USE_TZ está ativo, para comparações
+    seguras com timezone.now() (evita TypeError em dados legacy 'naive').
+    Assume que valores 'naive' estão no timezone local (TIME_ZONE).
+    """
+    if dt is None:
+        return None
+    if settings.USE_TZ and timezone.is_naive(dt):
+        return timezone.make_aware(dt)
+    return dt
+
+
+# =============================================================================
 # TASK 1 — Fallback de geração de recorrências
 # =============================================================================
 

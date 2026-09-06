@@ -675,7 +675,6 @@ class FilialDeleteView(AppPermissionMixin, _SuperuserOnlyMixin, DeleteView):
                 'registros associados a ela.'
             )
             return redirect('usuario:filial_lista')
-        
 # =============================================================================
 # PENDENTE DE VÍNCULO COM FUNCIONÁRIO
 # =============================================================================
