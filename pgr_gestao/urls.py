@@ -136,7 +136,7 @@ urlpatterns = [
     # AJAX / API ENDPOINTS
     # ========================================
     path('ajax/locais-prestacao/<int:empresa_id>/', views.get_locais_prestacao_ajax, name='ajax_locais_prestacao'),
-    path('ajax/locais/<int:empresa_id>/', views.load_locais_prestacao, name='ajax_load_locais'),
+    path('ajax/locais/<int:empresa_id>/', views.get_locais_prestacao_ajax, name='ajax_load_locais'),
     path('ajax/ges/<int:pgr_id>/', views.get_ges_ajax, name='ajax_ges'),
     path('ajax/dashboard-stats/', views.dashboard_stats_ajax, name='ajax_dashboard_stats'),
 

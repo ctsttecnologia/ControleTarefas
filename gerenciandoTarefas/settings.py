@@ -265,10 +265,6 @@ TEMPLATES = [
                 'pgr_gestao.context_processors.pgr_stats',
                 'notifications.context_processors.notification_processor',
                 'gestao_riscos.context_processors.dias_sem_acidentes',
-                'suprimentos.context_processors.suprimentos_menu_context',
-                'suprimentos.context_processors.suprimentos_notificacoes',
-            ],
-            'builtins': [
                 'suprimentos.context_processors.suprimentos_contadores',
                 'tarefas.context_processors.status_colors',
             ],
@@ -517,7 +513,7 @@ if IS_DEVELOPMENT:
                 'hosts': [(REDIS_HOST, REDIS_PORT)],
             },
         },
-    },
+    }
     logger.debug("Usando Redis para WebSockets (Desenvolvimento)")
 else:
     CHANNEL_LAYERS = {
@@ -579,18 +575,11 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,           # evita propagação para o root
-            'propagate': False,
         },
         'django.request': {
             'handlers': ['console'],
             'level': 'WARNING',
             'propagate': False,           # ESTA É A CORREÇÃO PRINCIPAL!
-        },
-        'django.server': {                # ADICIONADO explicitamente
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,           # não propaga para 'django'
-            'propagate': False,
         },
         'django.server': {
             'handlers': ['console'],
@@ -600,11 +589,11 @@ LOGGING = {
         'fontTools': {
             'handlers': ['console'],
             'level': 'WARNING',
-<<<<<<< HEAD
             'propagate': False,           # boa prática
         },
-        # ... seus outros loggers — adiciona propagate: False em todos
-=======
+        'weasyprint': {
+            'handlers': ['console'],
+            'level': 'WARNING',
             'propagate': False,
         },
         'suprimentos': {
@@ -612,8 +601,7 @@ LOGGING = {
             'level': 'DEBUG' if IS_DEVELOPMENT else 'INFO',
             'propagate': False,
         },
->>>>>>> main
-    },
+    }
 }
 
 if IS_PRE_PRODUCTION and LOGS_DIR.exists():
@@ -647,7 +635,7 @@ _QUIET_LOGGERS = [
     'twisted',
 ]
 
-if 'test' in sys.argv:
+if TESTING:
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
         "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},

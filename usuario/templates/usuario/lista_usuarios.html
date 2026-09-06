@@ -105,38 +105,24 @@
 
                                 {% if perms.usuario.view_usuario or user.is_superuser %}
                                 <a href="{% url 'usuario:usuario_gerenciar_grupos' usuario.pk %}"
-<<<<<<< HEAD
-                                   class="btn btn-outline-secondary" title="Grupos">
-=======
                                 class="btn btn-outline-secondary action-btn"
                                 title="Grupos">
->>>>>>> main
                                     <i class="bi bi-people"></i>
                                 </a>
                                 {% endif %}
 
                                 {% if perms.usuario.change_usuario or user.is_superuser %}
                                 <a href="{% url 'usuario:usuario_definir_senha' usuario.pk %}"
-<<<<<<< HEAD
-                                   class="btn btn-outline-warning" title="Redefinir Senha">
-=======
                                 class="btn btn-outline-warning action-btn"
                                 title="Redefinir senha">
->>>>>>> main
                                     <i class="bi bi-key"></i>
                                 </a>
                                 {% endif %}
 
                                 {% if usuario.pk != user.pk %}
                                 <form method="post"
-<<<<<<< HEAD
-                                      action="{% url 'usuario:usuario_toggle_active' usuario.pk %}"
-                                      class="d-inline"
-                                      onsubmit="return confirm('{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %} o usuário {{ usuario.username }}?');">
-=======
                                     action="{% url 'usuario:usuario_toggle_active' usuario.pk %}"
                                     onsubmit="return confirm('{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %} o usuário {{ usuario.username }}?');">
->>>>>>> main
                                     {% csrf_token %}
                                     <button type="submit"
                                             class="btn btn-outline-{% if usuario.is_active %}danger{% else %}success{% endif %} action-btn"

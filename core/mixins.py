@@ -203,6 +203,25 @@ class AppPermissionMixin(PermissionRequiredMixin):
             ),
         }, status=403)
 
+# =============================================================================
+# == MIXIN DE ACESSO AO MONITORAMENTO
+# =============================================================================
+
+class MonitoramentoAccessMixin:
+    """
+    Mixin que controla o acesso ao painel de monitoramento.
+    Acesso permitido para: superusers, staff, ou usuários com
+    permissão específica de monitoramento.
+    """
+
+    @staticmethod
+    def user_can_monitor(user):
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_superuser or user.is_staff:
+            return True
+        return user.has_perm('core.view_monitoramento')
+
 
 # =============================================================================
 # == MIXINS UTILITÁRIOS
@@ -294,6 +313,36 @@ class ChangeFilialAdminMixin:
 
     change_filial_action.short_description = "Alterar filial dos itens selecionados"
 
+
+class RequireActiveFilialMixin:
+    """
+    Garante que há uma filial ativa na sessão antes de executar a view.
+
+    Se não houver, redireciona o usuário para o perfil com mensagem
+    solicitando a seleção de filial.
+
+    Útil em views de criação de objetos que DEPENDEM da filial ativa
+    para determinar escopo (ex: criação de tarefa, cliente, etc.).
+
+    Ex:
+        class CriarTarefaView(AppPermissionMixin,
+                              RequireActiveFilialMixin,
+                              CreateView):
+            ...
+    """
+    active_filial_redirect_url = 'usuario:profile'
+    active_filial_message = (
+        "Selecione uma filial ativa no menu superior antes de continuar."
+    )
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.session.get('active_filial_id'):
+            # Superusers podem operar em "Todas as Filiais"
+            if not request.user.is_superuser:
+                messages.warning(request, self.active_filial_message)
+                return redirect(self.active_filial_redirect_url)
+
+        return super().dispatch(request, *args, **kwargs)
 
 class AtividadeLogMixin:
     """
@@ -764,7 +813,6 @@ class FuncionarioRequiredMixin(LoginRequiredMixin):
                 return redirect('core:home')
             except NoReverseMatch:
                 return redirect('/')
-
 
 # Alias público
 sanitize_image = _sanitize_image
