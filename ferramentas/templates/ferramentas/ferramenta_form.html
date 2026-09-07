@@ -1,5 +1,5 @@
 
-{# ferramentas/ferramenta_form.html #}
+<!-- ferramentas/ferramenta_form.html -->
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load widget_tweaks %}
 
@@ -37,7 +37,7 @@
                     </div>
                     {% endif %}
 
-                    {# Seção: Identificação #}
+                    <!-- Seção: Identificação -->
                     <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
                         <i class="bi bi-tag me-1"></i>Identificação
                     </h6>
@@ -55,10 +55,11 @@
                         <div class="col-md-3">
                             <label for="{{ form.patrimonio.id_for_label }}" class="form-label">Patrimônio</label>
                             {% render_field form.patrimonio class="form-control" %}
+                            {% for e in form.patrimonio.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                         </div>
                     </div>
 
-                    {# Seção: Especificações #}
+                    <!-- Seção: Especificações -->
                     <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
                         <i class="bi bi-gear me-1"></i>Especificações
                     </h6>
@@ -81,7 +82,7 @@
                         </div>
                     </div>
 
-                    {# Seção: Controle #}
+                    <!-- Seção: Controle -->
                     <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
                         <i class="bi bi-clipboard-data me-1"></i>Controle
                     </h6>
@@ -106,7 +107,7 @@
                         </div>
                     </div>
 
-                    {# Seção: Relacionamentos #}
+                    <!-- Seção: Relacionamentos -->
                     <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
                         <i class="bi bi-link-45deg me-1"></i>Relacionamentos
                     </h6>
@@ -114,6 +115,7 @@
                         <div class="col-md-6">
                             <label for="{{ form.fornecedor.id_for_label }}" class="form-label">Fornecedor</label>
                             {% render_field form.fornecedor class="form-select" %}
+                            {% for e in form.fornecedor.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                         </div>
                         <div class="col-md-6">
                             <label for="{{ form.mala.id_for_label }}" class="form-label">Mala</label>
@@ -121,25 +123,35 @@
                             {% if form.mala.help_text %}
                             <small class="form-text text-muted">{{ form.mala.help_text }}</small>
                             {% endif %}
+                            {% for e in form.mala.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                         </div>
                     </div>
 
-                    {# Observações #}
+                    <!-- Observações -->
                     <div class="mb-4">
                         <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observações</label>
                         {% render_field form.observacoes class="form-control" %}
+                        {% for e in form.observacoes.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                     </div>
 
-                    {# Rodapé #}
+                    <!-- Rodapé -->
                     <hr>
                     <div class="d-flex justify-content-between align-items-center">
                         <small class="text-muted"><span class="text-danger">*</span> Campos obrigatórios</small>
                         <div class="d-flex gap-2">
-                            {% if perms.ferramentas.view_ferramenta or user.is_superuser %}
                             <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-outline-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="bi bi-check-lg me-1"></i>Salvar
-                            </button>
+                            {% if is_create %}
+                                {% if perms.ferramentas.add_ferramenta or user.is_superuser %}
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <i class="bi bi-check-lg me-1"></i>Salvar
+                                </button>
+                                {% endif %}
+                            {% else %}
+                                {% if perms.ferramentas.change_ferramenta or user.is_superuser %}
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <i class="bi bi-check-lg me-1"></i>Salvar
+                                </button>
+                                {% endif %}
                             {% endif %}
                         </div>
                     </div>
@@ -149,5 +161,4 @@
     </div>
 </div>
 {% endblock %}
-
 

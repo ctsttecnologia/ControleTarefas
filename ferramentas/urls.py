@@ -7,13 +7,11 @@ app_name = 'ferramentas'
 urlpatterns = [
     # -- URLs Gerais e Dashboard --
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
-    
+
     # -- URLs de Ferramentas Individuais --
-    # A lista agora é a raiz do app (ex: /ferramentas/)
-    path('', views.FerramentaListView.as_view(), name='ferramenta_list'), 
+    path('', views.FerramentaListView.as_view(), name='ferramenta_list'),
     path('nova/', views.FerramentaCreateView.as_view(), name='ferramenta_create'),
-    # O detalhe agora é /ferramentas/<pk>/
-    path('<int:pk>/', views.FerramentaDetailView.as_view(), name='ferramenta_detail'), 
+    path('<int:pk>/', views.FerramentaDetailView.as_view(), name='ferramenta_detail'),
     path('<int:pk>/editar/', views.FerramentaUpdateView.as_view(), name='ferramenta_update'),
     path('<int:pk>/inativar/', views.InativarFerramentaView.as_view(), name='ferramenta_inativar'),
     path('<int:pk>/iniciar-manutencao/', views.IniciarManutencaoView.as_view(), name='iniciar_manutencao'),
@@ -38,13 +36,15 @@ urlpatterns = [
     path('importar/', views.ImportarFerramentasView.as_view(), name='importar_ferramentas'),
     path('importar/template/', views.DownloadTemplateView.as_view(), name='download_template'),
 
-    # URLS DE TERMOS ATUALIZADAS E NOVAS
+    # -- URLs de Termos de Responsabilidade --
     path('termos/', views.TermoListView.as_view(), name='termoderesponsabilidade_list'),
     path('termos/criar/', views.CriarTermoResponsabilidadeView.as_view(), name='criar_termo_responsabilidade'),
     path('termos/<int:pk>/', views.TermoDetailView.as_view(), name='termo_detail'),
     path('termos/<int:pk>/pdf/', views.DownloadTermoPDFView.as_view(), name='termo_pdf_download'),
     path('termos/download-lote/', views.DownloadTermosLoteView.as_view(), name='termo_download_lote'),
     path('termos/<int:pk>/reverter/', views.ReverterTermoView.as_view(), name='termo_reverter'),
-    
+    path('termos/<int:pk>/enviar-link/', views.EnviarLinkAssinaturaView.as_view(), name='enviar_link_assinatura'),
+    # Rota pública — sem prefixo de autenticação, fora do namespace protegido se houver middleware
+    path('termo/assinar/<uuid:token>/', views.AssinarTermoRemotoView.as_view(), name='assinar_termo_remoto'),
 ]
 

@@ -26,7 +26,7 @@ from django.views.generic import (
     CreateView, DetailView, FormView,
     ListView, TemplateView, UpdateView
 )
-
+from django.shortcuts import render
 import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
@@ -516,12 +516,10 @@ class InativarFerramentaView(AcaoFerramentaBaseView):
         messages.success(request, f"'{ferramenta.nome}' inativada com sucesso.")
         return redirect('ferramentas:ferramenta_list')
 
-
 # =============================================================================
 # MOVIMENTAÇÃO (Retirada / Devolução)
 # =============================================================================
-
-class MovimentacaoCreateView(LoginRequiredMixin, AppPermissionMixin, ItemRetrievalMixin, AtividadeLogMixin, CreateView):
+class MovimentacaoCreateView(LoginRequiredMixin, FilialAtribuicaoMixin, AppPermissionMixin, ItemRetrievalMixin, AtividadeLogMixin, CreateView):
     """Retirada de ferramenta ou mala."""
     app_label_required = _APP
     model = Movimentacao
@@ -554,14 +552,17 @@ class MovimentacaoCreateView(LoginRequiredMixin, AppPermissionMixin, ItemRetriev
     @transaction.atomic
     def form_valid(self, form):
         item = self.ferramenta or self.mala
-        if item.status != 'disponivel':
+
+        # Usa status_efetivo para ferramentas (considera a mala); malas usam status próprio
+        status_atual = item.status_efetivo if isinstance(item, Ferramenta) else item.status
+
+        if status_atual != 'disponivel':
             messages.error(self.request, f"'{item.nome}' não está disponível para retirada.")
             return redirect(item.get_absolute_url())
 
         movimentacao = form.save(commit=False)
         movimentacao.filial = self.request.user.filial_ativa
 
-        # Processa assinatura
         assinatura_data = form.cleaned_data.get('assinatura_base64')
         if assinatura_data and ';base64,' in assinatura_data:
             fmt, imgstr = assinatura_data.split(';base64,')
@@ -611,6 +612,13 @@ class DevolucaoUpdateView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScop
         ferramenta.status = Ferramenta.Status.DISPONIVEL
         ferramenta.save(update_fields=['status'])
 
+        assinatura_data = form.cleaned_data.get('assinatura_base64')
+        if assinatura_data and ';base64,' in assinatura_data:
+            fmt, imgstr = assinatura_data.split(';base64,')
+            ext = fmt.split('/')[-1]
+            fname = f'sig_dev_{movimentacao.pk}_{timezone.now().timestamp()}.{ext}'
+            movimentacao.assinatura_devolucao = ContentFile(base64.b64decode(imgstr), name=fname)
+
         self._log_atividade(
             ferramenta=ferramenta,
             tipo=Atividade.TipoAtividade.DEVOLUCAO,
@@ -652,6 +660,13 @@ class MalaDevolucaoUpdateView(LoginRequiredMixin, AppPermissionMixin, ViewFilial
         mala.itens.exclude(
             status=Ferramenta.Status.EM_MANUTENCAO
         ).update(status=Ferramenta.Status.DISPONIVEL)
+
+        assinatura_data = form.cleaned_data.get('assinatura_base64')
+        if assinatura_data and ';base64,' in assinatura_data:
+            fmt, imgstr = assinatura_data.split(';base64,')
+            ext = fmt.split('/')[-1]
+            fname = f'sig_dev_{movimentacao.pk}_{timezone.now().timestamp()}.{ext}'
+            movimentacao.assinatura_devolucao = ContentFile(base64.b64decode(imgstr), name=fname)
 
         self._log_atividade(
             mala=mala,
@@ -850,13 +865,26 @@ class ResultadoScanView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScoped
     slug_field = 'codigo_identificacao'
     slug_url_kwarg = 'codigo_identificacao'
 
+    def get_queryset(self):
+        return super().get_queryset().select_related('mala')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['movimentacao_ativa'] = self.object.movimentacoes.filter(
-            data_devolucao__isnull=True
-        ).select_related('retirado_por').first()
-        return context
+        ferramenta = self.object
 
+        # Movimentação ativa pode estar na ferramenta OU na mala à qual ela pertence
+        if ferramenta.mala_id:
+            movimentacao_ativa = Movimentacao.objects.filter(
+                Q(ferramenta=ferramenta) | Q(mala=ferramenta.mala),
+                data_devolucao__isnull=True
+            ).select_related('retirado_por').first()
+        else:
+            movimentacao_ativa = ferramenta.movimentacoes.filter(
+                data_devolucao__isnull=True
+            ).select_related('retirado_por').first()
+
+        context['movimentacao_ativa'] = movimentacao_ativa
+        return context
 
 class GerarQRCodesView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
     app_label_required = _APP
@@ -928,7 +956,6 @@ class TermoDetailView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMi
         context['titulo_pagina'] = f"Termo de Responsabilidade #{termo.pk}"
         return context
 
-
 class CriarTermoResponsabilidadeView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, FormView):
     app_label_required = _APP
     template_name = 'ferramentas/termo_responsabilidade_form.html'
@@ -949,9 +976,11 @@ class CriarTermoResponsabilidadeView(LoginRequiredMixin, AppPermissionMixin, Vie
 
     @transaction.atomic
     def form_valid(self, form):
-        # Validação da assinatura
+        modo_assinatura = self.request.POST.get('modo_assinatura', 'local')
         assinatura_base64 = self.request.POST.get('assinatura_base64')
-        if not assinatura_base64:
+
+        # ✅ Assinatura só é obrigatória se o modo escolhido for "local" (na tela)
+        if modo_assinatura == 'local' and not assinatura_base64:
             form.add_error(None, "É obrigatório que o responsável assine o termo.")
             return self.form_invalid(form)
 
@@ -968,14 +997,17 @@ class CriarTermoResponsabilidadeView(LoginRequiredMixin, AppPermissionMixin, Vie
         # Cria o termo
         termo = form.save(commit=False)
         termo.movimentado_por = self.request.user
-        termo.assinatura_data = assinatura_base64
-        termo.data_recebimento = timezone.now()
         termo.filial = self.request.user.filial_ativa
+
+        if modo_assinatura == 'local' and assinatura_base64:
+            termo.assinatura_data = assinatura_base64
+            termo.data_recebimento = timezone.now()
+        # Se for remoto, assinatura_data e data_recebimento ficam em branco (pendente)
+
         termo.save()
 
         data_devolucao = timezone.now() + timedelta(days=7)
 
-        # Processa cada item — ✅ agora com filtro de filial
         for item_data in itens_json:
             item_pk = item_data.get('pk')
             if not item_pk:
@@ -985,22 +1017,19 @@ class CriarTermoResponsabilidadeView(LoginRequiredMixin, AppPermissionMixin, Vie
 
             if termo.tipo_uso == TermoDeResponsabilidade.TipoUso.FERRAMENTAL:
                 ferramenta_obj = get_object_or_404(
-                    Ferramenta.objects.for_request(self.request),
-                    pk=item_pk
+                    Ferramenta.objects.for_request(self.request), pk=item_pk
                 )
                 item_obj = ferramenta_obj
             elif termo.tipo_uso == TermoDeResponsabilidade.TipoUso.MALA:
                 mala_obj = get_object_or_404(
-                    MalaFerramentas.objects.for_request(self.request),
-                    pk=item_pk
+                    MalaFerramentas.objects.for_request(self.request), pk=item_pk
                 )
                 item_obj = mala_obj
 
             if not item_obj or item_obj.status != 'disponivel':
                 messages.error(self.request, f"'{item_obj}' não está mais disponível.")
-                raise ValueError("Item indisponível")
+                return self.form_invalid(form)  # ✅ evita 500 (rollback automático via atomic)
 
-            # Cria ItemTermo
             ItemTermo.objects.create(
                 termo=termo,
                 ferramenta=ferramenta_obj,
@@ -1010,7 +1039,6 @@ class CriarTermoResponsabilidadeView(LoginRequiredMixin, AppPermissionMixin, Vie
                 item=item_data['item']
             )
 
-            # Cria Movimentação
             Movimentacao.objects.create(
                 termo_responsabilidade=termo,
                 ferramenta=ferramenta_obj,
@@ -1021,11 +1049,9 @@ class CriarTermoResponsabilidadeView(LoginRequiredMixin, AppPermissionMixin, Vie
                 filial=termo.filial,
             )
 
-            # Atualiza status
             item_obj.status = 'em_uso'
             item_obj.save(update_fields=['status'])
 
-            # Log de atividade
             Atividade.objects.create(
                 ferramenta=ferramenta_obj,
                 mala=mala_obj,
@@ -1035,7 +1061,14 @@ class CriarTermoResponsabilidadeView(LoginRequiredMixin, AppPermissionMixin, Vie
                 filial=termo.filial,
             )
 
-        messages.success(self.request, f"Termo #{termo.pk} criado com sucesso.")
+        if modo_assinatura == 'remoto':
+            messages.success(
+                self.request,
+                f"Termo #{termo.pk} criado. Envie o link de assinatura para o responsável."
+            )
+        else:
+            messages.success(self.request, f"Termo #{termo.pk} criado com sucesso.")
+
         self.termo_criado = termo
         return super().form_valid(form)
 
@@ -1043,6 +1076,120 @@ class CriarTermoResponsabilidadeView(LoginRequiredMixin, AppPermissionMixin, Vie
         return reverse('ferramentas:termo_detail', kwargs={'pk': self.termo_criado.pk})
 
 
+class AssinarTermoRemotoView(View):
+    """
+    View pública (sem login) para o responsável assinar o termo
+    remotamente pelo celular, através de um link único (token).
+    """
+    template_name = 'ferramentas/termo_assinatura_remota.html'
+
+    def get_termo(self, token):
+        return get_object_or_404(TermoDeResponsabilidade, token_assinatura=token)
+
+    def get(self, request, token, *args, **kwargs):
+        termo = self.get_termo(token)
+        return render(request, self.template_name, {
+            'termo': termo,
+            'ja_assinado': termo.is_signed(),
+        })
+
+    def post(self, request, token, *args, **kwargs):
+        termo = self.get_termo(token)
+
+        if termo.is_signed():
+            messages.info(request, "Este termo já foi assinado anteriormente.")
+            return redirect('ferramentas:assinar_termo_remoto', token=token)
+
+        assinatura_base64 = request.POST.get('assinatura_base64')
+        if not assinatura_base64:
+            messages.error(request, "É necessário assinar antes de confirmar.")
+            return redirect('ferramentas:assinar_termo_remoto', token=token)
+
+        termo.assinatura_data = assinatura_base64
+        termo.data_recebimento = timezone.now()
+        termo.save(update_fields=['assinatura_data', 'data_recebimento'])
+
+        Atividade.objects.create(
+            descricao=f"Termo #{termo.pk} assinado remotamente por {termo.responsavel.nome_completo}.",
+            tipo_atividade=Atividade.TipoAtividade.ALTERACAO,
+            filial=termo.filial,
+        )
+
+        return render(request, self.template_name, {
+            'termo': termo,
+            'ja_assinado': True,
+            'sucesso': True,
+        })
+
+
+class EnviarLinkAssinaturaView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, View):
+    app_label_required = _APP
+
+    def post(self, request, pk, *args, **kwargs):
+        termo = get_object_or_404(
+            TermoDeResponsabilidade.objects.for_request(request), pk=pk
+        )
+
+        if termo.is_signed():
+            messages.warning(request, "Este termo já está assinado.")
+            return redirect('ferramentas:termo_detail', pk=termo.pk)
+
+        link = termo.get_link_assinatura(request)
+        canal = request.POST.get('canal')
+
+        if canal == 'email':
+            email_destino = request.POST.get('email', '').strip() or getattr(
+                termo.responsavel, 'email', None
+            )
+            if not email_destino:
+                messages.error(request, "Informe um e-mail válido para envio.")
+                return redirect('ferramentas:termo_detail', pk=termo.pk)
+
+            from django.core.mail import send_mail
+            try:
+                send_mail(
+                    subject=f"Assinatura pendente — Termo de Responsabilidade #{termo.pk}",
+                    message=(
+                        f"Olá {termo.responsavel.nome_completo},\n\n"
+                        f"Você possui um Termo de Responsabilidade pendente de assinatura.\n"
+                        f"Acesse o link abaixo pelo celular ou computador para assinar:\n\n"
+                        f"{link}\n\n"
+                        f"Contrato: {termo.contrato}\n\n"
+                        f"CETEST"
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[email_destino],
+                    fail_silently=False,
+                )
+                messages.success(request, f"Link enviado por e-mail para {email_destino}.")
+            except Exception as e:
+                logger.error("Erro ao enviar e-mail do termo %s: %s", termo.pk, e)
+                messages.error(request, "Erro ao enviar e-mail. Verifique as configurações de SMTP.")
+
+            return redirect('ferramentas:termo_detail', pk=termo.pk)
+
+        elif canal == 'whatsapp':
+            import urllib.parse
+
+            telefone = request.POST.get('telefone', '').strip()
+            telefone_limpo = ''.join(filter(str.isdigit, telefone))
+
+            if not telefone_limpo:
+                messages.error(request, "Informe um telefone válido para envio via WhatsApp.")
+                return redirect('ferramentas:termo_detail', pk=termo.pk)
+
+            texto = (
+                f"Olá {termo.responsavel.nome_completo}, você possui um Termo de "
+                f"Responsabilidade (Contrato {termo.contrato}) pendente de assinatura. "
+                f"Assine pelo link: {link}"
+            )
+            wa_link = f"https://wa.me/{telefone_limpo}?text={urllib.parse.quote(texto)}"
+            return redirect(wa_link)
+
+        messages.error(request, "Canal de envio inválido.")
+        return redirect('ferramentas:termo_detail', pk=termo.pk)
+
+    
 class ReverterTermoView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, View):
     app_label_required = _APP
 

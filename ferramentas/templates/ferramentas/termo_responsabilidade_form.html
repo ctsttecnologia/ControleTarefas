@@ -1,4 +1,4 @@
-{# ferramentas/termo_responsabilidade_form.html #}
+<!-- ferramentas/termo_responsabilidade_form.html -->
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load static widget_tweaks %}
 
@@ -42,6 +42,25 @@
     .select2-container--bootstrap-5 .select2-selection {
         min-height: 38px;
     }
+    .modo-assinatura-card {
+        border: 2px solid #dee2e6;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        height: 100%;
+    }
+    .modo-assinatura-card:hover {
+        border-color: #0d6efd;
+        background-color: #f8f9fa;
+    }
+    .modo-assinatura-card.active {
+        border-color: #0d6efd;
+        background-color: #e7f1ff;
+    }
+    .modo-assinatura-card input[type="radio"] {
+        display: none;
+    }
 </style>
 {% endblock %}
 
@@ -49,7 +68,7 @@
 <form method="post" id="termoForm" novalidate>
     {% csrf_token %}
 
-    {# Erros gerais #}
+    <!-- Erros gerais -->
     {% if form.non_field_errors %}
     <div class="alert alert-danger alert-dismissible fade show">
         {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
@@ -57,9 +76,9 @@
     </div>
     {% endif %}
 
-    {# ================================================================
+    <!-- ================================================================
        SEÇÃO 1: INFORMAÇÕES GERAIS
-       ================================================================ #}
+       ================================================================ -->
     <div class="card shadow-sm mb-4">
         <div class="card-header py-3">
             <h6 class="mb-0 fw-bold">
@@ -109,9 +128,9 @@
         </div>
     </div>
 
-    {# ================================================================
+    <!-- ================================================================
        SEÇÃO 2: SELEÇÃO DE ITENS
-       ================================================================ #}
+       ================================================================ -->
     <div class="card shadow-sm mb-4">
         <div class="card-header py-3">
             <h6 class="mb-0 fw-bold">
@@ -120,7 +139,7 @@
             </h6>
         </div>
         <div class="card-body">
-            {# Tipo de uso #}
+            <!-- Tipo de uso -->
             <div class="mb-4">
                 <label for="{{ form.tipo_uso.id_for_label }}" class="form-label fw-bold">
                     Tipo de Uso <span class="text-danger">*</span>
@@ -134,7 +153,7 @@
                 </small>
             </div>
 
-            {# Container de Ferramentas (exibido quando tipo = FER) #}
+            <!-- Container de Ferramentas (exibido quando tipo = FER) -->
             <div id="ferramentas_container" class="item-container" style="display:none;">
                 <label for="{{ form.ferramentas_selecionadas.id_for_label }}" class="form-label fw-bold">
                     <i class="bi bi-tools me-1"></i>{{ form.ferramentas_selecionadas.label }}
@@ -145,7 +164,7 @@
                 </small>
             </div>
 
-            {# Container de Malas (exibido quando tipo = MAL) #}
+            <!-- Container de Malas (exibido quando tipo = MAL) -->
             <div id="malas_container" class="item-container" style="display:none;">
                 <label for="{{ form.malas_selecionadas.id_for_label }}" class="form-label fw-bold">
                     <i class="bi bi-box-seam me-1"></i>{{ form.malas_selecionadas.label }}
@@ -158,9 +177,9 @@
         </div>
     </div>
 
-    {# ================================================================
+    <!-- ================================================================
        SEÇÃO 3: ASSINATURA
-       ================================================================ #}
+       ================================================================ -->
     <div class="card shadow-sm mb-4">
         <div class="card-header py-3">
             <h6 class="mb-0 fw-bold">
@@ -169,27 +188,69 @@
             </h6>
         </div>
         <div class="card-body">
-            <p class="text-muted small mb-3">
-                <i class="bi bi-info-circle me-1"></i>
-                O responsável deve assinar abaixo para confirmar o recebimento dos itens.
-            </p>
-            <div class="signature-pad-wrapper" id="sig-wrapper">
-                <canvas id="signature-pad"></canvas>
+
+            <!-- Escolha do modo de assinatura -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="modo-assinatura-card active d-block" id="label_modo_local">
+                        <input type="radio" name="modo_assinatura" value="local" checked>
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-pencil-square fs-3 me-3 text-primary"></i>
+                            <div>
+                                <strong>Assinar agora</strong>
+                                <p class="text-muted small mb-0">O responsável assina nesta tela.</p>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="modo-assinatura-card d-block" id="label_modo_remoto">
+                        <input type="radio" name="modo_assinatura" value="remoto">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-phone fs-3 me-3 text-success"></i>
+                            <div>
+                                <strong>Enviar link remoto</strong>
+                                <p class="text-muted small mb-0">Assinatura pelo celular, via e-mail ou WhatsApp.</p>
+                            </div>
+                        </div>
+                    </label>
+                </div>
             </div>
-            <div class="d-flex justify-content-between align-items-center mt-2">
-                <small class="text-muted">Arraste o dedo ou mouse para assinar</small>
-                <button type="button" class="btn btn-sm btn-outline-danger" id="clear-signature">
-                    <i class="bi bi-eraser me-1"></i>Limpar Assinatura
-                </button>
+
+            <!-- Bloco: Assinatura local -->
+            <div id="assinatura_local_block">
+                <p class="text-muted small mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    O responsável deve assinar abaixo para confirmar o recebimento dos itens.
+                </p>
+                <div class="signature-pad-wrapper" id="sig-wrapper">
+                    <canvas id="signature-pad"></canvas>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <small class="text-muted">Arraste o dedo ou mouse para assinar</small>
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="clear-signature">
+                        <i class="bi bi-eraser me-1"></i>Limpar Assinatura
+                    </button>
+                </div>
             </div>
+
+            <!-- Bloco: Assinatura remota -->
+            <div id="assinatura_remoto_block" style="display:none;">
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Ao salvar, um link exclusivo de assinatura será gerado. Você poderá enviá-lo
+                    por <strong>e-mail</strong> ou <strong>WhatsApp</strong> na tela de detalhes do termo.
+                </div>
+            </div>
+
             <input type="hidden" name="assinatura_base64" id="id_assinatura_base64">
             <input type="hidden" name="itens_termo_json" id="itens_termo_json">
         </div>
     </div>
 
-    {# ================================================================
+    <!-- ================================================================
        BOTÃO DE SUBMISSÃO
-       ================================================================ #}
+       ================================================================ -->
     <div class="card shadow-sm mb-4">
         <div class="card-body py-4">
             <div class="d-flex justify-content-between align-items-center">
@@ -200,7 +261,7 @@
                     <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-outline-secondary px-4">
                         Cancelar
                     </a>
-                    {% if perms.ferramentas.add_termo_responsabilidade or user.is_superuser %}
+                    {% if perms.ferramentas.add_termoderesponsabilidade or user.is_superuser %}
                     <button type="submit" class="btn btn-success btn-lg px-5">
                         <i class="bi bi-check-circle me-2"></i>Confirmar e Gerar Termo
                     </button>
@@ -214,7 +275,7 @@
 
 {% block ferramentas_extra_js %}
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<!-- <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 
 <script>
@@ -297,20 +358,49 @@ jQuery(function($) {
     toggleContainers(); // Estado inicial
 
     // ===================================================================
+    // TOGGLE: Modo de Assinatura (Local x Remoto)
+    // ===================================================================
+    const localBlock = $('#assinatura_local_block');
+    const remotoBlock = $('#assinatura_remoto_block');
+    const labelLocal = $('#label_modo_local');
+    const labelRemoto = $('#label_modo_remoto');
+
+    $('input[name="modo_assinatura"]').on('change', function() {
+        const modo = $('input[name="modo_assinatura"]:checked').val();
+
+        if (modo === 'local') {
+            localBlock.show();
+            remotoBlock.hide();
+            labelLocal.addClass('active');
+            labelRemoto.removeClass('active');
+        } else {
+            localBlock.hide();
+            remotoBlock.show();
+            labelLocal.removeClass('active');
+            labelRemoto.addClass('active');
+            if (signaturePad) signaturePad.clear();
+        }
+    });
+
+    // ===================================================================
     // SUBMIT — Validação e montagem do JSON
     // ===================================================================
     $('#termoForm').on('submit', function(event) {
 
-        // 1. Validar assinatura
-        if (signaturePad && signaturePad.isEmpty()) {
-            alert("A assinatura do responsável é obrigatória.");
-            event.preventDefault();
-            return false;
-        }
+        const modoAssinatura = $('input[name="modo_assinatura"]:checked').val();
 
-        // Preenche o campo hidden com a imagem base64
-        if (signaturePad && sigInput) {
-            sigInput.value = signaturePad.toDataURL('image/png');
+        // 1. Validar/preencher assinatura apenas no modo local
+        if (modoAssinatura === 'local') {
+            if (signaturePad && signaturePad.isEmpty()) {
+                alert("A assinatura do responsável é obrigatória no modo 'Assinar agora'.");
+                event.preventDefault();
+                return false;
+            }
+            if (signaturePad && sigInput) {
+                sigInput.value = signaturePad.toDataURL('image/png');
+            }
+        } else {
+            sigInput.value = '';
         }
 
         // 2. Montar JSON dos itens selecionados
@@ -343,3 +433,5 @@ jQuery(function($) {
 });
 </script>
 {% endblock %}
+
+

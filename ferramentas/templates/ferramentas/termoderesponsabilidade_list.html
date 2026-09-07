@@ -13,7 +13,7 @@
                 <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-primary btn-sm">
                     <i class="bi bi-plus-dash me-2"></i>Painel de Ferramentas
                 </a>
-                {% if perms.ferramentas.add_termo_responsabilidade or user.is_superuser %}
+                {% if perms.ferramentas.add_termoderesponsabilidade or user.is_superuser %}
                     <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-primary btn-sm">
                         <i class="bi bi-plus-circle me-2"></i>Novo Termo
                     </a>
@@ -50,7 +50,7 @@
                         
                         {% for termo in object_list %}
                         <tr>
-                            <td>{{ termo.responsavel }}</td>
+                            <td>{{ termo.responsavel.nome_completo }}</td>
                             
                             <td>{{ termo.contrato }}</td>
 
@@ -67,8 +67,8 @@
                             </td>
                             
                             <td class="text-end">
-                                {% if perms.ferramentas.view_termo_detail or user.is_superuser %}
-                                <a href="{% url 'ferramentas:termo_detail' termo.pk %}" class="btn btn-info btn-sm" title="Ver Detalhes">
+                                {% if perms.ferramentas.view_termoderesponsabilidade or user.is_superuser %}
+                                <a href="{% url 'ferramentas:termo_detail' pk=termo.pk %}" class="btn btn-info btn-sm" title="Ver Detalhes">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 {% endif %}
@@ -131,4 +131,3 @@
     </div>
 </div>
 {% endblock %}
-

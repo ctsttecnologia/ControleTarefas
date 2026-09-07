@@ -1,4 +1,4 @@
-{# ferramentas/mala_list.html #}
+<!-- ferramentas/mala_list.html -->
 {% extends 'ferramentas/ferramentas_base.html' %}
 
 {% block ferramentas_page_title %}Malas de Ferramentas{% endblock %}
@@ -20,7 +20,7 @@
 
 {% block ferramentas_content %}
 <div class="card shadow-sm">
-    {# Busca #}
+    <!-- Busca -->
     <div class="card-header p-3">
         <form method="get" class="row g-2 align-items-center">
             <div class="col-lg-5 col-md-8">
@@ -33,17 +33,15 @@
                     <i class="bi bi-search me-1"></i>Buscar
                 </button>
                 {% if query %}
-                    {% if perms.ferramentas.view_mala_list or user.is_superuser %}
-                    <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
-                    {% endif %}
+                <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i>
+                </a>
                 {% endif %}
             </div>
         </form>
     </div>
 
-    {# Tabela #}
+    <!-- Tabela -->
     <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
@@ -64,16 +62,16 @@
                     </td>
                     <td><code class="small">{{ mala.codigo_identificacao }}</code></td>
                     <td class="text-center">
-                        {% if mala.status == 'disponivel' %}
-                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Disponível</span>
-                        {% else %}
-                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Em Uso</span>
-                        {% endif %}
+                        <span class="badge
+                            {% if mala.status == 'disponivel' %}bg-success-subtle text-success-emphasis border border-success-subtle
+                            {% else %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% endif %}">
+                            {{ mala.get_status_display }}
+                        </span>
                     </td>
                     <td class="text-center">
                         <span class="badge bg-secondary">{{ mala.item_count }}</span>
                     </td>
-                    <td class="small">{{ mala.localizacao_padrao }}</td>
+                    <td class="small">{{ mala.localizacao_padrao|default:"-" }}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             <a href="{{ mala.get_absolute_url }}" class="btn btn-outline-primary" title="Detalhes">
@@ -84,7 +82,7 @@
                                 <i class="bi bi-pencil"></i>
                             </a>
                             {% endif %}
-                            {% if perms.ferramentas.add_termo_responsabilidade or user.is_superuser %}
+                            {% if perms.ferramentas.add_termoderesponsabilidade or user.is_superuser %}
                             <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-outline-info" title="Novo Termo">
                                 <i class="bi bi-file-earmark-text"></i>
                             </a>
@@ -116,5 +114,4 @@
     {% endif %}
 </div>
 {% endblock %}
-
 

@@ -1,5 +1,5 @@
 
-{# ferramentas/termo_list.html #}
+<!-- ferramentas/termo_list.html -->
 {% extends 'ferramentas/ferramentas_base.html' %}
 
 {% block ferramentas_page_title %}Termos de Responsabilidade{% endblock %}
@@ -12,7 +12,7 @@
     <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-outline-secondary">
         <i class="bi bi-speedometer2 me-1"></i>Dashboard
     </a>
-    {% if perms.ferramentas.add_termo_responsabilidade or user.is_superuser %}
+    {% if perms.ferramentas.add_termoderesponsabilidade or user.is_superuser %}
     <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-primary">
         <i class="bi bi-plus-lg me-1"></i>Novo Termo
     </a>
@@ -22,9 +22,9 @@
 {% block ferramentas_content %}
 <div class="card shadow-sm">
 
-    {# ================================================================
+    <!-- ================================================================
        FILTROS
-       ================================================================ #}
+       ================================================================ -->
     <div class="card-header p-3">
         <form method="get" class="row g-2 align-items-center">
             <div class="col-lg-4 col-md-6">
@@ -58,9 +58,9 @@
         </form>
     </div>
 
-    {# ================================================================
+    <!-- ================================================================
        TABELA
-       ================================================================ #}
+       ================================================================ -->
     <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
@@ -77,21 +77,21 @@
             <tbody>
                 {% for termo in termos %}
                 <tr>
-                    {# Nº do Termo #}
+                    <!-- Nº do Termo -->
                     <td class="ps-3">
                         <span class="fw-bold text-muted">#{{ termo.pk }}</span>
                     </td>
 
-                    {# Responsável #}
+                    <!-- Responsável -->
                     <td>
                         <div class="fw-semibold">{{ termo.responsavel }}</div>
                         <small class="text-muted">{{ termo.filial.nome }}</small>
                     </td>
 
-                    {# Contrato #}
+                    <!-- Contrato -->
                     <td class="small">{{ termo.contrato|truncatechars:30 }}</td>
 
-                    {# Tipo #}
+                    <!-- Tipo -->
                     <td>
                         {% if termo.tipo_uso == 'FER' %}
                             <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">
@@ -104,10 +104,10 @@
                         {% endif %}
                     </td>
 
-                    {# Data #}
+                    <!-- Data -->
                     <td class="small">{{ termo.data_emissao|date:"d/m/Y" }}</td>
 
-                    {# Status #}
+                    <!-- Status -->
                     <td class="text-center">
                         {% if termo.status == 'ativo' %}
                             <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">
@@ -122,7 +122,7 @@
                                 <i class="bi bi-x-circle me-1"></i>Estornado
                             </span>
                         {% else %}
-                            {# Fallback para termos antigos sem campo status #}
+                            <!-- Fallback para termos antigos sem campo status -->
                             {% if termo.is_signed %}
                                 <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">
                                     <i class="bi bi-check-circle me-1"></i>Assinado
@@ -135,17 +135,17 @@
                         {% endif %}
                     </td>
 
-                    {# Ações #}
+                    <!-- Ações -->
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
-                            {% if perms.ferramentas.view_termo_detail or user.is_superuser %}
-                            <a href="{% url 'ferramentas:termo_detail' termo.pk %}" 
+                            {% if perms.ferramentas.view_termoderesponsabilidade or user.is_superuser %}
+                            <a href="{% url 'ferramentas:termo_detail' pk=termo.pk %}"
                                class="btn btn-outline-primary" title="Ver Detalhes">
                                 <i class="bi bi-eye"></i>
                             </a>
                             {% endif %}
-                            {% if perms.ferramentas.add_termo_responsabilidade or user.is_superuser %}
-                            <a href="{% url 'ferramentas:termo_pdf_download' termo.pk %}" 
+                            {% if perms.ferramentas.download_termo_pdf or user.is_superuser %}
+                            <a href="{% url 'ferramentas:termo_pdf_download' pk=termo.pk %}"
                                class="btn btn-outline-secondary" title="Baixar PDF">
                                 <i class="bi bi-file-pdf"></i>
                             </a>
@@ -161,7 +161,7 @@
                         {% if query or status_atual %}
                             <p class="text-muted small">Tente ajustar os filtros de busca.</p>
                         {% endif %}
-                        {% if perms.ferramentas.add_termo_responsabilidade or user.is_superuser %}
+                        {% if perms.ferramentas.add_termoderesponsabilidade or user.is_superuser %}
                         <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-sm btn-primary mt-2">
                             <i class="bi bi-plus-lg me-1"></i>Criar Termo
                         </a>
@@ -173,14 +173,14 @@
         </table>
     </div>
 
-    {# ================================================================
+    <!-- ================================================================
        PAGINAÇÃO
-       ================================================================ #}
+       ================================================================ -->
     {% if is_paginated %}
     <div class="card-footer">
         <nav aria-label="Paginação">
             <ul class="pagination pagination-sm justify-content-center mb-0">
-                {# Anterior #}
+                <!-- Anterior -->
                 {% if page_obj.has_previous %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}">
@@ -191,7 +191,7 @@
                 <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
                 {% endif %}
 
-                {# Números de página #}
+                <!-- Números de página -->
                 {% for i in paginator.page_range %}
                     {% if page_obj.number == i %}
                     <li class="page-item active"><span class="page-link">{{ i }}</span></li>
@@ -202,7 +202,7 @@
                     {% endif %}
                 {% endfor %}
 
-                {# Próxima #}
+                <!-- Próxima -->
                 {% if page_obj.has_next %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}">
@@ -218,5 +218,4 @@
     {% endif %}
 </div>
 {% endblock %}
-
 

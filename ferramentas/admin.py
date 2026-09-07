@@ -177,7 +177,7 @@ class ItemTermoInline(admin.TabularInline):
 
 
 @admin.register(TermoDeResponsabilidade)
-class TermoDeResponsabilidadeAdmin(admin.ModelAdmin):
+class TermoDeResponsabilidadeAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     inlines = [ItemTermoInline]
     
     # ATUALIZADO: Trocamos 'data_criacao' por 'data_emissao' e adicionamos outros campos úteis.

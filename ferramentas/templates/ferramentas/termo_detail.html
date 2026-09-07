@@ -1,5 +1,5 @@
 
-{# ferramentas/termo_detail.html #}
+<!-- ferramentas/termo_detail.html -->
 {% extends 'ferramentas/ferramentas_base.html' %}
 
 {% block ferramentas_page_title %}Termo - {{ termo.pk }}{% endblock %}
@@ -14,7 +14,7 @@
         <i class="bi bi-arrow-left me-1"></i>Lista
     </a>
     {% endif %}
-    {% if perms.ferramentas.add_termo_pdf_download or user.is_superuser %}
+    {% if perms.ferramentas.download_termo_pdf or user.is_superuser %}
     <a href="{% url 'ferramentas:termo_pdf_download' pk=termo.pk %}" class="btn btn-outline-primary">
         <i class="bi bi-file-pdf me-1"></i>Baixar PDF
     </a>
@@ -23,7 +23,7 @@
     <form action="{% url 'ferramentas:termo_reverter' pk=termo.pk %}" method="post" class="d-inline"
           onsubmit="return confirm('Tem certeza? Todos os itens serão devolvidos ao estoque.');">
         {% csrf_token %}
-        {% if perms.ferramentas.add_termo_reverter or user.is_superuser %}
+        {% if perms.ferramentas.reverter_termo or user.is_superuser %}
         <button type="submit" class="btn btn-danger">
             <i class="bi bi-arrow-counterclockwise me-1"></i>Estornar Termo
         </button>
@@ -35,7 +35,7 @@
 {% block ferramentas_content %}
 <div class="row g-4">
 
-    {# Informações do Termo #}
+    <!-- Informações do Termo -->
     <div class="col-lg-5">
         <div class="card shadow-sm mb-4">
             <div class="card-header fw-bold">
@@ -44,7 +44,7 @@
             <ul class="list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Responsável</span>
-                    <strong>{{ termo.responsavel }}</strong>
+                    <strong>{{ termo.responsavel.nome_completo }}</strong>
                 </li>
                 <li class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Contrato</span>
@@ -52,7 +52,7 @@
                 </li>
                 <li class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Separado por</span>
-                    <strong>{{ termo.separado_por|default:"N/A" }}</strong>
+                    <strong>{{ termo.separado_por.nome_completo|default:"N/A" }}</strong>
                 </li>
                 <li class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Data de Emissão</span>
@@ -86,7 +86,7 @@
             </ul>
         </div>
 
-        {# Assinatura #}
+        <!-- Assinatura -->
         <div class="card shadow-sm">
             <div class="card-header fw-bold">
                 <i class="bi bi-pen me-2"></i>Assinatura Registrada
@@ -101,7 +101,52 @@
         </div>
     </div>
 
-    {# Itens do Termo #}
+    <!-- Envio de Link para Assinatura Remota -->
+    {% if not termo.is_signed and termo.status == 'ativo' %}
+    <div class="card shadow-sm mt-4">
+        <div class="card-header fw-bold">
+            <i class="bi bi-send me-2"></i>Enviar Link de Assinatura
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-2">Link exclusivo para assinatura remota:</p>
+            <div class="input-group mb-3">
+                <input type="text" class="form-control form-control-sm" id="linkAssinatura"
+                        value="{{ termo.get_link_assinatura }}" readonly>
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        onclick="navigator.clipboard.writeText(document.getElementById('linkAssinatura').value)">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+            </div>
+
+            <form method="post" action="{% url 'ferramentas:enviar_link_assinatura' pk=termo.pk %}" class="mb-2">
+                {% csrf_token %}
+                <input type="hidden" name="canal" value="email">
+                <div class="input-group">
+                    <input type="email" name="email" class="form-control form-control-sm"
+                            placeholder="E-mail do responsável"
+                            value="{{ termo.responsavel.email|default:'' }}">
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-envelope me-1"></i>Enviar
+                    </button>
+                </div>
+            </form>
+
+            <form method="post" action="{% url 'ferramentas:enviar_link_assinatura' pk=termo.pk %}" target="_blank">
+                {% csrf_token %}
+                <input type="hidden" name="canal" value="whatsapp">
+                <div class="input-group">
+                    <input type="text" name="telefone" class="form-control form-control-sm"
+                            placeholder="Ex: 5511999999999">
+                    <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-whatsapp me-1"></i>Enviar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Itens do Termo -->
     <div class="col-lg-7">
         <div class="card shadow-sm">
             <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
@@ -152,4 +197,3 @@
     </div>
 </div>
 {% endblock %}
-

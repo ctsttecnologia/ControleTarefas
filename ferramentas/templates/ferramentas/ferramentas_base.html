@@ -1,4 +1,4 @@
-{# ferramentas/ferramentas_base.html #}
+<!-- ferramentas/ferramentas_base.html -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -8,29 +8,49 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/ferramentas/ferramentas.css' %}">
+    <style>
+        .ferramentas-wrapper {
+            padding: 0 0.5rem;
+            overflow-x: hidden; /* evita scrollbar horizontal por overflow de conteúdo */
+        }
+        .ferramentas-content {
+            padding: 0 0.25rem 1rem;
+        }
+        .ferramentas-content canvas,
+        .ferramentas-content img,
+        .ferramentas-content table {
+            max-width: 100%; /* evita elementos ultrapassarem a largura do container */
+        }
+        @media (max-width: 576px) {
+            .ferramentas-wrapper {
+                padding: 0 0.25rem;
+            }
+        }
+    </style>
     {% block ferramentas_extra_css %}{% endblock %}
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid ferramentas-content py-4 px-lg-5">
-
-    {# Cabeçalho padrão do app #}
-    <header class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-        <h1 class="h2 mb-0 ferramentas-title">
-            {% block ferramentas_title %}{% endblock %}
-        </h1>
-        <div class="d-flex flex-wrap gap-2">
-            {% block ferramentas_actions %}{% endblock %}
+<div class="ferramentas-wrapper">
+    <div class="rounded-4 text-white p-4 mb-4 d-print-none" style="background: linear-gradient(135deg, #1a56db 0%, #3b82f6 50%, #6366f1 100%);">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <h1 class="h2 mb-0 ferramentas-title">
+                {% block ferramentas_title %}{% endblock %}
+            </h1>
+            <div class="d-flex flex-wrap gap-2">
+                {% block ferramentas_actions %}{% endblock %}
+            </div>
         </div>
-    </header>
+    </div>
 
-    {# Conteúdo da página #}
-    {% block ferramentas_content %}{% endblock %}
+    <!-- Conteúdo da página -->
+    <div class="ferramentas-content {% block ferramentas_content_class %}{% endblock %}">
+        {% block ferramentas_content %}{% endblock %}
+    </div>
 </div>
 {% endblock content %}
 
 {% block extra_js %}
     {% block ferramentas_extra_js %}{% endblock %}
 {% endblock %}
-
 

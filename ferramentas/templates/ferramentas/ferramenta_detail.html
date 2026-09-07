@@ -1,5 +1,5 @@
 ﻿
-{# ferramentas/ferramenta_detail.html #}
+<!-- ferramentas/ferramenta_detail.html -->
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load secure_url %}
 
@@ -29,10 +29,10 @@
 
 {% block ferramentas_content %}
 <div class="row g-4">
-    {# =================== COLUNA ESQUERDA =================== #}
+    <!-- =================== COLUNA ESQUERDA =================== -->
     <div class="col-lg-4">
 
-        {# Card: Status e Ações #}
+        <!-- Card: Status e Ações -->
         <div class="card shadow-sm mb-4">
             <div class="card-header fw-bold
                 {% if status_efetivo == 'disponivel' %}text-bg-success
@@ -72,7 +72,7 @@
                                 <p class="text-muted small">Na mala <strong>{{ ferramenta.mala.nome }}</strong>, em uso.</p>
                             {% elif movimentacao_ativa %}
                                 <p class="text-muted small">
-                                    Retirada por <strong>{{ movimentacao_ativa.retirado_por.get_full_name }}</strong>
+                                    Retirada por <strong>{{ movimentacao_ativa.retirado_por.get_full_name|default:movimentacao_ativa.retirado_por.username }}</strong>
                                     {% if movimentacao_ativa.esta_atrasada %}
                                     <br><span class="badge bg-danger mt-1">
                                         <i class="bi bi-exclamation-triangle me-1"></i>{{ movimentacao_ativa.dias_atraso }} dia{{ movimentacao_ativa.dias_atraso|pluralize:"s" }} de atraso
@@ -83,7 +83,7 @@
                         </div>
                         {% if movimentacao_ativa and not ferramenta.mala %}
                         <div class="d-grid">
-                            {% if perms.ferramentas.add_devolver_form or user.is_superuser %}
+                            {% if perms.ferramentas.add_devolucao or user.is_superuser %}
                             <a href="{% url 'ferramentas:devolver_form' pk=movimentacao_ativa.pk %}" class="btn btn-success">
                                 <i class="bi bi-box-arrow-in-left me-2"></i>Realizar Devolução
                             </a>
@@ -91,7 +91,7 @@
                         </div>
                         {% endif %}
 
-                    {% elif ferramenta.status == 'em_manutencao' %}
+                    {% elif status_efetivo == 'em_manutencao' %}
                         <div class="mb-3">
                             <i class="bi bi-wrench-adjustable display-4 text-info"></i>
                             <h5 class="mt-2 text-info">Em Manutenção</h5>
@@ -105,7 +105,7 @@
                             {% endif %}
                         </div>
 
-                    {% elif ferramenta.status == 'descartada' %}
+                    {% else %}
                         <div class="mb-3">
                             <i class="bi bi-x-circle-fill display-4 text-danger"></i>
                             <h5 class="mt-2 text-danger">Descartada</h5>
@@ -116,7 +116,7 @@
             </div>
         </div>
 
-        {# Card: Ficha Técnica #}
+        <!-- Card: Ficha Técnica -->
         <div class="card shadow-sm mb-4">
             <div class="card-header fw-bold">
                 <i class="bi bi-info-circle me-2"></i>Ficha Técnica
@@ -140,7 +140,7 @@
                 </li>
                 <li class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Aquisição</span>
-                    <strong>{{ ferramenta.data_aquisicao|date:"d/m/Y" }}</strong>
+                    <strong>{{ ferramenta.data_aquisicao|date:"d/m/Y"|default:"N/D" }}</strong>
                 </li>
                 {% if ferramenta.mala %}
                 <li class="list-group-item d-flex justify-content-between">
@@ -157,7 +157,7 @@
             </ul>
         </div>
 
-        {# Card: QR Code #}
+        <!-- Card: QR Code -->
         <div class="card shadow-sm">
             <div class="card-header fw-bold">
                 <i class="bi bi-qr-code me-2"></i>QR Code
@@ -165,7 +165,7 @@
             <div class="card-body text-center">
                 {% if ferramenta.qr_code %}
                     {% secure_url ferramenta "qr_code" as qr_url %}
-                            <img src="{{ qr_url }}" alt="QR Code" class="img-fluid border rounded p-2 bg-white mb-3" style="max-width: 160px;">
+                    <img src="{{ qr_url }}" alt="QR Code" class="img-fluid border rounded p-2 bg-white mb-3" style="max-width: 160px;">
                     <div class="d-grid">
                         <a href="{{ qr_url }}" download="qr-{{ ferramenta.codigo_identificacao }}.png" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-download me-1"></i>Baixar
@@ -178,10 +178,10 @@
         </div>
     </div>
 
-    {# =================== COLUNA DIREITA =================== #}
+    <!-- =================== COLUNA DIREITA =================== -->
     <div class="col-lg-8">
 
-        {# Histórico de Movimentações #}
+        <!-- Histórico de Movimentações -->
         <div class="card shadow-sm mb-4">
             <div class="card-header fw-bold">
                 <i class="bi bi-arrow-left-right me-2"></i>Histórico de Movimentações
@@ -225,7 +225,7 @@
             </div>
         </div>
 
-        {# Gráfico de uso mensal #}
+        <!-- Gráfico de uso mensal -->
         <div class="card shadow-sm mb-4">
             <div class="card-header fw-bold">
                 <i class="bi bi-bar-chart me-2"></i>Uso Mensal (Últimos 6 meses)
@@ -235,7 +235,7 @@
             </div>
         </div>
 
-        {# Log de Atividades #}
+        <!-- Log de Atividades -->
         <div class="card shadow-sm">
             <div class="card-header fw-bold">
                 <i class="bi bi-journal-text me-2"></i>Log de Atividades
@@ -247,7 +247,7 @@
                         <span class="badge bg-secondary me-1">{{ atividade.get_tipo_atividade_display }}</span>
                         <span>{{ atividade.descricao }}</span>
                         {% if atividade.usuario %}
-                        <small class="text-muted d-block">por {{ atividade.usuario.get_full_name }}</small>
+                        <small class="text-muted d-block">por {{ atividade.usuario.get_full_name|default:atividade.usuario.username }}</small>
                         {% endif %}
                     </div>
                     <small class="text-muted text-nowrap ms-2">{{ atividade.timestamp|date:"d/m/y H:i" }}</small>

@@ -53,22 +53,15 @@ class FerramentaForm(forms.ModelForm):
         if self.request:
             from suprimentos.models import Parceiro
 
-            # Filtra malas pela filial ativa
             self.fields['mala'].queryset = (
                 MalaFerramentas.objects.for_request(self.request).order_by('nome')
             )
 
-            # Filtra fornecedores pela filial (se Parceiro usa FilialManager)
-            # Se Parceiro NÃO tem FilialManager, remova este bloco
-            try:
+            if hasattr(Parceiro.objects, 'for_request'):
                 self.fields['fornecedor'].queryset = (
                     Parceiro.objects.for_request(self.request).order_by('razao_social')
                 )
-            except AttributeError:
-                # Parceiro não tem for_request — mantém queryset padrão
-                pass
 
-        # Desabilita campos na edição
         if self.instance and self.instance.pk:
             self.fields['data_aquisicao'].disabled = True
             self.fields['mala'].disabled = True

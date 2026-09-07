@@ -5,7 +5,7 @@ from django.db.models import Q
 from core.managers import FilialManager 
 from suprimentos.models import PedidoCompra
 from usuario.models import Filial, Usuario
-
+import uuid
 from cliente.models import Cliente
 # ferramentas/models.py
 import qrcode
@@ -31,8 +31,14 @@ class FerramentaQuerySet(FilialQuerySet):
         return self.exclude(status=Ferramenta.Status.DESCARTADA)
 
     def disponiveis(self):
-        """Ferramentas prontas para retirada."""
-        return self.filter(status=Ferramenta.Status.DISPONIVEL)
+        """Ferramentas prontas para retirada (considera status da mala)."""
+        em_uso_ou_manutencao = (
+            Q(status=Ferramenta.Status.EM_USO) |
+            Q(status=Ferramenta.Status.EM_MANUTENCAO) |
+            Q(status=Ferramenta.Status.DESCARTADA) |
+            Q(mala__status=MalaFerramentas.Status.EM_USO)
+        )
+        return self.exclude(em_uso_ou_manutencao)
 
     def em_uso(self):
         """Ferramentas em uso direto ou via mala."""
@@ -106,6 +112,10 @@ class MalaFerramentas(models.Model):
         verbose_name = "Mala de Ferramentas"
         verbose_name_plural = "Malas de Ferramentas"
         ordering = ['nome']
+        permissions = [
+            ("retirar_mala", "Pode realizar retirada de mala"),
+            ("devolver_mala", "Pode realizar devolução de mala"),
+        ]
 
     def __str__(self):
         return f"{self.nome} ({self.codigo_identificacao})"
@@ -223,6 +233,10 @@ class Ferramenta(models.Model):
         indexes = [
             models.Index(fields=['status', 'filial'], name='idx_ferramenta_status_filial'),
             models.Index(fields=['codigo_identificacao'], name='idx_ferramenta_codigo'),
+        ]
+        permissions = [
+            ("retirar_ferramenta", "Pode realizar retirada de ferramenta"),
+            ("devolver_ferramenta", "Pode realizar devolução de ferramenta"),
         ]
 
     def __str__(self):
@@ -426,6 +440,10 @@ class Movimentacao(models.Model):
             models.Index(fields=['data_devolucao', 'ferramenta'], name='idx_mov_dev_ferramenta'),
             models.Index(fields=['data_devolucao', 'mala'], name='idx_mov_dev_mala'),
         ]
+        permissions = [
+            ("add_retirada", "Pode registrar retirada (movimentação)"),
+            ("add_devolucao", "Pode registrar devolução (movimentação)"),
+        ]
 
     def __str__(self):
         item = self.item_movimentado
@@ -459,9 +477,13 @@ class Movimentacao(models.Model):
 # =============================================================================
 # TERMO DE RESPONSABILIDADE
 # =============================================================================
-
 class TermoDeResponsabilidade(models.Model):
     """Documento formal de responsabilidade sobre ferramentas/malas."""
+
+    token_assinatura = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True,
+        verbose_name="Token de Assinatura Remota"
+    )
 
     class TipoUso(models.TextChoices):
         FERRAMENTAL = 'FER', 'Ferramental'
@@ -513,6 +535,17 @@ class TermoDeResponsabilidade(models.Model):
         verbose_name = "Termo de Responsabilidade"
         verbose_name_plural = "Termos de Responsabilidade"
         ordering = ['-data_emissao']
+        permissions = [
+            ("download_termo_pdf", "Pode baixar PDF do termo"),
+            ("reverter_termo", "Pode estornar/reverter termo"),
+        ]
+
+    def get_link_assinatura(self, request=None):
+        """Retorna a URL pública (absoluta, se request for fornecido) para assinatura remota."""
+        path = reverse('ferramentas:assinar_termo_remoto', kwargs={'token': self.token_assinatura})
+        if request:
+            return request.build_absolute_uri(path)
+        return path
 
     def __str__(self):
         return f"Termo #{self.pk} - {self.get_tipo_uso_display()} — {self.responsavel}"

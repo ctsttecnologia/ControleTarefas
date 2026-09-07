@@ -1,4 +1,4 @@
-{# ferramentas/retirada_form.html #}
+<!-- ferramentas/retirada_form.html -->
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load widget_tweaks %}
 
@@ -37,8 +37,8 @@
             </div>
             <div class="card-body p-4">
 
-                {# Lista de itens da mala (se for mala) #}
-                {% if item.itens %}
+                <!-- Lista de itens da mala se for mala -->
+                {% if item.itens.all %}
                 <div class="alert alert-info small">
                     <strong><i class="bi bi-info-circle me-1"></i>Itens inclusos na mala:</strong>
                     <ul class="mb-0 mt-1">
@@ -83,7 +83,7 @@
                         {% for e in form.condicoes_retirada.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                     </div>
 
-                    {# Assinatura #}
+                    <!-- Assinatura -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">Assinatura do Responsável <span class="text-danger">*</span></label>
                         <div class="signature-pad-container">

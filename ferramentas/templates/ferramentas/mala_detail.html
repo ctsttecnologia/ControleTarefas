@@ -1,5 +1,5 @@
 ﻿
-{# ferramentas/mala #}
+<!-- ferramentas/mala_detail.html -->
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load secure_url %}
 
@@ -30,11 +30,15 @@
 {% block ferramentas_content %}
 <div class="row g-4">
 
-    {# Coluna esquerda #}
+    <!-- Coluna esquerda -->
     <div class="col-lg-4">
-        {# Status #}
+        <!-- Status -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header fw-bold {% if mala.status == 'disponivel' %}text-bg-success{% else %}text-bg-warning{% endif %}">
+            <div class="card-header fw-bold
+                {% if mala.status == 'disponivel' %}text-bg-success
+                {% elif mala.status == 'em_uso' %}text-bg-warning
+                {% elif mala.status == 'em_manutencao' %}text-bg-info
+                {% else %}text-bg-danger{% endif %}">
                 <i class="bi bi-lightning me-1"></i>Status e Ações
             </div>
             <div class="card-body text-center">
@@ -48,12 +52,18 @@
                         </a>
                         {% endif %}
                     </div>
+
                 {% elif mala.status == 'em_uso' %}
                     <i class="bi bi-person-fill-up display-4 text-warning"></i>
                     <h5 class="mt-2 text-warning">Em Uso</h5>
                     {% if movimentacao_ativa %}
                     <p class="text-muted small">
-                        Por <strong>{{ movimentacao_ativa.retirado_por.get_full_name }}</strong>
+                        Por <strong>{{ movimentacao_ativa.retirado_por.get_full_name|default:movimentacao_ativa.retirado_por.username }}</strong>
+                        {% if movimentacao_ativa.esta_atrasada %}
+                        <br><span class="badge bg-danger mt-1">
+                            <i class="bi bi-exclamation-triangle me-1"></i>{{ movimentacao_ativa.dias_atraso }} dia{{ movimentacao_ativa.dias_atraso|pluralize:"s" }} de atraso
+                        </span>
+                        {% endif %}
                     </p>
                     <div class="d-grid">
                         {% if perms.ferramentas.devolver_mala or user.is_superuser %}
@@ -63,11 +73,20 @@
                         {% endif %}
                     </div>
                     {% endif %}
+
+                {% elif mala.status == 'em_manutencao' %}
+                    <i class="bi bi-wrench-adjustable display-4 text-info"></i>
+                    <h5 class="mt-2 text-info">Em Manutenção</h5>
+                    <p class="text-muted small">Indisponível para uso.</p>
+
+                {% else %}
+                    <i class="bi bi-x-circle-fill display-4 text-danger"></i>
+                    <h5 class="mt-2 text-danger">{{ mala.get_status_display|default:"Indisponível" }}</h5>
                 {% endif %}
             </div>
         </div>
 
-        {# Ficha Técnica #}
+        <!-- Ficha Técnica -->
         <div class="card shadow-sm mb-4">
             <div class="card-header fw-bold">
                 <i class="bi bi-info-circle me-2"></i>Ficha Técnica
@@ -79,7 +98,7 @@
                 </li>
                 <li class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Localização</span>
-                    <strong>{{ mala.localizacao_padrao }}</strong>
+                    <strong>{{ mala.localizacao_padrao|default:"N/D" }}</strong>
                 </li>
                 <li class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Filial</span>
@@ -92,7 +111,7 @@
             </ul>
         </div>
 
-        {# QR Code #}
+        <!-- QR Code -->
         <div class="card shadow-sm">
             <div class="card-header fw-bold">
                 <i class="bi bi-qr-code me-2"></i>QR Code
@@ -100,7 +119,7 @@
             <div class="card-body text-center">
                 {% if mala.qr_code %}
                     {% secure_url mala "qr_code" as qr_url %}
-                            <img src="{{ qr_url }}" alt="QR Code" class="img-fluid border rounded p-2 bg-white mb-3" style="max-width: 160px;">
+                    <img src="{{ qr_url }}" alt="QR Code" class="img-fluid border rounded p-2 bg-white mb-3" style="max-width: 160px;">
                     <div class="d-grid">
                         <a href="{{ qr_url }}" download="qr-mala-{{ mala.codigo_identificacao }}.png" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-download me-1"></i>Baixar
@@ -113,9 +132,9 @@
         </div>
     </div>
 
-    {# Coluna direita #}
+    <!-- Coluna direita -->
     <div class="col-lg-8">
-        {# Itens na mala #}
+        <!-- Itens na mala -->
         <div class="card shadow-sm mb-4">
             <div class="card-header fw-bold d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-tools me-2"></i>Itens na Mala</span>
@@ -142,7 +161,7 @@
             </div>
         </div>
 
-        {# Histórico #}
+        <!-- Histórico -->
         <div class="card shadow-sm">
             <div class="card-header fw-bold">
                 <i class="bi bi-arrow-left-right me-2"></i>Histórico de Movimentações
@@ -164,11 +183,16 @@
                             <td>
                                 {% if mov.esta_ativa %}
                                     <span class="badge bg-warning">Em Uso</span>
+                                    {% if mov.esta_atrasada %}
+                                        <span class="badge bg-danger" title="{{ mov.dias_atraso }}d atraso">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                        </span>
+                                    {% endif %}
                                 {% else %}
                                     <span class="badge bg-secondary">Concluída</span>
                                 {% endif %}
                             </td>
-                            <td>{{ mov.retirado_por.get_full_name }}</td>
+                            <td>{{ mov.retirado_por.get_full_name|default:mov.retirado_por.username }}</td>
                             <td>{{ mov.data_retirada|date:"d/m/y H:i" }}</td>
                             <td>{{ mov.recebido_por.get_full_name|default:"-" }}</td>
                             <td>{{ mov.data_devolucao|date:"d/m/y H:i"|default:"-" }}</td>
@@ -183,6 +207,5 @@
     </div>
 </div>
 {% endblock %}
-
 
 

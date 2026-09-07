@@ -1,5 +1,5 @@
 
-{# ferramentas/mala_form.html #}
+<!-- ferramentas/mala_form.html -->
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load widget_tweaks %}
 
@@ -35,7 +35,7 @@
                     </div>
                     {% endif %}
 
-                    {# Dados da mala #}
+                    <!-- Dados da mala -->
                     <div class="mb-3">
                         <label for="{{ form.nome.id_for_label }}" class="form-label">Nome da Mala <span class="text-danger">*</span></label>
                         {% render_field form.nome class="form-control" %}
@@ -55,7 +55,7 @@
                         </div>
                     </div>
 
-                    {# Seleção de ferramentas #}
+                    <!-- Seleção de ferramentas -->
                     <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
                         <i class="bi bi-tools me-1"></i>Ferramentas na Mala
                     </h6>
@@ -77,16 +77,23 @@
                         </div>
                     </div>
 
-                    {# Rodapé #}
+                    <!-- Rodapé -->
                     <hr>
                     <div class="d-flex justify-content-between align-items-center">
                         <small class="text-muted"><span class="text-danger">*</span> Campos obrigatórios</small>
-                        {% if perms.ferramentas.add_mala or user.is_superuser %}
-                        <button type="submit" class="btn btn-primary px-4">
-                            <i class="bi bi-check-lg me-1"></i>Salvar
-                        </button>
+                        {% if form.instance.pk %}
+                            {% if perms.ferramentas.change_mala or user.is_superuser %}
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check-lg me-1"></i>Salvar
+                            </button>
+                            {% endif %}
+                        {% else %}
+                            {% if perms.ferramentas.add_mala or user.is_superuser %}
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check-lg me-1"></i>Salvar
+                            </button>
+                            {% endif %}
                         {% endif %}
-
                     </div>
                 </form>
             </div>
@@ -94,5 +101,3 @@
     </div>
 </div>
 {% endblock %}
-
-
