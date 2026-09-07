@@ -1,90 +1,46 @@
-# Django
-*.log
+# Ambientes e segredos
+.env
+.env.*
+!.env.example
+
+# Backups e dumps de banco
+*.sql
+backups/
+backup_*.sql
+backup_*.json
+
+# Arquivos de backup/temporários
+*.bak
+*.backup
+*.freeze.backup.txt
+*.utf16.bak
+
+# Build Android / Gradle
+android/.gradle/
+android/build/
+android/app/build/
+
+# Diagnóstico interno (se não for mais usado)
+# diagnostico/
+
+# Arquivos de texto temporários de debug
+showmigrations_atual.txt
+tabelas_no_dump.txt
+tabelas_restauradas.txt
+sql_0006.sql
+requirements.txt.backup
+requirements.txt.freeze.bak
+requirements.txt.utf16.bak
+notifications/services.py.bak
+"how Django *"
 
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
 *.pyc
-*.pyo
-*.egg-info
+venv/
+*.egg-info/
 
-# Arquivo gerados pelo projeto
-/media/
-/midia/
-/staticfiles/
-
-# Ambiente Virtual
-/venv/
-/env/
-.env
-scripts  
-
-.expo/
-android/
-logs/
-*.txt.bak
-.env.dev
-.env.prod.backup
-_deprecated_backup/
-.debug/
+# IDE
 .vscode/
-.vs/
-
-
-# Scripts temporários de debug
-check_*.py
-debug_*.py
-debug_*.html
-fix_*.py
-sync_*.py
-seed_*.py
-diagnostico_*.py
-health_monitor.py
-count_*.py
-check_matriz.*py
-private_media/
-
-
-ctst-storage-key.json
-storage_backends.py
-
-# Coverage
-.coverage
-.coverage.*
-htmlcov/
-.pytest_cache/
-requirement_linux.txt
-.coveragerc
-
-# Teste
-run_tests.ps1
-.pytest_cache/
-test_output.txt
-manage_test.py
-test_output.txt
-
-
-# Relatorios de auditoria gerados localmente
-auditoria_*.txt
-
-
-# Relatorios de auditoria gerados localmente
-auditoria_*.txt
-
-rotas_usuario.csv
-sent_emails/
-# Arquivos de debug
-debug_*.html
-debug_*.txt
-
-.debug/
-
-# Script utilitario de manutencao
-scripts/fix_mojibake.py
-
-# Arquivos de comandos
-python manage.py collectstatic --noinput --upload-unhashed-files
-node_modules
-
+.idea/
 
