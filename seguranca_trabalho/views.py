@@ -32,7 +32,8 @@ from django.views.generic.edit import FormMixin
 from django.views.decorators.http import require_POST
 
 from docx import Document
-from weasyprint import HTML, default_url_fetcher
+from weasyprint import HTML
+from weasyprint.urls import URLFetcher
 
 from core.mixins import (
     AppPermissionMixin, FuncionarioRequiredMixin, ViewFilialScopedMixin,
@@ -56,7 +57,6 @@ logger = logging.getLogger(__name__)
 
 _APP = 'seguranca_trabalho'
 
-
 # =============================================================================
 # HELPERS
 # =============================================================================
@@ -65,8 +65,8 @@ def custom_url_fetcher(url):
     """Permite que o WeasyPrint acesse arquivos de media locais."""
     if url.startswith(settings.MEDIA_URL):
         path = (settings.MEDIA_ROOT / url[len(settings.MEDIA_URL):]).as_posix()
-        return default_url_fetcher(f'file://{path}')
-    return default_url_fetcher(url)
+        return URLFetcher(f'file://{path}')
+    return URLFetcher(url)
 
 
 def _estoque_equipamento(equipamento, filial):
