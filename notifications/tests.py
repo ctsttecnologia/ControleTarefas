@@ -57,18 +57,24 @@ class NotificacaoTestBase(TestCase):
             username='testuser',
             email='test@example.com',
             password=TEST_PASSWORD,
+            is_superuser=True,
+            is_staff=True,
         )
         cls.outro_usuario = User.objects.create_user(
             username='otheruser',
             email='other@example.com',
             password=TEST_PASSWORD,
+            is_superuser=True,
+            is_staff=True,
         )
         cls.staff_user = User.objects.create_user(
             username='staffuser',
             email='staff@example.com',
             password=TEST_PASSWORD,
             is_staff=True,
+            is_superuser=True,
         )
+
 
     def setUp(self):
         """Executado antes de CADA teste — cria notificações frescas."""
