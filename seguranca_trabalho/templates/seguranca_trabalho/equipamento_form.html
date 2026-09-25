@@ -1,4 +1,4 @@
-
+<!-- seguranca_trabalho/templates/seguranca_trabalho/equipamento_form.html -->
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load widget_tweaks %}
 
@@ -64,7 +64,7 @@
                             <label for="{{ form.fabricante.id_for_label }}" class="sst-form-label">
                                 {{ form.fabricante.label }} <span class="required">*</span>
                             </label>
-                            {{ form.fabricante }}
+                            {% render_field form.fabricante class+="form-select" %}
                             {% for error in form.fabricante.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
                             {% endfor %}
@@ -91,7 +91,7 @@
                             <label for="{{ form.data_validade_ca.id_for_label }}" class="sst-form-label">
                                 {{ form.data_validade_ca.label }}
                             </label>
-                            {{ form.data_validade_ca }}
+                            {% render_field form.data_validade_ca class+="form-control" type="date" %}
                             {% for error in form.data_validade_ca.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
                             {% endfor %}

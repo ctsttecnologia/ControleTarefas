@@ -1,3 +1,4 @@
+<!-- Base Template - Segurança do Trabalho -->
 {% extends "base.html" %}
 {% load static %}
 {% load i18n %}
@@ -5,6 +6,9 @@
 {% block title %}SST - {{ block.super }}{% endblock %}
 
 {% block extra_css %}
+            
+    <script src="{% static 'seguranca_trabalho/js/assinatura_remota.js' %}"></script>
+            
 {{ block.super }}
 <style>
     /* ═══════════════════════════════════════════════════════
@@ -1198,10 +1202,11 @@
             <div class="collapse navbar-collapse" id="sstNavbar">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-lg-center">
 
-                    {% if perms.seguranca_trabalho.view_fichaepi %}
+                    {% if perms.seguranca_trabalho.view_dashboard %}
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:dashboard' %}"
-                           class="sst-nav-link {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
+                           class="sst-nav-link {% if request.resolver_match and 'dashboard' in request.resolver_match.url_name %}
+active{% endif %}">
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
                     </li>
@@ -1210,14 +1215,14 @@
                     {% if perms.seguranca_trabalho.view_fichaepi %}
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:ficha_list' %}"
-                           class="sst-nav-link {% if 'ficha_' in request.resolver_match.url_name %}active{% endif %}">
+                           class="sst-nav-link {% if request.resolver_match and 'ficha_' in request.resolver_match.url_name %}active{% endif %}">
                             <i class="bi bi-file-person"></i> Fichas de EPI
                         </a>
                     </li>
                     {% else %}
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:minha_ficha_redirect' %}"
-                           class="sst-nav-link {% if 'minha_ficha' in request.resolver_match.url_name %}active{% endif %}">
+                           class="sst-nav-link {% if request.resolver_match and 'minha_ficha' in request.resolver_match.url_name %}active{% endif %}">
                             <i class="bi bi-file-person"></i> Minha Ficha
                         </a>
                     </li>
@@ -1226,7 +1231,7 @@
                     {% if perms.seguranca_trabalho.view_equipamento %}
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:equipamento_list' %}"
-                           class="sst-nav-link {% if 'equipamento_' in request.resolver_match.url_name %}active{% endif %}">
+                           class="sst-nav-link {% if request.resolver_match and 'equipamento_' in request.resolver_match.url_name %}active{% endif %}">
                             <i class="bi bi-hdd-stack"></i> EPI - Equipamentos
                         </a>
                     </li>
@@ -1235,7 +1240,7 @@
                     {% if perms.seguranca_trabalho.view_funcao %}
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:funcao_list' %}"
-                           class="sst-nav-link {% if 'funcao_' in request.resolver_match.url_name %}active{% endif %}">
+                           class="sst-nav-link {% if request.resolver_match and 'funcao_' in request.resolver_match.url_name %}active{% endif %}">
                             <i class="bi bi-briefcase"></i> Funções
                         </a>
                     </li>
@@ -1244,7 +1249,7 @@
                     {% if perms.seguranca_trabalho.change_matrizepi %}
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}"
-                           class="sst-nav-link {% if 'controle_epi' in request.resolver_match.url_name %}active{% endif %}">
+                           class="sst-nav-link {% if request.resolver_match and 'controle_epi' in request.resolver_match.url_name %}active{% endif %}">
                             <i class="bi bi-grid-3x3"></i> Matriz EPI
                         </a>
                     </li>

@@ -24,6 +24,14 @@
   }
   .sup-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
 
+  .sup-header-fixed {
+    position: fixed;
+    top: 60px; /* altura do header global acima dele */
+    left: 0;
+    right: 0;
+    z-index: 1020;
+  }
+
   /* ── STEPPER ── */
   .stepper { display: flex; justify-content: space-between; position: relative; margin: 2rem 0; }
   .stepper::before {
@@ -51,12 +59,33 @@
   .linha-nenhum td {
   background: #fafafa;
   }
-.linha-nenhum:hover td {
+  .linha-nenhum:hover td {
   background: #f0f0f0;
   }
-.min-w-0 { min-width: 0; }
+  .min-w-0 { min-width: 0; }
 
+  /* ── Corrige mensagens escondidas atrás do header fixo ── */
+  body {
+    padding-top: 0; /* ajuste se o header for fixed */
+  }
 
+  .messages,
+  #messages,
+  .alert-container {
+    position: relative;
+    z-index: 1050; /* acima do header */
+    margin-top: 1rem;
+  }
+
+  /* Se o header usar position: fixed ou sticky, garanta espaço no topo */
+  header.fixed-top,
+  .navbar.fixed-top {
+    z-index: 1030;
+  }
+
+  .container-fluid.py-3 {
+    scroll-margin-top: 80px; /* altura aproximada do header */
+  }
 
 </style>
 {% endblock %}

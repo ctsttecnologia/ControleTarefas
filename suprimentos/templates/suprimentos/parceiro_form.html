@@ -48,12 +48,16 @@
                     <div class="col-11">
                         {{ form.endereco|as_crispy_field }}
                     </div>
-                    
-                    <div class="col-1 d-flex align-items-center justify-content-between ">
-                        {% if perms.suprimentos.add_logradouro or user.is_superuser %}
-                        <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-outline-secondary mt-3" title="Incluir Novo Endereço">
+
+                    <div class="col-1 d-flex align-items-center justify-content-between">
+                        {% if perms.logradouro.add_logradouro or user.is_superuser %}
+                        <button type="button"
+                                id="btn-novo-endereco"
+                                class="btn btn-outline-secondary mt-3"
+                                title="Incluir Novo Endereço"
+                                data-url="{% url 'logradouro:cadastrar_logradouro' %}?popup=1">
                             <i class="bi bi-plus-circle"></i>
-                        </a>
+                        </button>
                         {% endif %}
                     </div>
                 </div>
@@ -86,4 +90,48 @@
     </div>
 </div>
 {% endblock sup_content %}
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    if (window.jQuery) {
+        $('.select2-endereco').select2({
+            width: '100%',
+            placeholder: "Selecione ou cadastre um endereço...",
+            allowClear: true,
+        });
+    }
+
+    const btnNovo = document.getElementById('btn-novo-endereco');
+    if (btnNovo) {
+        btnNovo.addEventListener('click', function () {
+            const url = btnNovo.dataset.url;
+            const popup = window.open(
+                url,
+                'novoLogradouro',
+                'width=900,height=650,resizable=yes,scrollbars=yes'
+            );
+            if (!popup) {
+                alert("O navegador bloqueou o popup. Permita popups para este site.");
+            }
+        });
+    }
+
+    window.dismissLogradouroPopup = function (id, text) {
+        const select = document.getElementById('id_endereco');
+        if (!select) return;
+        let option = select.querySelector(`option[value="${id}"]`);
+        if (!option) {
+            option = new Option(text, id, true, true);
+            select.appendChild(option);
+        }
+        select.value = id;
+        if (window.jQuery && $(select).data('select2')) {
+            $(select).val(id).trigger('change');
+        }
+    };
+});
+</script>
+{% endblock %}

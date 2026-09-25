@@ -8,11 +8,12 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-
+from django_cryptography.fields import encrypt
 from core.managers import FilialManager
 from departamento_pessoal.models import Cargo
 from suprimentos.models import PedidoCompra
 from usuario.models import Filial
+from core.models import AssinavelMixin
 
 
 # =====================================================================
@@ -152,6 +153,10 @@ class Equipamento(models.Model):
                 fields=['fabricante', 'modelo', 'certificado_aprovacao'],
                 name='equipamento_unico_constraint',
             ),
+            models.CheckConstraint(
+                check=models.Q(estoque_atual__gte=0),
+                name='equipamento_estoque_atual_nao_negativo',
+            ),
         ]
         indexes = [
             models.Index(fields=['filial', 'ativo']),
@@ -225,15 +230,19 @@ class FichaEPI(models.Model):
     )
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
-    assinatura_funcionario = models.TextField(
-        blank=True, null=True,
-        verbose_name=_("Assinatura do Funcionário"),
-        help_text=_("Assinatura digital (base64) do funcionário no termo."),
+    assinatura_funcionario = encrypt(
+        models.TextField(blank=True, null=True,
+            verbose_name=_("Assinatura do Funcionário"))
     )
     data_assinatura_termo = models.DateTimeField(
         blank=True, null=True,
         verbose_name=_("Data da Assinatura do Termo"),
     )
+
+    # models.py — adicionar ao EntregaEPI (e FichaEPI, se aplicável)
+    consentimento_lgpd_em = models.DateTimeField(null=True, blank=True, verbose_name="Consentimento registrado em")
+    consentimento_lgpd_ip = models.GenericIPAddressField(null=True, blank=True, verbose_name="IP do consentimento")
+
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
@@ -249,12 +258,35 @@ class FichaEPI(models.Model):
         verbose_name = _("Ficha de EPI")
         verbose_name_plural = _("Fichas de EPI")
         ordering = ['funcionario__nome_completo']
+        permissions = [
+            ("view_dados_sensiveis_ficha", _("Pode visualizar assinaturas e dados sensíveis")),
+        ]
 
     def __str__(self):
         return f"Ficha de {self.funcionario.nome_completo}"
 
     def get_absolute_url(self):
         return reverse('seguranca_trabalho:ficha_detail', args=[self.pk])
+
+    def pode_ser_assinado(self):
+        # ajuste a regra conforme sua necessidade
+        return self.data_assinatura_termo is None
+
+    def assinar_remotamente(self, post_data, files_data, ip=None):
+        assinatura_base64 = post_data.get('assinatura_base64')
+        if not assinatura_base64:
+            raise ValueError("Nenhuma assinatura foi enviada.")
+
+        self.assinatura_funcionario = assinatura_base64
+        self.data_assinatura_termo = timezone.now()
+        self.consentimento_lgpd_em = timezone.now()
+        self.consentimento_lgpd_ip = ip
+        self.save(update_fields=[
+            'assinatura_funcionario',
+            'data_assinatura_termo',
+            'consentimento_lgpd_em',
+            'consentimento_lgpd_ip',
+        ])
 
     @property
     def funcao(self):
@@ -269,23 +301,13 @@ class FichaEPI(models.Model):
         return None
 
 
-class EntregaEPI(models.Model):
+class EntregaEPI(AssinavelMixin, models.Model):
     ficha = models.ForeignKey(FichaEPI, on_delete=models.PROTECT, related_name='entregas')
     equipamento = models.ForeignKey(Equipamento, on_delete=models.PROTECT, verbose_name=_("Equipamento"))
     quantidade = models.PositiveIntegerField(default=1, verbose_name=_("Quantidade"))
     lote = models.CharField(max_length=100, blank=True, verbose_name=_("Lote de Fabricação"))
     numero_serie = models.CharField(max_length=100, blank=True, verbose_name=_("Número de Série"))
     data_entrega = models.DateField(default=date.today, verbose_name=_("Data de Recebimento"))
-    assinatura_recebimento = models.TextField(
-        blank=True, null=True,
-        verbose_name=_("Assinatura de Recebimento (Base64)"),
-    )
-    assinatura_imagem = models.ImageField(
-        upload_to='assinaturas/%Y/%m/',
-        null=True, blank=True,
-        verbose_name=_("Assinatura (Arquivo)"),
-    )
-    data_assinatura = models.DateTimeField(null=True, blank=True, verbose_name=_("Data da Assinatura"))
     data_devolucao = models.DateField(null=True, blank=True, verbose_name=_("Data de Devolução"))
     recebedor_devolucao = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -295,6 +317,9 @@ class EntregaEPI(models.Model):
         verbose_name=_("Recebedor"),
     )
     criado_em = models.DateTimeField(default=timezone.now, verbose_name=_("Data do Registro"))
+    consentimento_lgpd_em = models.DateTimeField(null=True, blank=True, verbose_name="Consentimento registrado em")
+    consentimento_lgpd_ip = models.GenericIPAddressField(null=True, blank=True, verbose_name="IP do consentimento")
+
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
@@ -312,6 +337,7 @@ class EntregaEPI(models.Model):
         ordering = ['-criado_em']
         permissions = [
             ("assinar_entregaepi", "Pode assinar entrega de EPI"),
+            ("registrar_devolucao_entregaepi", "Pode registrar devolução de EPI"),
         ]
         indexes = [
             models.Index(fields=['ficha', '-criado_em']),
@@ -325,6 +351,15 @@ class EntregaEPI(models.Model):
         data = self.data_entrega.strftime('%d/%m/%Y') if self.data_entrega else "S/D"
         return f"{equipamento} → {funcionario} ({data})"
 
+    def pode_ser_assinado(self):
+        return super().pode_ser_assinado() and self.data_devolucao is None
+
+    def salvar_assinatura(self, assinatura_base64=None, imagem_upload=None, ip=None):
+        super().salvar_assinatura(assinatura_base64, imagem_upload, ip)
+        self.consentimento_lgpd_em = timezone.now()
+        self.consentimento_lgpd_ip = ip
+        self.save(update_fields=['consentimento_lgpd_em', 'consentimento_lgpd_ip'])
+
     @property
     def data_vencimento_uso(self):
         if self.data_entrega and self.equipamento.vida_util_dias:
@@ -335,7 +370,7 @@ class EntregaEPI(models.Model):
     def status(self):
         if self.data_devolucao:
             return "Devolvido"
-        if not self.assinatura_recebimento and not self.assinatura_imagem:
+        if not self.assinatura_imagem:
             return "Pendente Assinatura"
         vencimento = self.data_vencimento_uso
         if vencimento and timezone.now().date() > vencimento:
@@ -472,6 +507,12 @@ class MovimentacaoEstoque(models.Model):
         # mude para campo separado de "saldo de ajuste".
         return self.quantidade
 
+class LogAcessoDadosSensiveis(models.Model):
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    ficha = models.ForeignKey(FichaEPI, on_delete=models.SET_NULL, null=True)
+    acao = models.CharField(max_length=100)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    ip_origem = models.GenericIPAddressField(null=True, blank=True)
 
 
         

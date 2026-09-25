@@ -1,0 +1,334 @@
+<!-- Acesso Rápido - Segurança do Trabalho -->
+{% extends "seguranca_trabalho/_base_sst.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Acesso Rápido - Segurança do Trabalho" %}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* ═══════════════════════════════════════════════════════
+       ACESSO RÁPIDO — CARDS "AGRUPADOS" + HOVER + TEMA
+       Escopado em .sst-quick-access para não afetar outras
+       páginas que usam o mesmo partial (ex: departamento_pessoal)
+       ═══════════════════════════════════════════════════════ */
+
+    /* Remove os gutters grandes do Bootstrap e aproxima os cards */
+    .sst-quick-access .row {
+        --bs-gutter-x: 0;
+        --bs-gutter-y: 0;
+        margin: 0;
+        background: var(--sst-border);
+        border: 1px solid var(--sst-border);
+        border-radius: 0.75rem;
+        overflow: hidden;
+        box-shadow: var(--sst-card-shadow);
+    }
+
+    /* O título "Acesso Rápido" (col-12) sai do agrupamento visual */
+    .sst-quick-access .row > .col-12:first-child {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0 0 1rem 0;
+        margin-bottom: 0.25rem;
+    }
+
+    .sst-quick-access .row > .col-12:first-child h4 {
+        color: var(--sst-text);
+    }
+
+    /* Cada "coluna" de card cola na vizinha, criando efeito de bloco único */
+    .sst-quick-access .row > div[class*="col-lg-3"] {
+        padding: 1px; /* cria a linha divisória fininha entre cards */
+    }
+
+    /* ── Card ── */
+    .sst-quick-access .card {
+        background: var(--sst-bg) !important;
+        border: none !important;
+        border-radius: 0.4rem !important;
+        box-shadow: none !important;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        transition:
+            background-color 0.25s ease,
+            transform 0.25s ease,
+            box-shadow 0.25s ease;
+    }
+
+    .card-hover {
+        transition:
+            transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 0.25s ease,
+            background-color 0.25s ease !important;
+    }
+
+    /* Barra de destaque no topo, some/aparece suavemente */
+    .sst-quick-access .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--sst-accent);
+        transform: scaleX(0);
+        transform-origin: center;
+        transition: transform 0.3s ease;
+        z-index: 2;
+    }
+
+    .sst-quick-access .card-hover:hover::before {
+        transform: scaleX(1);
+    }
+
+    /* Efeito de hover: elevação real + sombra + destaque de fundo */
+    .sst-quick-access .card-hover:hover {
+        transform: translateY(-6px) scale(1.015) !important;
+        box-shadow:
+            0 10px 24px rgba(0, 0, 0, 0.10),
+            0 3px 8px rgba(0, 0, 0, 0.06) !important;
+        background: var(--sst-accent-soft) !important;
+        z-index: 3;
+    }
+
+    [data-bs-theme="dark"] .sst-quick-access .card-hover:hover {
+        box-shadow:
+            0 10px 24px rgba(0, 0, 0, 0.4),
+            0 3px 8px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    /* ── Texto do card (compatível com tema) ── */
+    .sst-quick-access .card-body h6 {
+        color: var(--sst-text);
+        transition: color 0.2s ease;
+    }
+
+    .sst-quick-access .card-body p {
+        color: var(--sst-text-muted) !important;
+    }
+
+    .sst-quick-access .card-hover:hover h6 {
+        color: var(--sst-accent);
+    }
+
+    /* ── Ícones circulares: mantêm a cor semântica, mas reagem no hover ── */
+    .sst-quick-access .card-body .rounded-circle {
+        transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+    }
+
+    .sst-quick-access .card-hover:hover .rounded-circle {
+        transform: scale(1.12) rotate(-4deg);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    [data-bs-theme="dark"] .sst-quick-access .card-hover:hover .rounded-circle {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Opacidade reduzida nos backgrounds de ícone no dark, pra não "lavar" */
+    [data-bs-theme="dark"] .sst-quick-access .bg-opacity-10 {
+        --bs-bg-opacity: 0.18 !important;
+    }
+
+    /* ── Divisórias sutis entre cards adjacentes (efeito "tabela") ── */
+    .sst-quick-access .row > div[class*="col-lg-3"] .card {
+        box-shadow: inset -1px 0 0 var(--sst-border);
+    }
+
+    /* ── Responsivo ── */
+    @media (max-width: 768px) {
+        .sst-quick-access .card-body {
+            padding: 1.25rem !important;
+        }
+        .sst-quick-access .row > .col-12:first-child {
+            padding-bottom: 0.75rem;
+        }
+    }
+    /* ── Modo de arraste ── */
+    .sst-quick-access.sortable-active .card-hover {
+        cursor: grab;
+    }
+
+    .sst-quick-access .sortable-ghost {
+        opacity: 0.35;
+    }
+
+    .sst-quick-access .sortable-chosen {
+        cursor: grabbing !important;
+    }
+
+    .sst-quick-access .sortable-drag {
+        box-shadow: 0 12px 28px rgba(0,0,0,.25) !important;
+        border-radius: 0.5rem;
+    }
+
+    .sst-reorder-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 0.4rem 0.9rem;
+        border-radius: 2rem;
+        border: 1px solid var(--sst-border);
+        background: var(--sst-bg-alt);
+        color: var(--sst-text-muted);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .sst-reorder-toggle:hover {
+        border-color: var(--sst-accent);
+        color: var(--sst-accent);
+    }
+
+    .sst-reorder-toggle.active {
+        background: var(--sst-accent);
+        border-color: var(--sst-accent);
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block sst_content %}
+
+<!-- Header -->
+<div class="sst-page-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4>
+                <i class="bi bi-shield-check me-2"></i>{% trans "Segurança do Trabalho" %}
+            </h4>
+            <small class="sst-page-subtitle">{% trans "Acesso rápido aos módulos de SST" %}</small>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <button type="button" id="sstReorderToggle" class="btn btn-light" title="Acione para reordenar os cards de acesso rápido">
+                <i class="bi bi-arrows-move"></i> {% trans "Reordenar" %}
+            </button>
+            <a href="{% url 'seguranca_trabalho:dashboard' %}" class="btn btn-light" title="Voltar para o Dashboard principal">
+                <i class="bi bi-speedometer2 me-1"></i> {% trans "Dashboard" %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Acesso Rápido -->
+<div class="sst-quick-access" id="sstQuickAccess">
+    {% include "seguranca_trabalho/partials/_acesso_rapido.html" %}
+</div>
+
+{% endblock sst_content %}
+
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('Sortable disponível?', typeof Sortable !== 'undefined');
+
+    const STORAGE_KEY = 'sst_acesso_rapido_ordem';
+    const wrapper = document.getElementById('sstQuickAccess');
+    const container = wrapper ? wrapper.querySelector(':scope > .row') : null;
+    const toggleBtn = document.getElementById('sstReorderToggle');
+
+    if (!container) {
+        console.error('Container .row não encontrado dentro de #sstQuickAccess');
+        return;
+    }
+    if (typeof Sortable === 'undefined') {
+        console.error('SortableJS não carregou. Verifique o CDN ou bloqueio de rede.');
+        return;
+    }
+
+    // ── Impede o drag nativo do <a> conflitar com o Sortable ──
+    container.querySelectorAll('a').forEach(a => {
+        a.setAttribute('draggable', 'false');
+    });
+
+    function getCardItems() {
+        return Array.from(container.children).filter(
+            el => el.hasAttribute('data-card-id')
+        );
+    }
+
+    function aplicarOrdemSalva() {
+        const salvo = localStorage.getItem(STORAGE_KEY);
+        if (!salvo) return;
+        try {
+            const ordem = JSON.parse(salvo);
+            const mapa = {};
+            getCardItems().forEach(el => mapa[el.dataset.cardId] = el);
+            ordem.forEach(id => {
+                if (mapa[id]) container.appendChild(mapa[id]);
+            });
+        } catch (e) {
+            console.warn('Ordem salva inválida:', e);
+        }
+    }
+
+    function salvarOrdem() {
+        const ordem = getCardItems().map(el => el.dataset.cardId);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(ordem));
+        console.log('Ordem salva:', ordem);
+    }
+
+    aplicarOrdemSalva();
+
+    let sortableInstance = null;
+
+    function ativarReordenacao() {
+        // Bloqueia clique nos links enquanto estiver em modo de arraste
+        container.querySelectorAll('a').forEach(a => {
+            a.addEventListener('click', bloquearClique);
+        });
+
+        sortableInstance = Sortable.create(container, {
+            animation: 200,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            draggable: '[data-card-id]', // só esses elementos são "pegáveis"
+            onEnd: salvarOrdem
+        });
+
+        wrapper.classList.add('sortable-active');
+    }
+
+    function bloquearClique(e) {
+        e.preventDefault();
+    }
+
+    function desativarReordenacao() {
+        if (sortableInstance) {
+            sortableInstance.destroy();
+            sortableInstance = null;
+        }
+        container.querySelectorAll('a').forEach(a => {
+            a.removeEventListener('click', bloquearClique);
+        });
+        wrapper.classList.remove('sortable-active');
+    }
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function () {
+            const ativo = this.classList.toggle('active');
+            if (ativo) {
+                ativarReordenacao();
+                this.innerHTML = '<i class="bi bi-check-lg"></i> {% trans "Concluir" %}';
+            } else {
+                desativarReordenacao();
+                this.innerHTML = '<i class="bi bi-arrows-move"></i> {% trans "Reordenar" %}';
+            }
+        });
+    } else {
+        console.error('Botão #sstReorderToggle não encontrado.');
+    }
+});
+</script>
+{% endblock extra_js %}

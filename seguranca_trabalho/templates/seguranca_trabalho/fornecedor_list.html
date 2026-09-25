@@ -1,6 +1,5 @@
-
+<!-- Lista de Fornecedores (Parceiro com eh_fornecedor=True) -->
 {% extends "seguranca_trabalho/_base_sst.html" %}
-{% load static %}
 
 {% block title %}Fornecedores{% endblock %}
 
@@ -12,7 +11,7 @@
             <h4><i class="bi bi-truck me-2"></i>Fornecedores</h4>
             <span class="sst-page-subtitle">Gerencie os fornecedores de produtos e serviços</span>
         </div>
-        {% if perms.seguranca_trabalho.add_fornecedor or user.is_superuser %}
+        {% if perms.suprimentos.add_parceiro or user.is_superuser %}
         <a href="{% url 'seguranca_trabalho:fornecedor_create' %}" class="sst-btn-header sst-btn-header--primary">
             <i class="bi bi-plus-circle"></i> Novo Fornecedor
         </a>
@@ -48,7 +47,7 @@
                         <br><small class="text-muted-custom">{{ fornecedor.razao_social }}</small>
                         {% endif %}
                     </td>
-                    <td><code>{{ fornecedor.cnpj }}</code></td>
+                    <td><code>{{ fornecedor.cnpj|default:"—" }}</code></td>
                     <td>
                         {% if fornecedor.telefone %}
                         <i class="bi bi-telephone me-1" style="opacity:.5;"></i>{{ fornecedor.telefone }}
@@ -71,9 +70,11 @@
                             <a href="{% url 'seguranca_trabalho:fornecedor_detail' fornecedor.pk %}" class="sst-action-btn sst-action-btn--view" title="Ver">
                                 <i class="bi bi-eye"></i>
                             </a>
+                            {% if perms.suprimentos.change_parceiro or user.is_superuser %}
                             <a href="{% url 'seguranca_trabalho:fornecedor_update' fornecedor.pk %}" class="sst-action-btn sst-action-btn--edit" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -83,7 +84,7 @@
                         <div class="sst-empty">
                             <div class="sst-empty-icon"><i class="bi bi-inbox"></i></div>
                             <h6>Nenhum fornecedor cadastrado</h6>
-                            {% if perms.seguranca_trabalho.add_fornecedor or user.is_superuser %}
+                            {% if perms.suprimentos.add_parceiro or user.is_superuser %}
                             <a href="{% url 'seguranca_trabalho:fornecedor_create' %}" class="sst-btn-primary mt-2" style="font-size:.82rem; padding:.4rem 1rem;">
                                 <i class="bi bi-plus-circle"></i> Cadastrar primeiro
                             </a>
@@ -103,4 +104,5 @@
 </div>
 
 {% endblock %}
+
 

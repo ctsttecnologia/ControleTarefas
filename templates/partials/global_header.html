@@ -186,6 +186,41 @@
     </nav>
 </header>
 
+<!-- ============================================================= -->
+<!-- Script GLOBAL de ajuste de padding-top do body                -->
+<!-- Roda para TODOS os usuários (autenticados ou não), pois o     -->
+<!-- header fixo existe em ambos os casos.                          -->
+<!-- ============================================================= -->
+<script>
+(function() {
+    'use strict';
+
+    /**
+     * Ajusta o padding-top do <body> com base na altura real
+     * do(s) header(s) fixo(s), para que #messages-container e o
+     * conteúdo principal não fiquem escondidos atrás do navbar
+     * fixed-top (funciona para usuário logado ou anônimo).
+     */
+    function ajustarPaddingHeader() {
+        let totalHeight = 0;
+        document.querySelectorAll('.fixed-top, .header-fixo, #global-header, .sup-header-fixed')
+            .forEach(el => { totalHeight += el.offsetHeight; });
+
+        document.body.style.paddingTop = totalHeight + 'px';
+    }
+
+    document.addEventListener('DOMContentLoaded', ajustarPaddingHeader);
+    window.addEventListener('load', ajustarPaddingHeader);
+    window.addEventListener('resize', ajustarPaddingHeader);
+    // Executa imediatamente (script já está após o header no DOM)
+    ajustarPaddingHeader();
+
+    // Exposto globalmente para reuso pelo bloco autenticado abaixo
+    // e por outros scripts (chat.js, notificacoes-realtime.js etc.)
+    window.ajustarPaddingHeaderGlobal = ajustarPaddingHeader;
+})();
+</script>
+
 {% if user.is_authenticated %}
 <!-- ============================================================= -->
 <!-- Elementos auxiliares de notificação (fora do <nav> pra evitar  -->
@@ -318,9 +353,12 @@
     // API global — usada pelo chat.js (WebSocket) e por outros JS
     // ============================================================
     window.NotificacoesAPI = {
-        atualizarBadge: atualizarBadge,         // ✅ compatível com chat.js
+        atualizarBadge: atualizarBadge,               // ✅ compatível com chat.js
         forcarAtualizacao: forcarAtualizacao,
         recarregarDropdown: recarregarDropdown,
+        // Reaproveita a função global (roda para todos, mas mantida
+        // aqui por compatibilidade com quem já chama via NotificacoesAPI)
+        ajustarPaddingHeader: window.ajustarPaddingHeaderGlobal,
         // Atalhos para o sistema realtime (se carregado)
         pararPolling:   () => window.NotifRealtime?.pararPolling?.(),
         iniciarPolling: () => window.NotifRealtime?.iniciarPolling?.(),

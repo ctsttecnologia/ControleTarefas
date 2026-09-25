@@ -57,6 +57,9 @@ import io
 from core.utils import get_filial_ativa
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
+from suprimentos.utils import validar_cnpj
+from django.core.exceptions import ValidationError
+
 
 
 
@@ -1596,10 +1599,8 @@ class PedidoCompraListView(LoginRequiredMixin, ListView):
         return ctx
 
 
-# ═════════════════════════════════════════════════════════════
+
 # CADASTROS AUXILIARES (Parceiro / Material / Contrato)
-# ═════════════════════════════════════════════════════════════
-# ═════════════════════════════════════════════════════════════
 # PARCEIRO — CRUD
 # ═════════════════════════════════════════════════════════════
 class ParceiroListView(LoginRequiredMixin, AppPermissionMixin,
@@ -1643,20 +1644,23 @@ class ParceiroDetailView(LoginRequiredMixin, AppPermissionMixin,
         return super().get_queryset().select_related("endereco", "filial")
 
 
-class ParceiroCreateView(LoginRequiredMixin, AppPermissionMixin,
-                         RequireActiveFilialMixin, FilialCreateMixin, CreateView):
+class ParceiroCreateView(LoginRequiredMixin, ViewFilialScopedMixin,AppPermissionMixin,
+                          RequireActiveFilialMixin, FilialCreateMixin, CreateView):
     model = Parceiro
     form_class = ParceiroForm
     template_name = "suprimentos/parceiro_form.html"
     permission_required = "suprimentos.add_parceiro"
     success_url = reverse_lazy("suprimentos:parceiro_list")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["filial_ativa"] = self.get_filial_ativa()  # do FilialCreateMixin/ViewFilialScopedMixin
+        return kwargs
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["titulo_pagina"] = "Novo Parceiro"
         return ctx
-    # ✅ A mensagem de sucesso é tratada pelo FilialCreateMixin
-
 
 class ParceiroUpdateView(LoginRequiredMixin, AppPermissionMixin,
                          ViewFilialScopedMixin, UpdateView):
@@ -1664,6 +1668,11 @@ class ParceiroUpdateView(LoginRequiredMixin, AppPermissionMixin,
     form_class = ParceiroForm
     template_name = "suprimentos/parceiro_form.html"
     permission_required = "suprimentos.change_parceiro"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["filial_ativa"] = self.get_filial_ativa()  # do FilialCreateMixin/ViewFilialScopedMixin
+        return kwargs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -1693,20 +1702,61 @@ class ParceiroUploadMassaView(LoginRequiredMixin, AppPermissionMixin,
     ]
     BOOLEANOS = {"eh_fabricante", "eh_fornecedor", "ativo"}
 
+    def _mapear_linha(self, linha):
+        dados = {}
+        for idx, campo in enumerate(self.COLUNAS):
+            valor = linha[idx] if idx < len(linha) else None
+
+            if campo == "cnpj" and isinstance(valor, (int, float)):
+                digitos = str(int(valor)).zfill(14)
+                valor = f"{digitos[:2]}.{digitos[2:5]}.{digitos[5:8]}/{digitos[8:12]}-{digitos[12:14]}"
+            elif isinstance(valor, str):
+                valor = valor.strip()
+                if valor == "":
+                    valor = None
+
+            if campo in self.BOOLEANOS:
+                if valor is None:
+                    valor = True
+                elif isinstance(valor, str):
+                    valor = valor.strip().lower() in ("sim", "s", "true", "1", "yes")
+                else:
+                    valor = bool(valor)
+
+            dados[campo] = valor
+
+        return dados
+
 
     def get(self, request):
+        filial = request.filial_ativa
+        if filial is None:
+            messages.error(
+                request,
+                "Selecione uma filial específica no menu superior para gerar o modelo "
+                "(esta operação não está disponível em 'Todas as Filiais')."
+            )
+            return redirect("usuario:profile")
         return render(request, self.template_name)
 
     def post(self, request):
         arquivo = request.FILES.get("planilha")
+        filial = request.filial_ativa
+        if filial is None:
+            messages.error(
+                request,
+                "Selecione uma filial específica no menu superior para gerar o modelo "
+                "(esta operação não está disponível em 'Todas as Filiais')."
+            )
+            return redirect("usuario:profile")
+
+        if not arquivo:
+            messages.error(request, "Selecione um arquivo .xlsx para importar.")
+            return redirect("suprimentos:parceiro_upload_massa")
 
         MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
         if arquivo.size > MAX_UPLOAD_SIZE:
             messages.error(request, "Arquivo muito grande (máx. 5MB).")
-            return redirect(...)
-
-        if not arquivo:
-            messages.error(request, "Selecione um arquivo .xlsx para importar.")
             return redirect("suprimentos:parceiro_upload_massa")
 
         if not arquivo.name.lower().endswith(".xlsx"):
@@ -1719,9 +1769,6 @@ class ParceiroUploadMassaView(LoginRequiredMixin, AppPermissionMixin,
         except Exception:
             messages.error(request, "Não foi possível ler a planilha. Verifique o arquivo.")
             return redirect("suprimentos:parceiro_upload_massa")
-
-        # ✅ Filial ativa garantida pelo RequireActiveFilialMixin
-        filial = request.filial_ativa
 
         criados, atualizados, erros = 0, 0, []
         linhas = list(ws.iter_rows(min_row=2, values_only=True))
@@ -1738,25 +1785,47 @@ class ParceiroUploadMassaView(LoginRequiredMixin, AppPermissionMixin,
                         erros.append(f"Linha {idx}: 'nome_fantasia' é obrigatório.")
                         continue
 
-                    cnpj = dados.get("cnpj") or None
+                    cnpj_bruto = dados.get("cnpj") or None
+                    cnpj = None
+                    if cnpj_bruto:
+                        try:
+                            cnpj = validar_cnpj(cnpj_bruto)
+                        except ValidationError as e:
+                            erros.append(f"Linha {idx}: CNPJ inválido — {e.messages[0]}")
+                            continue
+
                     defaults = {k: v for k, v in dados.items() if k != "cnpj"}
-                    defaults["filial"] = filial  # ✅ sempre na filial ativa
 
                     try:
                         if cnpj:
-                            # update_or_create escopado por filial + cnpj
-                            obj, created = Parceiro.objects.update_or_create(
-                                cnpj=cnpj, filial=filial, defaults=defaults
-                            )
+                            # ── CNPJ é ÚNICO GLOBALMENTE (Opção A) ──
+                            # Lookup SEM filial: se já existir em qualquer filial, atualiza.
+                            # A filial original do parceiro é preservada (não sobrescrita
+                            # silenciosamente por uma importação feita de outra filial).
+                            obj = Parceiro.objects.filter(cnpj=cnpj).first()
+                            if obj:
+                                for campo, valor in defaults.items():
+                                    setattr(obj, campo, valor)
+                                obj.save()
+                                created = False
+                            else:
+                                defaults["filial"] = filial  # nova filial só na criação
+                                Parceiro.objects.create(cnpj=cnpj, **defaults)
+                                created = True
                         else:
+                            # Sem CNPJ: sempre cria novo (não há chave para localizar duplicata)
+                            defaults["filial"] = filial
                             Parceiro.objects.create(cnpj=None, **defaults)
                             created = True
+
                         criados += 1 if created else 0
                         atualizados += 0 if created else 1
-                    except Exception as e:
-                        erros.append(f"Linha {idx}: {e}")
-        except Exception as e:
-            messages.error(request, f"Importação cancelada por erro geral: {e}")
+                    except Exception:
+                        logger.exception(f"Erro ao importar linha {idx} da planilha de parceiros")
+                        erros.append(f"Linha {idx}: dados inválidos ou duplicados.")
+        except Exception:
+            logger.exception("Importação de parceiros cancelada por erro geral")
+            messages.error(request, "Importação cancelada devido a um erro inesperado. Tente novamente.")
             return redirect("suprimentos:parceiro_upload_massa")
 
         if criados:
@@ -1775,25 +1844,7 @@ class ParceiroUploadMassaView(LoginRequiredMixin, AppPermissionMixin,
 
         return redirect("suprimentos:parceiro_list")
 
-    # ── Helpers ──────────────────────────────────────────────
-    def _mapear_linha(self, linha):
-        dados = {}
-        for i, coluna in enumerate(self.COLUNAS):
-            valor = linha[i] if i < len(linha) else None
-            if coluna in self.BOOLEANOS:
-                dados[coluna] = self._to_bool(valor)
-            else:
-                dados[coluna] = (str(valor).strip() if valor is not None else "")
-        return dados
-
-    @staticmethod
-    def _to_bool(valor):
-        if isinstance(valor, bool):
-            return valor
-        if valor is None:
-            return False
-        return str(valor).strip().lower() in {"1", "sim", "true", "verdadeiro", "x", "s"}
-
+    
 class ParceiroModeloDownloadView(LoginRequiredMixin, AppPermissionMixin,
                                  RequireActiveFilialMixin, View):
     """
@@ -1832,6 +1883,13 @@ class ParceiroModeloDownloadView(LoginRequiredMixin, AppPermissionMixin,
 
     def get(self, request):
         filial = request.filial_ativa
+        if filial is None:
+            messages.error(
+                request,
+                "Selecione uma filial específica no menu superior para gerar o modelo "
+                "(esta operação não está disponível em 'Todas as Filiais')."
+            )
+            return redirect("usuario:profile")
         wb = Workbook()
 
         # ── Estilos ──────────────────────────────────────────
@@ -1946,10 +2004,9 @@ class ParceiroModeloDownloadView(LoginRequiredMixin, AppPermissionMixin,
         )
         wb.save(response)
         return response
+
   
-
 # Contrato
-
 class ContratoListView(LoginRequiredMixin, ListView):
     model = Contrato
     template_name = "suprimentos/contrato_list.html"

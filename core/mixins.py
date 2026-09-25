@@ -1,6 +1,8 @@
 # core/mixins.py
+from datetime import timezone
 import io
 import os
+from typing import Optional
 import uuid
 from django.conf import settings
 from django.contrib import admin, messages
@@ -9,13 +11,14 @@ from django.core.exceptions import ImproperlyConfigured, PermissionDenied, Valid
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import models
 from django.db.models import Q, QuerySet
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from PIL import Image
 from core.magic_utils import get_mime_type
 from core.utils import get_filial_ativa
 from core.validators import SecureFileValidator
+from usuario.models import Filial
 from .forms import ChangeFilialForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ObjectDoesNotExist
@@ -79,13 +82,18 @@ class ViewFilialScopedMixin:
 
     filial_field = 'filial'
 
-    def get_filial_ativa(self):
+    def get_filial_ativa(self, request: Optional["HttpRequest"] = None) -> Optional["Filial"]:
         """
-        Retorna a instância de Filial ativa, ou None.
-        Delega para core.utils.get_filial_ativa() (fonte única de verdade),
-        evitando divergência entre views que usam chaves de sessão diferentes.
+        Fonte única para resolver a filial ativa de um usuário.
+
+        Ordem de prioridade:
+        1. ID em `request.session[SESSION_FILIAL_ATIVA]` — se válido e pertencer ao usuário
+        2. `user.filial_ativa` (fallback)
+
+        Returns:
+            Instância de Filial ou None.
         """
-        request = getattr(self, 'request', None)
+        request = request or getattr(self, 'request', None)
         if request is None:
             return None
 
@@ -111,12 +119,14 @@ class ViewFilialScopedMixin:
 class TecnicoScopeMixin:
     """
     NÍVEL 3 (Vertical/Dados):
-    Mixin global para filtrar querysets para usuários do grupo 'TÉCNICO'.
-    Deve ser herdado ANTES do ViewFilialScopedMixin.
+    Mixin global de escopo de dados por usuário.
 
-    Ex:
-        class MinhaView(AppPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, ListView):
-            ...
+    Regras:
+    - Staff/superuser: vê tudo (gestão/RH).
+    - Demais usuários (técnico OU comum): só veem os registros
+      vinculados a eles mesmos via `tecnico_scope_lookup`.
+
+    Deve ser herdado ANTES do ViewFilialScopedMixin.
     """
     tecnico_scope_lookup = None
     _TECNICO_CACHE_ATTR = '_tecnico_group_cache'
@@ -131,20 +141,29 @@ class TecnicoScopeMixin:
             )
         return getattr(user, self._TECNICO_CACHE_ATTR)
 
+    def _pode_ver_todos(self) -> bool:
+        """Somente staff/superuser (gestão de RH/SST) tem visão irrestrita."""
+        user = self.request.user
+        return bool(user.is_superuser or user.is_staff)
+
     def get_queryset(self) -> QuerySet:
         queryset = super().get_queryset()
         return self.scope_tecnico_queryset(queryset)
 
     def scope_tecnico_queryset(self, queryset: QuerySet) -> QuerySet:
-        if not self._is_tecnico():
+        # ── Gestão/RH: acesso irrestrito ──
+        if self._pode_ver_todos():
             return queryset
 
+        # ── Corrigido: TODOS os demais usuários (técnico OU comum)
+        #    só acessam os registros vinculados a eles mesmos.
+        #    Isso impede que um colaborador comum veja fichas de
+        #    terceiros, atendendo à LGPD (minimização de dados). ──
         if self.tecnico_scope_lookup:
             filter_kwargs = {self.tecnico_scope_lookup: self.request.user}
             return queryset.filter(**filter_kwargs).distinct()
 
         return queryset.none()
-
 
 class TarefaPermissionMixin(AccessMixin):
     """
@@ -357,19 +376,12 @@ class ChangeFilialAdminMixin:
 
 class RequireActiveFilialMixin:
     """
-    Garante que há uma filial ativa na sessão antes de executar a view.
+    Garante que há uma filial ativa antes de executar a view,
+    e disponibiliza a instância em `request.filial_ativa`.
 
-    Se não houver, redireciona o usuário para o perfil com mensagem
-    solicitando a seleção de filial.
-
-    Útil em views de criação de objetos que DEPENDEM da filial ativa
-    para determinar escopo (ex: criação de tarefa, cliente, etc.).
-
-    Ex:
-        class CriarTarefaView(AppPermissionMixin,
-                              RequireActiveFilialMixin,
-                              CreateView):
-            ...
+    Delega para `core.utils.get_filial_ativa()` — a MESMA fonte de
+    verdade usada por `ViewFilialScopedMixin` — evitando qualquer
+    divergência de chave de sessão entre mixins.
     """
     active_filial_redirect_url = 'usuario:profile'
     active_filial_message = (
@@ -377,11 +389,14 @@ class RequireActiveFilialMixin:
     )
 
     def dispatch(self, request, *args, **kwargs):
-        if not request.session.get('active_filial_id'):
-            # Superusers podem operar em "Todas as Filiais"
-            if not request.user.is_superuser:
-                messages.warning(request, self.active_filial_message)
-                return redirect(self.active_filial_redirect_url)
+        from core.utils import get_filial_ativa, usuario_ve_todas_filiais
+
+        filial = get_filial_ativa(request.user, request)
+        request.filial_ativa = filial
+
+        if filial is None and not usuario_ve_todas_filiais(request.user):
+            messages.warning(request, self.active_filial_message)
+            return redirect(self.active_filial_redirect_url)
 
         return super().dispatch(request, *args, **kwargs)
 

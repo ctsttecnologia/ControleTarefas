@@ -1,0 +1,193 @@
+
+{# templates/core/assinatura_remota_form.html #}
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinatura Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f5f6f8; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="d-flex justify-content-center align-items-start py-5">
+        <div class="card shadow-sm" style="max-width: 600px; width: 100%;">
+            <div class="card-body">
+                <h4 class="card-title mb-3">
+                    <i class="bi bi-pen me-2"></i>Assinatura Digital
+                </h4>
+                <p class="text-muted mb-4">{{ objeto }}</p>
+
+                {% if erro %}
+                <div class="alert alert-danger">{{ erro }}</div>
+                {% endif %}
+
+                <form id="formAssinaturaRemota" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <!-- LGPD -->
+                    <div class="alert alert-secondary small mb-4">
+                        <i class="bi bi-shield-lock me-2"></i>
+                        <strong>Aviso de Proteção de Dados (LGPD):</strong>
+                        Ao assinar digitalmente este documento, você declara estar de acordo
+                        com o seu conteúdo. Seus dados (assinatura, IP e horário) serão
+                        registrados exclusivamente para fins de comprovação deste ato, em
+                        conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox"
+                               id="consentimentoLgpdRemoto" name="consentimento_lgpd" required>
+                        <label class="form-check-label small" for="consentimentoLgpdRemoto">
+                            Declaro que li e estou de acordo com o tratamento da minha
+                            assinatura para os fins descritos acima.
+                            <span class="text-danger">*</span>
+                        </label>
+                    </div>
+
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs" id="assinaturaTabsRemoto" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="draw-tab-remoto" data-bs-toggle="tab"
+                                    data-bs-target="#draw-pane-remoto" type="button">
+                                <i class="bi bi-pencil me-1"></i> Desenhar
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="upload-tab-remoto" data-bs-toggle="tab"
+                                    data-bs-target="#upload-pane-remoto" type="button">
+                                <i class="bi bi-upload me-1"></i> Anexar Imagem
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content border border-top-0 rounded-bottom p-3 mb-4" id="assinaturaTabsContentRemoto">
+                        <!-- Desenhar -->
+                        <div class="tab-pane fade show active" id="draw-pane-remoto" role="tabpanel">
+                            <label class="form-label fw-semibold">Campo para Assinatura:</label>
+                            <div class="border rounded bg-white position-relative" style="height: 200px;">
+                                <canvas id="signature-canvas-remoto" style="width: 100%; height: 100%; cursor: crosshair;"></canvas>
+                            </div>
+                            <input type="hidden" name="assinatura_base64" id="assinatura_base64_remoto">
+                            <small class="text-muted">Use o mouse ou toque para assinar</small>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="clear-signature-remoto">
+                                    <i class="bi bi-eraser me-1"></i> Limpar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Upload -->
+                        <div class="tab-pane fade" id="upload-pane-remoto" role="tabpanel">
+                            <label for="assinatura_imagem_upload_remoto" class="form-label fw-semibold">
+                                Fazer Upload de Assinatura:
+                            </label>
+                            <input class="form-control" type="file" id="assinatura_imagem_upload_remoto"
+                                   name="assinatura_imagem" accept="image/png, image/jpeg">
+                            <small class="text-muted">
+                                Formatos aceitos: PNG, JPEG. Tamanho máximo: 2MB.
+                            </small>
+                            <div class="invalid-feedback d-block" id="upload-erro-remoto"></div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" id="btn-salvar-assinatura-remoto" disabled>
+                        <i class="bi bi-check-lg me-1"></i> Enviar Assinatura
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById('signature-canvas-remoto');
+    const clearBtn = document.getElementById('clear-signature-remoto');
+    const hiddenInput = document.getElementById('assinatura_base64_remoto');
+    const form = document.getElementById('formAssinaturaRemota');
+    const checkboxConsentimento = document.getElementById('consentimentoLgpdRemoto');
+    const btnSalvar = document.getElementById('btn-salvar-assinatura-remoto');
+    const uploadInput = document.getElementById('assinatura_imagem_upload_remoto');
+    const uploadErro = document.getElementById('upload-erro-remoto');
+
+    const MAX_UPLOAD_MB = 2;
+    let signaturePad;
+
+    function atualizarBotaoSalvar() {
+        btnSalvar.disabled = !checkboxConsentimento.checked;
+    }
+    checkboxConsentimento.addEventListener('change', atualizarBotaoSalvar);
+
+    function resizeCanvas() {
+        if (!canvas) return;
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * ratio;
+        canvas.height = rect.height * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+        if (signaturePad) signaturePad.clear();
+    }
+
+    signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255, 255, 255)',
+        penColor: 'rgb(0, 0, 0)'
+    });
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            if (signaturePad) signaturePad.clear();
+        });
+    }
+
+    if (uploadInput) {
+        uploadInput.addEventListener('change', function () {
+            uploadErro.textContent = '';
+            uploadInput.classList.remove('is-invalid');
+
+            const arquivo = uploadInput.files[0];
+            if (!arquivo) return;
+
+            const tiposValidos = ['image/png', 'image/jpeg'];
+            if (!tiposValidos.includes(arquivo.type)) {
+                uploadErro.textContent = 'Formato inválido. Envie apenas PNG ou JPEG.';
+                uploadInput.classList.add('is-invalid');
+                uploadInput.value = '';
+                return;
+            }
+
+            const tamanhoMB = arquivo.size / (1024 * 1024);
+            if (tamanhoMB > MAX_UPLOAD_MB) {
+                uploadErro.textContent = `Arquivo muito grande (${tamanhoMB.toFixed(1)}MB). Máximo: ${MAX_UPLOAD_MB}MB.`;
+                uploadInput.classList.add('is-invalid');
+                uploadInput.value = '';
+            }
+        });
+    }
+
+    form.addEventListener('submit', function (e) {
+        if (!checkboxConsentimento.checked) {
+            e.preventDefault();
+            checkboxConsentimento.focus();
+            return;
+        }
+        if (signaturePad && !signaturePad.isEmpty()) {
+            hiddenInput.value = signaturePad.toDataURL('image/png');
+        }
+    });
+
+    atualizarBotaoSalvar();
+});
+</script>
+</body>
+</html>

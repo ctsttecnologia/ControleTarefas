@@ -40,7 +40,7 @@ urlpatterns = [
     # Esta será a sua página inicial/dashboard após o login
     path('', ProfileView.as_view(), name='home'),
 
-    path('', include('core.urls')), 
+    path('', include('core.urls')),
 
     # Rotas das apps com seus prefixos
     path('favicon.ico', RedirectView.as_view(url='/static/img/favicon.ico', permanent=True)),
@@ -75,6 +75,7 @@ urlpatterns = [
     path('api/auth/', include('rest_framework.urls')),  # login sessão (opcional)
     path('api/token/', TokenObtainPairView.as_view()),   # se usar JWT (simplejwt)
     path('api/token/refresh/', TokenRefreshView.as_view()),
+
 
 ]
 

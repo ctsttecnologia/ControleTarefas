@@ -1,5 +1,4 @@
-{# templates/seguranca_trabalho/partials/_acesso_rapido_sst.html #}
-
+{# templates/departamento_pessoal/partials/_acesso_rapido.html #}
 <div class="row g-4">
     <div class="col-12">
         <h4 class="mb-3 fw-bold">
@@ -8,25 +7,26 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════════
-         SEGURANÇA DO TRABALHO
+            SST - SEGURANÇA DO TRABALHO
     ═══════════════════════════════════════════════════════════════════════ -->
     
-    {% if perms.seguranca_trabalho.view_fichaepi %}
-    <div class="col-lg-3 col-md-6">
-        <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
+    {% if perms.seguranca_trabalho.view_dashboard or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="sst-dashboard">
+        <a href="{% url 'seguranca_trabalho:dashboard' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
                     <i class="bi bi-person-lines-fill text-primary fs-2"></i>
+                    <i class="bi bi-speedometer2"></i>
                 </div>
-                <h6 class="fw-bold mb-2">Fichas de EPI</h6>
-                <p class="text-muted small mb-0">Gerenciar fichas e entregas de EPIs.</p>
+                <h6 class="fw-bold mb-2">Dashboard</h6>
+                <p class="text-muted small mb-0">Visão geral do sistema.</p>
             </div>
         </a>
     </div>
     {% endif %}
 
-    {% if perms.seguranca_trabalho.view_equipamento %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.seguranca_trabalho.view_equipamento or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="sst-equipamentos">
         <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-info bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
@@ -39,8 +39,8 @@
     </div>
     {% endif %}
 
-    {% if perms.suprimentos.view_parceiro %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.suprimentos.view_parceiro or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="suprimentos-fornecedores">
         <a href="{% url 'suprimentos:parceiro_list' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
@@ -53,8 +53,8 @@
     </div>
     {% endif %}
 
-    {% if perms.gestao_riscos.view_cartaotag %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.gestao_riscos.view_cartaotag or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="riscos-cartao-tag">
         <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
@@ -67,8 +67,8 @@
     </div>
     {% endif %}
 
-    {% if perms.seguranca_trabalho.view_funcao %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.seguranca_trabalho.view_funcao or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="sst-funcoes">
         <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-secondary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
@@ -81,8 +81,8 @@
     </div>
     {% endif %}
 
-    {% if perms.seguranca_trabalho.view_matrizepi %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.seguranca_trabalho.view_matrizepi or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="sst-matriz-epi">
         <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-purple bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px; background-color: rgba(111, 66, 193, 0.1);">
@@ -95,8 +95,8 @@
     </div>
     {% endif %}
 
-    {% if perms.seguranca_trabalho.view_cargofuncao %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.seguranca_trabalho.view_cargofuncao or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="sst-cargo-funcao">
         <a href="{% url 'seguranca_trabalho:lista_associacoes' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-dark bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
@@ -113,8 +113,8 @@
          PGR - PROGRAMA DE GERENCIAMENTO DE RISCOS
     ═══════════════════════════════════════════════════════════════════════ -->
 
-    {% if perms.pgr_gestao.view_pgrdocumento %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.pgr_gestao.view_pgrdocumento or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="pgr-dashboard">
         <a href="{% url 'pgr_gestao:dashboard' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
@@ -127,8 +127,8 @@
     </div>
     {% endif %}
 
-    {% if perms.pgr_gestao.view_riscoidentificado %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.pgr_gestao.view_riscoidentificado or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="pgr-riscos">
         <a href="{% url 'pgr_gestao:risco_list' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
@@ -141,8 +141,8 @@
     </div>
     {% endif %}
 
-    {% if perms.pgr_gestao.view_planoacaopgr %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.pgr_gestao.view_planoacaopgr or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="pgr-planos-acao">
         <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
@@ -159,8 +159,8 @@
          LTCAT
     ═══════════════════════════════════════════════════════════════════════ -->
 
-    {% if perms.pgr_gestao.view_pgrdocumento %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.pgr_gestao.view_pgrdocumento or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="ltcat-dashboard">
         <a href="{% url 'ltcat:dashboard' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
@@ -178,8 +178,8 @@
          GESTÃO DE RISCOS
     ═══════════════════════════════════════════════════════════════════════ -->
 
-    {% if perms.gestao_riscos.view_inspecao %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.gestao_riscos.view_inspecao or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="riscos-inspecoes">
         <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
@@ -192,8 +192,8 @@
     </div>
     {% endif %}
 
-    {% if perms.gestao_riscos.view_incidente %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.gestao_riscos.view_incidente or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="riscos-incidentes">
         <a href="{% url 'gestao_riscos:registrar_incidente' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
@@ -210,8 +210,8 @@
          TREINAMENTOS
     ═══════════════════════════════════════════════════════════════════════ -->
 
-    {% if perms.treinamentos.view_treinamento %}
-    <div class="col-lg-3 col-md-6">
+    {% if perms.treinamentos.view_treinamento or perms.is_superuser %}
+    <div class="col-lg-3 col-md-6" data-card-id="treinamentos-list">
         <a href="{% url 'treinamentos:treinamento_list' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
             <div class="card-body text-center p-4">
                 <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">

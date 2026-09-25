@@ -437,28 +437,28 @@
     ═══════════════════════════════════════════════════════════════════════ -->
     <div class="secao">
         <h2 class="secao-titulo">
-            <span class="icone">📊</span> Indicadores Chave
+            <i class="bi bi-bar-chart-fill icone"></i> Indicadores Chave
         </h2>
         
         <table class="kpi-container">
             <tr>
                 <td class="kpi-card primario">
-                    <div class="kpi-icone primario">🛡️</div>
+                    <i class="bi bi-shield-fill-check kpi-icone primario"></i>
                     <p class="kpi-valor">{{ total_equipamentos_ativos|default:"0" }}</p>
                     <p class="kpi-label">Equipamentos Ativos</p>
                 </td>
                 <td class="kpi-card sucesso">
-                    <div class="kpi-icone sucesso">📋</div>
+                    <i class="bi bi-clipboard-check kpi-icone sucesso"></i>
                     <p class="kpi-valor">{{ fichas_ativas|default:"0" }}</p>
                     <p class="kpi-label">Fichas Ativas</p>
                 </td>
                 <td class="kpi-card aviso">
-                    <div class="kpi-icone aviso">✍️</div>
+                    <i class="bi bi-pen-fill kpi-icone aviso"></i>
                     <p class="kpi-valor">{{ entregas_pendentes_assinatura|default:"0" }}</p>
                     <p class="kpi-label">Pendentes Assinatura</p>
                 </td>
                 <td class="kpi-card perigo">
-                    <div class="kpi-icone perigo">⏰</div>
+                    <i class="bi bi-clock-fill kpi-icone perigo"></i>
                     <p class="kpi-valor">{{ epis_vencendo_em_30_dias|default:"0" }}</p>
                     <p class="kpi-label">Vencendo em 30 dias</p>
                 </td>
@@ -479,7 +479,7 @@
     {% if entregas %}
     <div class="secao">
         <h2 class="secao-titulo">
-            <span class="icone">📦</span> Entregas de EPI
+            <i class="bi bi-box-seam icone"></i> Entregas de EPI
         </h2>
         
         <table class="tabela">

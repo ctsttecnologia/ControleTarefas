@@ -3,6 +3,15 @@
 from __future__ import absolute_import, unicode_literals
 import os
 import sys
+from celery.schedules import crontab
+
+
+CELERY_BEAT_SCHEDULE = {
+    'anonimizar-dados-sensiveis-sst-mensal': {
+        'task': 'seguranca_trabalho.tasks.anonimizar_dados_sensiveis_task',
+        'schedule': crontab(day_of_month=1, hour=3, minute=0),  # 1x/mês
+    },
+}
 
 # Monkey patch do eventlet APENAS se estiver rodando um worker com eventlet.
 # Isso evita o conflito com o `runserver` do Django.

@@ -1,32 +1,39 @@
-
+<!-- Dashboard - Segurança do Trabalho -->
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load static %}
 {% load i18n %}
 
-{% block title %}Dashboard - Segurança do Trabalho{% endblock %}
+{% block title %}{% trans "Dashboard - Segurança do Trabalho" %}{% endblock %}
 
 {% block sst_content %}
 
 <!-- Header -->
 <div class="sst-page-header">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div>
-                <h4>
-                    <i class="bi bi-shield-check me-2"></i>Segurança do Trabalho
-                </h4>
-                <small class="sst-page-subtitle">Visão geral e acesso rápido aos módulos de SST</small>
-            </div>
-            <div class="d-flex gap-2">
-                <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="btn btn-light">
-                    <i class="bi bi-file-person me-1"></i> Fichas de EPI
-                </a>
-            </div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4>
+                <i class="bi bi-shield-check me-2"></i>{% trans "Segurança do Trabalho" %}
+            </h4>
+            <small class="sst-page-subtitle">{% trans "Visão geral dos indicadores de SST" %}</small>
         </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'seguranca_trabalho:acesso_rapido' %}" class="btn btn-light">
+                <i class="bi bi-lightning-charge me-1"></i> {% trans "Acesso Rápido" %}
+            </a>
+            <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="btn btn-light">
+                <i class="bi bi-file-person me-1"></i> {% trans "Fichas de EPI" %}
+            </a>
+            {% if perms.seguranca_trabalho.view_relatorio or user.is_superuser %}
+            <a href="{% url 'seguranca_trabalho:relatorio_pdf_template' %}" class="btn btn-light">
+                <i class="bi bi-file-richtext me-1"></i> {% trans "Relatório Geral" %}
+            </a>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
-<!-- KPIs (Sem bordas, com design limpo) -->
+<!-- KPIs -->
 <div class="row g-3 mb-4">
-    <!-- KPI 1 -->
     <div class="col-6 col-lg-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center">
@@ -35,13 +42,14 @@
                 </div>
                 <div>
                     <h3 class="mb-0 fw-bold">{{ total_equipamentos_ativos|default:"0" }}</h3>
-                    <small class="text-body-secondary text-uppercase fw-semibold" style="font-size: 0.75rem;">Equipamentos Ativos</small>
+                    <small class="text-body-secondary text-uppercase fw-semibold" style="font-size: 0.75rem;">
+                        {% trans "Equipamentos Ativos" %}
+                    </small>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- KPI 2 -->
+
     <div class="col-6 col-lg-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center">
@@ -50,13 +58,14 @@
                 </div>
                 <div>
                     <h3 class="mb-0 fw-bold">{{ fichas_ativas|default:"0" }}</h3>
-                    <small class="text-body-secondary text-uppercase fw-semibold" style="font-size: 0.75rem;">Fichas Ativas</small>
+                    <small class="text-body-secondary text-uppercase fw-semibold" style="font-size: 0.75rem;">
+                        {% trans "Fichas Ativas" %}
+                    </small>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- KPI 3 -->
+
     <div class="col-6 col-lg-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center">
@@ -65,13 +74,14 @@
                 </div>
                 <div>
                     <h3 class="mb-0 fw-bold">{{ entregas_pendentes_assinatura|default:"0" }}</h3>
-                    <small class="text-body-secondary text-uppercase fw-semibold" style="font-size: 0.75rem;">Pendentes Assinatura</small>
+                    <small class="text-body-secondary text-uppercase fw-semibold" style="font-size: 0.75rem;">
+                        {% trans "Pendentes Assinatura" %}
+                    </small>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- KPI 4 -->
+
     <div class="col-6 col-lg-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center">
@@ -80,21 +90,22 @@
                 </div>
                 <div>
                     <h3 class="mb-0 fw-bold">{{ epis_vencendo_em_30_dias|default:"0" }}</h3>
-                    <small class="text-body-secondary text-uppercase fw-semibold" style="font-size: 0.75rem;">Vencendo em 30d</small>
+                    <small class="text-body-secondary text-uppercase fw-semibold" style="font-size: 0.75rem;">
+                        {% trans "Vencendo em 30d" %}
+                    </small>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Grid de Gráficos (4 Gráficos) -->
+<!-- Grid de Gráficos -->
 <div class="row g-4 mb-4">
-    <!-- Gráfico 1: Matriz de EPI -->
     <div class="col-12 col-lg-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-transparent border-0 pt-4 pb-0">
                 <h6 class="mb-0 fw-bold text-body-secondary">
-                    <i class="bi bi-diagram-3 me-2"></i>Matriz de EPI por Função
+                    <i class="bi bi-diagram-3 me-2"></i>{% trans "Matriz de EPI por Função" %}
                 </h6>
             </div>
             <div class="card-body">
@@ -105,12 +116,11 @@
         </div>
     </div>
 
-    <!-- Gráfico 2: Status de Entregas -->
     <div class="col-12 col-lg-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-transparent border-0 pt-4 pb-0">
                 <h6 class="mb-0 fw-bold text-body-secondary">
-                    <i class="bi bi-pie-chart me-2"></i>Status das Entregas
+                    <i class="bi bi-pie-chart me-2"></i>{% trans "Status das Entregas" %}
                 </h6>
             </div>
             <div class="card-body">
@@ -121,12 +131,11 @@
         </div>
     </div>
 
-    <!-- Gráfico 3: Top 5 EPIs Mais Entregues -->
     <div class="col-12 col-lg-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-transparent border-0 pt-4 pb-0">
                 <h6 class="mb-0 fw-bold text-body-secondary">
-                    <i class="bi bi-graph-up me-2"></i>Top 5 EPIs Mais Entregues
+                    <i class="bi bi-graph-up me-2"></i>{% trans "Top 5 EPIs Mais Entregues" %}
                 </h6>
             </div>
             <div class="card-body">
@@ -137,12 +146,11 @@
         </div>
     </div>
 
-    <!-- Gráfico 4: Status de Vencimento -->
     <div class="col-12 col-lg-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-transparent border-0 pt-4 pb-0">
                 <h6 class="mb-0 fw-bold text-body-secondary">
-                    <i class="bi bi-shield-exclamation me-2"></i>Status de Vencimento (EPIs em uso)
+                    <i class="bi bi-shield-exclamation me-2"></i>{% trans "Status de Vencimento (EPIs em uso)" %}
                 </h6>
             </div>
             <div class="card-body">
@@ -154,115 +162,185 @@
     </div>
 </div>
 
-<!-- Acesso Rápido -->
-{% include "seguranca_trabalho/partials/_acesso_rapido.html" %}
-
 {% endblock sst_content %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{ matriz_labels|json_script:"matriz-labels-data" }}
+{{ matriz_data|json_script:"matriz-data-data" }}
+{{ chart_status_entregas_labels|json_script:"status-labels-data" }}
+{{ chart_status_entregas_data|json_script:"status-data-data" }}
+{{ chart_top_epis_labels|json_script:"top-epis-labels-data" }}
+{{ chart_top_epis_data|json_script:"top-epis-data-data" }}
+{{ chart_vencimento_labels|json_script:"vencimento-labels-data" }}
+{{ chart_vencimento_data|json_script:"vencimento-data-data" }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Configurações Globais do Chart.js para se adaptar ao Dark/Light mode
-    const style = getComputedStyle(document.body);
-    const textColor = style.getPropertyValue('--bs-body-color') || '#6c757d';
-    const gridColor = style.getPropertyValue('--bs-border-color') || '#dee2e6';
-    
-    Chart.defaults.color = textColor;
+    function getJSON(id) {
+        const el = document.getElementById(id);
+        return el ? JSON.parse(el.textContent) : null;
+    }
+
+    const matrizLabels = getJSON('matriz-labels-data');
+    const matrizData = getJSON('matriz-data-data');
+    const statusLabels = getJSON('status-labels-data');
+    const statusData = getJSON('status-data-data');
+    const topEpisLabels = getJSON('top-epis-labels-data');
+    const topEpisData = getJSON('top-epis-data-data');
+    const vencimentoLabels = getJSON('vencimento-labels-data');
+    const vencimentoData = getJSON('vencimento-data-data');
+
+    // ── Cores conforme o tema ativo ──
+    function getThemeColors() {
+        const style = getComputedStyle(document.documentElement);
+        return {
+            textColor: style.getPropertyValue('--sst-text').trim() || '#babbbb',
+            gridColor: style.getPropertyValue('--sst-border').trim() || '#717171',
+            mutedColor: style.getPropertyValue('--sst-text-muted').trim() || '#94a3b8'
+        };
+    }
+
     Chart.defaults.font.family = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif';
 
-    // Opções comuns para manter o código DRY
-    const commonOptionsBar = {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            x: { grid: { color: gridColor, drawBorder: false } },
-            y: { grid: { color: gridColor, drawBorder: false }, beginAtZero: true }
-        },
-        plugins: { legend: { display: false } }
-    };
+    // Guarda as instâncias para poder destruir/recriar ao trocar o tema
+    const chartInstances = [];
 
-    const commonOptionsPie = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { position: 'bottom', labels: { color: textColor, padding: 20 } }
+    function buildOptions() {
+        const { textColor, gridColor } = getThemeColors();
+
+        Chart.defaults.color = textColor;
+
+        const commonOptionsBar = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    ticks: { color: textColor },
+                    grid: { color: gridColor, drawBorder: false }
+                },
+                y: {
+                    ticks: { color: textColor },
+                    grid: { color: gridColor, drawBorder: false },
+                    beginAtZero: true
+                }
+            },
+            plugins: { legend: { display: false } }
+        };
+
+        const commonOptionsPie = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: textColor, padding: 20 }
+                }
+            }
+        };
+
+        return { commonOptionsBar, commonOptionsPie };
+    }
+
+    function renderCharts() {
+        const { commonOptionsBar, commonOptionsPie } = buildOptions();
+
+        if (matrizLabels && matrizData) {
+            const chart = new Chart(document.getElementById('matrizChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: matrizLabels,
+                    datasets: [{
+                        label: 'Nº de EPIs por Função',
+                        data: matrizData,
+                        backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                        borderRadius: 4
+                    }]
+                },
+                options: { ...commonOptionsBar, indexAxis: 'y' }
+            });
+            chartInstances.push(chart);
         }
-    };
 
-    // 1. Gráfico: Matriz de EPI (Barra Horizontal)
-    {% if matriz_labels and matriz_data %}
-    new Chart(document.getElementById('matrizChart').getContext('2d'), {
-        type: 'bar',
-        data: {
-            labels: {{ matriz_labels|safe }},
-            datasets: [{
-                label: 'Nº de EPIs por Função',
-                data: {{ matriz_data|safe }},
-                backgroundColor: 'rgba(13, 110, 253, 0.7)',
-                borderRadius: 4
-            }]
-        },
-        options: { ...commonOptionsBar, indexAxis: 'y' }
-    });
-    {% endif %}
+        if (statusLabels && statusData) {
+            const chart = new Chart(document.getElementById('statusEntregasChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: statusLabels,
+                    datasets: [{
+                        data: statusData,
+                        backgroundColor: [
+                            'rgba(25, 135, 84, 0.7)',
+                            'rgba(255, 193, 7, 0.7)',
+                            'rgba(108, 117, 125, 0.7)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: { ...commonOptionsPie, cutout: '65%' }
+            });
+            chartInstances.push(chart);
+        }
 
-    // 2. Gráfico: Status de Entregas (Doughnut)
-    {% if chart_status_entregas_labels %}
-    new Chart(document.getElementById('statusEntregasChart').getContext('2d'), {
-        type: 'doughnut',
-        data: {
-            labels: {{ chart_status_entregas_labels|safe }},
-            datasets: [{
-                data: {{ chart_status_entregas_data|safe }},
-                backgroundColor: [
-                    'rgba(25, 135, 84, 0.7)',  // Assinadas
-                    'rgba(255, 193, 7, 0.7)',  // Pendentes
-                    'rgba(108, 117, 125, 0.7)' // Devolvidas
-                ],
-                borderWidth: 0
-            }]
-        },
-        options: { ...commonOptionsPie, cutout: '65%' }
-    });
-    {% endif %}
+        if (topEpisLabels && topEpisData) {
+            const chart = new Chart(document.getElementById('topEpisChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: topEpisLabels,
+                    datasets: [{
+                        label: 'Quantidade Entregue',
+                        data: topEpisData,
+                        backgroundColor: 'rgba(111, 66, 193, 0.7)',
+                        borderRadius: 4
+                    }]
+                },
+                options: commonOptionsBar
+            });
+            chartInstances.push(chart);
+        }
 
-    // 3. Gráfico: Top 5 EPIs (Barra Vertical)
-    {% if chart_top_epis_labels %}
-    new Chart(document.getElementById('topEpisChart').getContext('2d'), {
-        type: 'bar',
-        data: {
-            labels: {{ chart_top_epis_labels|safe }},
-            datasets: [{
-                label: 'Quantidade Entregue',
-                data: {{ chart_top_epis_data|safe }},
-                backgroundColor: 'rgba(111, 66, 193, 0.7)', // Roxo
-                borderRadius: 4
-            }]
-        },
-        options: commonOptionsBar
-    });
-    {% endif %}
+        if (vencimentoLabels && vencimentoData) {
+            const chart = new Chart(document.getElementById('vencimentoChart').getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: vencimentoLabels,
+                    datasets: [{
+                        data: vencimentoData,
+                        backgroundColor: [
+                            'rgba(25, 135, 84, 0.7)',
+                            'rgba(253, 126, 20, 0.7)',
+                            'rgba(220, 53, 69, 0.7)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: commonOptionsPie
+            });
+            chartInstances.push(chart);
+        }
+    }
 
-    // 4. Gráfico: Status de Vencimento (Pie/Torta)
-    {% if chart_vencimento_labels %}
-    new Chart(document.getElementById('vencimentoChart').getContext('2d'), {
-        type: 'pie',
-        data: {
-            labels: {{ chart_vencimento_labels|safe }},
-            datasets: [{
-                data: {{ chart_vencimento_data|safe }},
-                backgroundColor: [
-                    'rgba(25, 135, 84, 0.7)',  // Regulares
-                    'rgba(253, 126, 20, 0.7)', // Vencendo 30d
-                    'rgba(220, 53, 69, 0.7)'   // Vencidos
-                ],
-                borderWidth: 0
-            }]
-        },
-        options: commonOptionsPie
+    function destroyCharts() {
+        chartInstances.forEach(chart => chart.destroy());
+        chartInstances.length = 0;
+    }
+
+    renderCharts();
+
+    // ── Recria os gráficos quando o tema (data-bs-theme) mudar ──
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'data-bs-theme') {
+                destroyCharts();
+                renderCharts();
+            }
+        });
     });
-    {% endif %}
+
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-bs-theme']
+    });
 });
 </script>
 {% endblock extra_js %}
+

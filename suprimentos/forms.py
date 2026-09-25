@@ -14,6 +14,10 @@ from django.forms import formset_factory, inlineformset_factory
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from .models import VerbaContrato
+from django import forms
+from django.forms import ModelForm
+from logradouro.models import Logradouro
+from suprimentos.utils import validar_cnpj
 
 
 # ═════════════════════════════════════════════════════════════
@@ -35,19 +39,38 @@ class BootstrapMixin:
 # ═════════════════════════════════════════════════════════════
 # CADASTROS AUXILIARES
 # ═════════════════════════════════════════════════════════════
-class ParceiroForm(BootstrapMixin, forms.ModelForm):
+class ParceiroForm(ModelForm):
     class Meta:
         model = Parceiro
         fields = [
-            "razao_social", "nome_fantasia", "cnpj", "inscricao_estadual",
-            "contato", "telefone", "celular", "email", "site",
-            "endereco", "observacoes",
-            "eh_fabricante", "eh_fornecedor", "ativo", "filial",
+            "filial", "nome_fantasia", "razao_social", "cnpj",
+            "inscricao_estadual", "endereco", "contato", "email",
+            "telefone", "celular", "site", "observacoes",
+            "eh_fabricante", "eh_fornecedor", "ativo",
         ]
         widgets = {
-            "endereco": forms.Textarea(attrs={"rows": 2}),
-            "observacoes": forms.Textarea(attrs={"rows": 3}),
+            "endereco": forms.Select(attrs={
+                "class": "form-select select2-endereco",
+                "data-placeholder": "Selecione ou cadastre um endereço...",
+            }),
         }
+
+    def __init__(self, *args, filial_ativa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Ordena e ajusta o label do endereço (rua, número - cidade/UF)
+        qs = Logradouro.objects.all().order_by(
+            "endereco", "numero"
+        )
+
+        # Se houver escopo de filial na Logradouro, filtra pela filial ativa
+        if filial_ativa and hasattr(Logradouro, "filial_id"):
+            qs = qs.filter(filial=filial_ativa)
+
+        self.fields["endereco"].queryset = qs
+        self.fields["endereco"].required = False
+        self.fields["endereco"].empty_label = "— Selecione um endereço —"
+
 
 class ContratoForm(BootstrapMixin, forms.ModelForm):
     class Meta:

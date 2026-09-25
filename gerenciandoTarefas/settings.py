@@ -50,13 +50,12 @@ SECRET_KEY = config('SECRET_KEY')
 # ============================================================
 # CRIPTOGRAFIA DE CAMPOS SENSÍVEIS
 # ============================================================
-# Este projeto utiliza DUAS bibliotecas de criptografia distintas,
-# cada uma responsável por campos específicos. NÃO remover nenhuma
-# das duas sem antes verificar todos os usos no código.
-
 # Usada pela lib "django-cryptography" (django_cryptography.fields.encrypt)
-# Responsável por: campo `numero` em departamento_pessoal.Documento
-CRYPTOGRAPHY_KEY = config('CRYPTOGRAPHY_KEY', default=SECRET_KEY)
+# Responsável por:
+#   - campo `numero` em departamento_pessoal.Documento
+#   - campo `assinatura_funcionario` em seguranca_trabalho.FichaEPI
+#   - campo `assinatura_recebimento` em seguranca_trabalho.EntregaEPI
+CRYPTOGRAPHY_KEY = config('CRYPTOGRAPHY_KEY')  # sem default — obrigatório
 
 # Usada pela lib "django-encrypted-model-fields" (EncryptedCharField)
 # Responsável por: campo `imei` em controle_de_telefone.models
@@ -120,7 +119,7 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_REFERRER_POLICY = 'same-origin'
 X_FRAME_OPTIONS = 'DENY'
 SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 14  # 14 dias
 
@@ -537,7 +536,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
+            'format': '{asctime} {levelname} {name} {message}',
             'style': '{',
         },
         'simple': {
@@ -549,6 +548,13 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
+        },
+        "lgpd_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "lgpd_auditoria.log",
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 10,
+            "formatter": "verbose",
         },
     },
     'root': {
@@ -581,8 +587,14 @@ LOGGING = {
             'level': 'DEBUG' if IS_DEVELOPMENT else 'INFO',
             'propagate': False,
         },
+        "lgpd.auditoria": {
+            "handlers": ["lgpd_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
+
 
 if IS_PRE_PRODUCTION and LOGS_DIR.exists():
     try:

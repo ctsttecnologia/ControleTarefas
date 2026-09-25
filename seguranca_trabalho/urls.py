@@ -14,6 +14,7 @@ from django.urls import path
 
 from .views import (
     # Dashboard e relatórios
+    AcessoRapidoSSTView,
     DashboardSSTView,
     RelatorioSSTPDFView,
     ControleEPIPorFuncaoView,
@@ -59,6 +60,7 @@ urlpatterns = [
     # 📊 DASHBOARD E RELATÓRIOS
     # ═══════════════════════════════════════════════════════════
     path('', DashboardSSTView.as_view(), name='dashboard'),
+    path('acesso-rapido/', AcessoRapidoSSTView.as_view(), name='acesso_rapido'),
     path('relatorio/', RelatorioSSTPDFView.as_view(), name='relatorio_pdf_template'),
     path('controle-epi-funcao/', ControleEPIPorFuncaoView.as_view(), name='controle_epi_por_funcao'),
 
@@ -79,7 +81,7 @@ urlpatterns = [
     # ═══════════════════════════════════════════════════════════
     path('entregas/<int:pk>/assinar/', AssinarEntregaView.as_view(), name='entrega_sign'),
     path('entregas/<int:pk>/devolver/', RegistrarDevolucaoView.as_view(), name='entrega_return'),
-
+    
     # ═══════════════════════════════════════════════════════════
     # 🦺 EQUIPAMENTOS (EPI) — CRUD + ESTOQUE
     # ═══════════════════════════════════════════════════════════

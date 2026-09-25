@@ -137,12 +137,6 @@ window.addEventListener('load', () => {
 
     if (containers.length > 0) {
         containers.forEach(container => new SignaturePadComponent(container));
-    } else {
-        // Fallback: busca pelo formulário legado
-        const legacyForm = document.getElementById('formAssinatura');
-        if (legacyForm) {
-            new SignaturePadComponent(legacyForm);
-        }
-    }
+    } 
 });
 

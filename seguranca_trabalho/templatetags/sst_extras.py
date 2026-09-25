@@ -1,7 +1,9 @@
 
 from django.template import Library
+from django import template
+from django.forms import Select, SelectMultiple, CheckboxInput
 
-register = Library()
+register = template.Library()
 
 @register.filter(name='get_item')
 def get_item(dictionary, key):
@@ -13,3 +15,10 @@ def get_item(dictionary, key):
         return dictionary.get(key)
     return None
 
+@register.simple_tag
+def is_select_field(field):
+    return isinstance(field.field.widget, (Select, SelectMultiple))
+
+@register.simple_tag
+def is_checkbox_field(field):
+    return isinstance(field.field.widget, CheckboxInput)

@@ -8,39 +8,66 @@
         <div class="modal-content">
             <form id="formAssinaturaModal" method="post" action="" enctype="multipart/form-data">
                 {% csrf_token %}
-                
+
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="assinaturaModalLabel">
                         <i class="bi bi-pen me-2"></i>Assinatura de Recebimento
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
-                
+
                 <div class="modal-body">
                     <!-- Info do funcionário -->
-                    <div class="alert alert-info d-flex align-items-center mb-4">
+                    <div class="alert alert-info d-flex align-items-start mb-3">
                         <i class="bi bi-person-check fs-4 me-3"></i>
                         <div>
-                            Eu, <strong id="modalFuncionarioNome"></strong>, confirmo o recebimento do EPI descrito.
+                            Eu, <strong id="modalFuncionarioNome"></strong>, confirmo o recebimento do
+                            Equipamento de Proteção Individual (EPI) descrito nesta ficha.
                         </div>
                     </div>
 
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <!-- Aviso de Proteção de Dados (LGPD)                    -->
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <div class="alert alert-secondary small mb-4">
+                        <i class="bi bi-shield-lock me-2"></i>
+                        <strong>Aviso de Proteção de Dados (LGPD):</strong>
+                        Sua assinatura (desenhada ou enviada como imagem) é um dado pessoal.
+                        Ela será coletada e armazenada exclusivamente para fins de
+                        <strong>comprovação da entrega de EPI</strong>, conforme exigido pela
+                        NR-06 do Ministério do Trabalho, com base no cumprimento de
+                        obrigação legal/regulatória (Art. 7º, II, Lei nº 13.709/2018 - LGPD).
+                        O dado será retido pelo prazo legal de guarda de documentos
+                        trabalhistas e não será compartilhado com terceiros para outras
+                        finalidades. Para mais informações, consulte a
+                        <a href="{% url 'core:politica_privacidade' %}" target="_blank" rel="noopener">
+                            Política de Privacidade
+                        </a>.
+                    </div>
+
+                    <!-- Consentimento explícito -->
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox"
+                               id="consentimentoLgpdModal" name="consentimento_lgpd" required>
+                        <label class="form-check-label small" for="consentimentoLgpdModal">
+                            Declaro que li e estou de acordo com o tratamento da minha
+                            assinatura para os fins descritos acima.
+                            <span class="text-danger">*</span>
+                        </label>
+                    </div>
+
                     <!-- Tabs de opção -->
+                    {% if perms.seguranca_trabalho.change_entregaepi or perms.seguranca_trabalho.change_fichaepi or user.is_superuser %}
                     <ul class="nav nav-tabs" id="assinaturaTabsModal" role="tablist">
                         <li class="nav-item" role="presentation">
-                            {% if perms.seguranca_trabalho.add_ficha or user.is_superuser %}
                             <button class="nav-link active" id="draw-tab-modal" data-bs-toggle="tab" data-bs-target="#draw-pane-modal" type="button">
                                 <i class="bi bi-pencil me-1"></i> Desenhar
                             </button>
-                            {% endif %}
                         </li>
-                        
                         <li class="nav-item" role="presentation">
-                            {% if perms.seguranca_trabalho.add_ficha or user.is_superuser %}
                             <button class="nav-link" id="upload-tab-modal" data-bs-toggle="tab" data-bs-target="#upload-pane-modal" type="button">
                                 <i class="bi bi-upload me-1"></i> Anexar Imagem
                             </button>
-                            {% endif %}
                         </li>
                     </ul>
 
@@ -54,30 +81,40 @@
                             <input type="hidden" name="assinatura_base64" id="assinatura_base64_modal">
                             <small class="text-muted">Use o mouse ou toque para assinar</small>
                         </div>
-                        
+
                         <!-- Tab: Upload -->
-                        {% if perms.seguranca_trabalho.add_ficha or user.is_superuser %}
                         <div class="tab-pane fade" id="upload-pane-modal" role="tabpanel">
                             <label for="assinatura_imagem_upload_modal" class="form-label fw-semibold">
                                 Fazer Upload de Assinatura:
                             </label>
-                            <input class="form-control" type="file" id="assinatura_imagem_upload_modal" 
+                            <input class="form-control" type="file" id="assinatura_imagem_upload_modal"
                                    name="assinatura_imagem" accept="image/png, image/jpeg">
-                            <small class="text-muted">Formatos aceitos: PNG, JPEG</small>
+                            <small class="text-muted">
+                                Formatos aceitos: PNG, JPEG. Tamanho máximo: 2MB.
+                            </small>
+                            <div class="invalid-feedback d-block" id="upload-erro-modal"></div>
                         </div>
-                        {% endif %}
                     </div>
+                    {% else %}
+                    <div class="alert alert-warning small mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Você não tem permissão para registrar assinaturas.
+                    </div>
+                    {% endif %}
                 </div>
                 
                 <div class="modal-footer bg-light">
+        
+                    {% if perms.seguranca_trabalho.change_entregaepi or perms.seguranca_trabalho.change_fichaepi or user.is_superuser %}
                     <button type="button" class="btn btn-outline-secondary" id="clear-signature-modal">
                         <i class="bi bi-eraser me-1"></i> Limpar
                     </button>
+                    {% endif %}
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         Cancelar
                     </button>
-                    {% if perms.seguranca_trabalho.add_ficha or user.is_superuser %}
-                    <button type="submit" class="btn btn-primary">
+                    {% if perms.seguranca_trabalho.change_entregaepi or user.is_superuser %}
+                    <button type="submit" class="btn btn-primary" id="btn-salvar-assinatura-modal" disabled>
                         <i class="bi bi-check-lg me-1"></i> Salvar Assinatura
                     </button>
                     {% endif %}
@@ -91,13 +128,29 @@
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const modal = document.getElementById('assinaturaModal');
     const canvas = document.getElementById('signature-canvas-modal');
     const clearBtn = document.getElementById('clear-signature-modal');
     const hiddenInput = document.getElementById('assinatura_base64_modal');
     const form = document.getElementById('formAssinaturaModal');
+    const checkboxConsentimento = document.getElementById('consentimentoLgpdModal');
+    const btnSalvar = document.getElementById('btn-salvar-assinatura-modal');
+    const uploadInput = document.getElementById('assinatura_imagem_upload_modal');
+    const uploadErro = document.getElementById('upload-erro-modal');
+
+    const MAX_UPLOAD_MB = 2;
     let signaturePad;
+
+    // ── Consentimento LGPD controla habilitação do botão de salvar ──
+    function atualizarBotaoSalvar() {
+        if (!btnSalvar) return;
+        btnSalvar.disabled = !checkboxConsentimento || !checkboxConsentimento.checked;
+    }
+
+    if (checkboxConsentimento) {
+        checkboxConsentimento.addEventListener('change', atualizarBotaoSalvar);
+    }
 
     function resizeCanvas() {
         if (canvas && signaturePad) {
@@ -110,38 +163,88 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    modal.addEventListener('show.bs.modal', function(event) {
-        const button = event.relatedTarget;
-        const formUrl = button.getAttribute('data-form-url');
-        const funcionarioNome = button.getAttribute('data-funcionario-nome');
-        
-        form.action = formUrl || '';
-        document.getElementById('modalFuncionarioNome').textContent = funcionarioNome || '';
-    });
+    // ── Validação client-side do upload (tamanho + tipo) ──
+    if (uploadInput) {
+        uploadInput.addEventListener('change', function () {
+            uploadErro.textContent = '';
+            uploadInput.classList.remove('is-invalid');
 
-    modal.addEventListener('shown.bs.modal', function() {
-        signaturePad = new SignaturePad(canvas, {
-            backgroundColor: 'rgb(255, 255, 255)',
-            penColor: 'rgb(0, 0, 0)'
+            const arquivo = uploadInput.files[0];
+            if (!arquivo) return;
+
+            const tiposValidos = ['image/png', 'image/jpeg'];
+            if (!tiposValidos.includes(arquivo.type)) {
+                uploadErro.textContent = 'Formato inválido. Envie apenas PNG ou JPEG.';
+                uploadInput.classList.add('is-invalid');
+                uploadInput.value = '';
+                return;
+            }
+
+            const tamanhoMB = arquivo.size / (1024 * 1024);
+            if (tamanhoMB > MAX_UPLOAD_MB) {
+                uploadErro.textContent = `Arquivo muito grande (${tamanhoMB.toFixed(1)}MB). Máximo: ${MAX_UPLOAD_MB}MB.`;
+                uploadInput.classList.add('is-invalid');
+                uploadInput.value = '';
+            }
         });
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+    }
+
+    modal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const formUrl = (button && button.getAttribute('data-form-url')) || '';
+        const funcionarioNome = (button && button.getAttribute('data-funcionario-nome')) || '';
+
+        // ── Só aceita URLs relativas (mesma origem) — nunca redireciona
+        //    o envio da assinatura para um host externo ──
+        const isRelative = formUrl.startsWith('/') && !formUrl.startsWith('//');
+        form.action = isRelative ? formUrl : '';
+
+        document.getElementById('modalFuncionarioNome').textContent = funcionarioNome;
+
+        // Reseta o estado do modal a cada abertura
+        if (checkboxConsentimento) checkboxConsentimento.checked = false;
+        atualizarBotaoSalvar();
+        if (uploadInput) uploadInput.value = '';
+        if (uploadErro) uploadErro.textContent = '';
     });
 
-    modal.addEventListener('hidden.bs.modal', function() {
+    modal.addEventListener('shown.bs.modal', function () {
+        if (canvas) {
+            signaturePad = new SignaturePad(canvas, {
+                backgroundColor: 'rgb(255, 255, 255)',
+                penColor: 'rgb(0, 0, 0)'
+            });
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+        }
+    });
+
+    modal.addEventListener('hidden.bs.modal', function () {
         window.removeEventListener('resize', resizeCanvas);
         if (signaturePad) signaturePad.clear();
+        if (hiddenInput) hiddenInput.value = '';
+        if (form) form.reset();
+        atualizarBotaoSalvar();
     });
 
-    clearBtn.addEventListener('click', function() {
-        if (signaturePad) signaturePad.clear();
-    });
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            if (signaturePad) signaturePad.clear();
+        });
+    }
 
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', function (e) {
+        // ── Bloqueia envio sem consentimento explícito (defesa extra,
+        //    além do atributo `required` do checkbox) ──
+        if (checkboxConsentimento && !checkboxConsentimento.checked) {
+            e.preventDefault();
+            checkboxConsentimento.focus();
+            return;
+        }
+
         if (signaturePad && !signaturePad.isEmpty()) {
             hiddenInput.value = signaturePad.toDataURL('image/png');
         }
     });
 });
 </script>
-

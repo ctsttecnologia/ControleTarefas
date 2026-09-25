@@ -1,7 +1,7 @@
+<!-- Detalhes do Fornecedor (Parceiro com eh_fornecedor=True) -->
 {% extends "seguranca_trabalho/_base_sst.html" %}
-{% load static %}
 
-{% block title %}Detalhes: {{ fornecedor.razao_social }}{% endblock %}
+{% block title %}Detalhes: {{ fornecedor.razao_social|default:fornecedor.nome_fantasia }}{% endblock %}
 
 {% block sst_content %}
 
@@ -15,8 +15,8 @@
             <a href="{% url 'seguranca_trabalho:fornecedor_list' %}" class="sst-btn-header">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
-            {% if perms.seguranca_trabalho.change_fornecedor or user.is_superuser %}
-            <a href="{% url 'seguranca_trabalho:fornecedor_update' fornecedor.pk %}" class="sst-btn-header--primary">
+            {% if perms.suprimentos.change_parceiro or user.is_superuser %}
+            <a href="{% url 'seguranca_trabalho:fornecedor_update' fornecedor.pk %}" class="sst-btn-header sst-btn-header--primary">
                 <i class="bi bi-pencil"></i> Editar
             </a>
             {% endif %}
@@ -36,7 +36,7 @@
                 <div class="sst-info-grid">
                     <div class="sst-info-item" style="grid-column: 1 / -1;">
                         <span class="sst-info-label">Razão Social</span>
-                        <span class="sst-info-value">{{ fornecedor.razao_social }}</span>
+                        <span class="sst-info-value">{{ fornecedor.razao_social|default:"—" }}</span>
                     </div>
                     <div class="sst-info-item">
                         <span class="sst-info-label">Nome Fantasia</span>
@@ -44,7 +44,7 @@
                     </div>
                     <div class="sst-info-item">
                         <span class="sst-info-label">CNPJ</span>
-                        <span class="sst-info-value"><code>{{ fornecedor.cnpj }}</code></span>
+                        <span class="sst-info-value"><code>{{ fornecedor.cnpj|default:"—" }}</code></span>
                     </div>
                     <div class="sst-info-item">
                         <span class="sst-info-label">Status</span>
@@ -146,6 +146,5 @@
 </div>
 
 {% endblock %}
-
 
 

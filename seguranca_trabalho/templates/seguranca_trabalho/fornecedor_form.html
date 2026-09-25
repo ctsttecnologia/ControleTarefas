@@ -1,5 +1,5 @@
+<!-- Formulário de Fornecedor (Parceiro com eh_fornecedor=True) -->
 {% extends "seguranca_trabalho/_base_sst.html" %}
-{% load static %}
 {% load widget_tweaks %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
@@ -60,7 +60,10 @@
                             <label for="{{ form.cnpj.id_for_label }}" class="sst-form-label">
                                 {{ form.cnpj.label }} <span class="required">*</span>
                             </label>
-                            {% render_field form.cnpj class+="form-control" %}
+                            {% render_field form.cnpj class+="form-control" placeholder="00.000.000/0000-00" %}
+                            <small class="form-text" style="color:var(--sst-text-muted);">
+                                Aceita CNPJ numérico ou alfanumérico (novo padrão vigente desde jul/2026).
+                            </small>
                             {% for error in form.cnpj.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
                             {% endfor %}
@@ -106,10 +109,18 @@
                     <a href="{% url 'seguranca_trabalho:fornecedor_list' %}" class="sst-btn-cancel">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </a>
-                    {% if perms.seguranca_trabalho.add_fornecedor or user.is_superuser %}
-                    <button type="submit" class="sst-btn-primary">
-                        <i class="bi bi-check-lg"></i> Salvar
-                    </button>
+                    {% if object %}
+                        {% if perms.suprimentos.change_parceiro or user.is_superuser %}
+                        <button type="submit" class="sst-btn-primary">
+                            <i class="bi bi-check-lg"></i> Salvar
+                        </button>
+                        {% endif %}
+                    {% else %}
+                        {% if perms.suprimentos.add_parceiro or user.is_superuser %}
+                        <button type="submit" class="sst-btn-primary">
+                            <i class="bi bi-check-lg"></i> Salvar
+                        </button>
+                        {% endif %}
                     {% endif %}
                 </div>
             </form>
@@ -121,12 +132,18 @@
 
 {% block extra_js %}
 {{ block.super }}
-<script src="https://unpkg.com/imask"></script>
+<script src="https://cdn.jsdelivr.net/npm/imask@7.6.1/dist/imask.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const cnpjInput = document.getElementById('id_cnpj');
     if (cnpjInput) {
-        IMask(cnpjInput, { mask: '00.000.000/0000-00' });
+        IMask(cnpjInput, {
+            mask: 'aa.aaa.aaa/aaaa-00',
+            definitions: { 'a': /[0-9A-Za-z]/ },
+            prepare: function (str) {
+                return str.toUpperCase();
+            }
+        });
     }
     const telefoneInput = document.getElementById('id_telefone');
     if (telefoneInput) {
@@ -140,4 +157,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
 

@@ -1,4 +1,4 @@
-
+<!-- Controle de EPIs por Função -->
 
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load i18n %}
@@ -260,27 +260,43 @@
         left: 0;
         z-index: 12;
         text-align: left;
+        min-width: 100px;
+        border-right: 2px solid rgba(255,255,255,.15);
+    }
+
+    .mz-table thead th:nth-child(2) {
+        left: 100px;
+        z-index: 12;
+        text-align: left;
         min-width: 240px;
         border-right: 2px solid rgba(255,255,255,.15);
     }
 
-    .mz-table thead th:not(:first-child) {
+    .mz-table thead th:not(:first-child):not(:nth-child(2)) {
         min-width: 130px;
     }
 
-    /* ── Coluna Fixa (Função) ── */
+    /* ── Colunas Fixas (Registro + Função) ── */
     .mz-table tbody th {
         position: sticky;
-        left: 0;
         background: var(--mz-bg-col-fixa);
         z-index: 5;
         text-align: left;
-        min-width: 240px;
         font-weight: 600;
         font-size: 0.84rem;
         color: var(--mz-text);
         padding: 0.65rem 1rem;
         border-right: 2px solid var(--mz-border);
+    }
+
+    .mz-table tbody th:first-child {
+        left: 0;
+        min-width: 100px;
+    }
+
+    .mz-table tbody th:nth-child(2) {
+        left: 100px;
+        min-width: 240px;
     }
 
     .mz-table tbody th .mz-funcao-icon {
@@ -518,8 +534,10 @@
             font-size: 1.1rem;
         }
         .mz-table thead th:first-child,
-        .mz-table tbody th {
-            min-width: 160px;
+        .mz-table thead th:nth-child(2),
+        .mz-table tbody th:first-child,
+        .mz-table tbody th:nth-child(2) {
+            min-width: 140px;
         }
         .mz-toolbar {
             flex-direction: column;
@@ -558,10 +576,9 @@
                     hx-target="#modal-content"
                     data-bs-toggle="modal"
                     data-bs-target="#genericModal">
-                <i class="bi bi-plus-lg me-1"></i> Nova Função
+                <i class="bi bi-plus-lg me-1"></i> {% trans "Nova Função" %}
             </button>
             {% endif %}
-
         </div>
     </div>
 </div>
@@ -575,11 +592,11 @@
         <div class="mz-legend-items">
             <span class="mz-legend-item">
                 <span class="mz-legend-swatch" style="background: var(--mz-qn-bg); border: 1.5px solid var(--mz-input-border);"></span>
-                <strong>QN</strong> = Quando Necessário (vazio ou 0)
+                <strong>QN</strong> = {% trans "Quando Necessário (vazio ou 0)" %}
             </span>
             <span class="mz-legend-item">
                 <span class="mz-legend-swatch" style="background: var(--mz-val-bg); border: 1.5px solid var(--mz-accent);"></span>
-                <strong>Nº</strong> = Frequência de troca em <strong>meses</strong>
+                <strong>Nº</strong> = {% trans "Frequência de troca em" %} <strong>{% trans "meses" %}</strong>
             </span>
         </div>
     </div>
@@ -591,10 +608,10 @@
 <div class="mz-card">
     <div class="mz-card-header">
         <h6>
-            <i class="bi bi-table me-2"></i>Matriz de EPIs por Função
+            <i class="bi bi-table me-2"></i>{% trans "Matriz de EPIs por Função" %}
         </h6>
         <span class="mz-badge">
-            {{ funcoes|length }} funções × {{ equipamentos|length }} equipamentos
+            {{ funcoes|length }} {% trans "funções" %} × {{ equipamentos|length }} {% trans "equipamentos" %}
         </span>
     </div>
 
@@ -605,21 +622,21 @@
             <i class="bi bi-search"></i>
             <input type="text"
                    id="mzSearchFuncao"
-                   placeholder="Buscar função..."
+                   placeholder="{% trans 'Buscar função...' %}"
                    autocomplete="off">
         </div>
         <div class="mz-stats">
             <span class="mz-stat-item">
                 <i class="bi bi-briefcase"></i>
-                <span class="mz-stat-value">{{ funcoes|length }}</span> funções
+                <span class="mz-stat-value">{{ funcoes|length }}</span> {% trans "funções" %}
             </span>
             <span class="mz-stat-item">
                 <i class="bi bi-shield-check"></i>
-                <span class="mz-stat-value">{{ equipamentos|length }}</span> EPIs
+                <span class="mz-stat-value">{{ equipamentos|length }}</span> {% trans "EPIs" %}
             </span>
             <span class="mz-stat-item" id="mzStatPreenchidos">
                 <i class="bi bi-check2-circle"></i>
-                <span class="mz-stat-value">0</span> preenchidos
+                <span class="mz-stat-value">0</span> {% trans "preenchidos" %}
             </span>
         </div>
     </div>
@@ -645,8 +662,8 @@
                 </thead>
                 <tbody id="mzTableBody">
                     {% for funcao in funcoes %}
-                    <tr data-funcao="{{ funcao.nome}}">
-                        <th>|  
+                    <tr data-funcao="{{ funcao.nome|lower }}">
+                        <th>
                             {{ funcao.registro|truncatechars:6 }}
                         </th>
                         <th>
@@ -654,16 +671,19 @@
                             {{ funcao.nome|truncatechars:50 }}
                         </th>
                         {% for equipamento in equipamentos %}
+                        {% with valor=matriz_data|get_item:funcao.id|get_item:equipamento.id %}
                         <td>
                             <input type="number"
-                                   class="mz-input"
-                                   name="freq_{{ funcao.id }}_{{ equipamento.id }}"
-                                   value="{{ matriz_data|get_item:funcao.id|get_item:equipamento.id|default:'' }}"
-                                   min="0"
-                                   max="120"
-                                   placeholder="QN"
-                                   data-state="{% if matriz_data|get_item:funcao.id|get_item:equipamento.id %}set{% else %}qn{% endif %}">
+                                class="mz-input"
+                                name="freq_{{ funcao.id }}_{{ equipamento.id }}"
+                                value="{{ valor|default:'' }}"
+                                min="0"
+                                max="120"
+                                placeholder="QN"
+                                {% if not perms.seguranca_trabalho.change_matrizepi and not user.is_superuser %}readonly{% endif %}
+                                data-state="{% if valor %}set{% else %}qn{% endif %}">
                         </td>
+                        {% endwith %}
                         {% endfor %}
                     </tr>
                     {% endfor %}
@@ -675,12 +695,14 @@
     <div class="mz-footer">
         <div class="mz-footer-info">
             <i class="bi bi-keyboard me-1"></i>
-            Use <kbd>Tab</kbd> para navegar entre campos · <kbd>0</kbd> ou vazio = QN
+            {% trans "Use" %} <kbd>Tab</kbd> {% trans "para navegar entre campos" %} · <kbd>0</kbd> {% trans "ou vazio = QN" %}
         </div>
+        {% if perms.seguranca_trabalho.change_matrizepi or user.is_superuser %}
         <button type="submit" form="matrizForm" class="mz-btn-save">
             <i class="bi bi-check-lg"></i>
             {% trans "Salvar Matriz" %}
         </button>
+        {% endif %}
     </div>
 
     {% else %}
@@ -689,10 +711,10 @@
         <div class="mz-empty-icon">
             <i class="bi bi-grid"></i>
         </div>
-        <h6>Nenhum dado para exibir</h6>
+        <h6>{% trans "Nenhum dado para exibir" %}</h6>
         <p>
-            {% if not funcoes %}Cadastre funções primeiro.{% endif %}
-            {% if not equipamentos %}Cadastre equipamentos primeiro.{% endif %}
+            {% if not funcoes %}{% trans "Cadastre funções primeiro." %}{% endif %}
+            {% if not equipamentos %}{% trans "Cadastre equipamentos primeiro." %}{% endif %}
         </p>
     </div>
     {% endif %}
@@ -763,7 +785,7 @@
             const rows = document.querySelectorAll('#mzTableBody tr');
 
             rows.forEach(row => {
-                const funcaoNome = row.dataset.funcao || '';
+                const funcaoNome = (row.dataset.funcao || '').toLowerCase();
                 row.style.display = funcaoNome.includes(termo) ? '' : 'none';
             });
         });
@@ -781,5 +803,4 @@
 })();
 </script>
 {% endblock %}
-
 

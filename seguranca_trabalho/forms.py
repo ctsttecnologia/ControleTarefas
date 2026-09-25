@@ -8,8 +8,26 @@ from .models import Equipamento, FichaEPI, EntregaEPI, Funcao, CargoFuncao
 from departamento_pessoal.models import Funcionario
 from suprimentos.models import Parceiro
 from django_select2.forms import ModelSelect2Widget
+from django.core.exceptions import ValidationError
+
+import base64
+import binascii
 
 
+from django.core.files.base import ContentFile
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+
+from .models import EntregaEPI, FichaEPI
+
+# Limite de tamanho para a assinatura (base64 ou upload), em bytes
+MAX_ASSINATURA_BYTES = 500_000  # ~500KB
+FORMATOS_IMAGEM_VALIDOS = ("PNG", "JPEG")
 
 class EquipamentoForm(forms.ModelForm):
     estoque_inicial = forms.IntegerField(
@@ -92,19 +110,25 @@ class FichaEPIForm(forms.ModelForm):
         request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
 
-        # Filtra funcionários pela filial ativa do usuário logado (lógica mantida)
         if request:
             filial_id = request.session.get('active_filial_id')
+            qs = Funcionario.objects.filter(status='ATIVO')
+
             if filial_id:
-                self.fields['funcionario'].queryset = Funcionario.objects.filter(
-                    filial_id=filial_id, status='ATIVO'
-                ).order_by('nome_completo')
+                qs = qs.filter(filial_id=filial_id)
+
+            # ── Regra de negócio: não permitir selecionar funcionário
+            #    que já possui ficha de EPI ativa ──
+            qs = qs.exclude(ficha_epi__isnull=False)
+
+            self.fields['funcionario'].queryset = qs.order_by('nome_completo')
 
     def clean_funcionario(self):
         funcionario = self.cleaned_data.get('funcionario')
         if funcionario and (not hasattr(funcionario, 'cargo') or not funcionario.cargo):
             raise forms.ValidationError(
-                _("O funcionário selecionado não possui um cargo definido. Por favor, atualize o cadastro no Departamento Pessoal."),
+                _("O funcionário selecionado não possui um cargo definido. "
+                  "Por favor, atualize o cadastro no Departamento Pessoal."),
                 code='sem_cargo'
             )
         return funcionario
@@ -131,39 +155,141 @@ class EntregaEPIForm(forms.ModelForm):
             queryset = queryset.filter(filial=filial)
         self.fields['equipamento'].queryset = queryset
 
-
 class AssinaturaForm(forms.Form):
-    """ Formulário simples para capturar a assinatura em base64 do frontend. """
+    """Formulário simples para capturar a assinatura em base64 do frontend."""
     assinatura_base64 = forms.CharField(widget=forms.HiddenInput())
+    consentimento_lgpd = forms.BooleanField(
+        required=True,
+        error_messages={
+            "required": _("É necessário consentir com o tratamento da sua assinatura.")
+        },
+    )
+
+    def clean_assinatura_base64(self):
+        valor = (self.cleaned_data.get("assinatura_base64") or "").strip()
+        if not valor:
+            raise ValidationError(_("A assinatura não pode estar vazia."))
+        _validar_base64_assinatura(valor)
+        return valor
 
 
-class AssinaturaEntregaForm(forms.ModelForm):
-    """Formulário para assinatura: aceita canvas (base64) OU upload de imagem."""
+class AssinaturaMixinLGPD(forms.ModelForm):
+    """
+    Mixin comum para forms de assinatura: valida o payload vindo do
+    signature_pad (base64) e/ou upload de imagem, exige consentimento
+    explícito (LGPD, Art. 7º, II — cumprimento de obrigação legal/NR-06)
+    e limita o tamanho do dado armazenado.
+    """
+    consentimento_lgpd = forms.BooleanField(
+        required=True,
+        error_messages={
+            "required": _("É necessário consentir com o tratamento da sua assinatura.")
+        },
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        sig_b64 = (self.data.get("assinatura_base64") or "").strip()
+
+        if sig_b64:
+            _validar_base64_assinatura(sig_b64)
+
+        arquivo = self.files.get(self._upload_field_name) if hasattr(self, "_upload_field_name") else None
+        if arquivo:
+            _validar_upload_imagem(arquivo)
+
+        if not sig_b64 and not arquivo:
+            raise ValidationError(_("É necessário desenhar ou enviar uma assinatura."))
+
+
+        return cleaned
+
+
+class AssinaturaEntregaForm(AssinaturaMixinLGPD):
+    """Formulário para assinatura de entrega: aceita canvas (base64) OU upload de imagem."""
+
+    _upload_field_name = "assinatura_imagem"
+    assinatura_imagem = forms.ImageField(required=False)
+    assinatura_base64 = forms.CharField(required=False, widget=forms.HiddenInput())
+
     class Meta:
         model = EntregaEPI
-        fields = ['assinatura_recebimento', 'assinatura_imagem', 'data_assinatura']
+        fields = []  # nada é salvo direto via ModelForm — a view chama entrega.salvar_assinatura()
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Base64 do signature_pad → hidden
-        self.fields['assinatura_recebimento'].widget = forms.HiddenInput()
-        self.fields['assinatura_recebimento'].required = False
-        # Upload de imagem → mantém FileInput (NÃO usar HiddenInput!)
-        self.fields['assinatura_imagem'].required = False
-        # Data preenchida pela view
-        self.fields['data_assinatura'].widget = forms.HiddenInput()
-        self.fields['data_assinatura'].required = False
+    
+class AssinaturaTermoForm(AssinaturaMixinLGPD):
+    """Formulário para assinatura de termo (Ficha EPI)."""
 
+    _upload_field_name = "assinatura_imagem"
+    assinatura_imagem = forms.ImageField(required=False)
 
-class AssinaturaTermoForm(forms.ModelForm):
     class Meta:
         model = FichaEPI
-        fields = ['assinatura_funcionario']
+        fields = ["assinatura_funcionario"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['assinatura_funcionario'].widget = forms.HiddenInput()
-        self.fields['assinatura_funcionario'].required = False
+        self.fields["assinatura_funcionario"].widget = forms.HiddenInput()
+        self.fields["assinatura_funcionario"].required = False
+
+
+# ── Helpers de validação compartilhados ──────────────────────────────────
+
+def _validar_base64_assinatura(valor: str) -> None:
+    """Valida tamanho e integridade do payload base64 do signature_pad."""
+    if len(valor) > MAX_ASSINATURA_BYTES:
+        raise ValidationError(_("Assinatura excede o tamanho permitido."))
+
+    # Formato esperado: "data:image/png;base64,XXXXX"
+    if "," in valor:
+        header, payload = valor.split(",", 1)
+        if "image/png" not in header and "image/jpeg" not in header:
+            raise ValidationError(_("Formato de assinatura não suportado."))
+    else:
+        payload = valor
+
+    try:
+        decoded = base64.b64decode(payload, validate=True)
+    except (binascii.Error, ValueError):
+        raise ValidationError(_("Assinatura corrompida ou em formato inválido."))
+
+    if Image is not None:
+        try:
+            from io import BytesIO
+            img = Image.open(BytesIO(decoded))
+            img.verify()
+            if img.format not in FORMATOS_IMAGEM_VALIDOS:
+                raise ValidationError(_("Formato de imagem não suportado."))
+        except ValidationError:
+            raise
+        except Exception:
+            raise ValidationError(_("Assinatura não é uma imagem válida."))
+
+
+def _validar_upload_imagem(arquivo) -> None:
+    """Valida tamanho, mimetype declarado e conteúdo real do upload."""
+    if arquivo.size > MAX_ASSINATURA_BYTES:
+        raise ValidationError(
+            _("Arquivo maior que %(mb).1fMB.") % {"mb": MAX_ASSINATURA_BYTES / (1024 * 1024)}
+        )
+
+    if arquivo.content_type not in ("image/png", "image/jpeg"):
+        raise ValidationError(_("Formato inválido. Envie apenas PNG ou JPEG."))
+
+    if Image is None:
+        return  # Pillow não instalado — validação de conteúdo fica só client-side
+
+    try:
+        img = Image.open(arquivo)
+        img.verify()
+        if img.format not in FORMATOS_IMAGEM_VALIDOS:
+            raise ValidationError(_("Formato de imagem não suportado."))
+    except ValidationError:
+        raise
+    except Exception:
+        raise ValidationError(_("Arquivo de imagem inválido ou corrompido."))
+    finally:
+        arquivo.seek(0)  # reposiciona o ponteiro após a verificação
 
 
 class FuncaoForm(forms.ModelForm):

@@ -15,33 +15,25 @@ estilização de erro do Bootstrap e texto de ajuda.
         {% endif %}
     </label>
 
-    {% if field.errors %}
-        {% if field.field.widget.input_type == 'select' %}
-            {% render_field field class+="form-select is-invalid" %}
-        {% elif field.field.widget.input_type == 'checkbox' %}
-            <div class="form-check">
-                {% render_field field class+="form-check-input is-invalid" %}
-            </div>
-        {% else %}
-            {% render_field field class+="form-control is-invalid" placeholder=field.label %}
-        {% endif %}
+    {% is_select_field field as is_select %}
+    {% is_checkbox_field field as is_checkbox %}
+
+    {% if is_checkbox %}
+        <div class="form-check">
+            {% render_field field class+="form-check-input" class="is-invalid" if field.errors %}
+        </div>
+    {% elif is_select %}
+        {% render_field field class="form-select" class+="is-invalid" if field.errors %}
     {% else %}
-        {% if field.field.widget.input_type == 'select' %}
-            {% render_field field class+="form-select" %}
-        {% elif field.field.widget.input_type == 'checkbox' %}
-            <div class="form-check">
-                {% render_field field class+="form-check-input" %}
-            </div>
-        {% else %}
-            {% render_field field class+="form-control" placeholder=field.label %}
-        {% endif %}
+        {% render_field field class="form-control" class+="is-invalid" if field.errors placeholder=field.label %}
     {% endif %}
 
     {% for error in field.errors %}
-        <div class="invalid-feedback">{{ error }}</div>
+        <div class="invalid-feedback d-block">{{ error }}</div>
     {% endfor %}
 
     {% if field.help_text %}
         <small class="form-text text-muted">{{ field.help_text|safe }}</small>
     {% endif %}
 </div>
+

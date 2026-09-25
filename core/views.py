@@ -1,6 +1,4 @@
 # core/views.py
-
-
 import mimetypes
 
 from django.conf import settings
@@ -11,14 +9,23 @@ from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.apps import apps
+from django.views.generic import TemplateView
 from usuario.models import Filial
 import logging
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+import json
+from django.contrib.contenttypes.models import ContentType
+from django.http import JsonResponse
+from django.urls import reverse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
+from .models import TokenAssinaturaRemota
 
 
-logger = logging.getLogger('uploads')
 
-
+logger = logging.getLogger(__name__)
 
 
 class SecureFileDownloadView(LoginRequiredMixin, View):
@@ -58,7 +65,8 @@ class SecureFileDownloadView(LoginRequiredMixin, View):
             # ══════════════════════════════════════════════
             if settings.DEBUG:
                 try:
-                    import storages.backends.gcloud as gcloud_module
+                    import importlib
+                    gcloud_module = importlib.import_module('storages.backends.gcloud')
                     GoogleCloudStorage = gcloud_module.GoogleCloudStorage
 
                     bucket_name = getattr(settings, 'GS_BUCKET_NAME', None)
@@ -265,3 +273,136 @@ def sem_funcionario_view(request):
     return render(request, 'errors/sem_funcionario.html', {'modulo': modulo}, status=403)
 
 
+class PoliticaPrivacidadeView(TemplateView):
+    template_name = "core/politica_privacidade.html"
+
+
+def _obter_token_valido(token):
+    """Retorna o token_obj se existir e estiver válido, senão None."""
+    token_obj = TokenAssinaturaRemota.objects.select_related('content_type').filter(token=token).first()
+    if token_obj and token_obj.valido:
+        return token_obj
+    return None
+
+
+@method_decorator(login_required, name='dispatch')
+class GerarLinkAssinaturaView(View):
+    """
+    Gera (ou reaproveita) um token de assinatura remota para qualquer objeto.
+    Uso via URL: /core/assinatura-remota/gerar/<app_label>/<model_name>/<object_id>/
+    """
+
+    def post(self, request, app_label, model_name, object_id):
+        content_type = get_object_or_404(ContentType, app_label=app_label, model=model_name)
+        modelo = content_type.model_class()
+        objeto = get_object_or_404(modelo, pk=object_id)
+
+        if hasattr(objeto, 'pode_ser_assinado') and not objeto.pode_ser_assinado():
+            return JsonResponse({
+                'ok': False,
+                'erro': 'Este registro já foi assinado ou não pode ser assinado neste momento.',
+            }, status=400)
+
+        # Invalida tokens antigos ainda não usados para o mesmo objeto
+        TokenAssinaturaRemota.objects.filter(
+            content_type=content_type,
+            object_id=object_id,
+            usado_em__isnull=True,
+        ).update(usado_em=timezone.now())
+
+        token_obj = TokenAssinaturaRemota.objects.create(
+            content_type=content_type,
+            object_id=object_id,
+            criado_por=request.user,
+        )
+
+        link = request.build_absolute_uri(
+            reverse('core:assinatura_remota', kwargs={'token': str(token_obj.token)})
+        )
+
+        logger.info(
+            f'[ASSINATURA REMOTA] Token gerado para {app_label}.{model_name} '
+            f'(id={object_id}) por {request.user.username}'
+        )
+
+        return JsonResponse({
+            'ok': True,
+            'link': link,
+            'expira_em': token_obj.expira_em.isoformat(),
+        })
+
+
+class AssinaturaRemotaView(View):
+    """
+    Tela pública (sem login) para exibir o form de assinatura ou processar o POST.
+    """
+
+    def get(self, request, token):
+        token_obj = _obter_token_valido(token)
+        if not token_obj:
+            return render(request, 'core/assinatura_remota_erro.html')
+
+        contexto = {
+            'token': token,
+            'objeto': token_obj.conteudo,
+            'tipo_objeto': token_obj.content_type.model,
+        }
+        return render(request, 'core/assinatura_remota_form.html', contexto)
+
+    def post(self, request, token):
+        token_obj = _obter_token_valido(token)
+        if not token_obj:
+            return render(request, 'core/assinatura_remota_erro.html')
+
+        objeto = token_obj.conteudo
+        ip = request.META.get('REMOTE_ADDR')
+
+        # ── Consentimento LGPD é obrigatório (defesa server-side) ──
+        if request.POST.get('consentimento_lgpd') != 'on':
+            contexto = {
+                'token': token,
+                'objeto': objeto,
+                'tipo_objeto': token_obj.content_type.model,
+                'erro': 'É necessário concordar com o tratamento dos dados (LGPD) para assinar.',
+            }
+            return render(request, 'core/assinatura_remota_form.html', contexto)
+
+        # ── Verificação de status de assinatura (agora "objeto" já existe) ──
+        if hasattr(objeto, 'pode_ser_assinado') and not objeto.pode_ser_assinado():
+                    contexto = {
+                        'token': token,
+                        'objeto': objeto,
+                        'tipo_objeto': token_obj.content_type.model,
+                        'erro': 'Este registro já foi assinado anteriormente.',
+                    }
+                    return render(request, 'core/assinatura_remota_form.html', contexto)
+        
+
+        if not hasattr(objeto, 'assinar_remotamente'):
+            logger.warning(
+                f'[ASSINATURA REMOTA] Objeto {token_obj.content_type.model} '
+                f'não possui método assinar_remotamente (token={token})'
+            )
+            return render(request, 'core/assinatura_remota_erro.html')
+
+        try:
+            objeto.assinar_remotamente(
+                post_data=request.POST,
+                files_data=request.FILES,
+                ip=ip,
+            )
+        except Exception:
+            logger.exception(
+                f'[ASSINATURA REMOTA] Falha ao assinar objeto '
+                f'{token_obj.content_type.model} (id={token_obj.object_id}, token={token})'
+            )
+            return render(request, 'core/assinatura_remota_erro.html')
+
+        token_obj.marcar_utilizado(ip=ip)
+
+        logger.info(
+            f'[ASSINATURA REMOTA] Assinatura concluída para '
+            f'{token_obj.content_type.model} (id={token_obj.object_id}), IP={ip}'
+        )
+
+        return render(request, 'core/assinatura_remota_sucesso.html')

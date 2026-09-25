@@ -1,6 +1,7 @@
 
 <!-- seguranca_trabalho/templates/seguranca_trabalho/ficha_pdf_template.html -->
 <!DOCTYPE html>
+{% load dict_extras %}
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -207,13 +208,18 @@
 <body>
 
     <!-- ═══ 1. LOGOMARCA ═══ -->
+
     <div class="logo-header">
         {% if logo_base64 %}
-            <img src="{{ logo_base64|safe }}" alt="Logo">
+            <img src="{{ logo_base64 }}" alt="Logo">
         {% else %}
             <span class="logo-texto">CETEST ENGENHARIA E SERVIÇOS S/A</span>
         {% endif %}
+        <div style="font-size: 6.5pt; color: #999; margin-top: 2px;">
+            Documento confidencial — contém dados pessoais protegidos pela LGPD (Lei nº 13.709/2018)
+        </div>
     </div>
+
 
     <!-- ═══ 2. DADOS DE IDENTIFICAÇÃO ═══ -->
     <div class="secao-titulo">Dados de Identificação</div>
@@ -325,7 +331,9 @@
                 <td>{{ entrega.data_devolucao|date:"d/m/Y"|default:"" }}</td>
                 <td class="visto-cell">
                     {% if entrega.assinatura_base64 %}
-                        <img src="{{ entrega.assinatura_base64|safe }}" alt="Assinatura">
+                        <img src="{{ entrega.assinatura_base64 }}" alt="Assinatura de recebimento">
+                    {% else %}
+                        <span class="text-muted">—</span>
                     {% endif %}
                 </td>
             </tr>
@@ -349,7 +357,7 @@
 
     <div class="rodape-sistema">
         Documento gerado em {{ data_emissao|date:"d/m/Y" }} às {{ data_emissao|time:"H:i" }} |
-        Cetest Engenharia e Serviços S/A — Sistema de Gestão de SST
+        Cetest Engenharia e Serviços Ltda — Sistema de Gestão de SST
     </div>
 
 </body>

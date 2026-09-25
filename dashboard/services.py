@@ -192,8 +192,7 @@ def get_metricas_epi(filial=None):
     total_entregas = entregas.count()
 
     entregas_sem_assinatura = entregas.filter(
-        Q(assinatura_recebimento='') | Q(assinatura_recebimento__isnull=True),
-        Q(assinatura_imagem__isnull=True),
+        Q(assinatura_imagem__isnull=True) | Q(assinatura_imagem=''),
     ).count()
 
     # Vencimento de uso (requer iteração, mas com select_related já otimizado)

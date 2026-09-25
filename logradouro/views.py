@@ -109,9 +109,27 @@ class LogradouroCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermission
             initial['filial'] = self.request.user.filial_ativa
         return initial
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["is_popup"] = self.request.GET.get("popup") == "1"
+        return ctx
+
     def form_valid(self, form):
-        messages.success(self.request, _('Endereço cadastrado com sucesso!'))
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        if self.request.GET.get("popup") == "1":
+            obj = self.object
+            html = f"""
+            <script>
+                (function() {{
+                    if (window.opener && window.opener.dismissLogradouroPopup) {{
+                        window.opener.dismissLogradouroPopup({obj.pk}, "{obj}");
+                    }}
+                    window.close();
+                }})();
+            </script>
+            """
+            return HttpResponse(html)
+        return response
 
     def form_invalid(self, form):
         messages.error(self.request, _('Por favor, corrija os erros abaixo.'))
