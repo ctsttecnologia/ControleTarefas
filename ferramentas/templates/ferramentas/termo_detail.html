@@ -1,4 +1,3 @@
-
 <!-- ferramentas/termo_detail.html -->
 {% extends 'ferramentas/ferramentas_base.html' %}
 
@@ -9,25 +8,21 @@
 {% endblock %}
 
 {% block ferramentas_actions %}
-    {% if perms.ferramentas.view_termoderesponsabilidade or user.is_superuser %}
     <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i>Lista
     </a>
-    {% endif %}
     {% if perms.ferramentas.download_termo_pdf or user.is_superuser %}
     <a href="{% url 'ferramentas:termo_pdf_download' pk=termo.pk %}" class="btn btn-outline-primary">
         <i class="bi bi-file-pdf me-1"></i>Baixar PDF
     </a>
     {% endif %}
-    {% if pode_reverter %}
+    {% if pode_reverter and perms.ferramentas.reverter_termo or user.is_superuser %}
     <form action="{% url 'ferramentas:termo_reverter' pk=termo.pk %}" method="post" class="d-inline"
           onsubmit="return confirm('Tem certeza? Todos os itens serão devolvidos ao estoque.');">
         {% csrf_token %}
-        {% if perms.ferramentas.reverter_termo or user.is_superuser %}
         <button type="submit" class="btn btn-danger">
             <i class="bi bi-arrow-counterclockwise me-1"></i>Estornar Termo
         </button>
-        {% endif %}
     </form>
     {% endif %}
 {% endblock %}
@@ -44,7 +39,7 @@
             <ul class="list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Responsável</span>
-                    <strong>{{ termo.responsavel.nome_completo }}</strong>
+                    <strong class="text-strong">{{ termo.responsavel.nome_completo }}</strong>
                 </li>
                 <li class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Contrato</span>
@@ -92,8 +87,20 @@
                 <i class="bi bi-pen me-2"></i>Assinatura Registrada
             </div>
             <div class="card-body text-center">
-                {% if termo.assinatura_data %}
-                    <img src="{{ termo.assinatura_data }}" alt="Assinatura" class="img-fluid border rounded p-2 bg-light" style="max-width: 350px;">
+                {% if termo.assinatura_imagem %}
+                    <img src="{{ termo.assinatura_imagem.url }}" alt="Assinatura"
+                         class="img-fluid border rounded p-2 bg-adaptive" style="max-width: 350px;">
+                    <p class="text-muted small mt-2 mb-0">
+                        Assinado em {{ termo.data_assinatura|date:"d/m/Y H:i" }}
+                        {% if termo.ip_assinatura %}
+                            · IP:
+                            {% if perms.ferramentas.view_ip_completo or user.is_superuser %}
+                                {{ termo.ip_assinatura }}
+                            {% else %}
+                                {{ termo.ip_assinatura|slice:":7" }}.xxx
+                            {% endif %}
+                        {% endif %}
+                    </p>
                 {% else %}
                     <p class="text-muted small mb-0">Nenhuma assinatura encontrada.</p>
                 {% endif %}
@@ -102,54 +109,72 @@
     </div>
 
     <!-- Envio de Link para Assinatura Remota -->
-    {% if not termo.is_signed and termo.status == 'ativo' %}
-    <div class="card shadow-sm mt-4">
-        <div class="card-header fw-bold">
-            <i class="bi bi-send me-2"></i>Enviar Link de Assinatura
-        </div>
-        <div class="card-body">
-            <p class="text-muted small mb-2">Link exclusivo para assinatura remota:</p>
-            <div class="input-group mb-3">
-                <input type="text" class="form-control form-control-sm" id="linkAssinatura"
-                        value="{{ termo.get_link_assinatura }}" readonly>
-                <button type="button" class="btn btn-sm btn-outline-secondary"
-                        onclick="navigator.clipboard.writeText(document.getElementById('linkAssinatura').value)">
-                    <i class="bi bi-clipboard"></i>
-                </button>
+    {% if not termo.data_assinatura and termo.status == 'ativo' %}
+        {% if perms.ferramentas.enviar_link_assinatura or user.is_superuser %}
+        <div class="col-12">
+        <div class="card shadow-sm mt-2">
+            <div class="card-header fw-bold">
+                <i class="bi bi-send me-2"></i>Enviar Link de Assinatura
             </div>
-
-            <form method="post" action="{% url 'ferramentas:enviar_link_assinatura' pk=termo.pk %}" class="mb-2">
-                {% csrf_token %}
-                <input type="hidden" name="canal" value="email">
-                <div class="input-group">
-                    <input type="email" name="email" class="form-control form-control-sm"
-                            placeholder="E-mail do responsável"
-                            value="{{ termo.responsavel.email|default:'' }}">
-                    <button type="submit" class="btn btn-sm btn-primary">
-                        <i class="bi bi-envelope me-1"></i>Enviar
+            <div class="card-body">
+                {% if link_assinatura %}
+                <div class="alert alert-warning small mb-3">
+                    <i class="bi bi-shield-exclamation me-1"></i>
+                    Este link concede acesso direto à assinatura do termo. Não compartilhe por canais não autorizados.
+                </div>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control form-control-sm" id="linkAssinatura"
+                           value="{{ link_assinatura }}" readonly>
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            onclick="navigator.clipboard.writeText(document.getElementById('linkAssinatura').value)">
+                        <i class="bi bi-clipboard"></i>
                     </button>
                 </div>
-            </form>
+                {% else %}
+                <p class="text-muted small mb-3">
+                    <i class="bi bi-info-circle me-1"></i>Nenhum link ativo. Use um dos canais abaixo para gerar e enviar.
+                </p>
+                {% endif %}
 
-            <form method="post" action="{% url 'ferramentas:enviar_link_assinatura' pk=termo.pk %}" target="_blank">
-                {% csrf_token %}
-                <input type="hidden" name="canal" value="whatsapp">
-                <div class="input-group">
-                    <input type="text" name="telefone" class="form-control form-control-sm"
-                            placeholder="Ex: 5511999999999">
-                    <button type="submit" class="btn btn-sm btn-success">
-                        <i class="bi bi-whatsapp me-1"></i>Enviar
-                    </button>
-                </div>
-            </form>
+                <form method="post" action="{% url 'ferramentas:enviar_link_assinatura' pk=termo.pk %}" class="mb-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="canal" value="email">
+                    <div class="input-group">
+                        <input type="email" name="email" class="form-control form-control-sm"
+                               placeholder="E-mail do responsável"
+                               value="{{ termo.responsavel.email|default:'' }}" maxlength="254">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-envelope me-1"></i>Enviar
+                        </button>
+                    </div>
+                </form>
+
+                <form method="post" action="{% url 'ferramentas:enviar_link_assinatura' pk=termo.pk %}" target="_blank">
+                    {% csrf_token %}
+                    <input type="hidden" name="canal" value="whatsapp">
+                    <div class="input-group">
+                        <input type="text" name="telefone" class="form-control form-control-sm"
+                               placeholder="Ex: 5511999999999" maxlength="15" pattern="[0-9]{10,15}">
+                        <button type="submit" class="btn btn-sm btn-success">
+                            <i class="bi bi-whatsapp me-1"></i>Enviar
+                        </button>
+                    </div>
+                </form>
+
+                <p class="text-muted small mt-3 mb-0">
+                    <i class="bi bi-shield-lock me-1"></i>
+                    O link expira em 48h e coleta IP/data-hora para fins de comprovação, conforme LGPD.
+                </p>
+            </div>
         </div>
-    </div>
+        </div>
+        {% endif %}
     {% endif %}
 
     <!-- Itens do Termo -->
     <div class="col-lg-7">
         <div class="card shadow-sm">
-            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+            <div class="card-header fw-bold d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-list-check me-2"></i>Itens do Termo</span>
                 <span class="badge bg-primary">{{ termo.itens.count }}</span>
             </div>
@@ -197,3 +222,4 @@
     </div>
 </div>
 {% endblock %}
+

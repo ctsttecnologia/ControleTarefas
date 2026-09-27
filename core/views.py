@@ -10,6 +10,7 @@ from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.apps import apps
 from django.views.generic import TemplateView
+from prompt_toolkit.validation import ValidationError
 from usuario.models import Filial
 import logging
 from django.contrib.auth.decorators import login_required
@@ -20,14 +21,15 @@ from django.http import JsonResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-
+from django.core.cache import cache
 from .models import TokenAssinaturaRemota
 
 
 
 logger = logging.getLogger(__name__)
 
-
+class HttpResponseTooManyRequests(HttpResponse):
+    status_code = 429
 class SecureFileDownloadView(LoginRequiredMixin, View):
     """
     View genérica para servir qualquer arquivo de mídia de forma segura.
@@ -331,6 +333,15 @@ class GerarLinkAssinaturaView(View):
             'expira_em': token_obj.expira_em.isoformat(),
         })
 
+def _rate_limit_excedido(request, chave_prefixo, limite=15, janela_segundos=600):
+    """Rate limiting simples por IP para rotas públicas sensíveis."""
+    ip = request.META.get('REMOTE_ADDR', 'desconhecido')
+    cache_key = f'{chave_prefixo}:{ip}'
+    tentativas = cache.get(cache_key, 0)
+    if tentativas >= limite:
+        return True
+    cache.set(cache_key, tentativas + 1, timeout=janela_segundos)
+    return False
 
 class AssinaturaRemotaView(View):
     """
@@ -338,9 +349,14 @@ class AssinaturaRemotaView(View):
     """
 
     def get(self, request, token):
+        if _rate_limit_excedido(request, 'assinatura_remota_get', limite=30):
+            return HttpResponseTooManyRequests(
+                "Muitas tentativas. Aguarde alguns minutos e tente novamente."
+            )
+
         token_obj = _obter_token_valido(token)
         if not token_obj:
-            return render(request, 'core/assinatura_remota_erro.html')
+            return render(request, 'core/assinatura_remota_erro.html', status=404)
 
         contexto = {
             'token': token,
@@ -350,9 +366,14 @@ class AssinaturaRemotaView(View):
         return render(request, 'core/assinatura_remota_form.html', contexto)
 
     def post(self, request, token):
+        if _rate_limit_excedido(request, 'assinatura_remota_post', limite=10):
+            return HttpResponseTooManyRequests(
+                "Muitas tentativas. Aguarde alguns minutos e tente novamente."
+            )
+
         token_obj = _obter_token_valido(token)
         if not token_obj:
-            return render(request, 'core/assinatura_remota_erro.html')
+            return render(request, 'core/assinatura_remota_erro.html', status=404)
 
         objeto = token_obj.conteudo
         ip = request.META.get('REMOTE_ADDR')
@@ -365,25 +386,27 @@ class AssinaturaRemotaView(View):
                 'tipo_objeto': token_obj.content_type.model,
                 'erro': 'É necessário concordar com o tratamento dos dados (LGPD) para assinar.',
             }
-            return render(request, 'core/assinatura_remota_form.html', contexto)
+            return render(request, 'core/assinatura_remota_form.html', contexto, status=400)
 
-        # ── Verificação de status de assinatura (agora "objeto" já existe) ──
+        # ── Verificação de status de assinatura ──
         if hasattr(objeto, 'pode_ser_assinado') and not objeto.pode_ser_assinado():
-                    contexto = {
-                        'token': token,
-                        'objeto': objeto,
-                        'tipo_objeto': token_obj.content_type.model,
-                        'erro': 'Este registro já foi assinado anteriormente.',
-                    }
-                    return render(request, 'core/assinatura_remota_form.html', contexto)
-        
+            contexto = {
+                'token': token,
+                'objeto': objeto,
+                'tipo_objeto': token_obj.content_type.model,
+                'erro': 'Este registro já foi assinado anteriormente.',
+            }
+            return render(request, 'core/assinatura_remota_form.html', contexto, status=409)
 
         if not hasattr(objeto, 'assinar_remotamente'):
             logger.warning(
                 f'[ASSINATURA REMOTA] Objeto {token_obj.content_type.model} '
                 f'não possui método assinar_remotamente (token={token})'
             )
-            return render(request, 'core/assinatura_remota_erro.html')
+            return render(request, 'core/assinatura_remota_erro.html', {
+                'titulo': 'Não foi possível processar',
+                'mensagem': 'Este tipo de documento não suporta assinatura remota. Contate o suporte.',
+            }, status=500)
 
         try:
             objeto.assinar_remotamente(
@@ -391,12 +414,23 @@ class AssinaturaRemotaView(View):
                 files_data=request.FILES,
                 ip=ip,
             )
+        except ValidationError as e:
+            contexto = {
+                'token': token,
+                'objeto': objeto,
+                'tipo_objeto': token_obj.content_type.model,
+                'erro': str(e),
+            }
+            return render(request, 'core/assinatura_remota_form.html', contexto, status=400)
         except Exception:
             logger.exception(
                 f'[ASSINATURA REMOTA] Falha ao assinar objeto '
                 f'{token_obj.content_type.model} (id={token_obj.object_id}, token={token})'
             )
-            return render(request, 'core/assinatura_remota_erro.html')
+            return render(request, 'core/assinatura_remota_erro.html', {
+                'titulo': 'Erro ao processar assinatura',
+                'mensagem': 'Ocorreu um erro inesperado. Tente novamente ou contate o suporte.',
+            }, status=500)
 
         token_obj.marcar_utilizado(ip=ip)
 

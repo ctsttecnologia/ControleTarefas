@@ -488,18 +488,15 @@ CELERY_BEAT_SCHEDULE = {
 # CHANNELS (WebSocket) - CONFIGURAÇÃO ADAPTATIVA
 # =============================================================================
 REDIS_HOST = config('REDIS_HOST', default='127.0.0.1')
-REDIS_PORT = config('REDIS_PORT', default=6380, cast=int)
+REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
 
 if IS_DEVELOPMENT:
     CHANNEL_LAYERS = {
         'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                'hosts': [(REDIS_HOST, REDIS_PORT)],
-            },
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
         },
     }
-    logger.debug("Usando Redis para WebSockets (Desenvolvimento)")
+    logger.debug("Usando InMemoryChannelLayer para WebSockets (Desenvolvimento - sem dependência de Redis)")
 else:
     CHANNEL_LAYERS = {
         'default': {

@@ -1,4 +1,5 @@
 
+{# templates/core/assinatura_remota_erro.html #}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -6,9 +7,23 @@
     <title>Link Inválido</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
+        :root {
+            --pub-bg: #f4f5f7;
+            --pub-card-bg: #ffffff;
+            --pub-text: #1a1a1a;
+            --pub-text-muted: #555555;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --pub-bg: #14161f;
+                --pub-card-bg: #1e2130;
+                --pub-text: #e2e8f0;
+                --pub-text-muted: #94a3b8;
+            }
+        }
         body {
-            font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-            background: #f4f5f7;
+            font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            background: var(--pub-bg);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -16,23 +31,24 @@
             margin: 0;
         }
         .card {
-            background: #fff;
+            background: var(--pub-card-bg);
+            color: var(--pub-text);
             padding: 32px 24px;
             border-radius: 12px;
             text-align: center;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
             max-width: 400px;
         }
         .icone { font-size: 48px; color: #dc2626; margin-bottom: 12px; }
-        h1 { font-size: 18px; color: #1a1a1a; margin-bottom: 8px; }
-        p { font-size: 14px; color: #555; }
+        h1 { font-size: 18px; margin-bottom: 8px; }
+        p { font-size: 14px; color: var(--pub-text-muted); }
     </style>
 </head>
 <body>
     <div class="card">
         <div class="icone">✕</div>
-        <h1>Link expirado ou já utilizado</h1>
-        <p>Solicite um novo link de assinatura ao responsável.</p>
+        <h1>{{ titulo|default:"Link expirado ou já utilizado" }}</h1>
+        <p>{{ mensagem|default:"Solicite um novo link de assinatura ao responsável." }}</p>
     </div>
 </body>
 </html>

@@ -3,11 +3,9 @@
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from core.managers import FilialManager 
+from core.models import AssinavelMixin, TokenAssinaturaRemota
 from suprimentos.models import PedidoCompra
-from usuario.models import Filial, Usuario
-import uuid
-from cliente.models import Cliente
-# ferramentas/models.py
+from usuario.models import Filial
 import qrcode
 from io import BytesIO
 from django.conf import settings
@@ -403,11 +401,7 @@ class Movimentacao(models.Model):
         verbose_name="Condições na Retirada",
         help_text="Descreva o estado do item."
     )
-    assinatura_retirada = models.ImageField(
-        upload_to='assinaturas/%Y/%m/',
-        verbose_name="Assinatura de Retirada"
-    )
-
+    
     # Devolução
     data_devolucao = models.DateTimeField(
         blank=True, null=True,
@@ -419,11 +413,7 @@ class Movimentacao(models.Model):
         blank=True, null=True, verbose_name="Recebido por"
     )
     condicoes_devolucao = models.TextField(blank=True, null=True, verbose_name="Condições na Devolução")
-    assinatura_devolucao = models.ImageField(
-        upload_to='assinaturas/%Y/%m/', blank=True, null=True,
-        verbose_name="Assinatura de Devolução"
-    )
-
+    
     # Controle
     filial = models.ForeignKey(
         Filial, on_delete=models.PROTECT,
@@ -473,17 +463,20 @@ class Movimentacao(models.Model):
             return (timezone.now() - self.data_devolucao_prevista).days
         return 0
 
+    @property
+    def assinatura_retirada(self):
+        return self.assinaturas.filter(tipo=AssinaturaMovimentacao.Tipo.RETIRADA).first()
+
+    @property
+    def assinatura_devolucao(self):
+        return self.assinaturas.filter(tipo=AssinaturaMovimentacao.Tipo.DEVOLUCAO).first()
+
 
 # =============================================================================
 # TERMO DE RESPONSABILIDADE
 # =============================================================================
-class TermoDeResponsabilidade(models.Model):
+class TermoDeResponsabilidade(AssinavelMixin, models.Model):
     """Documento formal de responsabilidade sobre ferramentas/malas."""
-
-    token_assinatura = models.UUIDField(
-        default=uuid.uuid4, editable=False, unique=True,
-        verbose_name="Token de Assinatura Remota"
-    )
 
     class TipoUso(models.TextChoices):
         FERRAMENTAL = 'FER', 'Ferramental'
@@ -494,7 +487,6 @@ class TermoDeResponsabilidade(models.Model):
         DEVOLVIDO = 'devolvido', 'Devolvido'
         ESTORNADO = 'estornado', 'Estornado'
 
-    # Dados do termo
     contrato = models.CharField(max_length=200, verbose_name="Contrato")
     responsavel = models.ForeignKey(
         Funcionario, on_delete=models.PROTECT,
@@ -507,19 +499,12 @@ class TermoDeResponsabilidade(models.Model):
         related_name='termos_separados',
         verbose_name="Separado por (Coordenador)"
     )
-
-    # Datas
     data_emissao = models.DateField(default=timezone.now, verbose_name="Data de Emissão")
-    data_recebimento = models.DateTimeField(null=True, blank=True, verbose_name="Data de Recebimento")
-
-    # Controle
     tipo_uso = models.CharField(max_length=30, choices=TipoUso.choices, verbose_name="Tipo de Uso")
     status = models.CharField(
         max_length=20, choices=StatusTermo.choices,
-        default=StatusTermo.ATIVO, verbose_name="Status do Termo",
-        db_index=True
+        default=StatusTermo.ATIVO, db_index=True
     )
-    assinatura_data = models.TextField(null=True, blank=True, verbose_name="Assinatura (Base64)")
     movimentado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
         verbose_name="Movimentado por"
@@ -536,26 +521,17 @@ class TermoDeResponsabilidade(models.Model):
         verbose_name_plural = "Termos de Responsabilidade"
         ordering = ['-data_emissao']
         permissions = [
+            ("reverter_termo", "Pode estornar termo de responsabilidade"),
             ("download_termo_pdf", "Pode baixar PDF do termo"),
-            ("reverter_termo", "Pode estornar/reverter termo"),
+            ("enviar_link_assinatura", "Pode enviar link de assinatura remota"),
+            ("view_ip_completo", "Pode ver IP completo de assinatura (auditoria)"),
         ]
-
-    def get_link_assinatura(self, request=None):
-        """Retorna a URL pública (absoluta, se request for fornecido) para assinatura remota."""
-        path = reverse('ferramentas:assinar_termo_remoto', kwargs={'token': self.token_assinatura})
-        if request:
-            return request.build_absolute_uri(path)
-        return path
 
     def __str__(self):
         return f"Termo #{self.pk} - {self.get_tipo_uso_display()} — {self.responsavel}"
 
-    def is_signed(self):
-        return bool(self.assinatura_data)
-
     @property
     def pode_reverter(self):
-        """Verifica se o termo pode ser revertido."""
         if self.status != self.StatusTermo.ATIVO:
             return False
         return not self.movimentacoes_geradas.filter(data_devolucao__isnull=False).exists()
@@ -583,6 +559,15 @@ class ItemTermo(models.Model):
         MalaFerramentas, on_delete=models.SET_NULL,
         null=True, blank=True, verbose_name="Mala"
     )
+    data_separacao = models.DateField(
+        null=True, blank=True, verbose_name="Data de Separação"
+    )
+    separado_por = models.ForeignKey(
+        Funcionario, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='itens_separados',
+        verbose_name="Separado por"
+    )
 
     class Meta:
         verbose_name = "Item do Termo"
@@ -594,5 +579,34 @@ class ItemTermo(models.Model):
     @property
     def item_vinculado(self):
         return self.ferramenta or self.mala
+
+class AssinaturaMovimentacao(AssinavelMixin):
+    """
+    Uma linha por assinatura (retirada OU devolução) de uma Movimentacao.
+    Reaproveita 100% da lógica de validação/segurança do core.
+    """
+
+    class Tipo(models.TextChoices):
+        RETIRADA = 'retirada', 'Retirada'
+        DEVOLUCAO = 'devolucao', 'Devolução'
+
+    movimentacao = models.ForeignKey(
+        'Movimentacao', on_delete=models.CASCADE,
+        related_name='assinaturas'
+    )
+    tipo = models.CharField(max_length=10, choices=Tipo.choices)
+
+    class Meta:
+        verbose_name = "Assinatura de Movimentação"
+        verbose_name_plural = "Assinaturas de Movimentação"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['movimentacao', 'tipo'],
+                name='uniq_assinatura_por_tipo_movimentacao'
+            )
+        ]
+
+    def __str__(self):
+        return f"Assinatura ({self.get_tipo_display()}) - Mov #{self.movimentacao_id}"
 
     

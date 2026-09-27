@@ -23,11 +23,11 @@ urlpatterns = [
     path('malas/<int:pk>/', views.MalaDetailView.as_view(), name='mala_detail'),
     path('malas/<int:pk>/editar/', views.MalaUpdateView.as_view(), name='mala_update'),
 
-    # -- URLs de Movimentação (Retirada e Devolução) --
-    path('retirar/ferramenta/<int:ferramenta_pk>/', views.MovimentacaoCreateView.as_view(), name='retirar_ferramenta'),
-    path('retirar/mala/<int:mala_pk>/', views.MovimentacaoCreateView.as_view(), name='retirar_mala'),
-    path('devolver/ferramenta/<int:pk>/', views.DevolucaoUpdateView.as_view(), name='devolver_form'),
-    path('devolver/mala/<int:pk>/', views.MalaDevolucaoUpdateView.as_view(), name='mala_devolucao_form'),
+    # -- URLs de Movimentação (Retirada e Devolução) --   
+    path('ferramentas/<int:ferramenta_pk>/retirar/', views.MovimentacaoCreateView.as_view(), name='retirar_ferramenta'),
+    path('malas/<int:mala_pk>/retirar/', views.MovimentacaoCreateView.as_view(), name='retirar_mala'),
+    path('movimentacoes/<int:pk>/devolver/', views.DevolucaoUpdateView.as_view(), name='devolver_movimentacao'),
+
 
     # -- URLs Utilitárias (QR Code, Importação, etc.) --
     path('qrcodes/gerar/', views.GerarQRCodesView.as_view(), name='gerar_qrcodes_view'),
@@ -44,7 +44,6 @@ urlpatterns = [
     path('termos/download-lote/', views.DownloadTermosLoteView.as_view(), name='termo_download_lote'),
     path('termos/<int:pk>/reverter/', views.ReverterTermoView.as_view(), name='termo_reverter'),
     path('termos/<int:pk>/enviar-link/', views.EnviarLinkAssinaturaView.as_view(), name='enviar_link_assinatura'),
-    # Rota pública — sem prefixo de autenticação, fora do namespace protegido se houver middleware
-    path('termo/assinar/<uuid:token>/', views.AssinarTermoRemotoView.as_view(), name='assinar_termo_remoto'),
+    
 ]
 

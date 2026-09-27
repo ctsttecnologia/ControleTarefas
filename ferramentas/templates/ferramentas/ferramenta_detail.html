@@ -84,7 +84,7 @@
                         {% if movimentacao_ativa and not ferramenta.mala %}
                         <div class="d-grid">
                             {% if perms.ferramentas.add_devolucao or user.is_superuser %}
-                            <a href="{% url 'ferramentas:devolver_form' pk=movimentacao_ativa.pk %}" class="btn btn-success">
+                            <a href="{% url 'ferramentas:devolver_movimentacao' pk=movimentacao_ativa.pk %}" class="btn btn-success">
                                 <i class="bi bi-box-arrow-in-left me-2"></i>Realizar Devolução
                             </a>
                             {% endif %}
@@ -195,6 +195,7 @@
                             <th>Retirada</th>
                             <th>Recebido por</th>
                             <th>Devolução</th>
+                            <th>Assinatura</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -216,9 +217,21 @@
                             <td>{{ mov.data_retirada|date:"d/m/y H:i" }}</td>
                             <td>{{ mov.recebido_por.get_full_name|default:"-" }}</td>
                             <td>{{ mov.data_devolucao|date:"d/m/y H:i"|default:"-" }}</td>
+                            <td>
+                                {% for assinatura in mov.assinaturas.all %}
+                                    {% if assinatura.pode_ser_assinado %}
+                                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                                onclick="gerarLinkAssinatura('ferramentas', 'assinaturamovimentacao', {{ assinatura.pk }}, this)">
+                                            <i class="bi bi-link-45deg"></i> Link Remoto ({{ assinatura.get_tipo_display }})
+                                        </button>
+                                    {% else %}
+                                        <span class="badge bg-success">Assinado</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="5" class="text-center text-muted py-3">Nenhuma movimentação.</td></tr>
+                        <tr><td colspan="6" class="text-center text-muted py-3">Nenhuma movimentação.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

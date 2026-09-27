@@ -8,18 +8,13 @@ from .models import (
     Ferramenta, Movimentacao, MalaFerramentas,
     TermoDeResponsabilidade, ItemTermo
 )
-
+from departamento_pessoal.models import Funcionario
 
 # =============================================================================
-# FORMULÁRIOS DE ITENS
+# FORMULÁRIOS DE ITENS (sem alterações)
 # =============================================================================
 
 class FerramentaForm(forms.ModelForm):
-    """
-    Formulário para criar/editar Ferramentas.
-    Recebe 'request' via kwargs para filtrar querysets por filial.
-    """
-
     class Meta:
         model = Ferramenta
         fields = [
@@ -71,11 +66,6 @@ class FerramentaForm(forms.ModelForm):
 
 
 class MalaFerramentasForm(forms.ModelForm):
-    """
-    Formulário para criar/editar Malas com seleção de ferramentas.
-    Recebe 'request' para filtrar ferramentas pela filial ativa.
-    """
-
     itens = forms.ModelMultipleChoiceField(
         queryset=Ferramenta.objects.none(),
         widget=forms.CheckboxSelectMultiple,
@@ -97,11 +87,8 @@ class MalaFerramentasForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         mala_pk = self.instance.pk if self.instance else None
-
-        # Base: ferramentas disponíveis para mala
         qs = Ferramenta.objects.ferramentas_disponiveis_para_mala(mala_instance_pk=mala_pk)
 
-        # Filtra pela filial ativa do request
         if self.request:
             qs = qs.for_request(self.request)
 
@@ -119,17 +106,14 @@ class MalaFerramentasForm(forms.ModelForm):
         ferramentas_selecionadas = set(self.cleaned_data['itens'])
         ferramentas_atuais = set(mala.itens.all())
 
-        # Remove ferramentas desmarcadas
         for f in ferramentas_atuais - ferramentas_selecionadas:
             f.mala = None
             f.save(update_fields=['mala'])
 
-        # Adiciona novas ferramentas
         for f in ferramentas_selecionadas - ferramentas_atuais:
             f.mala = mala
             f.save(update_fields=['mala'])
 
-        # Atualiza contagem
         mala.quantidade = len(ferramentas_selecionadas)
         mala.save(update_fields=['quantidade'])
 
@@ -142,10 +126,14 @@ class MalaFerramentasForm(forms.ModelForm):
 
 class MovimentacaoForm(forms.ModelForm):
     """
-    Formulário de retirada (Movimentação).
-    O campo 'retirado_por' é filtrado por usuários da filial ativa.
+    Formulário de retirada (Movimentacao).
+
+    ❌ REMOVIDO: campo `assinatura_base64` (era HiddenInput duplicado).
+       A assinatura agora é 100% responsabilidade da view, que chama
+       `AssinaturaMovimentacao.salvar_assinatura()` (via core.AssinavelMixin)
+       — incluindo validação de formato/tamanho e registro de IP.
+       O form só precisa dos campos "de negócio" da movimentação.
     """
-    assinatura_base64 = forms.CharField(widget=forms.HiddenInput(), required=True)
 
     class Meta:
         model = Movimentacao
@@ -167,7 +155,6 @@ class MovimentacaoForm(forms.ModelForm):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
 
-        # Filtra usuários pela filial ativa
         if self.request:
             from usuario.models import Usuario
 
@@ -200,11 +187,8 @@ class MovimentacaoForm(forms.ModelForm):
             instance.save()
         return instance
 
-
 class DevolucaoForm(forms.ModelForm):
-    """Formulário de devolução de ferramenta/mala."""
-    assinatura_base64 = forms.CharField(widget=forms.HiddenInput(), required=False)
-
+   
     class Meta:
         model = Movimentacao
         fields = ['condicoes_devolucao']
@@ -217,22 +201,44 @@ class DevolucaoForm(forms.ModelForm):
 
 
 # =============================================================================
-# FORMULÁRIOS UTILITÁRIOS
+# FORMULÁRIOS UTILITÁRIOS (reforçado — ver seção de segurança anterior)
 # =============================================================================
 
 class UploadFileForm(forms.Form):
-    """Upload de planilha Excel para importação."""
     file = forms.FileField(
         label="Selecione a planilha (.xlsx)",
         widget=forms.FileInput(attrs={'class': 'form-control', 'accept': '.xlsx'})
     )
 
+    ALLOWED_CONTENT_TYPES = {
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }
+    MAX_SIZE = 5 * 1024 * 1024
+    MAX_ROWS = 5000
+
     def clean_file(self):
         f = self.cleaned_data['file']
-        if not f.name.endswith('.xlsx'):
+
+        if not f.name.lower().endswith('.xlsx'):
             raise forms.ValidationError("Apenas arquivos .xlsx são aceitos.")
-        if f.size > 5 * 1024 * 1024:  # 5MB
+        if f.content_type not in self.ALLOWED_CONTENT_TYPES:
+            raise forms.ValidationError("Tipo de arquivo inválido.")
+        if f.size > self.MAX_SIZE:
             raise forms.ValidationError("Arquivo muito grande. Máximo: 5MB.")
+
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
+            ws = wb.active
+            if ws.max_row > self.MAX_ROWS:
+                raise forms.ValidationError(f"Planilha excede o limite de {self.MAX_ROWS} linhas.")
+        except forms.ValidationError:
+            raise
+        except Exception:
+            raise forms.ValidationError("Arquivo corrompido ou em formato inválido.")
+        finally:
+            f.seek(0)
+
         return f
 
 
@@ -242,10 +248,13 @@ class UploadFileForm(forms.Form):
 
 class TermoResponsabilidadeForm(forms.ModelForm):
     """
-    Formulário para criar Termos de Responsabilidade.
-    Todos os campos de FK são filtrados pela filial ativa via request.
+    ❌ REMOVIDO: `assinatura_base64`.
+    A assinatura local (modo_assinatura == 'local') é lida diretamente
+    de `request.POST` na view e processada via
+    `termo.salvar_assinatura()` (core.AssinavelMixin).
+
+    O modo remoto usa `TokenAssinaturaRemota.gerar()` — também fora do form.
     """
-    assinatura_base64 = forms.CharField(widget=forms.HiddenInput(), required=False)
 
     ferramentas_selecionadas = forms.ModelMultipleChoiceField(
         queryset=Ferramenta.objects.none(),
@@ -274,11 +283,8 @@ class TermoResponsabilidadeForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if request:
-            from departamento_pessoal.models import Funcionario
 
-            # ==========================================================
-            # FUNCIONÁRIOS: filtrados pela filial ativa + apenas ativos
-            # ==========================================================
+
             funcionarios_filial = Funcionario.objects.for_request(request).filter(
                 status='ATIVO'
             ).order_by('nome_completo')
@@ -286,20 +292,18 @@ class TermoResponsabilidadeForm(forms.ModelForm):
             self.fields['responsavel'].queryset = funcionarios_filial
             self.fields['separado_por'].queryset = funcionarios_filial
 
-            # ==========================================================
-            # FERRAMENTAS E MALAS: filtradas por filial + disponíveis
-            # ==========================================================
             self.fields['ferramentas_selecionadas'].queryset = (
                 Ferramenta.objects.for_request(request).disponiveis()
             )
             self.fields['malas_selecionadas'].queryset = (
-                MalaFerramentas.objects.for_request(request).filter(
-                    status=MalaFerramentas.Status.DISPONIVEL
-                )
+                MalaFerramentas.objects.for_request(request)
+                .filter(status=MalaFerramentas.Status.DISPONIVEL)
             )
-
 class ItemTermoForm(forms.ModelForm):
     class Meta:
         model = ItemTermo
-        fields = ['quantidade', 'unidade', 'item']
-
+        fields = ['quantidade', 'unidade', 'item', 'data_separacao', 'separado_por']
+        widgets = {
+            'data_separacao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'separado_por': forms.Select(attrs={'class': 'form-select'}),
+        }

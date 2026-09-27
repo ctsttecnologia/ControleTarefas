@@ -1,12 +1,8 @@
-<!-- ferramentas/retirada_form.html -->
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load widget_tweaks %}
 
 {% block ferramentas_page_title %}Retirada: {{ item.nome }}{% endblock %}
-
-{% block ferramentas_title %}
-    <i class="bi bi-box-arrow-right me-2"></i>Checklist de Retirada
-{% endblock %}
+{% block ferramentas_title %}<i class="bi bi-box-arrow-right me-2"></i>Checklist de Retirada{% endblock %}
 
 {% block ferramentas_actions %}
     <a href="{{ item.get_absolute_url }}" class="btn btn-outline-secondary">
@@ -18,12 +14,9 @@
 <style>
     .signature-pad-container {
         position: relative; width: 100%; height: 200px;
-        border: 2px dashed #dee2e6; border-radius: 0.5rem;
-        background: #f8f9fa;
+        border: 2px dashed #dee2e6; border-radius: 0.5rem; background: #f8f9fa;
     }
-    .signature-pad-container canvas {
-        position: absolute; left: 0; top: 0; width: 100%; height: 100%;
-    }
+    .signature-pad-container canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 </style>
 {% endblock %}
 
@@ -37,7 +30,6 @@
             </div>
             <div class="card-body p-4">
 
-                <!-- Lista de itens da mala se for mala -->
                 {% if item.itens.all %}
                 <div class="alert alert-info small">
                     <strong><i class="bi bi-info-circle me-1"></i>Itens inclusos na mala:</strong>
@@ -49,7 +41,7 @@
                 </div>
                 {% endif %}
 
-                <form method="post" novalidate>
+                <form method="post" novalidate id="form-retirada">
                     {% csrf_token %}
 
                     {% if form.non_field_errors %}
@@ -60,31 +52,36 @@
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label for="{{ form.retirado_por.id_for_label }}" class="form-label fw-bold">
-                                {{ form.retirado_por.label }} <span class="text-danger">*</span>
-                            </label>
+                            <label class="form-label fw-bold">{{ form.retirado_por.label }} <span class="text-danger">*</span></label>
                             {% render_field form.retirado_por class="form-select" %}
                             {% for e in form.retirado_por.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.data_devolucao_prevista.id_for_label }}" class="form-label fw-bold">
-                                {{ form.data_devolucao_prevista.label }} <span class="text-danger">*</span>
-                            </label>
+                            <label class="form-label fw-bold">{{ form.data_devolucao_prevista.label }} <span class="text-danger">*</span></label>
                             {% render_field form.data_devolucao_prevista class="form-control" %}
                             {% for e in form.data_devolucao_prevista.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="{{ form.condicoes_retirada.id_for_label }}" class="form-label fw-bold">
-                            {{ form.condicoes_retirada.label }} <span class="text-danger">*</span>
-                        </label>
-                        {% render_field form.condicoes_retirada class="form-control" rows="3" placeholder="Descreva o estado do item..." %}
+                        <label class="form-label fw-bold">{{ form.condicoes_retirada.label }} <span class="text-danger">*</span></label>
+                        {% render_field form.condicoes_retirada class="form-control" rows="3" %}
                         {% for e in form.condicoes_retirada.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                     </div>
 
-                    <!-- Assinatura -->
+                    <!-- Toggle de modo de assinatura -->
                     <div class="mb-3">
+                        <label class="form-label fw-bold">Como será assinado?</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="modo_assinatura" id="modo_local" value="local" checked>
+                            <label class="btn btn-outline-primary" for="modo_local"><i class="bi bi-pen"></i> Assinar agora</label>
+
+                            <input type="radio" class="btn-check" name="modo_assinatura" id="modo_remoto" value="remoto">
+                            <label class="btn btn-outline-primary" for="modo_remoto"><i class="bi bi-link-45deg"></i> Enviar link remoto</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="bloco-assinatura-local">
                         <label class="form-label fw-bold">Assinatura do Responsável <span class="text-danger">*</span></label>
                         <div class="signature-pad-container">
                             <canvas id="signature-pad"></canvas>
@@ -93,16 +90,14 @@
                             <i class="bi bi-eraser me-1"></i>Limpar
                         </button>
                     </div>
-                    {% render_field form.assinatura_base64 id="id_assinatura_base64" %}
+                    <input type="hidden" name="assinatura_base64" id="id_assinatura_base64">
 
                     <hr class="my-4">
                     <div class="d-flex justify-content-end gap-2">
                         <a href="{{ item.get_absolute_url }}" class="btn btn-outline-secondary">Cancelar</a>
-                        {% if perms.ferramentas.add_retirada or user.is_superuser %}
                         <button type="submit" class="btn btn-success px-4">
                             <i class="bi bi-check-lg me-1"></i>Confirmar Retirada
                         </button>
-                        {% endif %}
                     </div>
                 </form>
             </div>
@@ -113,5 +108,15 @@
 
 {% block ferramentas_extra_js %}
     {% include 'ferramentas/partials/signature_pad_js.html' %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const radios = document.querySelectorAll('input[name="modo_assinatura"]');
+        const bloco = document.getElementById('bloco-assinatura-local');
+        radios.forEach(r => r.addEventListener('change', function () {
+            bloco.style.display = this.value === 'local' ? 'block' : 'none';
+        }));
+    });
+    </script>
 {% endblock %}
+
 

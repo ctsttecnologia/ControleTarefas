@@ -128,6 +128,9 @@
         {% include 'chat/init_script.html' %}
     {% endif %}
 
+    <!-- 8.5. Assinatura Remota (genérico, disponível globalmente) -->
+    <script src="{% static 'core/js/assinatura_remota.js' %}"></script>
+
     <!-- 9. JS Específico da Página -->
     {% block extra_js %}{% endblock %}
 

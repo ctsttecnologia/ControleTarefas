@@ -22,17 +22,15 @@
 {% block ferramentas_content %}
 <div class="card shadow-sm">
 
-    <!-- ================================================================
-       FILTROS
-       ================================================================ -->
+    <!-- FILTROS -->
     <div class="card-header p-3">
         <form method="get" class="row g-2 align-items-center">
             <div class="col-lg-4 col-md-6">
                 <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                    <input type="text" name="q" class="form-control border-start-0"
+                    <span class="input-group-text bg-adaptive"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" class="form-control"
                            placeholder="Buscar por responsável, contrato ou nº..."
-                           value="{{ query|default:'' }}">
+                           value="{{ query|default:'' }}" maxlength="100">
                 </div>
             </div>
             <div class="col-lg-3 col-md-4">
@@ -48,50 +46,42 @@
                     <i class="bi bi-funnel me-1"></i>Filtrar
                 </button>
                 {% if query or status_atual %}
-                {% if perms.ferramentas.view_termoderesponsabilidade or user.is_superuser %}
                 <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-outline-secondary" title="Limpar filtros">
                     <i class="bi bi-x-lg"></i>
                 </a>
-                {% endif %}
                 {% endif %}
             </div>
         </form>
     </div>
 
-    <!-- ================================================================
-       TABELA
-       ================================================================ -->
+    <!-- TABELA -->
     <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
                 <tr>
-                    <th class="ps-3" style="width: 60px;">#</th>
+                    <th class="ps-3" style="width: 60px;">Nº</th>
                     <th>Responsável</th>
                     <th>Contrato</th>
                     <th>Tipo</th>
                     <th>Emissão</th>
                     <th class="text-center">Status</th>
-                    <th class="text-center" style="width: 140px;">Ações</th>
+                    <th class="text-center" style="width: 90px;">Ações</th>
                 </tr>
             </thead>
             <tbody>
                 {% for termo in termos %}
                 <tr>
-                    <!-- Nº do Termo -->
                     <td class="ps-3">
                         <span class="fw-bold text-muted">#{{ termo.pk }}</span>
                     </td>
 
-                    <!-- Responsável -->
                     <td>
-                        <div class="fw-semibold">{{ termo.responsavel }}</div>
+                        <div class="fw-semibold text-strong">{{ termo.responsavel }}</div>
                         <small class="text-muted">{{ termo.filial.nome }}</small>
                     </td>
 
-                    <!-- Contrato -->
                     <td class="small">{{ termo.contrato|truncatechars:30 }}</td>
 
-                    <!-- Tipo -->
                     <td>
                         {% if termo.tipo_uso == 'FER' %}
                             <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">
@@ -104,10 +94,8 @@
                         {% endif %}
                     </td>
 
-                    <!-- Data -->
                     <td class="small">{{ termo.data_emissao|date:"d/m/Y" }}</td>
 
-                    <!-- Status -->
                     <td class="text-center">
                         {% if termo.status == 'ativo' %}
                             <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">
@@ -122,7 +110,6 @@
                                 <i class="bi bi-x-circle me-1"></i>Estornado
                             </span>
                         {% else %}
-                            <!-- Fallback para termos antigos sem campo status -->
                             {% if termo.is_signed %}
                                 <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">
                                     <i class="bi bi-check-circle me-1"></i>Assinado
@@ -135,18 +122,17 @@
                         {% endif %}
                     </td>
 
-                    <!-- Ações -->
                     <td class="text-center">
-                        <div class="btn-group btn-group-sm">
+                        <div class="action-buttons">
                             {% if perms.ferramentas.view_termoderesponsabilidade or user.is_superuser %}
                             <a href="{% url 'ferramentas:termo_detail' pk=termo.pk %}"
-                               class="btn btn-outline-primary" title="Ver Detalhes">
+                               class="btn btn-outline-primary action-btn" title="Ver Detalhes">
                                 <i class="bi bi-eye"></i>
                             </a>
                             {% endif %}
                             {% if perms.ferramentas.download_termo_pdf or user.is_superuser %}
                             <a href="{% url 'ferramentas:termo_pdf_download' pk=termo.pk %}"
-                               class="btn btn-outline-secondary" title="Baixar PDF">
+                               class="btn btn-outline-secondary action-btn" title="Baixar PDF">
                                 <i class="bi bi-file-pdf"></i>
                             </a>
                             {% endif %}
@@ -155,9 +141,9 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="text-center py-5">
-                        <i class="bi bi-inbox display-4 text-muted d-block mb-2"></i>
-                        <h6 class="text-muted">Nenhum termo encontrado.</h6>
+                    <td colspan="7" class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <h6>Nenhum termo encontrado.</h6>
                         {% if query or status_atual %}
                             <p class="text-muted small">Tente ajustar os filtros de busca.</p>
                         {% endif %}
@@ -173,14 +159,11 @@
         </table>
     </div>
 
-    <!-- ================================================================
-       PAGINAÇÃO
-       ================================================================ -->
+    <!-- PAGINAÇÃO -->
     {% if is_paginated %}
     <div class="card-footer">
         <nav aria-label="Paginação">
             <ul class="pagination pagination-sm justify-content-center mb-0">
-                <!-- Anterior -->
                 {% if page_obj.has_previous %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}">
@@ -191,7 +174,6 @@
                 <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
                 {% endif %}
 
-                <!-- Números de página -->
                 {% for i in paginator.page_range %}
                     {% if page_obj.number == i %}
                     <li class="page-item active"><span class="page-link">{{ i }}</span></li>
@@ -202,7 +184,6 @@
                     {% endif %}
                 {% endfor %}
 
-                <!-- Próxima -->
                 {% if page_obj.has_next %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}">
@@ -218,4 +199,5 @@
     {% endif %}
 </div>
 {% endblock %}
+
 

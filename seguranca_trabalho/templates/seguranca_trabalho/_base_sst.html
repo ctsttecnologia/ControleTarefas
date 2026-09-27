@@ -6,9 +6,7 @@
 {% block title %}SST - {{ block.super }}{% endblock %}
 
 {% block extra_css %}
-            
-    <script src="{% static 'seguranca_trabalho/js/assinatura_remota.js' %}"></script>
-            
+                        
 {{ block.super }}
 <style>
     /* ═══════════════════════════════════════════════════════
@@ -1206,7 +1204,7 @@
                     <li class="nav-item">
                         <a href="{% url 'seguranca_trabalho:dashboard' %}"
                            class="sst-nav-link {% if request.resolver_match and 'dashboard' in request.resolver_match.url_name %}
-active{% endif %}">
+                            active{% endif %}">
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
                     </li>

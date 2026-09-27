@@ -40,16 +40,23 @@ class AssinavelMixin(models.Model):
     class Meta:
         abstract = True
 
+    def gerar_token_assinatura(self, usuario=None, horas_validade=48):
+        return TokenAssinaturaRemota.gerar(self, usuario=usuario, horas_validade=horas_validade)
+
+    def get_link_assinatura(self, token_obj, request=None):
+        from django.urls import reverse
+        path = reverse('core:assinatura_remota', kwargs={'token': token_obj.token})
+        return request.build_absolute_uri(path) if request else path
+
+
     def assinar_remotamente(self, post_data, files_data, ip=None):
-        """
-        Wrapper para uso na assinatura remota (via link/token).
-        Reaproveita a lógica já existente de salvar_assinatura().
-        """
+        from django.core.exceptions import ValidationError  # já importado no topo do arquivo
+
         assinatura_base64 = post_data.get('assinatura_base64')
         imagem_upload = files_data.get('assinatura_imagem')
 
         if not assinatura_base64 and not imagem_upload:
-            raise ValueError("Nenhuma assinatura foi enviada.")
+            raise ValidationError("Nenhuma assinatura foi enviada. Por favor, assine antes de confirmar.")
 
         self.salvar_assinatura(
             assinatura_base64=assinatura_base64,

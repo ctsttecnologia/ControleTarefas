@@ -1,5 +1,5 @@
 
-{# templates/core/assinatura_remota_form.html #}
+<!-- templates/core/assinatura_remota_form.html -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -10,7 +10,75 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
-        body { background-color: #f5f6f8; }
+        :root {
+            --pub-bg: #f5f6f8;
+            --pub-card-bg: #ffffff;
+            --pub-text: #1a1a1a;
+            --pub-text-muted: #6c757d;
+            --pub-border: #dee2e6;
+            --pub-canvas-bg: #ffffff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --pub-bg: #14161f;
+                --pub-card-bg: #1e2130;
+                --pub-text: #e2e8f0;
+                --pub-text-muted: #94a3b8;
+                --pub-border: #2d3348;
+            }
+        }
+
+        body {
+            background-color: var(--pub-bg);
+            color: var(--pub-text);
+        }
+
+        .card {
+            background-color: var(--pub-card-bg);
+            border-color: var(--pub-border);
+            color: var(--pub-text);
+        }
+
+        .text-muted {
+            color: var(--pub-text-muted) !important;
+        }
+
+        .nav-tabs .nav-link {
+            color: var(--pub-text-muted);
+        }
+
+        .nav-tabs .nav-link.active {
+            background-color: var(--pub-card-bg);
+            color: var(--pub-text);
+            border-color: var(--pub-border) var(--pub-border) var(--pub-card-bg);
+        }
+
+        .tab-content {
+            border-color: var(--pub-border) !important;
+        }
+
+        .form-control {
+            background-color: var(--pub-card-bg);
+            color: var(--pub-text);
+            border-color: var(--pub-border);
+        }
+
+        .form-control:focus {
+            background-color: var(--pub-card-bg);
+            color: var(--pub-text);
+        }
+
+        /* Canvas de assinatura sempre com fundo branco fixo (contraste garantido p/ tinta preta) */
+        #signature-canvas-remoto {
+            background-color: var(--pub-canvas-bg);
+        }
+
+        .alert-secondary {
+            background-color: rgba(148, 163, 184, 0.15);
+            color: var(--pub-text);
+            border-color: var(--pub-border);
+        }
     </style>
 </head>
 <body>
@@ -39,6 +107,10 @@
                         com o seu conteúdo. Seus dados (assinatura, IP e horário) serão
                         registrados exclusivamente para fins de comprovação deste ato, em
                         conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).
+                        Consulte nossa
+                        <a href="{% url 'core:politica_privacidade' %}" target="_blank" rel="noopener">
+                            Política de Privacidade
+                        </a>.
                     </div>
 
                     <div class="form-check mb-4">
@@ -71,7 +143,7 @@
                         <!-- Desenhar -->
                         <div class="tab-pane fade show active" id="draw-pane-remoto" role="tabpanel">
                             <label class="form-label fw-semibold">Campo para Assinatura:</label>
-                            <div class="border rounded bg-white position-relative" style="height: 200px;">
+                            <div class="border rounded position-relative" style="height: 200px; background-color: var(--pub-canvas-bg);">
                                 <canvas id="signature-canvas-remoto" style="width: 100%; height: 100%; cursor: crosshair;"></canvas>
                             </div>
                             <input type="hidden" name="assinatura_base64" id="assinatura_base64_remoto">
@@ -121,6 +193,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const MAX_UPLOAD_MB = 2;
     let signaturePad;
+    let jaEnviando = false;
 
     function atualizarBotaoSalvar() {
         btnSalvar.disabled = !checkboxConsentimento.checked;
@@ -181,9 +254,17 @@ document.addEventListener('DOMContentLoaded', function () {
             checkboxConsentimento.focus();
             return;
         }
+        if (jaEnviando) {
+            // evita duplo submit (clique duplo)
+            e.preventDefault();
+            return;
+        }
         if (signaturePad && !signaturePad.isEmpty()) {
             hiddenInput.value = signaturePad.toDataURL('image/png');
         }
+        jaEnviando = true;
+        btnSalvar.disabled = true;
+        btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
     });
 
     atualizarBotaoSalvar();

@@ -1,23 +1,26 @@
-
 # ferramentas/admin.py
 
 from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
-# Importa o modelo MalaFerramentas
-from .models import Atividade, Ferramenta, MalaFerramentas, Movimentacao
-from django.contrib import admin
-from .models import TermoDeResponsabilidade, ItemTermo
 from django.contrib.auth import get_user_model
+
+from .models import (
+    Atividade, Ferramenta, MalaFerramentas, Movimentacao,
+    AssinaturaMovimentacao, TermoDeResponsabilidade, ItemTermo
+)
 
 User = get_user_model()
 
-#  Inline para mostrar as ferramentas DENTRO de uma Mala
+
+# =============================================================================
+# INLINE: Ferramentas dentro de uma Mala (mantido)
+# =============================================================================
+
 class FerramentaInline(admin.TabularInline):
-    """Permite visualizar e editar as ferramentas que pertencem a uma mala."""
     model = Ferramenta
-    extra = 0  # Não mostra formulários extras para adicionar novas
+    extra = 0
     fields = ('nome', 'codigo_identificacao', 'status', 'link_para_ferramenta')
     readonly_fields = ('nome', 'codigo_identificacao', 'status', 'link_para_ferramenta')
     verbose_name = "Item na Mala"
@@ -29,20 +32,19 @@ class FerramentaInline(admin.TabularInline):
         return format_html('<a href="{}">Ver Detalhes</a>', url)
 
     def has_add_permission(self, request, obj=None):
-        return False # A adição de ferramentas a uma mala deve ser feita na própria ferramenta
+        return False
 
     def has_delete_permission(self, request, obj=None):
-        return False # A remoção também
+        return False
 
 
-# Registro completo para o modelo MalaFerramentas
 @admin.register(MalaFerramentas)
 class MalaFerramentasAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     list_display = ('nome', 'codigo_identificacao', 'status', 'filial', 'contagem_itens', 'qr_code_preview')
     list_filter = ('status', 'filial')
     search_fields = ('nome', 'codigo_identificacao')
     readonly_fields = ('qr_code_preview',)
-    inlines = [FerramentaInline] # Adiciona o inline de ferramentas aqui
+    inlines = [FerramentaInline]
 
     fieldsets = (
         ('Informações Principais', {
@@ -63,16 +65,13 @@ class MalaFerramentasAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin
     def contagem_itens(self, obj):
         return obj.itens.count()
 
-#  FerramentaAdmin agora mostra a qual mala pertence
+
 @admin.register(Ferramenta)
 class FerramentaAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
-    # Adicionado 'mala' ao list_display e list_filter
     list_display = ('nome', 'patrimonio', 'status', 'mala', 'filial', 'qr_code_preview')
     list_filter = ('status', 'fabricante_marca', 'modelo', 'data_aquisicao', 'filial', 'mala')
     search_fields = ('nome', 'patrimonio', 'codigo_identificacao')
-    readonly_fields = ('qr_code_preview',) # 'filial' removido daqui para ser editável se necessário
-    
-    #  Usando raw_id_fields para o campo 'mala' para melhor performance
+    readonly_fields = ('qr_code_preview',)
     raw_id_fields = ('mala',)
 
     fieldsets = (
@@ -94,28 +93,66 @@ class FerramentaAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Mode
             return format_html('<img src="{}" width="100" />', obj.qr_code.url)
         return "Será gerado ao salvar"
 
-#  MovimentacaoAdmin agora mostra o item correto (Ferramenta ou Mala)
+
+# =============================================================================
+# INLINE: Assinaturas dentro de Movimentacao (NOVO — via core.AssinavelMixin)
+# =============================================================================
+
+class AssinaturaMovimentacaoInline(admin.TabularInline):
+    """
+    Exibe as assinaturas (retirada/devolução) vinculadas à movimentação.
+    Somente leitura — assinaturas nunca devem ser editadas via admin
+    (dado sensível / integridade probatória).
+    """
+    model = AssinaturaMovimentacao
+    extra = 0
+    fields = ('tipo', 'assinatura_preview', 'data_assinatura', 'ip_assinatura')
+    readonly_fields = ('tipo', 'assinatura_preview', 'data_assinatura', 'ip_assinatura')
+    verbose_name = "Assinatura"
+    verbose_name_plural = "Assinaturas"
+
+    @admin.display(description="Assinatura")
+    def assinatura_preview(self, obj):
+        if obj.assinatura_imagem:
+            return format_html(
+                '<img src="{}" width="150" height="50" style="border: 1px solid #ccc;" />',
+                obj.assinatura_imagem.url
+            )
+        return "Não fornecida"
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Movimentacao)
 class MovimentacaoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
-    # 'item_movimentado_link' substitui 'ferramenta'
     list_display = ('item_movimentado_link', 'retirado_por', 'data_retirada', 'esta_ativa', 'filial')
     list_filter = ('data_retirada', 'filial')
-    # Busca por nome da ferramenta ou da mala
     search_fields = ('ferramenta__nome', 'mala__nome', 'retirado_por__username')
+
+    # ❌ Removidos: assinatura_retirada_preview, assinatura_devolucao_preview
+    #    (agora vêm do inline AssinaturaMovimentacaoInline)
     readonly_fields = (
         'ferramenta', 'mala', 'filial', 'retirado_por', 'data_retirada', 'data_devolucao_prevista',
-        'condicoes_retirada', 'assinatura_retirada_preview', 'recebido_por',
-        'data_devolucao', 'condicoes_devolucao', 'assinatura_devolucao_preview'
+        'condicoes_retirada', 'recebido_por', 'data_devolucao', 'condicoes_devolucao',
     )
+    inlines = [AssinaturaMovimentacaoInline]
+
     fieldsets = (
         ('Item Movimentado', {
             'fields': ('ferramenta', 'mala')
         }),
         ('Dados da Retirada', {
-            'fields': ('filial', 'retirado_por', 'data_retirada', 'data_devolucao_prevista', 'condicoes_retirada', 'assinatura_retirada_preview')
+            'fields': ('filial', 'retirado_por', 'data_retirada', 'data_devolucao_prevista', 'condicoes_retirada')
         }),
         ('Dados da Devolução', {
-            'fields': ('recebido_por', 'data_devolucao', 'condicoes_devolucao', 'assinatura_devolucao_preview')
+            'fields': ('recebido_por', 'data_devolucao', 'condicoes_devolucao')
         }),
     )
 
@@ -130,26 +167,18 @@ class MovimentacaoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Mo
             return format_html('<b>Mala:</b> <a href="{}">{}</a>', url, item)
         return "N/A"
 
-    @admin.display(description="Assinatura (Retirada)")
-    def assinatura_retirada_preview(self, obj):
-        if obj.assinatura_retirada:
-            return format_html('<img src="{}" width="150" height="50" style="border: 1px solid #ccc;" />', obj.assinatura_retirada.url)
-        return "Não fornecida"
+    def has_add_permission(self, request):
+        return False
 
-    @admin.display(description="Assinatura (Devolução)")
-    def assinatura_devolucao_preview(self, obj):
-        if obj.assinatura_devolucao:
-            return format_html('<img src="{}" width="150" height="50" style="border: 1px solid #ccc;" />', obj.assinatura_devolucao.url)
-        return "Não fornecida"
+    def has_change_permission(self, request, obj=None):
+        return False
 
-    def has_add_permission(self, request): return False
-    def has_change_permission(self, request, obj=None): return False
-    def has_delete_permission(self, request, obj=None): return False
+    def has_delete_permission(self, request, obj=None):
+        return False
 
-# [ATUALIZADO] AtividadeAdmin agora mostra o item correto (Ferramenta ou Mala)
+
 @admin.register(Atividade)
 class AtividadeAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
-    # [MELHORIA] 'item_afetado' substitui 'ferramenta'
     list_display = ('timestamp', 'item_afetado', 'tipo_atividade', 'usuario', 'filial')
     list_filter = ('tipo_atividade', 'timestamp', 'filial')
     search_fields = ('ferramenta__nome', 'mala__nome', 'descricao', 'usuario__username')
@@ -159,52 +188,62 @@ class AtividadeAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Model
     def item_afetado(self, obj):
         return obj.ferramenta or obj.mala or "N/A"
 
-    def has_add_permission(self, request): return False
-    def has_change_permission(self, request, obj=None): return False
-    def has_delete_permission(self, request, obj=None): return False
+    def has_add_permission(self, request):
+        return False
 
-# Termos de responsabilidade
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+# =============================================================================
+# TERMOS DE RESPONSABILIDADE (adaptado ao AssinavelMixin)
+# =============================================================================
 
 class ItemTermoInline(admin.TabularInline):
     model = ItemTermo
-    extra = 1 # Quantidade de formulários extras para adicionar
-    
-    # Campos que serão exibidos no inline
-    fields = ['quantidade', 'unidade', 'item', 'ferramenta', 'mala'] 
-    
-    # Você pode querer customizar o formulário para ter lógica condicional aqui (mais complexo)
-    # Por exemplo: fazer 'ferramenta' ou 'mala' serem obrigatórios com base no termo principal.
+    extra = 1
+    fields = ['quantidade', 'unidade', 'item', 'ferramenta', 'mala']
 
 
 @admin.register(TermoDeResponsabilidade)
 class TermoDeResponsabilidadeAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     inlines = [ItemTermoInline]
-    
-    # ATUALIZADO: Trocamos 'data_criacao' por 'data_emissao' e adicionamos outros campos úteis.
-    list_display = ('id', 'responsavel', 'contrato', 'data_emissao', 'is_signed', 'filial')
-    
-    # ATUALIZADO: Adicionado filtro por filial e data de emissão.
-    list_filter = ('filial', 'tipo_uso', 'data_emissao')
-    
-    # CORRIGIDO: 'contrato' agora é um CharField e 'responsavel' busca pelo nome_completo.
-    search_fields = ('responsavel__nome_completo', 'contrato') 
-    
-    readonly_fields = ('data_recebimento', 'assinatura_data', 'movimentado_por')
 
-    # CORRIGIDO: Campos 'coordenador' e 'data_criacao' foram atualizados para 'separado_por' e 'data_emissao'.
+    list_display = ('id', 'responsavel', 'contrato', 'data_emissao', 'is_signed', 'filial')
+    list_filter = ('filial', 'tipo_uso', 'data_emissao')
+    search_fields = ('responsavel__nome_completo', 'contrato')
+
+    # ❌ token_assinatura removido (agora vive em TokenAssinaturaRemota, genérico, no core)
+    # ✅ assinatura_imagem/data_assinatura/ip_assinatura vêm do AssinavelMixin
+    readonly_fields = ('assinatura_preview', 'data_assinatura', 'ip_assinatura', 'movimentado_por')
+
     fieldsets = (
         ('Informações do Termo', {
             'fields': ('tipo_uso', 'contrato', 'responsavel', 'separado_por', 'data_emissao', 'filial')
         }),
         ('Controle de Assinatura (Gerado pelo Sistema)', {
-            'classes': ('collapse',), # Oculta por padrão para uma interface mais limpa
-            'fields': ('data_recebimento', 'assinatura_data', 'movimentado_por')
+            'classes': ('collapse',),
+            'fields': ('assinatura_preview', 'data_assinatura', 'ip_assinatura', 'movimentado_por')
         }),
     )
 
+    @admin.display(description="Assinatura")
+    def assinatura_preview(self, obj):
+        if obj.assinatura_imagem:
+            return format_html(
+                '<img src="{}" width="150" height="50" style="border: 1px solid #ccc;" />',
+                obj.assinatura_imagem.url
+            )
+        return "Não fornecida"
+
+    @admin.display(description="Assinado?", boolean=True)
+    def is_signed(self, obj):
+        return obj.is_signed()
+
     def save_model(self, request, obj, form, change):
-        # Garante que o usuário logado que está fazendo a movimentação seja registrado
         if not obj.pk:
             obj.movimentado_por = request.user
         super().save_model(request, obj, form, change)
-

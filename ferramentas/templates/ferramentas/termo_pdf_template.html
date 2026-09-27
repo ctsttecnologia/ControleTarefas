@@ -6,87 +6,199 @@
     <title>Termo de Responsabilidade - {{ termo.pk }}</title>
     <style>
         @page { size: A4; margin: 2cm; }
-        body { font-family: Arial, sans-serif; font-size: 11pt; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1 { font-size: 16pt; margin: 0; }
-        .header h2 { font-size: 14pt; margin: 5px 0 20px 0; border-bottom: 2px solid #000; padding-bottom: 5px; }
-        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .info-table td { padding: 5px; border: 1px solid #ccc; }
-        .info-table .label { font-weight: bold; width: 120px; }
-        .declaracao { text-align: justify; margin-bottom: 25px; line-height: 1.5; }
-        .items-table { width: 100%; border-collapse: collapse; }
-        .items-table th, .items-table td { border: 1px solid #000; padding: 8px; text-align: center; }
-        .items-table th { background-color: #f2f2f2; }
-        .assinatura { margin-top: 60px; }
-        .assinatura-linha { border-bottom: 1px solid #000; width: 300px; margin: 40px auto 0 auto; }
-        .assinatura-texto { text-align: center; }
+        body { font-family: Arial, sans-serif; font-size: 11pt; color: #000; }
+
+        /* ═══ LOGOMARCA + TÍTULO ═══ */
+        .logo-header {
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1.5px solid #000;
+        }
+
+        .logo-header table {
+            width: 100%;
+            border: none;
+        }
+
+        .logo-header table td {
+            border: none;
+            vertical-align: middle;
+        }
+
+        .logo-header img {
+            max-height: 40px;
+            max-width: 180px;
+        }
+
+        .logo-header .logo-texto {
+            font-size: 14pt;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        /* ═══ SEÇÕES ═══ */
+        .secao-titulo {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 0;
+            text-align: left;
+        }
+
+        .secao-subtitulo {
+            font-size: 11pt;
+            font-weight: bold;
+            margin-top: 2px;
+            text-align: left;
+        }
+
+        .rodape-sistema {
+            margin-top: 8px;
+            font-size: 6.5pt;
+            color: #999;
+            text-align: center;
+        }
+
+        .header { text-align: center; margin-bottom: 15px; }
+        .header h1 { font-size: 16pt; margin: 0; letter-spacing: 2px; }
+        .header h2 { font-size: 13pt; margin: 5px 0 15px 0; border-bottom: 2px solid #000; padding-bottom: 5px; }
+
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10.5pt; }
+        .info-table td { padding: 4px 6px; border: 1px solid #000; }
+        .info-table .label { font-weight: bold; width: 110px; background: #f2f2f2; }
+
+        .declaracao { text-align: justify; margin: 15px 0 20px 0; line-height: 1.5; font-size: 10.5pt; }
+
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+        .items-table th, .items-table td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            text-align: center;
+            font-size: 10pt;
+        }
+        .items-table th { background-color: #f2f2f2; font-weight: bold; }
+        .items-table td.item-desc { text-align: left; }
+
+        .assinatura-bloco { margin-top: 50px; page-break-inside: avoid; }
+        .assinatura-imagem-wrap { text-align: center; margin-bottom: 5px; min-height: 60px; }
+        .assinatura-imagem-wrap img { max-height: 60px; }
+        .assinatura-linha { border-bottom: 1px solid #000; width: 320px; margin: 0 auto; }
+        .assinatura-texto { text-align: center; font-size: 10pt; margin-top: 4px; }
+        .assinatura-data { text-align: center; font-size: 9pt; color: #333; margin-top: 2px; }
+        .items-table td img {
+            max-height: 25px;
+            max-width: 60px;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>CETEST</h1>
-        <h2>TERMO DE RESPONSABILIDADE</h2>
+    <div class="logo-header">
+        <table>
+            <tr>
+                <td style="width:70%;">
+                    <div class="secao-titulo">TERMO DE RESPONSABILIDADE</div>
+                    <div class="secao-subtitulo">CETEST ENGENHARIA E SERVIÇOS LTDA</div>
+                </td>
+                <td style="width:30%; text-align:right;">
+                    {% if logo_base64 %}
+                        <img src="{{ logo_base64 }}" alt="Logo">
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+        <div style="font-size: 6.5pt; color: #999; margin-top: 6px; text-align:center;">
+            Documento confidencial — contém dados pessoais protegidos pela LGPD (Lei nº 13.709/2018)
+        </div>
     </div>
 
     <table class="info-table">
         <tr>
-            <td class="label">Separado por:</td>
+            <td class="label">Coordenador:</td>
             <td>{{ termo.separado_por.nome_completo|default:"N/A" }}</td>
-            <td class="label">Data de Emissão:</td>
-            <td>{{ termo.data_emissao|date:"d/m/Y" }}</td>
+            <td class="label">Contrato:</td>
+            <td>{{ termo.contrato }}</td>
         </tr>
         <tr>
             <td class="label">Responsável:</td>
             <td>{{ termo.responsavel.nome_completo }}</td>
             <td class="label">Recebido em:</td>
-            <td>{{ termo.data_recebimento|date:"d/m/Y H:i"|default:"Pendente" }}</td>
-        </tr>
-        <tr>
-            <td class="label">Contrato:</td>
-            <td colspan="3">{{ termo.contrato }}</td>
+            <td>
+                {% if termo.data_assinatura %}
+                    {{ termo.data_assinatura|date:"d/m/Y" }}
+                {% else %}
+                    Pendente
+                {% endif %}
+            </td>
         </tr>
     </table>
 
     <p class="declaracao">
         Declaro através deste Termo de Responsabilidade, que se encontra sob minha
-        responsabilidade os equipamentos conforme descrito abaixo. Estou ciente que, em caso de
-        perda e uso indevido, ocasionando danos, será reembolsado a importância referente ao
-        preço de reposição da mesma. A utilização é para fins das atividades Cetest não podendo ser utilizado para outros fins.
+        responsabilidade os equipamentos conforme descrito abaixo, estou ciente que, em caso de
+        perda e uso indevido, ocasionando danos será reembolsado a importância referente ao
+        preço de reposição da mesma.
     </p>
 
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width:15%;">QTDA.</th>
-                <th style="width:15%;">UN</th>
+                <th style="width:12%;">Data</th>
+                <th style="width:10%;">QTDA.</th>
+                <th style="width:10%;">UN</th>
                 <th>ITEM</th>
+                <th style="width:18%;">Separado</th>
+                <th style="width:15%;">Ass.</th>
             </tr>
         </thead>
         <tbody>
-            {% for item in termo.itens.all %}
+                {% for item in termo.itens.all %}
+                <tr>
+                    <td>{{ item.data_separacao|date:"d/m/Y"|default:"-" }}</td>
+                    <td>{{ item.quantidade }}</td>
+                    <td>{{ item.unidade }}</td>
+                    <td class="item-desc">{{ item.item }}</td>
+                    <td>{{ item.separado_por.nome_completo|default:"-" }}</td>
+                    <td>
+                        {% if assinatura_base64 %}
+                            <img src="{{ assinatura_base64 }}" alt="Assinatura" style="max-height: 25px; max-width: 60px;">
+                        {% else %}
+                            &nbsp;
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
             <tr>
-                <td>{{ item.quantidade }}</td>
-                <td>{{ item.unidade }}</td>
-                <td style="text-align: left;">{{ item.item }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="3">Nenhum item associado a este termo.</td>
+                <td colspan="6">Nenhum item associado a este termo.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <div class="assinatura">
-        {% if termo.assinatura_data %}
-            <div class="assinatura-texto">
-                <img src="{{ termo.assinatura_data }}" alt="Assinatura" style="max-height: 80px; display: block; margin: 0 auto;">
-            </div>
-        {% endif %}
+    <p class="declaracao" style="margin-top:-10px;">
+        A utilização é para fins das atividades Cetest não podendo ser utilizado para outros fins.
+    </p>
+
+    <div class="assinatura-bloco">
+        <div class="assinatura-imagem-wrap">
+            {% if assinatura_base64 %}
+                <img src="{{ assinatura_base64 }}" alt="Assinatura">
+            {% endif %}
+        </div>
         <div class="assinatura-linha"></div>
-        <div class="assinatura-texto">{{ termo.responsavel.nome_completo }}</div>
+        <div class="assinatura-texto"><strong>{{ termo.responsavel.nome_completo }}</strong></div>
+        <div class="assinatura-data">
+            {% if termo.data_assinatura %}
+                Assinado em {{ termo.data_assinatura|date:"d/m/Y H:i" }}
+                {% if termo.ip_assinatura %} — IP: {{ termo.ip_assinatura }}{% endif %}
+            {% else %}
+                Ass.: __________________________________
+            {% endif %}
+        </div>
+    </div>
+    <div class="rodape-sistema">
+        Documento gerado em {% now "d/m/Y H:i" %} 
+        Cetest Engenharia e Serviços Ltda — Sistema de Gestão de Ferramentas
     </div>
 </body>
 </html>
-
 

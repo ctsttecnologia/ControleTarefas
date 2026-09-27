@@ -15,14 +15,19 @@
 {% endblock %}
 
 {% block ferramentas_extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"
+      integrity="sha384-OXVF05DQEe311p6ohU11NwlnX08FzMCsyoXzGOaL+83dKAb3qS17yZJxESl8YrJQ"
+      crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
+      integrity="sha384-IrMr0LFnIMa9H6HhC5VVqVuWNEIwspnRLKQc0SUyPj4Cy4s02DiWDZEoJOo5WNK6"
+      crossorigin="anonymous" />
+
 <style>
     .signature-pad-wrapper {
         position: relative;
         width: 100%;
         height: 200px;
-        border: 2px dashed #dee2e6;
+        border: 2px dashed var(--bs-border-color);
         border-radius: 0.5rem;
         background: #fff;
         cursor: crosshair;
@@ -43,23 +48,61 @@
         min-height: 38px;
     }
     .modo-assinatura-card {
-        border: 2px solid #dee2e6;
+        border: 1px solid var(--bs-border-color);
         border-radius: 0.5rem;
         padding: 1rem;
         cursor: pointer;
         transition: all 0.2s;
         height: 100%;
+        background-color: var(--surface-elevated);
+        color: var(--bs-body-color);
     }
     .modo-assinatura-card:hover {
-        border-color: #0d6efd;
-        background-color: #f8f9fa;
+        border-color: var(--bs-primary);
+        background-color: var(--surface-hover);
     }
     .modo-assinatura-card.active {
-        border-color: #0d6efd;
-        background-color: #e7f1ff;
+        border-color: var(--bs-primary);
+        background-color: rgba(var(--bs-primary-rgb), 0.08);
     }
     .modo-assinatura-card input[type="radio"] {
         display: none;
+    }
+    /* ===== Select2 — Dark Mode Fix ===== */
+    [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection,
+    [data-bs-theme="dark"] .select2-dropdown {
+        background-color: var(--surface-elevated) !important;
+        color: var(--bs-body-color) !important;
+        border-color: var(--bs-border-color) !important;
+    }
+
+    [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection__choice {
+        background-color: var(--bs-primary) !important;
+        color: #fff !important;
+        border-color: var(--bs-primary) !important;
+    }
+
+    [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection__choice__remove {
+        color: #fff !important;
+    }
+
+    [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option {
+        background-color: var(--surface-elevated) !important;
+        color: var(--bs-body-color) !important;
+    }
+
+    [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted {
+        background-color: var(--bs-primary) !important;
+        color: #fff !important;
+    }
+
+    [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-search__field {
+        background-color: var(--surface-elevated) !important;
+        color: var(--bs-body-color) !important;
+    }
+
+    [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection__placeholder {
+        color: var(--bs-secondary-color) !important;
     }
 </style>
 {% endblock %}
@@ -68,7 +111,6 @@
 <form method="post" id="termoForm" novalidate>
     {% csrf_token %}
 
-    <!-- Erros gerais -->
     {% if form.non_field_errors %}
     <div class="alert alert-danger alert-dismissible fade show">
         {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
@@ -92,7 +134,7 @@
                     <label for="{{ form.contrato.id_for_label }}" class="form-label">
                         Contrato <span class="text-danger">*</span>
                     </label>
-                    {% render_field form.contrato class="form-control" placeholder="Ex: CETEST-2026/001" %}
+                    {% render_field form.contrato class="form-control" maxlength="50" placeholder="Ex: CETEST-2026/001" %}
                     {% for e in form.contrato.errors %}
                         <div class="invalid-feedback d-block">{{ e }}</div>
                     {% endfor %}
@@ -139,7 +181,6 @@
             </h6>
         </div>
         <div class="card-body">
-            <!-- Tipo de uso -->
             <div class="mb-4">
                 <label for="{{ form.tipo_uso.id_for_label }}" class="form-label fw-bold">
                     Tipo de Uso <span class="text-danger">*</span>
@@ -153,7 +194,6 @@
                 </small>
             </div>
 
-            <!-- Container de Ferramentas (exibido quando tipo = FER) -->
             <div id="ferramentas_container" class="item-container" style="display:none;">
                 <label for="{{ form.ferramentas_selecionadas.id_for_label }}" class="form-label fw-bold">
                     <i class="bi bi-tools me-1"></i>{{ form.ferramentas_selecionadas.label }}
@@ -164,7 +204,18 @@
                 </small>
             </div>
 
-            <!-- Container de Malas (exibido quando tipo = MAL) -->
+            {# 🆕 JSON com metadados extras para enriquecer o Select2 #}
+            <script id="ferramentas-meta" type="application/json">
+                {
+                {% for f in context_ferramentas_completo %}
+                    "{{ f.pk }}": {
+                        "localizacao": "{{ f.localizacao_padrao|escapejs }}",
+                        "patrimonio": "{{ f.patrimonio|default:''|escapejs }}"
+                    }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+                }
+            </script>
+
             <div id="malas_container" class="item-container" style="display:none;">
                 <label for="{{ form.malas_selecionadas.id_for_label }}" class="form-label fw-bold">
                     <i class="bi bi-box-seam me-1"></i>{{ form.malas_selecionadas.label }}
@@ -189,7 +240,6 @@
         </div>
         <div class="card-body">
 
-            <!-- Escolha do modo de assinatura -->
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <label class="modo-assinatura-card active d-block" id="label_modo_local">
@@ -217,7 +267,6 @@
                 </div>
             </div>
 
-            <!-- Bloco: Assinatura local -->
             <div id="assinatura_local_block">
                 <p class="text-muted small mb-3">
                     <i class="bi bi-info-circle me-1"></i>
@@ -234,12 +283,12 @@
                 </div>
             </div>
 
-            <!-- Bloco: Assinatura remota -->
             <div id="assinatura_remoto_block" style="display:none;">
                 <div class="alert alert-info mb-0">
                     <i class="bi bi-info-circle me-1"></i>
                     Ao salvar, um link exclusivo de assinatura será gerado. Você poderá enviá-lo
                     por <strong>e-mail</strong> ou <strong>WhatsApp</strong> na tela de detalhes do termo.
+                    <br><small>O link expira em 48h e registra IP/data-hora, conforme LGPD.</small>
                 </div>
             </div>
 
@@ -262,7 +311,7 @@
                         Cancelar
                     </a>
                     {% if perms.ferramentas.add_termoderesponsabilidade or user.is_superuser %}
-                    <button type="submit" class="btn btn-success btn-lg px-5">
+                    <button type="submit" class="btn btn-success btn-lg px-5" id="btnSubmitTermo">
                         <i class="bi bi-check-circle me-2"></i>Confirmar e Gerar Termo
                     </button>
                     {% endif %}
@@ -274,12 +323,44 @@
 {% endblock %}
 
 {% block ferramentas_extra_js %}
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha384-1H217gwSVyLSIfaLxHbE7dRb3v4mYCKbpQvzx0cegeju1MVsGrX5xXxAvs/HgeFs"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"
+        integrity="sha384-d3UHjPdzJkZuk5H3qKYMLRyWLAQBJbby2yr2Q58hXXtAGF8RSNO9jpLDlKKPv5v3"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"
+        integrity="sha384-dPowQo9uxJU703klzvnG+vzLHQDNmO/zREXw6BhCMupB54CE70wj6SWOGVPySK3s"
+        crossorigin="anonymous"></script>
 <script>
 jQuery(function($) {
+
+    // ===================================================================
+    // METADADOS EXTRAS — Localização/Patrimônio das Ferramentas
+    // ===================================================================
+    let ferramentasMeta = {};
+    try {
+        ferramentasMeta = JSON.parse(document.getElementById('ferramentas-meta')?.textContent || '{}');
+    } catch (e) {
+        console.warn('Não foi possível carregar metadados de ferramentas.', e);
+    }
+
+    function formatFerramentaResult(item) {
+        if (!item.id) return item.text; // placeholder/loading
+
+        const meta = ferramentasMeta[item.id];
+        if (!meta) return item.text;
+
+        return $(
+            `<div>
+                <div class="fw-semibold">${item.text}</div>
+                <small class="text-muted">
+                    <i class="bi bi-geo-alt"></i> ${meta.localizacao || 'Sem localização'}
+                    ${meta.patrimonio ? ' • Pat: ' + meta.patrimonio : ''}
+                </small>
+            </div>`
+        );
+    }
 
     // ===================================================================
     // SIGNATURE PAD
@@ -287,6 +368,7 @@ jQuery(function($) {
     const canvas = document.getElementById('signature-pad');
     const clearBtn = document.getElementById('clear-signature');
     const sigInput = document.getElementById('id_assinatura_base64');
+    const MAX_SIGNATURE_LENGTH = 2000000; // ~2MB em base64 (segurança / anti-abuso)
     let signaturePad = null;
 
     if (canvas) {
@@ -309,11 +391,12 @@ jQuery(function($) {
     // ===================================================================
     // SELECT2 — Inicialização
     // ===================================================================
-    function initSelect2(selector) {
+    function initSelect2(selector, isFerramenta) {
         $(selector).select2({
             theme: "bootstrap-5",
             width: '100%',
             closeOnSelect: false,
+            templateResult: isFerramenta ? formatFerramentaResult : undefined,   // 🆕 renderização enriquecida
             language: {
                 noResults: function() { return "Nenhum item encontrado."; },
                 searching: function() { return "Buscando..."; }
@@ -321,7 +404,6 @@ jQuery(function($) {
         });
     }
 
-    // Select2 nos campos de funcionário (busca simples)
     $('#id_responsavel, #id_separado_por').select2({
         theme: "bootstrap-5",
         width: '100%',
@@ -342,20 +424,20 @@ jQuery(function($) {
         if (tipo === 'FER') {
             ferramentasContainer.show();
             if (!ferramentasContainer.data('s2-init')) {
-                initSelect2('#id_ferramentas_selecionadas');
+                initSelect2('#id_ferramentas_selecionadas', true);   // 🔧 true = template rico
                 ferramentasContainer.data('s2-init', true);
             }
         } else if (tipo === 'MAL') {
             malasContainer.show();
             if (!malasContainer.data('s2-init')) {
-                initSelect2('#id_malas_selecionadas');
+                initSelect2('#id_malas_selecionadas', false);
                 malasContainer.data('s2-init', true);
             }
         }
     }
 
     tipoUsoSelect.on('change', toggleContainers);
-    toggleContainers(); // Estado inicial
+    toggleContainers();
 
     // ===================================================================
     // TOGGLE: Modo de Assinatura (Local x Remoto)
@@ -397,7 +479,13 @@ jQuery(function($) {
                 return false;
             }
             if (signaturePad && sigInput) {
-                sigInput.value = signaturePad.toDataURL('image/png');
+                const dataUrl = signaturePad.toDataURL('image/png');
+                if (dataUrl.length > MAX_SIGNATURE_LENGTH) {
+                    alert("A assinatura ficou muito complexa. Simplifique o traço e tente novamente.");
+                    event.preventDefault();
+                    return false;
+                }
+                sigInput.value = dataUrl;
             }
         } else {
             sigInput.value = '';
@@ -429,6 +517,10 @@ jQuery(function($) {
         });
 
         $('#itens_termo_json').val(JSON.stringify(itens));
+
+        // Evita duplo clique/duplo submit
+        $('#btnSubmitTermo').prop('disabled', true)
+            .html('<i class="bi bi-hourglass-split me-2"></i>Salvando...');
     });
 });
 </script>

@@ -8,7 +8,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('seguranca_trabalho', '0007_adicionar_estoque_atual_equipamento'),
-        ('ferramentas', '0003_alter_termoderesponsabilidade_options_and_more'),
         ('suprimentos', '0003_material_equipamento_epi_material_ferramenta_ref_and_more'),
     ]
 
@@ -23,9 +22,5 @@ class Migration(migrations.Migration):
             name='equipamento_epi',
             field=models.ForeignKey(blank=True, help_text='Para materiais EPI: vincule ao equipamento de SST para entrada automática no estoque.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='materiais_vinculados', to='seguranca_trabalho.equipamento', verbose_name='Equipamento EPI vinculado'),
         ),
-        migrations.AlterField(
-            model_name='material',
-            name='ferramenta_ref',
-            field=models.ForeignKey(blank=True, help_text='Para ferramentas: vincule para atualizar quantidade ao receber pedido.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='materiais_vinculados', to='ferramentas.ferramenta', verbose_name='Ferramenta vinculada'),
-        ),
+        # REMOVIDO: AlterField 'ferramenta_ref' (movido para migration posterior 0032)
     ]
