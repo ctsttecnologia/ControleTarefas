@@ -155,6 +155,15 @@ class SecureFileValidator:
         self.app_name = app_name
 
     def __call__(self, file):
+        # Se o arquivo não foi alterado no form (é o FieldFile já salvo),
+        # e ele não existe mais no disco, pula toda a validação.
+        if not getattr(file, '_committed', True) is False:
+            # arquivo já salvo anteriormente (não é upload novo)
+            try:
+                file.size  # força checagem de existência
+            except (FileNotFoundError, OSError):
+                return  # ignora validação de arquivo órfão
+
         self.config = get_upload_config(self.app_name)
         self._validate_filename(file)
         self._validate_extension(file)
@@ -226,21 +235,22 @@ class SecureFileValidator:
             )
 
     def _validate_size(self, file):
-        # Se o arquivo já estava salvo e não foi alterado, pula validação de tamanho
-        # (evita FileNotFoundError quando o arquivo físico sumiu do storage)
-        if not hasattr(file, 'file') or not hasattr(file, 'size'):
-            return
-        
+        """
+        Valida tamanho do arquivo. Se o arquivo físico já não existir
+        no storage (registro órfão no banco), ignora a validação
+        silenciosamente em vez de propagar o erro.
+        """
         try:
             file_size = file.size
         except (FileNotFoundError, OSError):
-            # Arquivo registrado no banco mas ausente no disco — ignora
+            # Arquivo referenciado no banco mas ausente no disco — ignora
             return
-        
-        max_bytes = self.max_size  # ajuste para o nome real do seu atributo
+
+        max_bytes = self._get_max_size_mb() * 1024 * 1024
         if file_size > max_bytes:
             raise ValidationError(
-                f'Arquivo muito grande. Máximo permitido: {max_bytes} bytes.'
+                f'Arquivo muito grande. Máximo permitido: {self._get_max_size_mb()} MB.',
+                code='file_too_large',
             )
 
     def _validate_mime_extension_match(self, file):

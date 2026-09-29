@@ -162,6 +162,11 @@ class Equipamento(models.Model):
             models.Index(fields=['filial', 'ativo']),
             models.Index(fields=['nome']),
         ]
+        permissions = [
+            ("view_dashboard", _("Pode visualizar o Dashboard de SST")),
+            ("download_relatorio", _("Pode baixar relatórios de SST")),
+            ("view_all_seguranca_trabalho", _("Pode ver todos os dados de SST (todas as filiais/técnicos)")),
+        ]
 
     def __str__(self):
         ca_text = f"CA: {self.certificado_aprovacao}" if self.certificado_aprovacao else 'N/A'

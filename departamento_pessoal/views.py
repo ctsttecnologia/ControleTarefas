@@ -607,7 +607,7 @@ class FuncionarioListView(DPBaseMixin, ListView):
             try:
                 _ = request.user.funcionario
             except ObjectDoesNotExist:
-                return render(request, 'departamento_pessoal/acesso_negado.html', {
+                return render(request, 'errors/acesso_negado.html', {
                     'titulo': 'Acesso Restrito',
                     'mensagem': (
                         'Sua conta não está vinculada a um registro de funcionário, '

@@ -279,7 +279,7 @@ class SSTBaseMixin(
                 try:
                     _ = request.user.funcionario
                 except Funcionario.DoesNotExist:
-                    return render(request, 'erros/acesso_negado.html', {})
+                    return render(request, 'errors/acesso_negado.html', {})
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -1031,12 +1031,17 @@ class AssinarEntregaView(SSTBaseMixin, TecnicoScopeMixin, UpdateView):
 # =============================================================================
 
 class DashboardSSTView(SSTBaseMixin, TecnicoScopeMixin, TemplateView):
+    """
+    Dashboard de Segurança do Trabalho.
+
+    - FuncionarioRequiredMixin: garante request.funcionario (ou None p/ RH/superuser)
+      e trata o caso de usuário sem vínculo, sem duplicar lógica aqui.
+    - TecnicoScopeMixin: fornece _is_tecnico()/_pode_ver_todos() já baseados em
+      grupo 'TÉCNICO', evitando reimplementação divergente.
+    """
     template_name = 'seguranca_trabalho/dashboard.html'
     tecnico_scope_lookup = 'funcionario__usuario'
     permission_required = 'seguranca_trabalho.view_dashboard'
-
-    def _is_tecnico(self):
-        return getattr(self.request.user, 'is_tecnico', False)
 
     def _qs_filial(self, model_class):
         """Retorna queryset do model filtrado pela filial ativa."""
@@ -1065,8 +1070,8 @@ class DashboardSSTView(SSTBaseMixin, TecnicoScopeMixin, TemplateView):
             entregas = EntregaEPI.objects.none()
             matriz = MatrizEPI.objects.none()
 
-        # Técnicos só veem os próprios dados
-        if self._is_tecnico():
+        # Técnicos só veem os próprios dados (mesma regra usada em TecnicoScopeMixin)
+        if not self._pode_ver_todos() and self._is_tecnico():
             equipamentos = equipamentos.none()
             matriz = matriz.none()
             fichas = fichas.filter(funcionario__usuario=self.request.user)
@@ -1115,7 +1120,6 @@ class DashboardSSTView(SSTBaseMixin, TecnicoScopeMixin, TemplateView):
             context['matriz_labels'] = [item['funcao__nome'] for item in matriz_data]
             context['matriz_data'] = [item['num_epis'] for item in matriz_data]
 
-
         # ---------- GRÁFICO: Status das Entregas ----------
         entregas_assinadas = entregas.filter(
             data_devolucao__isnull=True,
@@ -1139,6 +1143,7 @@ class DashboardSSTView(SSTBaseMixin, TecnicoScopeMixin, TemplateView):
 
         context['titulo_pagina'] = "Painel de Segurança do Trabalho"
         return context
+
 
 # =============================================================================
 # ACESSO RÁPIDO SST

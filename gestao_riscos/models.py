@@ -74,6 +74,16 @@ STATUS_CHOICES = [
     ('CANCELADA', _('Cancelada')),
 ]
 
+class CartaoTagVisibilityMixin:
+    def apply_visibility(self, queryset):
+        user = self.request.user
+        if user.is_superuser or user.has_perm('gestao_riscos.view_all_cartaotag'):
+            return queryset
+        funcionario = getattr(user, 'funcionario', None)
+        if not funcionario:
+            return queryset.none()
+        return queryset.filter(funcionario=funcionario)
+
 
 # ===========================================
 # INCIDENTE / ACIDENTE
@@ -191,6 +201,9 @@ class Incidente(models.Model):
         verbose_name = "Ocorrência"
         verbose_name_plural = "Ocorrências"
         ordering = ['-data_ocorrencia']
+        permissions = [
+            ("view_all_incidente", _("Pode visualizar todas as ocorrências da filial")),
+        ]
 
     def __str__(self):
         return f"[{self.get_tipo_ocorrencia_display()}] {self.descricao}"
@@ -268,6 +281,9 @@ class Inspecao(models.Model):
         verbose_name = "Inspeção"
         verbose_name_plural = "Inspeções"
         ordering = ['-data_agendada']
+        permissions = [
+            ("view_all_inspecao", _("Pode visualizar todas as inspeções da filial")),
+        ]
 
     def __str__(self):
         if self.entrega_epi:
@@ -334,6 +350,9 @@ class CartaoTag(models.Model):
         verbose_name = "Cartão de Bloqueio (Tag)"
         verbose_name_plural = "Cartões de Bloqueio (Tags)"
         ordering = ['-data_criacao']
+        permissions = [
+            ("view_all_cartaotag", _("Pode visualizar todos os cartões de bloqueio da filial")),
+        ]
 
     def __str__(self):
         return f"Cartão de {self.funcionario.nome_completo}"

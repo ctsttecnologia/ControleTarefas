@@ -117,18 +117,8 @@ class ViewFilialScopedMixin:
         return qs.filter(**{self.filial_field: filial})
 
 class TecnicoScopeMixin:
-    """
-    NÍVEL 3 (Vertical/Dados):
-    Mixin global de escopo de dados por usuário.
-
-    Regras:
-    - Staff/superuser: vê tudo (gestão/RH).
-    - Demais usuários (técnico OU comum): só veem os registros
-      vinculados a eles mesmos via `tecnico_scope_lookup`.
-
-    Deve ser herdado ANTES do ViewFilialScopedMixin.
-    """
     tecnico_scope_lookup = None
+    permission_view_all = None  # ex: 'gestao_riscos.view_all_cartaotag'
     _TECNICO_CACHE_ATTR = '_tecnico_group_cache'
 
     def _is_tecnico(self) -> bool:
@@ -142,27 +132,26 @@ class TecnicoScopeMixin:
         return getattr(user, self._TECNICO_CACHE_ATTR)
 
     def _pode_ver_todos(self) -> bool:
-        """Somente staff/superuser (gestão de RH/SST) tem visão irrestrita."""
+        """Staff/superuser sempre veem tudo. Demais perfis podem ganhar
+        acesso irrestrito via permissao explicita definida em
+        `permission_view_all` (configuravel por view)."""
         user = self.request.user
-        return bool(user.is_superuser or user.is_staff)
+        if user.is_superuser or user.is_staff:
+            return True
+        if self.permission_view_all:
+            return user.has_perm(self.permission_view_all)
+        return False
 
     def get_queryset(self) -> QuerySet:
         queryset = super().get_queryset()
         return self.scope_tecnico_queryset(queryset)
 
     def scope_tecnico_queryset(self, queryset: QuerySet) -> QuerySet:
-        # ── Gestão/RH: acesso irrestrito ──
         if self._pode_ver_todos():
             return queryset
-
-        # ── Corrigido: TODOS os demais usuários (técnico OU comum)
-        #    só acessam os registros vinculados a eles mesmos.
-        #    Isso impede que um colaborador comum veja fichas de
-        #    terceiros, atendendo à LGPD (minimização de dados). ──
         if self.tecnico_scope_lookup:
             filter_kwargs = {self.tecnico_scope_lookup: self.request.user}
             return queryset.filter(**filter_kwargs).distinct()
-
         return queryset.none()
 
 class TarefaPermissionMixin(AccessMixin):

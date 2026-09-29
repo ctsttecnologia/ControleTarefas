@@ -28,18 +28,19 @@ logger = logging.getLogger(__name__)
 # HELPER - Escopo de tecnico reutilizavel
 # =============================================================================
 
-def filtrar_queryset_por_tecnico(queryset, request, lookup_field):
+def filtrar_queryset_por_tecnico(queryset, request, lookup_field, permissao_view_all=None):
     """
-    Aplica o escopo de tecnico a um queryset.
-    - Se o user e tecnico: filtra por lookup_field=user
-    - Caso contrario: retorna queryset inalterado
-
-    Substitui o anti-pattern de instanciar TecnicoScopeMixin() manualmente.
+    Aplica escopo de tecnico a um queryset, respeitando permissao 'view_all'.
     """
     user = request.user
+    if user.is_superuser:
+        return queryset
+    if permissao_view_all and user.has_perm(permissao_view_all):
+        return queryset
     if getattr(user, 'is_tecnico', False):
         return queryset.filter(**{lookup_field: user})
     return queryset
+
 
 
 # =============================================================================
@@ -47,14 +48,11 @@ def filtrar_queryset_por_tecnico(queryset, request, lookup_field):
 # =============================================================================
 
 class GestaoRiscosDashboardView(GestaoRiscosTecnicoMixin, ListView):
-    """
-    Dashboard que exibe dados de Gestao de Riscos, aplicando a
-    arquitetura de seguranca em 3 niveis (auth + funcionario + filial + tecnico).
-    """
     model = Incidente
     template_name = 'gestao_riscos/lista_riscos.html'
     context_object_name = 'incidentes'
     tecnico_scope_lookup = 'registrado_por'
+    permission_view_all = 'gestao_riscos.view_all_incidente'
 
     def get_queryset(self):
         return super().get_queryset().order_by('-data_ocorrencia')[:10]
@@ -67,7 +65,8 @@ class GestaoRiscosDashboardView(GestaoRiscosTecnicoMixin, ListView):
 
         # Aplica escopo de tecnico via funcao utilitaria (sem instanciar mixin)
         qs_inspecoes_scoped = filtrar_queryset_por_tecnico(
-            qs_inspecoes_base, self.request, 'responsavel'
+            qs_inspecoes_base, self.request, 'responsavel',
+            permissao_view_all='gestao_riscos.view_all_inspecao'
         )
 
         context['inspecoes_pendentes'] = qs_inspecoes_scoped.filter(
@@ -199,18 +198,14 @@ class ConfirmarInspecaoView(GestaoRiscosBaseMixin, View):
 
 
 class InspecaoDetailView(GestaoRiscosTecnicoMixin, DetailView):
-    """View de detalhe para a inspecao."""
     model = Inspecao
     template_name = 'gestao_riscos/inspecao_detail.html'
     context_object_name = 'inspecao'
     tecnico_scope_lookup = 'responsavel'
+    permission_view_all = 'gestao_riscos.view_all_inspecao'
 
 
-class CompletarInspecaoView(
-    GestaoRiscosTecnicoMixin,
-    SuccessMessageMixin,
-    UpdateView,
-):
+class CompletarInspecaoView(GestaoRiscosTecnicoMixin, SuccessMessageMixin, UpdateView):
     """View para marcar uma inspecao como 'CONCLUIDA'."""
     model = Inspecao
     template_name = 'gestao_riscos/inspecao_completar_form.html'
@@ -218,6 +213,7 @@ class CompletarInspecaoView(
     success_url = reverse_lazy('gestao_riscos:calendario')
     success_message = "Inspecao marcada como Concluida!"
     tecnico_scope_lookup = 'responsavel'
+    permission_view_all = 'gestao_riscos.view_all_inspecao'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -268,7 +264,10 @@ class InspecaoEventsApiView(GestaoRiscosBaseMixin, View):
         qs_base = Inspecao.objects.for_request(request)
 
         # 2. Filtra pelo escopo do Tecnico (se aplicavel)
-        qs_scoped = filtrar_queryset_por_tecnico(qs_base, request, 'responsavel')
+        qs_scoped = filtrar_queryset_por_tecnico(
+            qs_base, request, 'responsavel',
+            permissao_view_all='gestao_riscos.view_all_inspecao'
+        )
 
         # 3. Filtra por status visiveis + garante data preenchida
         qs_final = qs_scoped.filter(
@@ -342,14 +341,16 @@ class CartaoTagListView(GestaoRiscosTecnicoMixin, ListView):
     template_name = 'gestao_riscos/cartao_tag_list.html'
     context_object_name = 'cartoes'
     paginate_by = 10
-    tecnico_scope_lookup = 'responsavel'
+    tecnico_scope_lookup = 'funcionario__usuario'
+    permission_view_all = 'gestao_riscos.view_all_cartaotag'
 
 
 class CartaoTagDetailView(GestaoRiscosTecnicoMixin, DetailView):
     model = CartaoTag
     template_name = 'gestao_riscos/cartao_tag_detail.html'
     context_object_name = 'cartao'
-    tecnico_scope_lookup = 'responsavel'
+    tecnico_scope_lookup = 'funcionario__usuario'
+    permission_view_all = 'gestao_riscos.view_all_cartaotag'
 
 
 class CartaoTagCreateView(
@@ -370,17 +371,14 @@ class CartaoTagCreateView(
         return kwargs
 
 
-class CartaoTagUpdateView(
-    GestaoRiscosTecnicoMixin,
-    SuccessMessageMixin,
-    UpdateView,
-):
+class CartaoTagUpdateView(GestaoRiscosTecnicoMixin, SuccessMessageMixin, UpdateView):
     model = CartaoTag
     form_class = CartaoTagForm
     template_name = 'gestao_riscos/cartao_tag_form.html'
     success_url = reverse_lazy('gestao_riscos:cartao_tag_list')
     success_message = "Cartao de Bloqueio atualizado com sucesso!"
-    tecnico_scope_lookup = 'responsavel'
+    tecnico_scope_lookup = 'funcionario__usuario'
+    permission_view_all = 'gestao_riscos.view_all_cartaotag'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -388,16 +386,13 @@ class CartaoTagUpdateView(
         return kwargs
 
 
-class CartaoTagDeleteView(
-    GestaoRiscosTecnicoMixin,
-    SuccessMessageMixin,
-    DeleteView,
-):
+class CartaoTagDeleteView(GestaoRiscosTecnicoMixin, SuccessMessageMixin, DeleteView):
     model = CartaoTag
     template_name = 'gestao_riscos/cartao_tag_confirm_delete.html'
     success_url = reverse_lazy('gestao_riscos:cartao_tag_list')
     success_message = "Cartao de Bloqueio deletado com sucesso!"
-    tecnico_scope_lookup = 'responsavel'
+    tecnico_scope_lookup = 'funcionario__usuario'
+    permission_view_all = 'gestao_riscos.view_all_cartaotag'
 
 
 # =============================================================================
