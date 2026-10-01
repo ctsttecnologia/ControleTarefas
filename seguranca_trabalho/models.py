@@ -154,7 +154,7 @@ class Equipamento(models.Model):
                 name='equipamento_unico_constraint',
             ),
             models.CheckConstraint(
-                check=models.Q(estoque_atual__gte=0),
+                condition=models.Q(estoque_atual__gte=0),
                 name='equipamento_estoque_atual_nao_negativo',
             ),
         ]

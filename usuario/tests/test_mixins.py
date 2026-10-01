@@ -405,9 +405,6 @@ class TestPreventPrivilegeEscalationMixin:
         assert alvo.is_staff is True
 
 
-# =============================================================================
-# 7. RequireActiveFilialMixin
-# =============================================================================
 
 class TestRequireActiveFilialMixin:
 
@@ -418,6 +415,9 @@ class TestRequireActiveFilialMixin:
         return DummyView()
 
     def test_bloqueia_sem_filial_ativa(self, rf, usuario_comum):
+        usuario_comum.filial_ativa = None
+        usuario_comum.save(update_fields=["filial_ativa"])
+
         request = rf.get("/")
         request.user = usuario_comum
         _add_session_and_messages(request)

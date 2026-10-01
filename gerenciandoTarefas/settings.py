@@ -493,6 +493,8 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+FORMS_URLFIELD_ASSUME_HTTPS = True
+
 # =============================================================================
 # CHANNELS (WebSocket) - CONFIGURAÇÃO ADAPTATIVA
 # =============================================================================

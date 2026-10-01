@@ -24,6 +24,7 @@ def _base_data(filial, **overrides):
         'password1': 'Senha@Forte123',
         'password2': 'Senha@Forte123',
         'filiais_permitidas': [filial.pk],
+        "aceite_lgpd": "on",
     }
     data.update(overrides)
     return data

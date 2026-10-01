@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name='equipamento',
             constraint=models.CheckConstraint(
-                check=models.Q(estoque_atual__gte=0),
+                condition=models.Q(estoque_atual__gte=0),
                 name='equipamento_estoque_atual_nao_negativo',
             ),
         ),

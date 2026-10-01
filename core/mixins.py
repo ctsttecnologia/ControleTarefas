@@ -26,23 +26,6 @@ from django.urls import reverse, NoReverseMatch
 from django.contrib.auth.mixins import UserPassesTestMixin
 
 
-
-class RequireActiveFilialMixin:
-    """
-    Garante que o usuário tenha uma filial ativa antes de acessar a view.
-    Caso contrário, redireciona com mensagem.
-    """
-    filial_required_redirect_url = "usuario:selecionar_filial"  # ajuste se necessário
-    filial_required_message = "Selecione uma filial para continuar."
-
-    def dispatch(self, request, *args, **kwargs):
-        filial = get_filial_ativa(request.user, request)
-        if filial is None:
-            messages.warning(request, self.filial_required_message)
-            return redirect(self.filial_required_redirect_url)
-        request.filial_ativa = filial  # disponibiliza na view
-        return super().dispatch(request, *args, **kwargs)
-
 # =============================================================================
 # == MIXINS DE PERMISSÃO E ESCOPO (ARQUITETURA DE 3 NÍVEIS)
 # =============================================================================

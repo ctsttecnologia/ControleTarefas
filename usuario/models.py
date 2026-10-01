@@ -125,7 +125,8 @@ class Usuario(AbstractUser):
 
     @property
     def is_administrador(self) -> bool:
-        return self.groups.filter(name=GRUPO_ADMINISTRADOR).exists()
+        return self.is_superuser or self.groups.filter(name=GRUPO_ADMINISTRADOR).exists()
+
 
     # ---------- Feature flags ----------
     @property

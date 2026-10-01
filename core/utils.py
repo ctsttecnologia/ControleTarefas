@@ -68,8 +68,9 @@ def get_filial_ativa(user, request: Optional["HttpRequest"] = None) -> Optional[
     Fonte única para resolver a filial ativa de um usuário.
 
     Ordem de prioridade:
-    1. ID em `request.session[SESSION_FILIAL_ATIVA]` — se válido e pertencer ao usuário
-    2. `user.filial_padrao` (fallback)
+    1. `request.session[SESSION_FILIAL_ATIVA]` — se existir e o usuário
+       tiver acesso (superuser/administrador acessam qualquer filial).
+    2. `user.filial_ativa` (fallback).
 
     Returns:
         Instância de Filial ou None.
@@ -78,19 +79,17 @@ def get_filial_ativa(user, request: Optional["HttpRequest"] = None) -> Optional[
         return None
 
     from usuario.models import Filial
-    # 1) Tenta sessão
+
     if request is not None:
         filial_id = request.session.get(SESSION_FILIAL_ATIVA)
         if filial_id:
-            filial = (
-                Filial.objects.filter(pk=filial_id, usuarios=user).first()
-                if hasattr(Filial, "usuarios")
-                else Filial.objects.filter(pk=filial_id).first()
-            )
+            qs = Filial.objects.filter(pk=filial_id)
+            if not usuario_ve_todas_filiais(user):
+                qs = qs.filter(usuarios_permitidos=user)
+            filial = qs.first()
             if filial is not None:
                 return filial
 
-    # 2) Fallback
     return getattr(user, "filial_ativa", None)
 
 
@@ -129,8 +128,9 @@ def queryset_da_filial(queryset, user, request=None, campo_filial='filial'):
 
 # departamento_pessoal
 def mascarar_cpf(cpf: str) -> str:
-    if not cpf or len(cpf) < 11:
+    digits = ''.join(filter(str.isdigit, cpf or ''))
+    if len(digits) != 11:
         return cpf or ''
-    digits = ''.join(filter(str.isdigit, cpf))
     return f"***.{digits[3:6]}.***-{digits[9:11]}"
+
 
