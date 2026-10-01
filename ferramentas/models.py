@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.utils import timezone
 from core.managers import FilialQuerySet, FilialManager
 from departamento_pessoal.models import Funcionario
+from cloudinary_storage.storage import RawMediaCloudinaryStorage
 
 # =============================================================================
 # QUERYSETS E MANAGERS CUSTOMIZADOS
@@ -513,6 +514,14 @@ class TermoDeResponsabilidade(AssinavelMixin, models.Model):
         Filial, on_delete=models.PROTECT,
         related_name='termos_responsabilidade'
     )
+    # 🆕 Persiste o PDF gerado no Cloudinary (storage "raw", pois não é imagem)
+    pdf_arquivo = models.FileField(
+        upload_to='termos/pdf/',
+        storage=RawMediaCloudinaryStorage(),
+        blank=True, null=True,
+        verbose_name="PDF do Termo (Cloudinary)"
+    )
+
 
     objects = FilialManager()
 
@@ -529,6 +538,12 @@ class TermoDeResponsabilidade(AssinavelMixin, models.Model):
 
     def __str__(self):
         return f"Termo #{self.pk} - {self.get_tipo_uso_display()} — {self.responsavel}"
+
+    def salvar_pdf(self, pdf_bytes):
+        """Salva/atualiza o PDF gerado no Cloudinary."""
+        from django.core.files.base import ContentFile
+        fname = f'termo_{self.pk}.pdf'
+        self.pdf_arquivo.save(fname, ContentFile(pdf_bytes), save=True)
 
     @property
     def pode_reverter(self):

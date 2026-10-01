@@ -9,7 +9,6 @@ Arquitetura:
 import logging
 
 from django.contrib import messages
-from django.contrib.auth import logout
 from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import (
@@ -21,6 +20,7 @@ from django.db.models import ProtectedError, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
@@ -44,8 +44,6 @@ from usuario.mixins import (
 )
 from usuario.models import Filial, Group, GroupCardPermissions, Usuario
 from usuario.services.excel_export import gerar_excel_usuarios
-from django.views.generic import ListView
-from urllib.parse import urlencode
 
 
 # Logger de auditoria
@@ -53,6 +51,43 @@ audit_logger = logging.getLogger('usuario.audit')
 
 # Duração da sessão (em segundos) — 8 horas
 SESSION_EXPIRY_SECONDS = 60 * 60 * 8
+
+
+# =============================================================================
+# MIXINS DE PAPEL (ROLE-BASED) — devem vir SEMPRE ANTES de AppPermissionMixin
+# no MRO, pois definem `has_permission()` sem depender de
+# `app_label_required`/`permission_required`.
+# =============================================================================
+
+class SuperuserOnlyMixin:
+    """
+    Restringe o acesso EXCLUSIVAMENTE ao superusuário.
+
+    Uso: ações sensíveis do sistema de permissões (Grupos do Django),
+    onde nem Gerente nem Administrador devem ter acesso.
+    """
+    def has_permission(self):
+        user = self.request.user
+        return user.is_authenticated and user.is_superuser
+
+
+class ManagementRolesMixin:
+    """
+    Libera acesso para Superusuário, Gerente ou Administrador.
+
+    Uso: gestão operacional (Usuários, Filiais, Cards) — papéis
+    hierárquicos que administram o dia a dia, mas não o núcleo
+    de permissões do Django.
+    """
+    def has_permission(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        return (
+            user.is_superuser
+            or getattr(user, 'is_gerente', False)
+            or getattr(user, 'is_administrador', False)
+        )
 
 
 # =============================================================================
@@ -70,7 +105,6 @@ class CustomLoginView(LoginView):
         user = form.get_user()
         filial_ativa = self._determinar_filial_ativa(user)
 
-        # 🔒 Valida ANTES de autenticar efetivamente
         if not filial_ativa:
             messages.error(
                 self.request,
@@ -121,7 +155,6 @@ class SelecionarFilialView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         filial_id_str = request.POST.get('filial_id', '').strip()
 
-        # Superusuário limpando filtro ("Todas as Filiais")
         if filial_id_str == '0' and request.user.is_superuser:
             request.session.pop('active_filial_id', None)
             request.user.filial_ativa = None
@@ -139,7 +172,6 @@ class SelecionarFilialView(LoginRequiredMixin, View):
             return redirect(self._safe_next())
 
         try:
-            # 🔒 SEMPRE via filiais_permitidas (impede forjar filial alheia)
             filial = request.user.filiais_permitidas.get(pk=filial_id)
         except Filial.DoesNotExist:
             audit_logger.warning(
@@ -156,7 +188,6 @@ class SelecionarFilialView(LoginRequiredMixin, View):
         return redirect(self._safe_next())
 
     def _safe_next(self):
-        """🔒 Evita open redirect."""
         next_url = self.request.POST.get('next', '')
         if next_url and url_has_allowed_host_and_scheme(
             next_url, allowed_hosts={self.request.get_host()}
@@ -183,7 +214,6 @@ class ProfileView(LoginRequiredMixin, DetailView):
         return context
 
     def _build_visible_cards(self, user):
-        """Monta a lista de cards visíveis para o usuário."""
         allowed_ids = self._get_allowed_card_ids(user)
         visible = []
 
@@ -211,7 +241,6 @@ class ProfileView(LoginRequiredMixin, DetailView):
         )
 
     def _get_allowed_card_ids(self, user):
-        """Retorna IDs de cards permitidos pelos grupos do usuário."""
         if user.is_superuser:
             return get_card_ids()
 
@@ -252,7 +281,7 @@ class UserListView(AppPermissionMixin,
                    FilialScopedUserMixin,
                    HideSuperusersMixin,
                    ListView):
-    """Lista de usuários com busca e escopo por filial."""
+    """Lista de usuários com busca e escopo por filial. Staff pode ver."""
     app_label_required = 'usuario'
     model = Usuario
     template_name = 'usuario/lista_usuarios.html'
@@ -283,15 +312,23 @@ class UserListView(AppPermissionMixin,
 
 
 @method_decorator(never_cache, name='dispatch')
-class UserCreateView(AppPermissionMixin,
+class UserCreateView(ManagementRolesMixin,
+                     AppPermissionMixin,
                      PreventPrivilegeEscalationMixin,
                      CreateView):
-    """Criação de novo usuário."""
-    permission_required = 'usuario.add_usuario'
+    """Criação de novo usuário. Superuser, Gerente ou Administrador."""
     model = Usuario
     form_class = CustomUserCreationForm
     template_name = 'usuario/form_usuario.html'
     success_url = reverse_lazy('usuario:usuario_lista')
+
+    def post(self, request, *args, **kwargs):
+        if request.POST.get('website', '').strip():
+            audit_logger.warning(
+                f"Honeypot acionado (possível bot): ip={request.META.get('REMOTE_ADDR', '-')}"
+            )
+            return redirect('usuario:usuario_lista')
+        return super().post(request, *args, **kwargs)
 
     def dispatch(self, request, *args, **kwargs):
         if not Filial.objects.exists():
@@ -311,26 +348,21 @@ class UserCreateView(AppPermissionMixin,
         response = super().form_valid(form)
         user = self.object
 
-        # Define primeira filial permitida como ativa
         primeira = user.filiais_permitidas.first()
         if primeira:
             user.filial_ativa = primeira
             user.save(update_fields=['filial_ativa'])
 
         audit_logger.info(
-            f"Usuário criado: alvo={user.username} "
-            f"por={self.request.user.username}"
+            f"[LGPD] Aceite de tratamento de dados registrado: "
+            f"usuario={user.username} ip={self.request.META.get('REMOTE_ADDR', '-')} "
+            f"timestamp={timezone.now().isoformat()}"
         )
         messages.success(
             self.request,
             f"Usuário '{user.username}' criado com sucesso."
         )
         return response
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['request_user'] = self.request.user
-        return kwargs
 
     def form_invalid(self, form):
         audit_logger.warning(
@@ -339,15 +371,16 @@ class UserCreateView(AppPermissionMixin,
         )
         return super().form_invalid(form)
 
+
 @method_decorator(never_cache, name='dispatch')
-class UserUpdateView(AppPermissionMixin,
+class UserUpdateView(ManagementRolesMixin,
+                     AppPermissionMixin,
                      FilialScopedUserMixin,
                      HideSuperusersMixin,
                      HierarchyProtectionMixin,
                      PreventPrivilegeEscalationMixin,
                      UpdateView):
-    """Edição de usuário existente."""
-    permission_required = 'usuario.change_usuario'
+    """Edição de usuário existente. Superuser, Gerente ou Administrador."""
     model = Usuario
     form_class = CustomUserChangeForm
     template_name = 'usuario/form_usuario.html'
@@ -366,7 +399,6 @@ class UserUpdateView(AppPermissionMixin,
     def form_valid(self, form):
         response = super().form_valid(form)
 
-        # Garante que filial_ativa esteja entre as permitidas
         user = self.object
         if user.filial_ativa and user.filial_ativa not in user.filiais_permitidas.all():
             user.filial_ativa = user.filiais_permitidas.first()
@@ -384,7 +416,8 @@ class UserUpdateView(AppPermissionMixin,
 
 
 @method_decorator(never_cache, name='dispatch')
-class UserToggleActiveView(AppPermissionMixin,
+class UserToggleActiveView(ManagementRolesMixin,
+                           AppPermissionMixin,
                            FilialScopedUserMixin,
                            HideSuperusersMixin,
                            PreventSelfActionMixin,
@@ -392,8 +425,7 @@ class UserToggleActiveView(AppPermissionMixin,
                            LastSuperuserProtectionMixin,
                            SingleObjectMixin,
                            View):
-    """Ativar/desativar um usuário."""
-    permission_required = 'usuario.change_usuario'
+    """Ativar/desativar um usuário. Superuser, Gerente ou Administrador."""
     model = Usuario
     http_method_names = ['post']
     self_action_message = "Você não pode desativar a si mesmo."
@@ -419,11 +451,15 @@ class UserToggleActiveView(AppPermissionMixin,
     'new_password1', 'new_password2'
 ), name='dispatch')
 @method_decorator(never_cache, name='dispatch')
-class UserSetPasswordView(AppPermissionMixin,
+class UserSetPasswordView(SuperuserOnlyMixin,
+                          AppPermissionMixin,
                           PreventSelfActionMixin,
                           FormView):
-    """Permite superusuário definir nova senha para outro usuário."""
-    permission_required = 'usuario.change_usuario'
+    """
+    Permite superusuário definir nova senha para outro usuário.
+    🔒 Mantido restrito a SUPERUSER (não estende para Gerente/Administrador
+    por ser ação crítica de segurança).
+    """
     form_class = SetPasswordForm
     template_name = 'usuario/alterar_senha.html'
     success_url = reverse_lazy('usuario:usuario_lista')
@@ -432,14 +468,9 @@ class UserSetPasswordView(AppPermissionMixin,
     )
     self_action_redirect_url = 'usuario:alterar_senha_propria'
 
-    def has_permission(self):
-        # 🔒 Apenas superuser pode redefinir senha de outros
-        return self.request.user.is_authenticated and self.request.user.is_superuser
-
     def get_target_user(self):
         return get_object_or_404(Usuario, pk=self.kwargs['pk'])
 
-    # Para os mixins PreventSelfActionMixin funcionarem
     def get_object(self):
         return self.get_target_user()
 
@@ -469,26 +500,20 @@ class UserSetPasswordView(AppPermissionMixin,
 
 
 # =============================================================================
-# CRUD DE GRUPOS (Superusuário)
+# CRUD DE GRUPOS (Superusuário apenas — núcleo de permissões do sistema)
 # =============================================================================
 
-class GroupListView(AppPermissionMixin, ListView):
+class GroupListView(SuperuserOnlyMixin, AppPermissionMixin, ListView):
     model = Group
     template_name = 'usuario/grupo_lista.html'
     context_object_name = 'grupos'
 
-    def has_permission(self):
-        return self.request.user.is_authenticated and self.request.user.is_superuser
 
-
-class GroupCreateView(AppPermissionMixin, CreateView):
+class GroupCreateView(SuperuserOnlyMixin, AppPermissionMixin, CreateView):
     model = Group
     form_class = GrupoForm
     template_name = 'usuario/grupo_form.html'
     success_url = reverse_lazy('usuario:grupo_lista')
-
-    def has_permission(self):
-        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self, form):
         audit_logger.info(
@@ -502,14 +527,11 @@ class GroupCreateView(AppPermissionMixin, CreateView):
         return super().form_valid(form)
 
 
-class GroupUpdateView(AppPermissionMixin, UpdateView):
+class GroupUpdateView(SuperuserOnlyMixin, AppPermissionMixin, UpdateView):
     model = Group
     form_class = GrupoForm
     template_name = 'usuario/grupo_form.html'
     success_url = reverse_lazy('usuario:grupo_lista')
-
-    def has_permission(self):
-        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self, form):
         audit_logger.info(
@@ -523,13 +545,10 @@ class GroupUpdateView(AppPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class GroupDeleteView(AppPermissionMixin, DeleteView):
+class GroupDeleteView(SuperuserOnlyMixin, AppPermissionMixin, DeleteView):
     model = Group
     template_name = 'usuario/grupo_confirmar_exclusao.html'
     success_url = reverse_lazy('usuario:grupo_lista')
-
-    def has_permission(self):
-        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def form_valid(self, form):
         nome = self.object.name
@@ -540,13 +559,13 @@ class GroupDeleteView(AppPermissionMixin, DeleteView):
         return super().form_valid(form)
 
 
-class GerenciarGruposUsuarioView(AppPermissionMixin, View):
-    """Adicionar/remover grupos de um usuário específico."""
+class GerenciarGruposUsuarioView(ManagementRolesMixin, AppPermissionMixin, View):
+    """
+    Adicionar/remover grupos de um usuário específico.
+    Superuser, Gerente ou Administrador.
+    """
     template_name = 'usuario/gerenciar_grupos_usuario.html'
     http_method_names = ['get', 'post']
-
-    def has_permission(self):
-        return self.request.user.is_authenticated and self.request.user.is_superuser
 
     def get(self, request, *args, **kwargs):
         usuario = get_object_or_404(Usuario, pk=self.kwargs.get('pk'))
@@ -563,7 +582,6 @@ class GerenciarGruposUsuarioView(AppPermissionMixin, View):
         grupo_id = request.POST.get('grupo')
         acao = request.POST.get('acao')
 
-        # 🔒 Whitelist de ações
         if acao not in ('adicionar', 'remover'):
             messages.error(request, "Ação inválida.")
             return redirect('usuario:gerenciar_grupos_usuario', pk=usuario.pk)
@@ -599,22 +617,16 @@ class GerenciarGruposUsuarioView(AppPermissionMixin, View):
 
 
 # =============================================================================
-# CRUD DE FILIAIS (Superusuário)
+# CRUD DE FILIAIS (Superuser, Gerente ou Administrador)
 # =============================================================================
 
-class _SuperuserOnlyMixin:
-    """Mixin interno para views de Filial — apenas superuser."""
-    def has_permission(self):
-        return self.request.user.is_authenticated and self.request.user.is_superuser
-
-
-class FilialListView(AppPermissionMixin, _SuperuserOnlyMixin, ListView):
+class FilialListView(ManagementRolesMixin, AppPermissionMixin, ListView):
     model = Filial
     template_name = 'usuario/filial_lista.html'
     context_object_name = 'filiais'
 
 
-class FilialCreateView(AppPermissionMixin, _SuperuserOnlyMixin, CreateView):
+class FilialCreateView(ManagementRolesMixin, AppPermissionMixin, CreateView):
     model = Filial
     form_class = FilialForm
     template_name = 'usuario/filial_form.html'
@@ -634,7 +646,7 @@ class FilialCreateView(AppPermissionMixin, _SuperuserOnlyMixin, CreateView):
         return super().form_valid(form)
 
 
-class FilialUpdateView(AppPermissionMixin, _SuperuserOnlyMixin, UpdateView):
+class FilialUpdateView(ManagementRolesMixin, AppPermissionMixin, UpdateView):
     model = Filial
     form_class = FilialForm
     template_name = 'usuario/filial_form.html'
@@ -654,7 +666,7 @@ class FilialUpdateView(AppPermissionMixin, _SuperuserOnlyMixin, UpdateView):
         return super().form_valid(form)
 
 
-class FilialDeleteView(AppPermissionMixin, _SuperuserOnlyMixin, DeleteView):
+class FilialDeleteView(ManagementRolesMixin, AppPermissionMixin, DeleteView):
     model = Filial
     template_name = 'usuario/filial_confirm_delete.html'
     success_url = reverse_lazy('usuario:filial_lista')
@@ -675,9 +687,12 @@ class FilialDeleteView(AppPermissionMixin, _SuperuserOnlyMixin, DeleteView):
                 'registros associados a ela.'
             )
             return redirect('usuario:filial_lista')
+
+
 # =============================================================================
 # PENDENTE DE VÍNCULO COM FUNCIONÁRIO
 # =============================================================================
+
 class PendenteVinculoView(LoginRequiredMixin, TemplateView):
     """
     Exibida quando o usuário logado não possui um Funcionario vinculado.
@@ -692,10 +707,10 @@ class PendenteVinculoView(LoginRequiredMixin, TemplateView):
 
 
 # =============================================================================
-# GERENCIAMENTO DE CARDS POR GRUPO
+# GERENCIAMENTO DE CARDS POR GRUPO (Superuser, Gerente ou Administrador)
 # =============================================================================
 
-class ManageCardPermissionsView(AppPermissionMixin, _SuperuserOnlyMixin, View):
+class ManageCardPermissionsView(ManagementRolesMixin, AppPermissionMixin, View):
     """Configura quais cards cada grupo pode ver."""
     template_name = 'usuario/gerenciar_cards.html'
     http_method_names = ['get', 'post']
@@ -738,16 +753,13 @@ class ManageCardPermissionsView(AppPermissionMixin, _SuperuserOnlyMixin, View):
 @method_decorator(sensitive_post_parameters('email'), name='dispatch')
 @method_decorator(never_cache, name='dispatch')
 class CustomPasswordResetView(PasswordResetView):
-    """
-    Solicita o e-mail e envia link de redefinição.
-    Usuário NÃO precisa estar autenticado.
-    """
+    """Solicita o e-mail e envia link de redefinição. Usuário NÃO autenticado."""
     template_name = 'usuario/password_reset/form.html'
-    email_template_name = 'usuario/password_reset/email.txt'        # versão texto
-    html_email_template_name = 'usuario/password_reset/email.html'  # versão HTML
+    email_template_name = 'usuario/password_reset/email.txt'
+    html_email_template_name = 'usuario/password_reset/email.html'
     subject_template_name = 'usuario/password_reset/subject.txt'
     success_url = reverse_lazy('usuario:password_reset_done')
-    from_email = None  # usa DEFAULT_FROM_EMAIL do settings
+    from_email = None
 
     def form_valid(self, form):
         email = form.cleaned_data.get('email', '')
@@ -764,10 +776,10 @@ class CustomPasswordResetDoneView(PasswordResetDoneView):
 ), name='dispatch')
 @method_decorator(never_cache, name='dispatch')
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
-    """Recebe o link clicado pelo usuário, valida o token e permite criar nova senha."""
+    """Recebe o link, valida o token e permite criar nova senha."""
     template_name = 'usuario/password_reset/confirm.html'
     success_url = reverse_lazy('usuario:password_reset_complete')
-    post_reset_login = False  # 🔒 não loga automaticamente (mais seguro)
+    post_reset_login = False
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -782,36 +794,23 @@ class CustomPasswordResetCompleteView(PasswordResetCompleteView):
     template_name = 'usuario/password_reset/complete.html'
 
 
-
 # =============================================================================
-# EXPORTAÇÃO EXCEL
+# EXPORTAÇÃO EXCEL (Superuser, Gerente ou Administrador)
 # =============================================================================
 
 @method_decorator(never_cache, name='dispatch')
-class ExportarUsuariosExcelView(AppPermissionMixin,
+class ExportarUsuariosExcelView(ManagementRolesMixin,
+                                AppPermissionMixin,
                                 FilialScopedUserMixin,
                                 HideSuperusersMixin,
                                 View):
     """
     Exporta lista de usuários em Excel (.xlsx).
-    🔒 Requer permissão de gerenciamento (não apenas staff) por expor PII.
+    🔒 Requer papel de gestão (não apenas staff) por expor PII.
     """
-    permission_required = 'usuario.view_usuario'
     model = Usuario
 
-    def has_permission(self):
-        # 🔒 Apenas superuser ou quem é gerente/administrador
-        user = self.request.user
-        if not user.is_authenticated:
-            return False
-        return (
-            user.is_superuser
-            or getattr(user, 'is_gerente', False)
-            or getattr(user, 'is_administrador', False)
-        )
-
     def get_queryset(self):
-        # Base queryset — os mixins de escopo filtrarão
         return Usuario.objects.select_related('filial_ativa').prefetch_related(
             'filiais_permitidas', 'groups'
         ).order_by('first_name', 'last_name')

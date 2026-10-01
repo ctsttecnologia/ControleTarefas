@@ -123,6 +123,10 @@ class Usuario(AbstractUser):
     def is_do_sst(self) -> bool:
         return self.groups.filter(name=GRUPO_SST_SEGURANCA).exists()
 
+    @property
+    def is_administrador(self) -> bool:
+        return self.groups.filter(name=GRUPO_ADMINISTRADOR).exists()
+
     # ---------- Feature flags ----------
     @property
     def tem_dashboard_full(self) -> bool:
@@ -131,9 +135,7 @@ class Usuario(AbstractUser):
     # ---------- Helper genérico ----------
     def pertence_ao_grupo(self, nome_grupo: str) -> bool:
         """Verifica pertencimento a qualquer grupo pelo nome."""
-        return self.groups.filter(name=nome_grupo).exists()
-
-   
+        return self.groups.filter(name=nome_grupo).exists() 
     
 class GroupCardPermissions(models.Model):
     # A Foreign Key para o modelo de grupo do Django

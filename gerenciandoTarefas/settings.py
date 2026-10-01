@@ -349,6 +349,8 @@ CLOUDINARY_STORAGE = {
     'API_KEY': config('CLOUDINARY_API_KEY', default=''),
     'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
     'SECURE': True,
+    # Prefixo para organizar por pastas dentro da conta Cloudinary
+    'PREFIX': 'cetest',
 }
 
 cloudinary.config(
@@ -366,10 +368,15 @@ if IS_DEVELOPMENT:
     MEDIA_URL = '/midia/'
     logger.debug("📁 Usando storage local (Desenvolvimento)")
 else:
+    # Mantém STATIC local/whitenoise — não usar Cloudinary para estáticos
+    # STATICFILES_STORAGE permanece como já configurado (whitenoise, etc.)  
     # ── PRODUÇÃO COM WHITENOISE + CLOUDINARY ──
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     STATIC_URL = '/static/'
+    # 🔒 Storage padrão para MEDIA (arquivos enviados/gerados pelos usuários)
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    # RAW storage é necessário para armazenar PDFs (Cloudinary trata PDF como "raw", não "image")
+    CLOUDINARY_RAW_STORAGE = 'cloudinary_storage.storage.RawMediaCloudinaryStorage'
     MEDIA_URL = '/midia/'
     logger.debug("📦 Usando WhiteNoise + Cloudinary (Produção)")
 

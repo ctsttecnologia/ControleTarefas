@@ -96,6 +96,12 @@ class CustomUserCreationForm(UserCreationForm):
         empty_label="--- Nenhum ---",
     )
 
+    aceite_lgpd = forms.BooleanField(
+        required=True,
+        label="Confirmo que fui informado sobre o tratamento dos meus dados pessoais",
+        error_messages={'required': 'É necessário confirmar o aceite da política de privacidade.'},
+    )
+
     filiais_permitidas = forms.ModelMultipleChoiceField(
         queryset=Filial.objects.none(),  # setado no __init__
         widget=FilteredSelectMultiple(verbose_name='Filiais Permitidas', is_stacked=False),
@@ -137,6 +143,13 @@ class CustomUserCreationForm(UserCreationForm):
                 self.fields.pop(flag, None)
 
         _aplicar_bootstrap(self.fields)
+
+    def clean_email(self):
+        # 🔒 normaliza e-mail (evita duplicidade por caixa alta/espaços)
+        email = self.cleaned_data.get('email', '').strip().lower()
+        if Usuario.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Este e-mail já está cadastrado.")
+        return email
 
     def clean_filiais_permitidas(self):
         filiais = self.cleaned_data.get('filiais_permitidas')

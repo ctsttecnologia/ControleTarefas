@@ -1,5 +1,4 @@
-﻿
-{% extends "departamento_pessoal/_base_dp.html" %}
+﻿{% extends "departamento_pessoal/_base_dp.html" %}
 {% load secure_url %}
 {% load static %}
 
@@ -31,18 +30,65 @@
 
 <!-- Conteúdo -->
 <div class="content-card">
-    <!-- Barra de Pesquisa -->
+
+    <!-- 🆕 Barra de Filtros Avançados -->
     <div class="content-card-body border-bottom">
-        <form method="get" class="search-box" style="max-width: 500px;">
-            <input type="text" name="q" placeholder="Pesquisar por nome, matrícula, cargo..."
-                   value="{{ request.GET.q|default:'' }}">
-            <button type="submit">
-                <i class="bi bi-search"></i>
-            </button>
+        <form method="get" class="row g-2 align-items-end">
+
+            <div class="col-md-3">
+                <label for="filtro-q" class="form-label small text-muted mb-1">Busca geral</label>
+                <div class="search-box mb-0">
+                    <input type="text" id="filtro-q" name="q"
+                           placeholder="Nome, matrícula, cargo..."
+                           value="{{ current_q }}">
+                    <button type="submit" title="Buscar">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <label for="filtro-nome" class="form-label small text-muted mb-1">Nome</label>
+                <input type="text" id="filtro-nome" name="nome" class="form-control"
+                       placeholder="Filtrar por nome"
+                       value="{{ filtro_nome }}">
+            </div>
+
+            <div class="col-md-3">
+                <label for="filtro-cargo" class="form-label small text-muted mb-1">Cargo</label>
+                <select id="filtro-cargo" name="cargo" class="form-select">
+                    <option value="">Todos os cargos</option>
+                    {% for cargo in cargos_disponiveis %}
+                    <option value="{{ cargo.id }}" {% if filtro_cargo == cargo.id|stringformat:"s" %}selected{% endif %}>
+                        {{ cargo.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+                <div class="col-md-3">
+                    <label for="filtro-contrato" class="form-label small text-muted mb-1">Contrato</label>
+                    <select id="filtro-contrato" name="contrato" class="form-select">
+                        <option value="">Todos os contratos</option>
+                        {% for contrato in contratos_disponiveis %}
+                        <option value="{{ contrato }}" {% if filtro_contrato == contrato %}selected{% endif %}>
+                            {{ contrato }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 d-flex gap-2 justify-content-end">
+                <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-circle me-1"></i> Limpar Filtros
+                </a>
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-funnel me-1"></i> Filtrar
+                </button>
+            </div>
         </form>
     </div>
 
-        <!-- Tabela -->
+    <!-- Tabela -->
     {% if funcionarios %}
     <div class="table-responsive">
         <table class="table table-modern">
@@ -64,7 +110,7 @@
                     <td>
                         <div class="d-flex align-items-center gap-2">
                             {% if funcionario.foto_3x4 %}
-                                <img src="{{ funcionario.foto_3x4.url }}" 
+                                <img src="{{ funcionario.foto_3x4.url }}"
                                      class="rounded-circle" width="40" height="40" style="object-fit: cover;"
                                      onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ funcionario.nome_completo|urlencode }}&background=3b82f6&color=fff&size=40&bold=true';">
                             {% else %}
@@ -153,7 +199,7 @@
             <i class="bi bi-people"></i>
         </div>
         <h5>Nenhum funcionário encontrado</h5>
-        <p>Cadastre o primeiro funcionário da empresa.</p>
+        <p>Cadastre o primeiro funcionário da empresa ou ajuste os filtros.</p>
         {% if perms.departamento_pessoal.add_funcionario or user.is_superuser %}
         <a href="{% url 'departamento_pessoal:funcionario_create' %}" class="btn btn-primary">
             <i class="bi bi-plus-circle me-1"></i> Novo Funcionário
@@ -161,19 +207,20 @@
         {% endif %}
     </div>
     {% endif %}
+
     <!-- Paginação -->
     {% if is_paginated %}
     <div class="content-card-body border-top">
-        <nav aria-label="Paginação de cargos">
+        <nav aria-label="Paginação de funcionários">
             <ul class="pagination justify-content-center mb-0">
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page=1" title="Primeira">
+                    <a class="page-link" href="?page=1&{{ query_string }}" title="Primeira">
                         <i class="bi bi-chevron-double-left"></i>
                     </a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ query_string }}">
                         <i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
@@ -193,19 +240,19 @@
                     </li>
                     {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        <a class="page-link" href="?page={{ num }}&{{ query_string }}">{{ num }}</a>
                     </li>
                     {% endif %}
                 {% endfor %}
 
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ query_string }}">
                         <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" title="Última">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" title="Última">
                         <i class="bi bi-chevron-double-right"></i>
                     </a>
                 </li>
@@ -220,13 +267,14 @@
             </ul>
             <p class="text-center text-muted mt-2 mb-0" style="font-size: 0.8rem;">
                 Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-                — {{ page_obj.paginator.count }} cargo{{ page_obj.paginator.count|pluralize:"s" }} no total
+                — {{ page_obj.paginator.count }} funcionário{{ page_obj.paginator.count|pluralize:"s" }} no total
             </p>
         </nav>
     </div>
     {% endif %}
 </div>
 {% endblock %}
+
 
 
 

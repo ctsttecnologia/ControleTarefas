@@ -10,17 +10,43 @@
     {{ form.media.css }}
     <style>
         /* =============================================
-           SEÇÕES — usa variáveis globais do tema
+           LAYOUT — STEPPER / SEÇÕES SEMÂNTICAS
            ============================================= */
-        .section-divider {
-            font-size: 0.75rem;
+        .form-fieldset {
+            border: none;
+            padding: 0;
+            margin: 0 0 2rem 0;
+        }
+        .form-fieldset legend {
+            font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             color: var(--bs-text-muted);
             font-weight: 700;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
+            width: 100%;
+            padding-bottom: 0.6rem;
+            margin-bottom: 1.25rem;
             border-bottom: 2px solid var(--bs-border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .form-fieldset legend i { font-size: 0.95rem; }
+
+        /* =============================================
+           BADGE DE STATUS DE SEGURANÇA
+           ============================================= */
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.25rem 0.65rem;
+            border-radius: 999px;
+            background: rgba(var(--bs-warning-rgb), 0.12);
+            color: var(--bs-warning-text-emphasis, #997404);
+            border: 1px solid rgba(var(--bs-warning-rgb), 0.3);
         }
 
         /* =============================================
@@ -29,9 +55,38 @@
         .switch-card {
             background-color: var(--surface-subtle);
             border: 1px solid var(--bs-border-color);
-            border-radius: 0.5rem;
-            padding: 1rem 1.25rem;
+            border-radius: 0.6rem;
+            padding: 1.1rem 1.3rem;
             color: var(--bs-body-color);
+        }
+        .switch-card .form-check + .form-check {
+            margin-top: 0.65rem;
+            padding-top: 0.65rem;
+            border-top: 1px dashed var(--bs-border-color);
+        }
+
+        /* =============================================
+           AVISO LGPD
+           ============================================= */
+        .lgpd-notice {
+            background: rgba(var(--bs-info-rgb), 0.08);
+            border: 1px solid rgba(var(--bs-info-rgb), 0.25);
+            border-radius: 0.6rem;
+            padding: 1rem 1.2rem;
+            font-size: 0.85rem;
+            color: var(--bs-body-color);
+        }
+        .lgpd-notice a { text-decoration: underline; }
+
+        .lgpd-consent-box {
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.5rem;
+            padding: 0.9rem 1.1rem;
+            background: var(--surface-subtle);
+        }
+        .lgpd-consent-box .form-check-input:invalid,
+        .lgpd-consent-box .form-check-input.is-invalid {
+            border-color: var(--bs-danger);
         }
 
         /* =============================================
@@ -44,8 +99,6 @@
             gap: 0.75rem;
             width: 100% !important;
         }
-
-        /* Painéis (disponíveis / escolhidos) */
         .selector .selector-available,
         .selector .selector-chosen {
             flex: 1 !important;
@@ -59,8 +112,6 @@
             float: none !important;
             width: auto !important;
         }
-
-        /* Cabeçalhos dos painéis */
         .selector h2 {
             font-size: 0.8rem !important;
             font-weight: 600 !important;
@@ -70,8 +121,6 @@
             border-bottom: 1px solid var(--bs-border-color) !important;
             color: var(--bs-body-color) !important;
         }
-
-        /* Área do filtro (busca) */
         .selector .selector-filter {
             padding: 0.4rem 0.5rem !important;
             border-bottom: 1px solid var(--bs-border-color) !important;
@@ -106,8 +155,6 @@
             color: var(--bs-text-muted) !important;
             opacity: 0.7;
         }
-
-        /* Listas de opções */
         .selector select {
             flex-grow: 1;
             border: none !important;
@@ -129,8 +176,6 @@
             background-color: var(--surface-hover) !important;
             color: var(--bs-primary) !important;
         }
-
-        /* Controles centrais (setas) */
         .selector .selector-control {
             display: flex !important;
             flex-direction: column;
@@ -158,22 +203,11 @@
             background-color: var(--bs-primary) !important;
             border-color: var(--bs-primary) !important;
         }
-        .selector .selector-control a img {
-            transition: filter 0.15s ease-in-out;
-        }
-        .selector .selector-control a:hover img {
-            filter: brightness(0) invert(1);
-        }
-        /* Inverte ícones do widget no tema escuro */
+        .selector .selector-control a img { transition: filter 0.15s ease-in-out; }
+        .selector .selector-control a:hover img { filter: brightness(0) invert(1); }
         [data-bs-theme="dark"] .selector .selector-control a img,
-        [data-bs-theme="dark"] .selector .selector-filter label img {
-            filter: invert(0.85);
-        }
-        [data-bs-theme="dark"] .selector .selector-control a:hover img {
-            filter: brightness(0) invert(1);
-        }
-
-        /* Botões "Escolher todos" / "Limpar todos" */
+        [data-bs-theme="dark"] .selector .selector-filter label img { filter: invert(0.85); }
+        [data-bs-theme="dark"] .selector .selector-control a:hover img { filter: brightness(0) invert(1); }
         .selector .selector-chooseall,
         .selector .selector-clearall {
             font-size: 0.72rem !important;
@@ -193,33 +227,31 @@
             color: #fff !important;
             border-color: var(--bs-primary) !important;
         }
-
-        /* Esconde texto de ajuda do widget admin */
         .selector-available p.help,
-        .selector-chosen p.help {
-            display: none !important;
-        }
-
-        /* Responsivo */
+        .selector-chosen p.help { display: none !important; }
         @media (max-width: 576px) {
             .selector { flex-direction: column; }
             .selector .selector-control { flex-direction: row; padding: 0.25rem 0; }
         }
-
-        /* Altura maior para o widget de permissões */
         #id_user_permissions_from,
-        #id_user_permissions_to {
-            min-height: 250px !important;
-        }
+        #id_user_permissions_to { min-height: 250px !important; }
 
         /* =============================================
-           BARRA DE FORÇA DE SENHA (texto adaptativo)
+           BARRA DE FORÇA DE SENHA
            ============================================= */
-        #password-strength-text.text-warning {
-            color: #ffc107 !important;
-        }
-        [data-bs-theme="dark"] #password-strength-text.text-warning {
-            color: #ffda6a !important;
+        #password-strength-text.text-warning { color: #ffc107 !important; }
+        [data-bs-theme="dark"] #password-strength-text.text-warning { color: #ffda6a !important; }
+
+        /* =============================================
+           SUPERUSER — destaque de risco
+           ============================================= */
+        .superuser-warning {
+            background: rgba(var(--bs-danger-rgb), 0.08);
+            border: 1px solid rgba(var(--bs-danger-rgb), 0.3);
+            border-radius: 0.4rem;
+            padding: 0.6rem 0.9rem;
+            font-size: 0.78rem;
+            margin-top: 0.5rem;
         }
     </style>
 {% endblock %}
@@ -228,7 +260,7 @@
 <div class="row justify-content-center">
     <div class="col-xxl-10">
         <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white py-3">
+            <div class="card-header bg-primary text-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0">
                     {% if form.instance.pk %}
                         <i class="bi bi-pencil-square me-2"></i>Editar: {{ form.instance.get_full_name|default:form.instance.username }}
@@ -236,14 +268,35 @@
                         <i class="bi bi-person-plus me-2"></i>Cadastrar Novo Usuário
                     {% endif %}
                 </h5>
+                <span class="security-badge">
+                    <i class="bi bi-shield-lock-fill"></i> Conexão segura e auditada
+                </span>
             </div>
+
             <div class="card-body p-4">
-                <form method="post" novalidate>
+
+                {# ── AVISO LGPD (sempre visível) ── #}
+                <div class="lgpd-notice mb-4" role="note" aria-label="Aviso de proteção de dados">
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    Os dados inseridos neste formulário são tratados conforme a
+                    <strong>Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018)</strong>,
+                    utilizados exclusivamente para fins de controle de acesso interno e
+                    auditoria de segurança. Consulte a
+                    <a href="{% url 'usuario:pendente_vinculo' %}" target="_blank" rel="noopener noreferrer">política de privacidade</a>
+                    para mais detalhes.
+                </div>
+
+                <form method="post" novalidate autocomplete="off" id="form-usuario">
                     {% csrf_token %}
 
-                    {# Exibe TODOS os erros (evita falhas silenciosas) #}
+                    {# Honeypot anti-bot — campo invisível, nunca deve ser preenchido #}
+                    <div style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
+                        <label for="website">Não preencher este campo</label>
+                        <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
+                    </div>
+
                     {% if form.errors %}
-                    <div class="alert alert-danger">
+                    <div class="alert alert-danger" role="alert">
                         <h6 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-1"></i>Corrija os erros abaixo:</h6>
                         <ul class="mb-0">
                             {% for field, errors in form.errors.items %}
@@ -256,7 +309,7 @@
                     {% endif %}
 
                     {% if form.non_field_errors %}
-                    <div class="alert alert-danger">
+                    <div class="alert alert-danger" role="alert">
                         {% for error in form.non_field_errors %}
                         <div>{{ error }}</div>
                         {% endfor %}
@@ -264,170 +317,170 @@
                     {% endif %}
 
                     {# ── SEÇÃO 1: INFORMAÇÕES DE LOGIN ── #}
-                    <div class="section-divider">
-                        <i class="bi bi-person me-1"></i>Informações de Login
-                    </div>
+                    <fieldset class="form-fieldset">
+                        <legend><i class="bi bi-person"></i> Informações de Login</legend>
 
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-3">
-                            <label for="{{ form.first_name.id_for_label }}" class="form-label fw-semibold">
-                                Primeiro Nome <span class="text-danger">*</span>
-                            </label>
-                            {% render_field form.first_name class="form-control" placeholder="Ex: Bruno" %}
-                            {% for error in form.first_name.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
-                            {% endfor %}
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label fw-semibold">
+                                    Primeiro Nome <span class="text-danger">*</span>
+                                </label>
+                                {% render_field form.first_name class="form-control" placeholder="Ex: Bruno" autocomplete="given-name" maxlength="150" required=True %}
+                                {% for error in form.first_name.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label fw-semibold">
+                                    Último Nome <span class="text-danger">*</span>
+                                </label>
+                                {% render_field form.last_name class="form-control" placeholder="Ex: Filipe" autocomplete="family-name" maxlength="150" required=True %}
+                                {% for error in form.last_name.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">
+                                    Usuário <span class="text-danger">*</span>
+                                </label>
+                                {% render_field form.username class="form-control" placeholder="nome.sobrenome" autocomplete="username" spellcheck="false" required=True %}
+                                {% if form.username.help_text %}
+                                <div class="form-text"><small>{{ form.username.help_text|safe }}</small></div>
+                                {% endif %}
+                                {% for error in form.username.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">
+                                    E-mail <span class="text-danger">*</span>
+                                </label>
+                                {% render_field form.email class="form-control" type="email" placeholder="email@empresa.com" autocomplete="email" required=True %}
+                                {% for error in form.email.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <label for="{{ form.last_name.id_for_label }}" class="form-label fw-semibold">
-                                Último Nome <span class="text-danger">*</span>
-                            </label>
-                            {% render_field form.last_name class="form-control" placeholder="Ex: Filipe" %}
-                            {% for error in form.last_name.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        <div class="col-md-3">
-                            <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">
-                                Usuário <span class="text-danger">*</span>
-                            </label>
-                            {% render_field form.username class="form-control" placeholder="nome.sobrenome" %}
-                            {% if form.username.help_text %}
-                            <div class="form-text"><small>{{ form.username.help_text|safe }}</small></div>
-                            {% endif %}
-                            {% for error in form.username.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        <div class="col-md-3">
-                            <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">
-                                E-mail <span class="text-danger">*</span>
-                            </label>
-                            {% render_field form.email class="form-control" placeholder="email@empresa.com" %}
-                            {% for error in form.email.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                    </div>
+                    </fieldset>
 
                     {# ── SENHA (apenas criação) ── #}
                     {% if not form.instance.pk %}
-                    <div class="row g-3 mb-4">
+                    <fieldset class="form-fieldset">
+                        <legend><i class="bi bi-key-fill"></i> Definição de Senha</legend>
 
-                        {# Campo: Senha #}
-                        <div class="col-md-3">
-                            <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold">
-                                Senha <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                {% render_field form.password1 class="form-control" placeholder="••••••••" %}
-                                <button class="btn btn-outline-secondary toggle-password"
-                                        type="button"
-                                        data-target="#{{ form.password1.id_for_label }}"
-                                        tabindex="-1"
-                                        title="Mostrar/ocultar senha">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            </div>
-                            {% if form.password1.help_text %}
-                            <div class="form-text"><small>{{ form.password1.help_text|safe }}</small></div>
-                            {% endif %}
-                            {% for error in form.password1.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
-                            {% endfor %}
-
-                            {# Barra de força logo abaixo do campo password1 #}
-                            <div class="mt-2">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <small class="text-muted">Força da senha</small>
-                                    <small id="password-strength-text" class="fw-semibold"></small>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold">
+                                    Senha <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    {% render_field form.password1 class="form-control" placeholder="••••••••" autocomplete="new-password" required=True %}
+                                    <button class="btn btn-outline-secondary toggle-password"
+                                            type="button"
+                                            data-target="#{{ form.password1.id_for_label }}"
+                                            tabindex="-1"
+                                            aria-label="Mostrar ou ocultar senha"
+                                            title="Mostrar/ocultar senha">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
                                 </div>
-                                <div class="progress" style="height: 5px;">
-                                    <div id="password-strength-bar"
-                                         class="progress-bar"
-                                         role="progressbar"
-                                         style="width: 0%; transition: width 0.3s ease;">
+                                {% if form.password1.help_text %}
+                                <div class="form-text"><small>{{ form.password1.help_text|safe }}</small></div>
+                                {% endif %}
+                                {% for error in form.password1.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+
+                                <div class="mt-2">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small class="text-muted">Força da senha</small>
+                                        <small id="password-strength-text" class="fw-semibold" aria-live="polite"></small>
+                                    </div>
+                                    <div class="progress" style="height: 5px;">
+                                        <div id="password-strength-bar"
+                                             class="progress-bar"
+                                             role="progressbar"
+                                             aria-valuemin="0" aria-valuemax="100"
+                                             style="width: 0%; transition: width 0.3s ease;">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {# Campo: Confirmar Senha #}
-                        <div class="col-md-3">
-                            <label for="{{ form.password2.id_for_label }}" class="form-label fw-semibold">
-                                Confirmar Senha <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                {% render_field form.password2 class="form-control" placeholder="••••••••" %}
-                                <button class="btn btn-outline-secondary toggle-password"
-                                        type="button"
-                                        data-target="#{{ form.password2.id_for_label }}"
-                                        tabindex="-1"
-                                        title="Mostrar/ocultar senha">
-                                    <i class="bi bi-eye"></i>
-                                </button>
+                            <div class="col-md-3">
+                                <label for="{{ form.password2.id_for_label }}" class="form-label fw-semibold">
+                                    Confirmar Senha <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    {% render_field form.password2 class="form-control" placeholder="••••••••" autocomplete="new-password" required=True %}
+                                    <button class="btn btn-outline-secondary toggle-password"
+                                            type="button"
+                                            data-target="#{{ form.password2.id_for_label }}"
+                                            tabindex="-1"
+                                            aria-label="Mostrar ou ocultar senha"
+                                            title="Mostrar/ocultar senha">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                {% for error in form.password2.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
                             </div>
-                            {% for error in form.password2.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
-                            {% endfor %}
-                        </div>
 
-                        {% if form.funcionario %}
-                        <div class="col-md-6">
-                            <label for="{{ form.funcionario.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.funcionario.label }}
-                            </label>
-                            {% render_field form.funcionario class="form-select" %}
-                            {% if form.funcionario.help_text %}
-                            <div class="form-text"><small>{{ form.funcionario.help_text }}</small></div>
+                            {% if form.funcionario %}
+                            <div class="col-md-6">
+                                <label for="{{ form.funcionario.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.funcionario.label }}
+                                </label>
+                                {% render_field form.funcionario class="form-select" %}
+                                {% if form.funcionario.help_text %}
+                                <div class="form-text"><small>{{ form.funcionario.help_text }}</small></div>
+                                {% endif %}
+                            </div>
                             {% endif %}
                         </div>
-                        {% endif %}
-
-                    </div>
+                    </fieldset>
                     {% endif %}
 
                     {# ── SEÇÃO 2: FILIAIS ── #}
-                    <div class="section-divider">
-                        <i class="bi bi-building me-1"></i>Filiais
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.filiais_permitidas.id_for_label }}" class="form-label fw-semibold">
-                            Filiais Permitidas <span class="text-danger">*</span>
-                        </label>
-                        {{ form.filiais_permitidas }}
-                        {% if form.filiais_permitidas.help_text %}
-                        <div class="form-text mt-1"><small>{{ form.filiais_permitidas.help_text }}</small></div>
-                        {% endif %}
-                        {% for error in form.filiais_permitidas.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
-                    </div>
+                    <fieldset class="form-fieldset">
+                        <legend><i class="bi bi-building"></i> Filiais</legend>
 
-                    {# Filial Ativa — apenas edição (na criação será setada automaticamente) #}
-                    {% if form.instance.pk and form.filial_ativa %}
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <label for="{{ form.filial_ativa.id_for_label }}" class="form-label fw-semibold">
-                                <i class="bi bi-geo-alt-fill text-primary me-1"></i>{{ form.filial_ativa.label }}
+                        <div class="mb-3">
+                            <label for="{{ form.filiais_permitidas.id_for_label }}" class="form-label fw-semibold">
+                                Filiais Permitidas <span class="text-danger">*</span>
                             </label>
-                            {% render_field form.filial_ativa class="form-select" %}
-                            {% if form.filial_ativa.help_text %}
-                            <div class="form-text"><small>{{ form.filial_ativa.help_text }}</small></div>
+                            {{ form.filiais_permitidas }}
+                            {% if form.filiais_permitidas.help_text %}
+                            <div class="form-text mt-1"><small>{{ form.filiais_permitidas.help_text }}</small></div>
                             {% endif %}
-                            {% for error in form.filial_ativa.errors %}
+                            {% for error in form.filiais_permitidas.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
                             {% endfor %}
                         </div>
-                    </div>
-                    {% endif %}
+
+                        {% if form.instance.pk and form.filial_ativa %}
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="{{ form.filial_ativa.id_for_label }}" class="form-label fw-semibold">
+                                    <i class="bi bi-geo-alt-fill text-primary me-1"></i>{{ form.filial_ativa.label }}
+                                </label>
+                                {% render_field form.filial_ativa class="form-select" %}
+                                {% if form.filial_ativa.help_text %}
+                                <div class="form-text"><small>{{ form.filial_ativa.help_text }}</small></div>
+                                {% endif %}
+                                {% for error in form.filial_ativa.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </fieldset>
 
                     {# ── SEÇÃO 3: GRUPOS ── #}
                     {% if form.groups %}
-                    <div class="section-divider">
-                        <i class="bi bi-people me-1"></i>Grupos
-                    </div>
-                    <div class="mb-4">
+                    <fieldset class="form-fieldset">
+                        <legend><i class="bi bi-people"></i> Grupos</legend>
                         <label for="{{ form.groups.id_for_label }}" class="form-label fw-semibold">
                             Grupos do Usuário
                         </label>
@@ -435,50 +488,54 @@
                         {% for error in form.groups.errors %}
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
-                    </div>
+                    </fieldset>
                     {% endif %}
 
                     {# ── SEÇÃO 4: STATUS E ACESSO ── #}
-                    <div class="section-divider">
-                        <i class="bi bi-shield-lock me-1"></i>Status e Acesso
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-md-6">
-                            <div class="switch-card">
-                                {% if form.is_active %}
-                                <div class="form-check form-switch mb-2">
-                                    {% render_field form.is_active class="form-check-input" %}
-                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
-                                        <i class="bi bi-check-circle-fill text-success me-1"></i>Usuário ativo
-                                    </label>
+                    <fieldset class="form-fieldset">
+                        <legend><i class="bi bi-shield-lock"></i> Status e Acesso</legend>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="switch-card">
+                                    {% if form.is_active %}
+                                    <div class="form-check form-switch">
+                                        {% render_field form.is_active class="form-check-input" %}
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                            <i class="bi bi-check-circle-fill text-success me-1"></i>Usuário ativo
+                                        </label>
+                                    </div>
+                                    {% endif %}
+                                    {% if form.is_staff %}
+                                    <div class="form-check form-switch">
+                                        {% render_field form.is_staff class="form-check-input" %}
+                                        <label class="form-check-label" for="{{ form.is_staff.id_for_label }}">
+                                            <i class="bi bi-person-badge-fill text-info me-1"></i>Acesso ao painel (Staff)
+                                        </label>
+                                    </div>
+                                    {% endif %}
+                                    {% if form.is_superuser %}
+                                    <div class="form-check form-switch">
+                                        {% render_field form.is_superuser class="form-check-input" %}
+                                        <label class="form-check-label text-danger" for="{{ form.is_superuser.id_for_label }}">
+                                            <i class="bi bi-shield-fill-exclamation me-1"></i>Superusuário
+                                        </label>
+                                    </div>
+                                    <div class="superuser-warning text-danger">
+                                        <i class="bi bi-exclamation-octagon-fill me-1"></i>
+                                        Concede acesso irrestrito a todos os módulos e dados do sistema.
+                                        Esta ação é registrada em log de auditoria.
+                                    </div>
+                                    {% endif %}
                                 </div>
-                                {% endif %}
-                                {% if form.is_staff %}
-                                <div class="form-check form-switch mb-2">
-                                    {% render_field form.is_staff class="form-check-input" %}
-                                    <label class="form-check-label" for="{{ form.is_staff.id_for_label }}">
-                                        <i class="bi bi-person-badge-fill text-info me-1"></i>Acesso ao painel (Staff)
-                                    </label>
-                                </div>
-                                {% endif %}
-                                {% if form.is_superuser %}
-                                <div class="form-check form-switch">
-                                    {% render_field form.is_superuser class="form-check-input" %}
-                                    <label class="form-check-label text-danger" for="{{ form.is_superuser.id_for_label }}">
-                                        <i class="bi bi-shield-fill-exclamation me-1"></i>Superusuário
-                                    </label>
-                                </div>
-                                {% endif %}
                             </div>
                         </div>
-                    </div>
+                    </fieldset>
 
                     {# ── SEÇÃO 5: PERMISSÕES (apenas edição) ── #}
                     {% if form.user_permissions %}
-                    <div class="section-divider mt-4">
-                        <i class="bi bi-key me-1"></i>Permissões do Usuário
-                    </div>
-                    <div class="mb-4">
+                    <fieldset class="form-fieldset">
+                        <legend><i class="bi bi-key"></i> Permissões do Usuário</legend>
                         <label for="{{ form.user_permissions.id_for_label }}" class="form-label fw-semibold">
                             Permissões Específicas
                         </label>
@@ -492,7 +549,25 @@
                         {% for error in form.user_permissions.errors %}
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
-                    </div>
+                    </fieldset>
+                    {% endif %}
+
+                    {# ── SEÇÃO 6: CONSENTIMENTO LGPD (apenas criação) ── #}
+                    {% if not form.instance.pk and form.aceite_lgpd %}
+                    <fieldset class="form-fieldset">
+                        <legend><i class="bi bi-file-earmark-lock2"></i> Consentimento — LGPD</legend>
+                        <div class="lgpd-consent-box">
+                            <div class="form-check">
+                                {% render_field form.aceite_lgpd class="form-check-input" required=True %}
+                                <label class="form-check-label" for="{{ form.aceite_lgpd.id_for_label }}">
+                                    {{ form.aceite_lgpd.label }}
+                                </label>
+                            </div>
+                            {% for error in form.aceite_lgpd.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
                     {% endif %}
 
                     {# ── RODAPÉ ── #}
@@ -514,7 +589,7 @@
                             <a href="{% url 'usuario:usuario_lista' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-1"></i>Cancelar
                             </a>
-                            <button type="submit" class="btn btn-primary px-4">
+                            <button type="submit" class="btn btn-primary px-4" id="btn-submit-usuario">
                                 <i class="bi bi-check-lg me-1"></i>Salvar
                             </button>
                         </div>
@@ -533,7 +608,17 @@
     (function () {
         'use strict';
 
-        // ─── Toggle mostrar/ocultar senha ────────────────────────────────────
+        // ─── Anti-doublesubmit ────────────────────────────────────────────────
+        const form = document.getElementById('form-usuario');
+        const submitBtn = document.getElementById('btn-submit-usuario');
+        if (form && submitBtn) {
+            form.addEventListener('submit', function () {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Salvando...';
+            });
+        }
+
+        // ─── Toggle mostrar/ocultar senha ───────────────────────────────────
         document.querySelectorAll('.toggle-password').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 const input = document.querySelector(this.dataset.target);
@@ -543,14 +628,23 @@
                 input.type = isPassword ? 'text' : 'password';
                 icon.classList.toggle('bi-eye',       !isPassword);
                 icon.classList.toggle('bi-eye-slash',  isPassword);
+
+                // 🔒 Auto-oculta novamente após 10s de inatividade (evita shoulder surfing)
+                clearTimeout(this._hideTimer);
+                if (isPassword) {
+                    this._hideTimer = setTimeout(function () {
+                        input.type = 'password';
+                        icon.classList.add('bi-eye');
+                        icon.classList.remove('bi-eye-slash');
+                    }, 10000);
+                }
             });
         });
 
-        // ─── Força da senha (campo password1) ────────────────────────────────
-        // UserCreationForm usa password1 / password2 → id: id_password1
+        // ─── Força da senha ──────────────────────────────────────────────────
         const passwordInput = document.getElementById('id_password1');
-        const bar           = document.getElementById('password-strength-bar');
-        const label         = document.getElementById('password-strength-text');
+        const bar   = document.getElementById('password-strength-bar');
+        const label = document.getElementById('password-strength-text');
 
         if (passwordInput && bar && label) {
             passwordInput.addEventListener('input', function () {
@@ -562,27 +656,38 @@
                     { pct: 75,  cls: 'bg-info',    text: 'Média'       },
                     { pct: 100, cls: 'bg-success', text: 'Forte'       },
                 ];
-                const level       = levels[strength];
-                bar.style.width   = level.pct + '%';
-                bar.className     = 'progress-bar ' + level.cls;
+                const level = levels[strength];
+                bar.style.width = level.pct + '%';
+                bar.setAttribute('aria-valuenow', level.pct);
+                bar.className = 'progress-bar ' + level.cls;
                 label.textContent = level.text;
-                label.className   = 'fw-semibold ' + level.cls.replace('bg-', 'text-');
+                label.className = 'fw-semibold ' + level.cls.replace('bg-', 'text-');
             });
         }
 
         function calcStrength(pwd) {
             if (!pwd) return 0;
             let score = 0;
-            if (pwd.length >= 8)                         score++;
+            if (pwd.length >= 8)                        score++;
             if (pwd.length >= 12)                        score++;
             if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
             if (/[0-9]/.test(pwd))                       score++;
-            if (/[^A-Za-z0-9]/.test(pwd))               score++;
+            if (/[^A-Za-z0-9]/.test(pwd))                score++;
             return Math.min(4, score);
+        }
+
+        // ─── Honeypot: se preenchido, bloqueia submit client-side (defesa extra) ──
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                const honeypot = document.getElementById('website');
+                if (honeypot && honeypot.value.trim() !== '') {
+                    e.preventDefault();
+                    console.warn('Submissão bloqueada: honeypot preenchido.');
+                }
+            });
         }
 
     })();
     </script>
 {% endblock %}
-
 

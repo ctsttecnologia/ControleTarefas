@@ -24,11 +24,14 @@
             </form>
 
             <!-- Botão de Exportação Excel -->
-            <a href="{% url 'usuario:usuario_exportar_excel' %}{% if request.GET.q %}?q={{ request.GET.q }}{% endif %}" 
+            {% if user.is_superuser or user.is_administrador %}
+            <a href="{% url 'usuario:usuario_exportar_excel' %}{% if request.GET.q %}?q={{ request.GET.q }}{% endif %}"
             class="btn btn-outline-success align-self-start" title="Exportar para Excel">
                 <i class="bi bi-file-earmark-spreadsheet me-3"></i> Exportar Excel
-            </a>    
-            {% if user.is_superuser or user.is_gerente or user.is_administrador %}
+            </a>
+            {% endif %} 
+            <!-- Botão Novo Usuário -->
+            {% if perms.usuario.add_usuario or user.is_superuser %}
             <a href="{% url 'usuario:usuario_criar' %}" class="btn btn-outline-primary align-self-start" title="Criar novo usuário">
                 <i class="bi bi-person-plus me-3"></i>Novo Usuário
             </a>
@@ -66,16 +69,15 @@
                                 <span class="badge bg-primary bg-opacity-10 text-primary">
                                     <i class="bi bi-building me-1"></i>{{ usuario.filial_ativa.nome }}
                                 </span>
-                                {% with grupo=usuario.groups.first %}
-                                    {% if grupo %}
-                                        <small class="text-muted d-block">{{ grupo.name }}</small>
-                                    {% endif %}
-                                {% endwith %}
+                                    {% with grupo=usuario.groups.first %}
+                                        {% if grupo %}
+                                            <small class="text-muted d-block">{{ grupo.name }}</small>
+                                        {% endif %}
+                                    {% endwith %}
                             {% else %}
                                 <span class="text-muted">—</span>
                             {% endif %}
                         </td>
-
                         <td class="text-center">
                             {% if usuario.is_active %}
                                 <span class="badge bg-success">Ativo</span>
@@ -102,7 +104,8 @@
                                 </a>
                                 {% endif %}
 
-                                {% if perms.usuario.view_usuario or user.is_superuser %}
+                                <!-- Botão Grupos — visível apenas para Superuser ou Administrador -->
+                                {% if user.is_superuser or user.is_administrador %}
                                 <a href="{% url 'usuario:usuario_gerenciar_grupos' usuario.pk %}"
                                 class="btn btn-outline-secondary action-btn"
                                 title="Grupos">

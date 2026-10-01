@@ -52,6 +52,7 @@ from .models import Cargo, Cliente, Departamento, Documento, Filial, Funcionario
 from .services.importacao_massa import gerar_planilha_modelo, processar_planilha
 from django_ratelimit.decorators import ratelimit
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -593,7 +594,6 @@ def baixar_relatorio_erros(request):
 # ═══════════════════════════════════════════════════════════════════════════════
 # CRUD — FUNCIONÁRIOS
 # ═══════════════════════════════════════════════════════════════════════════════
-
 class FuncionarioListView(DPBaseMixin, ListView):
     permission_required = f'{APP_LABEL}.view_funcionario'
     model = Funcionario
@@ -618,26 +618,76 @@ class FuncionarioListView(DPBaseMixin, ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset().select_related(
-            'cargo', 'departamento'
+            'cargo', 'departamento', 'cliente'
         ).order_by('nome_completo')
 
         queryset = self.apply_visibility(queryset)
+        queryset = self._aplicar_filtros(queryset)
+        return queryset
 
-        query = self.request.GET.get('q')
+    def _aplicar_filtros(self, queryset):
+        """Aplica filtros de busca geral + filtros específicos (nome, contrato, cargo)."""
+        params = self.request.GET
+
+        # 🔎 Busca geral
+        query = params.get('q', '').strip()
         if query:
             queryset = queryset.filter(
                 Q(nome_completo__icontains=query) |
                 Q(matricula__icontains=query) |
-                Q(cargo__nome__icontains=query)
+                Q(cargo__nome__icontains=query) |
+                Q(cliente__contrato__icontains=query)
             )
+
+        # Filtro específico por Nome
+        nome = params.get('nome', '').strip()
+        if nome:
+            queryset = queryset.filter(nome_completo__icontains=nome)
+
+        # Filtro específico por Contrato (cliente.contrato)
+        contrato = params.get('contrato', '').strip()
+        if contrato:
+            queryset = queryset.filter(cliente__contrato=contrato)
+
+        # Filtro específico por Cargo
+        cargo_id = params.get('cargo', '').strip()
+        if cargo_id:
+            queryset = queryset.filter(cargo_id=cargo_id)
+
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['filial_ativa'] = self.get_filial_ativa()
         context['current_q'] = self.request.GET.get('q', '')
-        return context
 
+        # Valores atuais dos filtros
+        context['filtro_nome'] = self.request.GET.get('nome', '')
+        context['filtro_contrato'] = self.request.GET.get('contrato', '')
+        context['filtro_cargo'] = self.request.GET.get('cargo', '')
+
+        # Opções para os selects — escopadas pela mesma visibilidade da listagem
+        base_qs = self.apply_visibility(Funcionario.objects.all())
+
+        context['cargos_disponiveis'] = Cargo.objects.filter(
+            id__in=base_qs.values_list('cargo_id', flat=True)
+        ).order_by('nome')
+
+        # Contratos únicos direto de cliente.contrato (sem depender de Parceiro)
+        context['contratos_disponiveis'] = (
+            base_qs.exclude(cliente__contrato__isnull=True)
+            .exclude(cliente__contrato='')
+            .values_list('cliente__contrato', flat=True)
+            .distinct()
+            .order_by('cliente__contrato')
+        )
+
+        # Preserva querystring atual (sem 'page') para uso na paginação
+        qs_params = self.request.GET.copy()
+        qs_params.pop('page', None)
+        context['query_string'] = qs_params.urlencode()
+
+        return context
 
 class FuncionarioCreateView(DPBaseMixin, FilialCreateMixin, CreateView):
     permission_required = f'{APP_LABEL}.add_funcionario'

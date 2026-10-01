@@ -6,6 +6,7 @@ from io import BytesIO
 import json
 import subprocess
 import sys
+import requests
 from django.contrib.contenttypes.models import ContentType
 import zipfile
 from datetime import timedelta, datetime
@@ -982,15 +983,16 @@ class GerarQRCodesView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixi
     permission_required = 'ferramentas.change_ferramenta'
 
     def post(self, request, *args, **kwargs):
-        subprocess.Popen([
-            sys.executable,
-            str(settings.BASE_DIR / "manage.py"),
-            "generate_qrcodes",
-        ])
-        messages.success(request, "Geração de QR Codes iniciada em segundo plano.")
+        import os
+        env = os.environ.copy()
+        env.setdefault('DJANGO_SETTINGS_MODULE', 'gerenciandoTarefas.settings') 
+
+        subprocess.Popen(
+            [sys.executable, str(settings.BASE_DIR / "manage.py"), "generate_qrcodes"],
+            env=env,
+        )
+        messages.success(request, "Geração de QR Codes iniciada em segundo plano (armazenamento: Cloudinary).")
         return redirect('ferramentas:ferramenta_list')
-
-
 # =============================================================================
 # TERMOS DE RESPONSABILIDADE
 # =============================================================================
@@ -1321,27 +1323,39 @@ class DownloadTermoPDFView(LoginRequiredMixin, AppPermissionMixin, ViewFilialSco
             {
                 'termo': termo,
                 'logo_base64': get_logo_base64(),
-                'assinatura_base64': self._get_assinatura_base64(termo),  # ✅ NOVO
+                'assinatura_base64': self._get_assinatura_base64(termo),
             },
             request=request,
         )
 
         pdf_bytes = self._gerar_pdf(html_string, request)
 
+        # 🆕 Persiste no Cloudinary para auditoria/histórico (não bloqueia o download)
+        try:
+            termo.salvar_pdf(pdf_bytes)
+        except Exception as e:
+            logger.warning("Falha ao persistir PDF do termo #%s no Cloudinary: %s", termo.pk, e)
+
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="termo_{termo.pk}.pdf"'
         return response
 
     def _get_assinatura_base64(self, termo):
-        """Converte a imagem de assinatura para base64 (necessário p/ WeasyPrint/xhtml2pdf)."""
+        """Converte a imagem de assinatura para base64 (compatível com storage local ou Cloudinary)."""
         if not termo.assinatura_imagem:
             return None
         try:
-            with termo.assinatura_imagem.open('rb') as f:
-                dados = f.read()
+            # Storage remoto (Cloudinary) — melhor buscar via URL pública HTTPS
+            if hasattr(termo.assinatura_imagem, 'url') and termo.assinatura_imagem.url.startswith('http'):
+                resp = requests.get(termo.assinatura_imagem.url, timeout=10)
+                resp.raise_for_status()
+                dados = resp.content
+            else:
+                with termo.assinatura_imagem.open('rb') as f:
+                    dados = f.read()
             return f"data:image/png;base64,{base64.b64encode(dados).decode()}"
-        except (FileNotFoundError, ValueError):
-            logger.warning("Não foi possível ler a imagem de assinatura do termo #%s", termo.pk)
+        except Exception as e:
+            logger.warning("Não foi possível ler a assinatura do termo #%s: %s", termo.pk, e)
             return None
 
     def _gerar_pdf(self, html_string, request):

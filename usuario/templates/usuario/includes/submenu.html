@@ -37,37 +37,43 @@
                 </li>
 
                 {# Demais itens — Apenas admin/gerente/super #}
-                {% if user.is_superuser or user.is_gerente or user.is_administrador %}
+                
                 <li class="nav-item">
+                    {% if user.is_superuser or user.is_administrador %}
                     <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'usuario_criar' %}active{% endif %}"
                        href="{% url 'usuario:usuario_criar' %}">
                         <i class="bi bi-person-plus"></i>
                         <span>Novo Usuário</span>
                     </a>
+                    {% endif %}
                 </li>
                 <li class="nav-item">
+                    {% if user.is_superuser or user.is_administrador %}
                     <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'grupo_lista' %}active{% endif %}"
                        href="{% url 'usuario:grupo_lista' %}">
                         <i class="bi bi-collection"></i>
                         <span>Grupos</span>
                     </a>
+                    {% endif %}
                 </li>
                 <li class="nav-item">
+                    {% if user.is_superuser or user.is_administrador %}
                     <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'gerenciar_cards' %}active{% endif %}"
                        href="{% url 'usuario:gerenciar_cards' %}">
                         <i class="bi bi-grid-3x3-gap"></i>
                         <span>Cards</span>
                     </a>
+                    {% endif %}
                 </li>
                 <li class="nav-item">
+                    {% if user.is_superuser or user.is_administrador %}
                     <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'filial_lista' %}active{% endif %}"
                         href="{% url 'usuario:filial_lista' %}">
                         <i class="bi bi-building"></i>
                         <span>Filiais</span>
                     </a>
+                    {% endif %}
                 </li>
-                {% endif %}
-
             </ul>
         </div>
     </div>
