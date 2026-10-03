@@ -47,8 +47,10 @@ urlpatterns = [
     # --- Concluir Tarefa Rápido ---
     path('tarefas/<int:pk>/concluir-rapido/', views.concluir_tarefa_rapido, name='concluir_tarefa_rapido'),
 
-    
+    path("comentarios/<int:pk>/excluir/", views.comentario_excluir, name="comentario_excluir",),
+    path("comentarios/<int:pk>/anexo/excluir/", views.comentario_anexo_excluir, name="comentario_anexo_excluir",),
 ]
 
+    
 
 

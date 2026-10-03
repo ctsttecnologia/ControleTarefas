@@ -4,7 +4,6 @@ from datetime import timedelta, timezone
 from django.utils import timezone   # ← este precisa estar aqui
 from datetime import date  
 from io import BytesIO
-from api.views import TermoViewSet
 from departamento_pessoal.models import Funcionario
 from usuario.models import Filial
 from django.core.files.uploadedfile import SimpleUploadedFile

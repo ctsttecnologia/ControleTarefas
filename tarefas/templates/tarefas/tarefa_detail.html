@@ -392,19 +392,54 @@
                     <hr style="border-color: var(--detail-divider);">
 
                     {% for comentario in comentarios %}
+
                     <div class="comment-item">
                         <div class="comment-avatar"><i class="bi bi-person"></i></div>
                         <div class="comment-body">
                             <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                                 <span class="comment-author">{{ comentario.autor.get_full_name|default:comentario.autor.username }}</span>
-                                <span class="comment-date">{{ comentario.criado_em|date:"d/m/Y H:i" }}</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="comment-date">{{ comentario.criado_em|date:"d/m/Y H:i" }}</span>
+                                    {% if perms.tarefas.delete_comentario or user.is_superuser or comentario.autor_id == user.id %}
+                                    <form method="post"
+                                        action="{% url 'tarefas:comentario_excluir' comentario.pk %}"
+                                        class="d-inline"
+                                        onsubmit="return confirm('Excluir este comentário?');">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger py-0 px-1"
+                                                title="Excluir comentário"
+                                                aria-label="Excluir comentário">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
                             </div>
+
                             <div class="comment-text">{{ comentario.texto|linebreaksbr }}</div>
+
                             {% if comentario.anexo %}
                             {% secure_url comentario "anexo" as anexo_url %}
-                            <a href="{{ anexo_url }}" class="comment-attachment" target="_blank">
-                                <i class="bi bi-paperclip"></i>{{ comentario.nome_anexo }}
-                            </a>
+                            <div class="d-flex align-items-center gap-2 flex-wrap mt-1">
+                                <a href="{{ anexo_url }}" class="comment-attachment" target="_blank" rel="noopener">
+                                    <i class="bi bi-paperclip"></i>{{ comentario.nome_anexo }}
+                                </a>
+                                {% if perms.tarefas.delete_comentario or user.is_superuser or comentario.autor_id == user.id %}
+                                <form method="post"
+                                    action="{% url 'tarefas:comentario_anexo_excluir' comentario.pk %}"
+                                    class="d-inline"
+                                    onsubmit="return confirm('Excluir este arquivo?');">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger py-0 px-1"
+                                            title="Excluir arquivo"
+                                            aria-label="Excluir arquivo">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
                             {% endif %}
                         </div>
                     </div>
@@ -413,8 +448,7 @@
                     {% endfor %}
                 </div>
             </div>
-        </div>
-
+        </div>           
         <!-- ═══ Sidebar ═══ -->
         <div>
             <!-- Card Detalhes -->
@@ -671,7 +705,8 @@
                 </div>
                 {% endfor %}
             </div>
-        {% endif %}
+            {% endif %}
+        </div> 
     </div>
 </div>
 {% endblock %}

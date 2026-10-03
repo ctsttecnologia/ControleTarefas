@@ -52,4 +52,5 @@ media/
 sent_emails/
 staticfiles/
 
-.comandos
+comandos
+pytest.ini

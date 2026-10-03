@@ -77,15 +77,6 @@ ALL_CARDS = [
         ]
     },
     {
-        'id': 'telefones',
-        'title': 'Controle de Telefones',
-        'permission': 'controle_de_telefone.view_linhatelefonica',
-        'icon': 'images/telefones.gif',
-        'links': [
-            {'url': 'controle_de_telefone:dashboard', 'text': 'Gestão de Telefones', 'permission': 'controle_de_telefone.view_linhatelefonica'},
-        ]
-    },
-    {
         'id': 'estoque',
         'title': 'Estoque',
         'permission': 'seguranca_trabalho.view_equipamento',

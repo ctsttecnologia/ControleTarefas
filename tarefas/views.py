@@ -23,6 +23,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.core.exceptions import PermissionDenied
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q, Count, Case, When, IntegerField
 from django.db.models.functions import TruncWeek
@@ -37,7 +38,7 @@ from django.views.generic import (
 )
 from core.mixins import FuncionarioRequiredMixin, ViewFilialScopedMixin, TarefaAccessMixin, AppPermissionMixin
 from .forms import TarefaForm, ComentarioForm
-from .models import HistoricoTarefa, Tarefas
+from .models import  Comentario, Tarefas
 from .services import (
     preparar_contexto_relatorio,
     gerar_pdf_relatorio,
@@ -45,12 +46,10 @@ from .services import (
     gerar_docx_relatorio,
     registrar_alteracao_status,
 )
-from notifications.services import notificar_tarefa_criada, notificar_tarefa_comentario
+from notifications.services import notificar_tarefa_comentario
 from openpyxl import Workbook
 from django.http import HttpResponse
-from .utils.excel_styles import (
-    aplicar_cabecalho_relatorio, aplicar_estilo_tabela
-)
+
 from datetime import date
 from django.core.cache import cache
 
@@ -368,6 +367,48 @@ class TarefaDeleteView(TarefasBaseMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, "Tarefa excluída com sucesso!")
         return super().form_valid(form)
+
+
+def pode_excluir_comentario(user, comentario):
+    return (
+        user.is_superuser
+        or user.has_perm("tarefas.delete_comentario")
+        or comentario.autor_id == user.pk
+    )
+
+
+@login_required
+@require_POST
+def comentario_excluir(request, pk):
+    comentario = get_object_or_404(Comentario, pk=pk)
+
+    if not pode_excluir_comentario(request.user, comentario):
+        raise PermissionDenied
+
+    # O Django não remove automaticamente arquivos associados ao excluir o modelo.
+    if comentario.anexo:
+        comentario.anexo.delete(save=False)
+
+    tarefa_id = comentario.tarefa_id
+    comentario.delete()
+    return redirect("tarefas:tarefa_detail", pk=tarefa_id)
+
+
+@login_required
+@require_POST
+def comentario_anexo_excluir(request, pk):
+    comentario = get_object_or_404(Comentario, pk=pk)
+
+    if not pode_excluir_comentario(request.user, comentario):
+        raise PermissionDenied
+
+    if comentario.anexo:
+        comentario.anexo.delete(save=False)
+        comentario.save(update_fields=["anexo"])
+
+    return redirect("tarefas:tarefa_detail", pk=comentario.tarefa_id)
+
+
 
 
 class ConcluirTarefaView(TarefasBaseMixin, View):

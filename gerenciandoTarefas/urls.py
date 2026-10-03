@@ -57,16 +57,12 @@ urlpatterns = [
     path('automovel/', include('automovel.urls')),
     path('atas/', include('ata_reuniao.urls')),
     path('ferramentas/', include('ferramentas.urls', namespace='ferramentas')),
-    path('controle_de_telefone/', include('controle_de_telefone.urls')),
     path('select2/', include('django_select2.urls')),
     path('chat/', include('chat.urls')),
     path('documentos/', include('documentos.urls', namespace='documentos')),
     path('pgr_gestao/', include('pgr_gestao.urls', namespace='pgr_gestao')),
     # Isso permite usar o namespace "dashboard..."
     path('dashboard/', include('dashboard.urls')),
-    # API URLs
-    path('api/', include('api.urls')),
-    path('api/auth/', include('dj_rest_auth.urls')),
     path('notifications/', include('notifications.urls', namespace='notifications')),  # Para manter compatibilidade com URLs antigas
     path("ltcat/", include("ltcat.urls")),
     path('relatorio-fotografico/', include('relatorio_fotografico.urls')),
