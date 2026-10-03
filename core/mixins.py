@@ -1,5 +1,5 @@
 # core/mixins.py
-from datetime import timezone
+
 import io
 import os
 from typing import Optional
@@ -24,6 +24,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse, NoReverseMatch
 from django.contrib.auth.mixins import UserPassesTestMixin
+from tarefas import permissions as perms
 
 
 # =============================================================================
@@ -235,25 +236,6 @@ class AppPermissionMixin(PermissionRequiredMixin):
             ),
         }, status=403)
 
-# =============================================================================
-# == MIXIN DE ACESSO AO MONITORAMENTO
-# =============================================================================
-
-class MonitoramentoAccessMixin:
-    """
-    Mixin que controla o acesso ao painel de monitoramento.
-    Acesso permitido para: superusers, staff, ou usuários com
-    permissão específica de monitoramento.
-    """
-
-    @staticmethod
-    def user_can_monitor(user):
-        if not user or not user.is_authenticated:
-            return False
-        if user.is_superuser or user.is_staff:
-            return True
-        return user.has_perm('core.view_monitoramento')
-
 
 # =============================================================================
 # == MIXINS UTILITÁRIOS
@@ -441,10 +423,7 @@ class HTMXModalFormMixin:
 # =============================================================================
 
 class TarefaAccessMixin:
-    """
-    Mixin que garante acesso à tarefa.
-    Acesso: criador, responsável, participantes, staff, superuser.
-    """
+    """Acesso a tarefa: delega à regra única em tarefas/permissions.py."""
 
     def get_object(self, queryset=None):
         obj = super().get_object(queryset)
@@ -454,25 +433,13 @@ class TarefaAccessMixin:
 
     @staticmethod
     def user_can_access(user, tarefa):
-        if user.is_superuser or user.is_staff:
-            return True
-        if tarefa.usuario_id == user.pk:
-            return True
-        if tarefa.responsavel_id == user.pk:
-            return True
-        if tarefa.participantes.filter(pk=user.pk).exists():
-            return True
-        return False
+        from tarefas import permissions as perms   # import lazy (evita circular)
+        return perms.can_view(user, tarefa)
 
     @staticmethod
     def user_can_edit(user, tarefa):
-        if user.is_superuser or user.is_staff:
-            return True
-        if tarefa.usuario_id == user.pk:
-            return True
-        if tarefa.responsavel_id == user.pk:
-            return True
-        return False
+        from tarefas import permissions as perms
+        return perms.can_edit(user, tarefa)
 
 
 # =============================================================================
