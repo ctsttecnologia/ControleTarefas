@@ -54,6 +54,17 @@ class FuncionarioForm(forms.ModelForm):
         ):
             self.fields.pop('salario', None)
 
+        if "usuario" in self.fields:
+            vinculados = (
+                Funcionario._base_manager
+                .exclude(usuario__isnull=True)
+                .exclude(pk=self.instance.pk)
+                .values_list("usuario_id", flat=True)
+            )
+            self.fields["usuario"].queryset = (
+                User.objects.filter(is_active=True).exclude(pk__in=vinculados)
+            )
+
     funcao = forms.ModelChoiceField(
         queryset=Funcao.objects.filter(ativo=True),
         required=False, # Torna o campo não obrigatório
@@ -151,6 +162,22 @@ class FuncionarioForm(forms.ModelForm):
                     'Este funcionário ainda não possui usuário do sistema vinculado. '
                     'Você pode vinculá-lo agora.'
                 )
+
+    def clean_usuario(self):
+        usuario = self.cleaned_data.get("usuario")
+        if usuario:
+            existente = (
+                Funcionario._base_manager
+                .filter(usuario=usuario)
+                .exclude(pk=self.instance.pk)
+                .first()
+            )
+            if existente:
+                raise forms.ValidationError(
+                    f"Este usuário já está vinculado a {existente.nome_completo} "
+                    f"(matrícula {existente.matricula})."
+                )
+        return usuario
 
 # --- Formulário de Documentos ---
 
