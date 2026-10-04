@@ -47,10 +47,10 @@
 
 {% block ferramentas_actions %}
 <div class="d-print-none">
-    <button type="button" onclick="window.print();" class="btn btn-light">
+    <button type="button" onclick="window.print();" class="btn btn-light fw-semibold">
         <i class="bi bi-printer-fill me-2"></i>Imprimir
     </button>
-    <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-outline-light">
+    <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-outline-light fw-semibold">
         <i class="bi bi-arrow-left me-2"></i>Voltar
     </a>
 </div>
@@ -66,12 +66,12 @@
     {% for ferramenta in ferramentas %}
     <div class="col-4">
         <div class="qr-label">
-            {% secure_url ferramenta "qr_code" as qr_url %}
-            <img src="{{ qr_url }}" alt="QR Code de {{ ferramenta.nome }}">
+            <img src="{{ ferramenta.qr_code.url }}" alt="QR Code de {{ ferramenta.nome }}">
             <div class="tool-name">{{ ferramenta.nome }}</div>
             <div class="tool-code">{{ ferramenta.codigo_identificacao }}</div>
         </div>
     </div>
+
     {% empty %}
     <div class="col-12">
         <div class="alert alert-warning">

@@ -1,8 +1,6 @@
 
 # ferramentas/models.py
 from django.core.exceptions import ValidationError
-from django.db.models import Q
-from core.managers import FilialManager 
 from core.models import AssinavelMixin, TokenAssinaturaRemota
 from suprimentos.models import PedidoCompra
 from usuario.models import Filial
@@ -16,7 +14,17 @@ from django.urls import reverse
 from django.utils import timezone
 from core.managers import FilialQuerySet, FilialManager
 from departamento_pessoal.models import Funcionario
-from cloudinary_storage.storage import RawMediaCloudinaryStorage
+from django.conf import settings
+from django.core.files.storage import default_storage
+
+
+
+def raw_storage():
+    if getattr(settings, "IS_DEVELOPMENT", False):
+        return default_storage
+    from cloudinary_storage.storage import RawMediaCloudinaryStorage
+    return RawMediaCloudinaryStorage()
+
 
 # =============================================================================
 # QUERYSETS E MANAGERS CUSTOMIZADOS
@@ -237,7 +245,7 @@ class Ferramenta(models.Model):
             ("retirar_ferramenta", "Pode realizar retirada de ferramenta"),
             ("devolver_ferramenta", "Pode realizar devolução de ferramenta"),
         ]
-
+        
     def __str__(self):
         identificador = self.patrimonio or self.codigo_identificacao
         return f"{self.nome} ({identificador})"
@@ -435,6 +443,23 @@ class Movimentacao(models.Model):
             ("add_retirada", "Pode registrar retirada (movimentação)"),
             ("add_devolucao", "Pode registrar devolução (movimentação)"),
         ]
+        constraints = [
+            # XOR: a movimentação deve pertencer a UMA ferramenta OU UMA mala, nunca ambas/nenhuma
+            # Suportado pelo MySQL via CheckConstraint.
+            models.CheckConstraint(
+                condition=(
+                    Q(ferramenta__isnull=False, mala__isnull=True) |
+                    Q(ferramenta__isnull=True, mala__isnull=False)
+                ),
+                name='mov_ferramenta_xor_mala',
+            ),
+        ]
+        # NOTA: a proteção contra duas movimentações ATIVAS simultâneas para o mesmo
+        # item NÃO pode ser um UniqueConstraint condicional aqui — MySQL/MariaDB não
+        # suporta índice único parcial (o Django faz um no-op silencioso).
+        # Essa proteção foi movida para a camada de aplicação: ver
+        # MovimentacaoCreateView.form_valid, que usa select_for_update() dentro de
+        # uma transaction.atomic() para serializar retiradas concorrentes do mesmo item.
 
     def __str__(self):
         item = self.item_movimentado
@@ -517,9 +542,9 @@ class TermoDeResponsabilidade(AssinavelMixin, models.Model):
     # 🆕 Persiste o PDF gerado no Cloudinary (storage "raw", pois não é imagem)
     pdf_arquivo = models.FileField(
         upload_to='termos/pdf/',
-        storage=RawMediaCloudinaryStorage(),
+        storage=raw_storage,
         blank=True, null=True,
-        verbose_name="PDF do Termo (Cloudinary)"
+        verbose_name="PDF do Termo",
     )
 
 
@@ -587,6 +612,16 @@ class ItemTermo(models.Model):
     class Meta:
         verbose_name = "Item do Termo"
         verbose_name_plural = "Itens do Termo"
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(ferramenta__isnull=False, mala__isnull=True) |
+                    Q(ferramenta__isnull=True, mala__isnull=False) |
+                    Q(ferramenta__isnull=True, mala__isnull=True)
+                ),
+                name='itemtermo_ferramenta_xor_mala', 
+            ),
+        ]
 
     def __str__(self):
         return f"{self.item} ({self.quantidade} {self.unidade})"

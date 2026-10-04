@@ -359,24 +359,22 @@ cloudinary.config(
 )
 
 if IS_DEVELOPMENT:
-    # ── DESENVOLVIMENTO LOCAL ──
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
     STATIC_URL = '/static/'
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
     MEDIA_URL = '/midia/'
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
     logger.debug("📁 Usando storage local (Desenvolvimento)")
 else:
-    # Mantém STATIC local/whitenoise — não usar Cloudinary para estáticos
-    # STATICFILES_STORAGE permanece como já configurado (whitenoise, etc.)  
-    # ── PRODUÇÃO COM WHITENOISE + CLOUDINARY ──
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     STATIC_URL = '/static/'
-    # 🔒 Storage padrão para MEDIA (arquivos enviados/gerados pelos usuários)
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    # RAW storage é necessário para armazenar PDFs (Cloudinary trata PDF como "raw", não "image")
-    CLOUDINARY_RAW_STORAGE = 'cloudinary_storage.storage.RawMediaCloudinaryStorage'
     MEDIA_URL = '/midia/'
+    STORAGES = {
+        "default": {"BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    }
     logger.debug("📦 Usando WhiteNoise + Cloudinary (Produção)")
+
 
 # =============================================================================
 # ARQUIVOS PRIVADOS (sendfile2 - mantém local em qualquer ambiente)

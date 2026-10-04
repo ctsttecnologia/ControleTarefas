@@ -64,6 +64,11 @@ class FerramentaForm(forms.ModelForm):
     def clean_codigo_identificacao(self):
         return self.cleaned_data['codigo_identificacao'].upper().strip()
 
+    def clean_patrimonio(self):
+        valor = self.cleaned_data.get('patrimonio')
+        return valor.strip() or None if valor else None
+
+
 
 class MalaFerramentasForm(forms.ModelForm):
     itens = forms.ModelMultipleChoiceField(
@@ -128,7 +133,7 @@ class MovimentacaoForm(forms.ModelForm):
     """
     Formulário de retirada (Movimentacao).
 
-    ❌ REMOVIDO: campo `assinatura_base64` (era HiddenInput duplicado).
+    REMOVIDO: campo `assinatura_base64` (era HiddenInput duplicado).
        A assinatura agora é 100% responsabilidade da view, que chama
        `AssinaturaMovimentacao.salvar_assinatura()` (via core.AssinavelMixin)
        — incluindo validação de formato/tamanho e registro de IP.
@@ -174,6 +179,17 @@ class MovimentacaoForm(forms.ModelForm):
         if self.ferramenta and self.mala:
             raise forms.ValidationError(
                 "Movimentação não pode ser de ferramenta e mala simultaneamente."
+            )
+        # Checagem antecipada de concorrência (a constraint do banco é a garantia final)
+        from .models import Movimentacao
+        item_field = 'ferramenta' if self.ferramenta else 'mala'
+        item_obj = self.ferramenta or self.mala
+        ja_ativa = Movimentacao.objects.filter(
+            **{item_field: item_obj}, data_devolucao__isnull=True
+        ).exists()
+        if ja_ativa:
+            raise forms.ValidationError(
+                "Este item já possui uma retirada ativa. Atualize a página."
             )
         return cleaned_data
 
@@ -255,18 +271,6 @@ class TermoResponsabilidadeForm(forms.ModelForm):
 
     O modo remoto usa `TokenAssinaturaRemota.gerar()` — também fora do form.
     """
-
-    ferramentas_selecionadas = forms.ModelMultipleChoiceField(
-        queryset=Ferramenta.objects.none(),
-        required=False,
-        label="Ferramentas"
-    )
-    malas_selecionadas = forms.ModelMultipleChoiceField(
-        queryset=MalaFerramentas.objects.none(),
-        required=False,
-        label="Malas/Kits"
-    )
-
     class Meta:
         model = TermoDeResponsabilidade
         fields = ['contrato', 'responsavel', 'separado_por', 'data_emissao', 'tipo_uso']
@@ -299,11 +303,3 @@ class TermoResponsabilidadeForm(forms.ModelForm):
                 MalaFerramentas.objects.for_request(request)
                 .filter(status=MalaFerramentas.Status.DISPONIVEL)
             )
-class ItemTermoForm(forms.ModelForm):
-    class Meta:
-        model = ItemTermo
-        fields = ['quantidade', 'unidade', 'item', 'data_separacao', 'separado_por']
-        widgets = {
-            'data_separacao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'separado_por': forms.Select(attrs={'class': 'form-select'}),
-        }

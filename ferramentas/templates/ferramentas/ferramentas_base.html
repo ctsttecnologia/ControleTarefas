@@ -7,52 +7,281 @@
 {% endblock %}
 
 {% block extra_head %}
-    <link rel="stylesheet" href="{% static 'css/ferramentas/ferramentas.css' %}">
+    {% block ferramentas_extra_css %}{% endblock %} 
     <style>
-        .ferramentas-wrapper {
-            padding: 0 0.5rem;
-            overflow-x: hidden;
-        }
-        .ferramentas-content {
-            padding: 0 0.25rem 1rem;
-        }
-        .ferramentas-content canvas,
-        .ferramentas-content img,
-        .ferramentas-content table {
-            max-width: 100%;
-        }
-        .ferramentas-header {
-            background: linear-gradient(135deg, #1a56db 0%, #3b82f6 50%, #6366f1 100%);
-            color: #ffffff;
-        }
-        [data-bs-theme="dark"] .ferramentas-header {
-            background: linear-gradient(135deg, #0f2a6b 0%, #1e3a8a 50%, #312e81 100%);
-            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-        }
-        .ferramentas-header .btn-light {
-            background-color: rgba(255, 255, 255, 0.95);
-            border: none;
-            color: #1a56db;
-        }
-        .ferramentas-header .btn-light:hover {
-            background-color: #ffffff;
-            color: #0f2a6b;
-        }
-        [data-bs-theme="dark"] .ferramentas-header .btn-light {
-            background-color: rgba(255, 255, 255, 0.9);
-            color: #1e3a8a;
-        }
-        [data-bs-theme="dark"] .ferramentas-header .btn-light:hover {
-            background-color: #ffffff;
-            color: #0f2a6b;
-        }
-        @media (max-width: 576px) {
-            .ferramentas-wrapper { padding: 0 0.25rem; }
-        }
-    </style>
-    {% block ferramentas_extra_css %}{% endblock %}
-{% endblock %}
+    /* =================================================================
+   FERRAMENTAS.CSS — escopo: páginas do app ferramentas
+   (.page-actions, .btn-danger-soft e .action-buttons ficam no CSS global)
+   ================================================================= */
 
+    /* ═══ 1. VARIÁVEIS ═══ */
+    :root {
+        --fer-card-bg: #ffffff;
+        --fer-card-header-bg: #f8f9fa;
+        --fer-card-border: rgba(0, 0, 0, 0.08);
+        --fer-text-primary: #1a202c;
+        --fer-text-secondary: #4a5568;
+        --fer-text-muted: #718096;
+        --fer-list-border: #e2e8f0;
+        --fer-table-header-bg: #f8f9fa;
+        --fer-table-hover: rgba(0, 0, 0, 0.02);
+        --fer-input-bg: #ffffff;
+        --fer-input-border: #dee2e6;
+        --fer-scrollbar-track: #f1f1f1;
+        --fer-scrollbar-thumb: #c1c1c1;
+        --fer-accent: #3b82f6;
+    }
+
+    [data-bs-theme="dark"] {
+        --fer-card-bg: #1e2130;
+        --fer-card-header-bg: #252840;
+        --fer-card-border: rgba(255, 255, 255, 0.08);
+        --fer-text-primary: #e2e8f0;
+        --fer-text-secondary: #cbd5e1;
+        --fer-text-muted: rgba(255, 255, 255, 0.5);
+        --fer-list-border: rgba(255, 255, 255, 0.06);
+        --fer-table-header-bg: rgba(255, 255, 255, 0.03);
+        --fer-table-hover: rgba(255, 255, 255, 0.03);
+        --fer-input-bg: rgba(255, 255, 255, 0.05);
+        --fer-input-border: rgba(255, 255, 255, 0.12);
+        --fer-scrollbar-track: rgba(255, 255, 255, 0.03);
+        --fer-scrollbar-thumb: rgba(255, 255, 255, 0.12);
+    }
+
+    /* ═══ 2. LAYOUT ═══ */
+    .ferramentas-wrapper {
+        padding: 0 0.5rem;
+        overflow-x: clip; /* corta o excesso sem criar scroll nem recortar tooltips */
+    }
+
+    .ferramentas-content {
+        padding: 0 0.25rem 1rem;
+    }
+
+    .ferramentas-content canvas,
+    .ferramentas-content img,
+    .ferramentas-content table {
+        max-width: 100%;
+    }
+
+    @media (max-width: 576px) {
+        .ferramentas-wrapper { padding: 0 0.25rem; }
+    }
+
+    /* ═══ 3. HEADER DA PÁGINA ═══ */
+    .ferramentas-header {
+        background: linear-gradient(135deg, #020c21 0%, #3b82f6 50%, #6366f1 100%);
+        color: #ffffff;
+    }
+
+    [data-bs-theme="dark"] .ferramentas-header {
+        background: linear-gradient(135deg, #0f2a6b 0%, #1e3a8a 50%, #312e81 100%);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    }
+
+    /* Subtítulo legível sobre o gradiente */
+    .ferramentas-header .text-muted,
+    .ferramentas-header small {
+        color: rgba(255, 255, 255, 0.75) !important;
+    }
+
+    /* ═══ 4. CARDS ═══ */
+    .ferramentas-content .card {
+        background-color: var(--fer-card-bg);
+        border-color: var(--fer-card-border);
+    }
+
+    /* Headers coloridos (text-bg-*, bg-primary) mantêm a cor do Bootstrap */
+    .ferramentas-content .card-header:not([class*="text-bg-"]):not(.bg-primary) {
+        background-color: var(--fer-card-header-bg) !important;
+        border-bottom-color: var(--fer-card-border);
+    }
+
+    .ferramentas-content .card-header:not([class*="text-bg-"]):not(.bg-primary),
+    .ferramentas-content .card-header:not([class*="text-bg-"]):not(.bg-primary) :is(h5, h6, i, span:not(.badge)) {
+        color: var(--fer-text-primary);
+    }
+
+    .ferramentas-content .card-header[class*="text-bg-"] i {
+        color: inherit;
+    }
+
+    .ferramentas-content .card-body {
+        color: var(--fer-text-secondary);
+    }
+
+    .ferramentas-content .card-body :is(h3, h5, h6, .h3, .display-6, strong, .fw-bold) {
+        color: var(--fer-text-primary);
+    }
+
+    .ferramentas-content .card-footer {
+        background-color: var(--fer-card-header-bg);
+        border-top-color: var(--fer-card-border);
+    }
+
+    /* ═══ 5. TEXTO ═══ */
+    .ferramentas-content .text-muted {
+        color: var(--fer-text-muted) !important;
+    }
+
+    [data-bs-theme="dark"] .ferramentas-content .text-dark {
+        color: var(--fer-text-primary) !important;
+    }
+
+    [data-bs-theme="dark"] .ferramentas-content .text-body {
+        color: var(--fer-text-secondary) !important;
+    }
+
+    /* ═══ 6. LIST GROUP ═══ */
+    .ferramentas-content .list-group-item {
+        background-color: transparent;
+        border-color: var(--fer-list-border);
+        color: var(--fer-text-secondary);
+    }
+
+    .ferramentas-content .list-group-item :is(strong, .fw-bold) {
+        color: var(--fer-text-primary);
+    }
+
+    .ferramentas-content .list-group-item-action:hover {
+        background-color: var(--fer-table-hover);
+        color: var(--fer-text-primary);
+    }
+
+    /* ═══ 7. TABELAS ═══ */
+    .ferramentas-content .table {
+        color: var(--fer-text-secondary);
+    }
+
+    .ferramentas-content .table thead {
+        background-color: var(--fer-table-header-bg);
+    }
+
+    [data-bs-theme="dark"] .ferramentas-content .table-light {
+        --bs-table-bg: var(--fer-table-header-bg);
+        --bs-table-color: var(--fer-text-muted);
+        background-color: var(--fer-table-header-bg) !important;
+        color: var(--fer-text-muted);
+    }
+
+    .ferramentas-content .table th {
+        color: var(--fer-text-muted);
+        border-bottom-color: var(--fer-card-border);
+        font-weight: 600;
+    }
+
+    .ferramentas-content .table td {
+        color: var(--fer-text-secondary);
+        border-bottom-color: var(--fer-card-border);
+    }
+
+    .ferramentas-content .table td :is(strong, .fw-bold) {
+        color: var(--fer-text-primary);
+    }
+
+    .ferramentas-content .table td a:not(.btn) {
+        color: var(--fer-text-primary);
+    }
+
+    .ferramentas-content .table td a:not(.btn):hover {
+        color: var(--fer-accent);
+    }
+
+    .ferramentas-content .table td code {
+        color: var(--fer-text-secondary);
+    }
+
+    .ferramentas-content .table tbody tr:hover {
+        background-color: var(--fer-table-hover);
+    }
+
+    /* ═══ 8. FORMULÁRIOS ═══ */
+    .ferramentas-content .form-control,
+    .ferramentas-content .form-select {
+        background-color: var(--fer-input-bg);
+        border-color: var(--fer-input-border);
+        color: var(--fer-text-primary);
+    }
+
+    .ferramentas-content .form-control::placeholder {
+        color: var(--fer-text-muted);
+    }
+
+    .ferramentas-content .form-control:focus,
+    .ferramentas-content .form-select:focus {
+        border-color: var(--fer-accent);
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.15);
+    }
+
+    /* ═══ 9. BADGES ═══ */
+    [data-bs-theme="dark"] .ferramentas-content .badge.bg-secondary {
+        background-color: rgba(255, 255, 255, 0.12) !important;
+        color: #cbd5e1 !important;
+    }
+
+    /* ═══ 10. MODAIS (tema escuro) ═══ */
+    [data-bs-theme="dark"] .ferramentas-content .modal-content {
+        background-color: var(--fer-card-bg);
+        border-color: var(--fer-card-border);
+    }
+
+    [data-bs-theme="dark"] .ferramentas-content .modal-header {
+        border-bottom-color: var(--fer-card-border);
+    }
+
+    [data-bs-theme="dark"] .ferramentas-content .modal-footer {
+        border-top-color: var(--fer-card-border);
+    }
+
+    [data-bs-theme="dark"] .ferramentas-content .modal-body {
+        color: var(--fer-text-secondary);
+    }
+
+    [data-bs-theme="dark"] .ferramentas-content .modal-body strong {
+        color: var(--fer-text-primary);
+    }
+
+    /* ═══ 11. ESTADOS VAZIOS ═══ */
+    .ferramentas-content :is(.list-group-item, td).text-center.text-muted,
+    .ferramentas-content :is(.list-group-item .display-6, td .display-4) {
+        color: var(--fer-text-muted) !important;
+    }
+
+    /* ═══ 12. SCROLLBAR ═══ */
+    .ferramentas-content ::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .ferramentas-content ::-webkit-scrollbar-track {
+        background: var(--fer-scrollbar-track);
+        border-radius: 3px;
+    }
+
+    .ferramentas-content ::-webkit-scrollbar-thumb {
+        background: var(--fer-scrollbar-thumb);
+        border-radius: 3px;
+    }
+
+    .ferramentas-content ::-webkit-scrollbar-thumb:hover {
+        background: rgba(128, 128, 128, 0.5);
+    }
+
+    /* ═══ 13. IMPRESSÃO ═══ */
+    @media print {
+        .ferramentas-content .card {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+
+        .ferramentas-content .card-header {
+            background: #f8f9fa !important;
+            color: #212529 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    }
+    </style>
+{% endblock %}
 
 {% block content %}
 <div class="ferramentas-wrapper">
@@ -61,13 +290,12 @@
             <h1 class="h2 mb-0 ferramentas-title">
                 {% block ferramentas_title %}{% endblock %}
             </h1>
-            <div class="d-flex flex-wrap gap-2">
+            <div class="page-actions">
                 {% block ferramentas_actions %}{% endblock %}
             </div>
         </div>
     </div>
 
-    <!-- Conteúdo da página -->
     <div class="ferramentas-content {% block ferramentas_content_class %}{% endblock %}">
         {% block ferramentas_content %}{% endblock %}
     </div>
@@ -77,5 +305,4 @@
 {% block extra_js %}
     {% block ferramentas_extra_js %}{% endblock %}
 {% endblock %}
-
 

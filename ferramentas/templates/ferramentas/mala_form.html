@@ -3,23 +3,28 @@
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load widget_tweaks %}
 
-{% block ferramentas_page_title %}
-    {% if form.instance.pk %}Editar Mala{% else %}Nova Mala{% endif %}
+
+
+{% block title %}
+    {% if is_create %}Nova Mala{% else %}Editar Mala{% endif %}
 {% endblock %}
 
 {% block ferramentas_title %}
-    {% if form.instance.pk %}
-        <i class="bi bi-pencil-square me-2"></i>Editar: {{ form.instance.nome }}
+    {% if is_create %}
+        <i class="bi bi-plus-circle me-2"></i> Adicionar Mala
     {% else %}
-        <i class="bi bi-plus-circle me-2"></i>Nova Mala de Ferramentas
+        <i class="bi bi-pencil-square me-2"></i> Editar: {{ form.instance.nome }}
     {% endif %}
 {% endblock %}
 
 {% block ferramentas_actions %}
-    <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Cancelar
-    </a>
+    {% if perms.ferramentas.view_ferramenta or user.is_superuser %}
+        <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-light fw-semibold">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+    {% endif %}
 {% endblock %}
+
 
 {% block ferramentas_content %}
 <div class="row justify-content-center">

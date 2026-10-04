@@ -4,20 +4,23 @@
 {% block ferramentas_page_title %}Malas de Ferramentas{% endblock %}
 
 {% block ferramentas_title %}
-    <i class="bi bi-box-seam me-2"></i>Malas de Ferramentas
+    <i class="bi bi-box-seam me-2"></i> Malas de Ferramentas
 {% endblock %}
 
 {% block ferramentas_actions %}
-    <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-speedometer2 me-1"></i>Dashboard
-    </a>
+    
     {% if perms.ferramentas.add_mala or user.is_superuser %}
-    <a href="{% url 'ferramentas:mala_create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i>Nova Mala
+    <a href="{% url 'ferramentas:mala_create' %}" class="btn btn-light fw-semibold">
+        <i class="bi bi-plus-lg"></i> Nova Mala
+    </a>
+    {% endif %}
+    {% if perms.ferramentas.view_dashboard or user.is_superuser %}
+    <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-light fw-semibold">
+        <i class="bi bi-speedometer2"></i> Dashboard
     </a>
     {% endif %}
 {% endblock %}
-
+    
 {% block ferramentas_content %}
 <div class="card shadow-sm">
     <!-- Busca -->
@@ -30,7 +33,7 @@
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-search me-1"></i>Buscar
+                    <i class="bi bi-search me-1"></i> Buscar
                 </button>
                 {% if query %}
                 <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
@@ -73,17 +76,17 @@
                     </td>
                     <td class="small">{{ mala.localizacao_padrao|default:"-" }}</td>
                     <td class="text-center">
-                        <div class="btn-group btn-group-sm">
-                            <a href="{{ mala.get_absolute_url }}" class="btn btn-outline-primary" title="Detalhes">
+                        <div class="action-buttons">
+                            <a href="{{ mala.get_absolute_url }}" class="btn btn-outline-primary action-btn" title="Detalhes">
                                 <i class="bi bi-eye"></i>
                             </a>
                             {% if perms.ferramentas.change_mala or user.is_superuser %}
-                            <a href="{% url 'ferramentas:mala_update' pk=mala.pk %}" class="btn btn-outline-secondary" title="Editar">
+                            <a href="{% url 'ferramentas:mala_update' pk=mala.pk %}" class="btn btn-outline-secondary action-btn" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             {% endif %}
                             {% if perms.ferramentas.add_termoderesponsabilidade or user.is_superuser %}
-                            <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-outline-info" title="Novo Termo">
+                            <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-outline-info action-btn" title="Novo Termo">
                                 <i class="bi bi-file-earmark-text"></i>
                             </a>
                             {% endif %}
@@ -92,9 +95,14 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center py-5">
-                        <i class="bi bi-inbox display-4 text-muted d-block mb-2"></i>
-                        <h6 class="text-muted">Nenhuma mala cadastrada.</h6>
+                    <td colspan="6" class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <h6>Nenhuma ferramenta encontrada.</h6>
+
+                        {% if query %}
+                            <p class="text-muted small">Tente ajustar os filtros de busca.</p>
+                        {% endif %}
+
                         {% if perms.ferramentas.add_mala or user.is_superuser %}
                         <a href="{% url 'ferramentas:mala_create' %}" class="btn btn-sm btn-primary mt-2">
                             <i class="bi bi-plus-lg me-1"></i>Adicionar mala

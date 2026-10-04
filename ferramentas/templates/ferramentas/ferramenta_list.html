@@ -9,35 +9,37 @@
 {% endblock %}
 
 {% block ferramentas_actions %}
-    {% if user.is_authenticated %}
-    <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-speedometer2 me-1"></i>Dashboard
-    </a>
-    {% endif %}
-    {% if perms.ferramentas.add_ferramenta or user.is_superuser %}
-    <a href="{% url 'ferramentas:importar_ferramentas' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-file-earmark-arrow-up me-1"></i>Importar
-    </a>
-    {% endif %}
-    {% if perms.ferramentas.view_ferramenta or user.is_superuser %}
-    <a href="{% url 'ferramentas:imprimir_qrcodes' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-printer me-1"></i>Etiquetas
-    </a>
-    {% endif %}
-    {% if perms.ferramentas.add_ferramenta or user.is_superuser %}
-    <a href="{% url 'ferramentas:ferramenta_create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i>Nova Ferramenta
-    </a>
-    {% endif %}
-    {% if perms.ferramentas.gerar_qrcodes or user.is_superuser %}
-    <form action="{% url 'ferramentas:gerar_qrcodes_view' %}" method="post" class="d-inline">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-warning"
-                onclick="return confirm('A geração pode levar alguns minutos. Continuar?');">
-            <i class="bi bi-qr-code-scan me-1"></i>Gerar QR Codes
-        </button>
-    </form>
-    {% endif %}
+    <div class="d-flex gap-2 flex-wrap">
+        {% if perms.ferramentas.gerar_qrcodes or user.is_superuser %}
+        <form action="{% url 'ferramentas:gerar_qrcodes_view' %}" method="post" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-main"
+                    onclick="return confirm('A geração roda em segundo plano e pode levar alguns minutos. Continuar?');" title="Gerar QR Codes para todas as ferramentas">
+                <i class="bi bi-qr-code-scan"></i>
+            </button>
+        </form>
+        {% endif %}
+        {% if perms.ferramentas.view_ferramenta or user.is_superuser %}
+        <a href="{% url 'ferramentas:imprimir_qrcodes' %}" class="btn btn-light fw-semibold">
+            <i class="bi bi-printer"></i> Etiquetas
+        </a>
+        {% endif %}
+        {% if perms.ferramentas.add_ferramenta or user.is_superuser %}
+        <a href="{% url 'ferramentas:importar_ferramentas' %}" class="btn btn-light fw-semibold">
+            <i class="bi bi-file-earmark-arrow-up"></i> Importar
+        </a>
+        {% endif %}
+        {% if perms.ferramentas.add_ferramenta or user.is_superuser %}
+        <a href="{% url 'ferramentas:ferramenta_create' %}" class="btn btn-light fw-semibold">
+            <i class="bi bi-plus-lg"></i> Nova Ferramenta
+        </a>
+        {% endif %}
+        {% if perms.ferramentas.view_dashboard or user.is_superuser %}
+        <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-light fw-semibold">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        {% endif %}
+    </div>
 {% endblock %}
 
 {% block ferramentas_content %}
@@ -61,11 +63,11 @@
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-funnel me-1"></i>Filtrar
+                    <i class="bi bi-funnel me-1"></i> Filtrar
                 </button>
                 {% if query or status_atual %}
                 <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-x-lg me-1"></i>Limpar
+                    <i class="bi bi-x-lg me-1"></i> Limpar
                 </a>
                 {% endif %}
             </div>
@@ -120,27 +122,26 @@
                     <td class="small">{{ ferramenta.localizacao_padrao|default:"-" }}</td>
                     <td class="small">{{ ferramenta.data_aquisicao|date:"d/m/Y"|default:"-" }}</td>
                     <td class="text-center">
-                        <div class="btn-group btn-group-sm">
-                            <a href="{{ ferramenta.get_absolute_url }}" class="btn btn-outline-primary" title="Painel">
+                        <div class="action-buttons">
+                            <a href="{{ ferramenta.get_absolute_url }}" class="btn btn-outline-primary action-btn" title="Painel">
                                 <i class="bi bi-display"></i>
                             </a>
                             {% if perms.ferramentas.change_ferramenta or user.is_superuser %}
-                            <a href="{% url 'ferramentas:ferramenta_update' pk=ferramenta.pk %}" class="btn btn-outline-secondary" title="Editar">
+                            <a href="{% url 'ferramentas:ferramenta_update' pk=ferramenta.pk %}" class="btn btn-outline-secondary action-btn" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             {% endif %}
-
                             {% if ferramenta.termo_ativo %}
                                 {% if perms.ferramentas.view_termoderesponsabilidade or user.is_superuser %}
-                                <a href="{% url 'ferramentas:termo_detail' pk=ferramenta.termo_ativo.pk %}" class="btn btn-outline-info" title="Termo #{{ ferramenta.termo_ativo.pk }}">
+                                <a href="{% url 'ferramentas:termo_detail' pk=ferramenta.termo_ativo.pk %}"
+                                class="btn btn-outline-info action-btn" title="Termo #{{ ferramenta.termo_ativo.pk }}">
                                     <i class="bi bi-file-earmark-text"></i>
                                 </a>
                                 {% endif %}
                             {% endif %}
-
                             {% if ferramenta.status == 'disponivel' %}
                                 {% if perms.ferramentas.inativar_ferramenta or user.is_superuser %}
-                                <button type="button" class="btn btn-outline-danger btn-inativar" title="Inativar"
+                                <button type="button" class="btn btn-outline-danger action-btn btn-inativar" title="Inativar"
                                         data-bs-toggle="modal" data-bs-target="#confirmInativarModal"
                                         data-url="{% url 'ferramentas:ferramenta_inativar' pk=ferramenta.pk %}"
                                         data-nome="{{ ferramenta.nome }}">
@@ -148,7 +149,7 @@
                                 </button>
                                 {% endif %}
                             {% else %}
-                                <button class="btn btn-outline-danger" disabled title="Indisponível neste status">
+                                <button type="button" class="btn btn-outline-danger action-btn" disabled title="Indisponível neste status">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             {% endif %}

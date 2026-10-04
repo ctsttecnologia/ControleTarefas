@@ -216,8 +216,8 @@ class TermoDeResponsabilidadeAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixi
     list_filter = ('filial', 'tipo_uso', 'data_emissao')
     search_fields = ('responsavel__nome_completo', 'contrato')
 
-    # ❌ token_assinatura removido (agora vive em TokenAssinaturaRemota, genérico, no core)
-    # ✅ assinatura_imagem/data_assinatura/ip_assinatura vêm do AssinavelMixin
+    # token_assinatura removido (agora vive em TokenAssinaturaRemota, genérico, no core)
+    # assinatura_imagem/data_assinatura/ip_assinatura vêm do AssinavelMixin
     readonly_fields = ('assinatura_preview', 'data_assinatura', 'ip_assinatura', 'movimentado_por')
 
     fieldsets = (

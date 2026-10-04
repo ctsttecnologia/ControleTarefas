@@ -1266,3 +1266,45 @@ body.has-submenu {
     border-color: var(--bs-border-color);
 }
 
+/* ═══ 29. BOTÕES DO HEADER DE PÁGINA ═══ */
+.page-actions .btn,
+.page-actions .btn.btn-light,
+.page-actions .btn.btn-outline-light,
+.page-actions .btn.btn-outline-secondary,
+.page-actions .btn.btn-primary,
+.page-actions .btn.btn-warning,
+.page-actions .btn.btn-success,
+.page-actions .btn.btn-danger {
+    --_bd: rgba(255, 255, 255, 0.55);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 38px;
+    padding: 0 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--header-text) !important;
+    background-color: transparent !important;
+    border: 1px solid var(--_bd) !important;
+    border-radius: 8px;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.page-actions .btn:hover,
+.page-actions .btn:focus-visible {
+    color: var(--header-text) !important;
+    background-color: rgba(255, 255, 255, 0.18) !important;
+    border-color: #fff !important;
+    transform: translateY(-1px);
+}
+
+.page-actions .btn.btn-main {
+    background-color: #fff !important;
+    color: var(--bs-primary) !important;
+    border-color: #fff !important;
+    font-weight: 600;
+}
+
+.page-actions .btn.btn-main:hover {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+}

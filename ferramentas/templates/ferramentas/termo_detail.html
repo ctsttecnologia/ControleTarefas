@@ -8,11 +8,11 @@
 {% endblock %}
 
 {% block ferramentas_actions %}
-    <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-outline-secondary">
+    <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-light fw-semibold">
         <i class="bi bi-arrow-left me-1"></i>Lista
     </a>
     {% if perms.ferramentas.download_termo_pdf or user.is_superuser %}
-    <a href="{% url 'ferramentas:termo_pdf_download' pk=termo.pk %}" class="btn btn-outline-primary">
+    <a href="{% url 'ferramentas:termo_pdf_download' pk=termo.pk %}" class="btn btn-light fw-semibold">
         <i class="bi bi-file-pdf me-1"></i>Baixar PDF
     </a>
     {% endif %}

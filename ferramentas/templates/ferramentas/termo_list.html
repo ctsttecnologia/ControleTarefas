@@ -2,22 +2,21 @@
 <!-- ferramentas/termo_list.html -->
 {% extends 'ferramentas/ferramentas_base.html' %}
 
-{% block ferramentas_page_title %}Termos de Responsabilidade{% endblock %}
-
 {% block ferramentas_title %}
     <i class="bi bi-file-earmark-text me-2"></i>Termos de Responsabilidade
 {% endblock %}
 
 {% block ferramentas_actions %}
-    <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-speedometer2 me-1"></i>Dashboard
+    <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-light fw-semibold">
+        <i class="bi bi-speedometer2"></i> Dashboard
     </a>
     {% if perms.ferramentas.add_termoderesponsabilidade or user.is_superuser %}
-    <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i>Novo Termo
+    <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-light fw-semibold">
+        <i class="bi bi-plus-lg"></i> Novo Termo
     </a>
     {% endif %}
 {% endblock %}
+
 
 {% block ferramentas_content %}
 <div class="card shadow-sm">
@@ -72,7 +71,7 @@
                 {% for termo in termos %}
                 <tr>
                     <td class="ps-3">
-                        <span class="fw-bold text-muted">#{{ termo.pk }}</span>
+                        <span class="fw-bold text-muted">{{ termo.pk }}</span>
                     </td>
 
                     <td>

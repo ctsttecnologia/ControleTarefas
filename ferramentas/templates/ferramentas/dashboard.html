@@ -5,23 +5,23 @@
 {% block ferramentas_page_title %}Painel{% endblock %}
 
 {% block ferramentas_title %}
-    <i class="bi bi-speedometer2 me-2"></i>Painel de Ferramentas
+    <i class="bi bi-speedometer2 me-2"></i> Painel de Ferramentas
 {% endblock %}
 
 {% block ferramentas_actions %}
     {% if perms.ferramentas.view_ferramenta or user.is_superuser %}
     <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-light fw-semibold">
-        <i class="bi bi-tools me-1"></i>Ferramentas
+        <i class="bi bi-tools me-1"></i> Ferramentas
     </a>
     {% endif %}
     {% if perms.ferramentas.view_malaferramentas or user.is_superuser %}
     <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-light fw-semibold">
-        <i class="bi bi-box-seam me-1"></i>Malas
+        <i class="bi bi-box-seam me-1"></i> Malas
     </a>
     {% endif %}
     {% if perms.ferramentas.view_termoderesponsabilidade or user.is_superuser %}
     <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-light fw-semibold">
-        <i class="bi bi-file-text me-1"></i>Termos
+        <i class="bi bi-file-text me-1"></i> Termos
     </a>
     {% endif %}
 {% endblock %}

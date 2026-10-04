@@ -4,16 +4,12 @@ import base64
 import logging
 from io import BytesIO
 import json
-import subprocess
-import sys
 import requests
 from django.contrib.contenttypes.models import ContentType
 import zipfile
 from datetime import timedelta, datetime
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.http import HttpResponse
@@ -36,6 +32,7 @@ from core.mixins import (
     AtividadeLogMixin, AppPermissionMixin
 )
 from core.models import TokenAssinaturaRemota
+from django.conf import settings
 from usuario.models import Filial
 
 from .forms import (
@@ -48,6 +45,14 @@ from .models import (
 )
 from .models import AssinaturaMovimentacao
 from .utils import get_logo_base64
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
+from django.shortcuts import redirect
+from django.views import View
+from django.views.generic import DetailView, ListView
+from django.db import IntegrityError, transaction
+from .tasks import gerar_qrcodes_task
 
 
 
@@ -72,7 +77,6 @@ class FilialAtribuicaoMixin:
         if filial is None:
             raise ValueError("Usuário sem filial ativa. Impossível criar registro.")
         instance.filial = filial
-
 
 
 class ItemRetrievalMixin:
@@ -525,7 +529,9 @@ class InativarFerramentaView(AcaoFerramentaBaseView):
         return redirect('ferramentas:ferramenta_list')
 
 # =============================================================================
-# MOVIMENTAÇÃO (Retirada / Devolução)
+# ferramentas/views.py — tratar IntegrityError da constraint
+#    (defesa final, caso dois requests passem pela validação do form
+#    ao mesmo tempo e caiam juntos na constraint do banco)
 # =============================================================================
 class MovimentacaoCreateView(LoginRequiredMixin, AppPermissionMixin,
                               ItemRetrievalMixin, AtividadeLogMixin, CreateView):
@@ -561,73 +567,40 @@ class MovimentacaoCreateView(LoginRequiredMixin, AppPermissionMixin,
 
     @transaction.atomic
     def form_valid(self, form):
+        """
+        MySQL não suporta UniqueConstraint condicional, então a proteção contra
+        duas retiradas simultâneas do mesmo item é feita aqui: select_for_update()
+        trava a linha do item até o fim da transação, serializando requests
+        concorrentes. O segundo request só segue depois do commit/rollback do
+        primeiro, e aí a checagem de "já ativa" abaixo detecta o conflito.
+        """
         item = self.ferramenta or self.mala
-        status_atual = item.status_efetivo if isinstance(item, Ferramenta) else item.status
+        if item is None:
+            form.add_error(None, "Movimentação sem item associado.")
+            return self.form_invalid(form)
 
-        if status_atual != 'disponivel':
-            messages.error(self.request, f"'{item.nome}' não está disponível para retirada.")
-            return redirect(item.get_absolute_url())
+        ItemModel = item.__class__
+        # Lock pessimista na linha do item: qualquer outra transação que tente
+        # dar select_for_update() no mesmo registro espera aqui até esta commitar.
+        ItemModel.objects.select_for_update().get(pk=item.pk)
 
-        modo_assinatura = self.request.POST.get('modo_assinatura', 'local')
-
-        movimentacao = form.save(commit=False)
-        movimentacao.filial = self.request.user.filial_ativa
-        movimentacao.save()
-
-        assinatura = AssinaturaMovimentacao.objects.create(
-            movimentacao=movimentacao,
-            tipo=AssinaturaMovimentacao.Tipo.RETIRADA,
-        )
-
-        if modo_assinatura == 'remoto':
-            token = assinatura.gerar_token_assinatura(usuario=self.request.user)
-            link = assinatura.get_link_assinatura(token, request=self.request)
-
-            item.status = 'em_uso'
-            item.save(update_fields=['status'])
-
-            self._log_atividade(
-                tipo=Atividade.TipoAtividade.RETIRADA,
-                descricao=f"Retirada aguardando assinatura remota de {movimentacao.retirado_por}.",
-                ferramenta=self.ferramenta,
-                mala=self.mala,
+        campo_item = 'ferramenta' if self.ferramenta else 'mala'
+        ja_ativa = Movimentacao.objects.filter(
+            **{campo_item: item}, data_devolucao__isnull=True
+        ).exists()
+        if ja_ativa:
+            form.add_error(
+                None,
+                "Este item já possui uma retirada ativa. Atualize a página e tente novamente."
             )
-            messages.success(
-                self.request,
-                f"Retirada registrada! Envie este link para assinatura: {link}"
-            )
-            self.object = movimentacao
-            return redirect(item.get_absolute_url())
-
-        # modo local
-        assinatura_base64 = self.request.POST.get('assinatura_base64')
-        if not assinatura_base64:
-            transaction.set_rollback(True)
-            form.add_error(None, "A assinatura é obrigatória.")
             return self.form_invalid(form)
 
         try:
-            assinatura.salvar_assinatura(
-                assinatura_base64=assinatura_base64,
-                ip=self.request.META.get('REMOTE_ADDR'),
-            )
-        except ValidationError as e:
+            return self._processar_retirada(form)
+        except IntegrityError:
             transaction.set_rollback(True)
-            form.add_error(None, str(e))
+            form.add_error(None, "Este item acabou de ser retirado por outro usuário. Tente novamente.")
             return self.form_invalid(form)
-
-        item.status = 'em_uso'
-        item.save(update_fields=['status'])
-
-        self._log_atividade(
-            tipo=Atividade.TipoAtividade.RETIRADA,
-            descricao=f"Retirado por {movimentacao.retirado_por.get_username()}.",
-            ferramenta=self.ferramenta,
-            mala=self.mala,
-        )
-        messages.success(self.request, f"'{item.nome}' retirada com sucesso.")
-        self.object = movimentacao
-        return redirect(item.get_absolute_url())
 
 class DevolucaoUpdateView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin,
                            AtividadeLogMixin, UpdateView):
@@ -939,6 +912,10 @@ class ImportarFerramentasView(LoginRequiredMixin, AppPermissionMixin, FormView):
         return None
 
 
+# ============================================================
+# ferramentas/views.py  (substitua as 3 views)
+# Remova os imports não usados: subprocess, sys, settings (se só eram usados aqui)
+# ============================================================
 class ImprimirQRCodesView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, ListView):
     app_label_required = _APP
     model = Ferramenta
@@ -946,7 +923,13 @@ class ImprimirQRCodesView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScop
     context_object_name = 'ferramentas'
 
     def get_queryset(self):
-        return super().get_queryset().ativas().com_qr_code().order_by('nome')
+        return (
+            super().get_queryset()
+            .ativas()
+            .com_qr_code()
+            .select_related('mala')
+            .order_by('nome')
+        )
 
 
 class ResultadoScanView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, DetailView):
@@ -965,34 +948,33 @@ class ResultadoScanView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScoped
         ferramenta = self.object
 
         # Movimentação ativa pode estar na ferramenta OU na mala à qual ela pertence
+        filtro = Q(ferramenta=ferramenta)
         if ferramenta.mala_id:
-            movimentacao_ativa = Movimentacao.objects.filter(
-                Q(ferramenta=ferramenta) | Q(mala=ferramenta.mala),
-                data_devolucao__isnull=True
-            ).select_related('retirado_por').first()
-        else:
-            movimentacao_ativa = ferramenta.movimentacoes.filter(
-                data_devolucao__isnull=True
-            ).select_related('retirado_por').first()
+            filtro |= Q(mala_id=ferramenta.mala_id)
 
-        context['movimentacao_ativa'] = movimentacao_ativa
+        context['movimentacao_ativa'] = (
+            Movimentacao.objects
+            .filter(filtro, data_devolucao__isnull=True)
+            .select_related('retirado_por', 'termo_responsabilidade')
+            .first()
+        )
         return context
+
 
 class GerarQRCodesView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
     app_label_required = _APP
     permission_required = 'ferramentas.change_ferramenta'
 
     def post(self, request, *args, **kwargs):
-        import os
-        env = os.environ.copy()
-        env.setdefault('DJANGO_SETTINGS_MODULE', 'gerenciandoTarefas.settings') 
-
-        subprocess.Popen(
-            [sys.executable, str(settings.BASE_DIR / "manage.py"), "generate_qrcodes"],
-            env=env,
+        forcar = request.POST.get('forcar') == '1'
+        gerar_qrcodes_task.delay(forcar=forcar)
+        messages.success(
+            request,
+            "Geração de QR Codes iniciada em segundo plano"
+            + (" (recriando todos)." if forcar else " (apenas os pendentes)."),
         )
-        messages.success(request, "Geração de QR Codes iniciada em segundo plano (armazenamento: Cloudinary).")
         return redirect('ferramentas:ferramenta_list')
+
 # =============================================================================
 # TERMOS DE RESPONSABILIDADE
 # =============================================================================

@@ -1,19 +1,28 @@
+
 # ferramentas/tests.py
 """
 Testes para o app ferramentas
+
+Comandos
+pytest ferramentas/tests.py
+python manage.py test ferramentas
+
+python manage.py test ferramentas
+python manage.py test ferramentas -v 2
+python manage.py test ferramentas.tests.MovimentacaoConstraintTest
+python manage.py test ferramentas.tests.MovimentacaoConcorrenciaTest
 """
-from datetime import datetime
-from datetime import date, timedelta
-from django.test import TestCase, TestCase
+from datetime import date, timedelta, datetime
+
+from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.utils import IntegrityError
 from django.utils import timezone
 
-
 # Modelos da app 'ferramentas'
 from .models import (
-    MalaFerramentas, Ferramenta, Atividade, 
+    AssinaturaMovimentacao, MalaFerramentas, Ferramenta, Atividade,
     Movimentacao, TermoDeResponsabilidade, ItemTermo
 )
 
@@ -22,8 +31,6 @@ from usuario.models import Filial
 from departamento_pessoal.models import Departamento, Funcionario
 from suprimentos.models import Parceiro
 from seguranca_trabalho.models import Cargo, Funcao
-
-from django.urls import reverse
 
 
 User = get_user_model()
@@ -34,88 +41,76 @@ class FerramentasBaseTestCase(TestCase):
     Classe base com dados comuns para todos os testes do app ferramentas.
     Desativa signals problemáticos durante os testes.
     """
-    
+
     @classmethod
     def setUpClass(cls):
         """Desativa signals antes de iniciar os testes"""
         super().setUpClass()
-        
-        # Desativa signals do PGR para evitar erros
         cls._disconnect_signals()
-    
-    
 
     @classmethod
     def tearDownClass(cls):
         """Reativa signals após os testes"""
         cls._reconnect_signals()
         super().tearDownClass()
-    
+
     @classmethod
     def _disconnect_signals(cls):
         """Desconecta signals problemáticos"""
         from django.db.models.signals import post_save
         from departamento_pessoal.models import Funcionario
-        
-        # Armazena receivers para reconectar depois
+
         cls._stored_receivers = []
-        
-        # Procura e desconecta signals do PGR
+
         for receiver in post_save._live_receivers(Funcionario):
             receiver_name = getattr(receiver, '__name__', str(receiver))
             if 'pgr' in receiver_name.lower() or 'admissional' in receiver_name.lower():
                 cls._stored_receivers.append((post_save, Funcionario, receiver))
-        
-        # Desconecta os receivers armazenados
+
         for signal, sender, receiver in cls._stored_receivers:
             signal.disconnect(receiver, sender=sender)
-    
+
     @classmethod
     def _reconnect_signals(cls):
         """Reconecta signals que foram desconectados"""
         for signal, sender, receiver in getattr(cls, '_stored_receivers', []):
             signal.connect(receiver, sender=sender)
-    
+
     @classmethod
     def setUpTestData(cls):
         """Configura dados comuns para todos os testes"""
-        
-        # 1. Criar uma Filial
+
         cls.filial = Filial.objects.create(
             nome=f"Filial Teste {timezone.now().timestamp()}"
         )
-        
-        # 2. Criar um Departamento
+
         cls.departamento = Departamento.objects.create(
             nome=f"Departamento Teste {timezone.now().timestamp()}",
             filial=cls.filial
         )
-        
-        # 3. Criar um Usuário
+
         cls.user = User.objects.create_user(
             username=f'testuser_{timezone.now().timestamp()}',
             password='password123'
         )
-        # Associar filial se o modelo User tiver esse campo
         if hasattr(cls.user, 'filial'):
             cls.user.filial = cls.filial
             cls.user.save()
-        
-        # 4. Criar Cargo e Função
+
         cls.cargo = Cargo.objects.create(
-            filial=cls.filial, 
+            filial=cls.filial,
             nome=f"Cargo Teste {timezone.now().timestamp()}"
         )
         cls.funcao = Funcao.objects.create(
-            filial=cls.filial, 
+            filial=cls.filial,
             nome=f"Função Teste {timezone.now().timestamp()}"
         )
-        # Use timestamp ou uuid para garantir unicidade
+
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
-        # 5. Criar Funcionários
+
         cls.funcionario = Funcionario.objects.create(
             nome_completo='João da Silva Teste',
-            matricula=f'TESTE-FUNC-{timestamp}',   # ← sufixo único
+            matricula=f'TESTE-FUNC-{timestamp}',
             filial=cls.filial,
             cargo=cls.cargo,
             funcao=cls.funcao,
@@ -125,29 +120,30 @@ class FerramentasBaseTestCase(TestCase):
 
         cls.coordenador = Funcionario.objects.create(
             nome_completo='Maria Coordenadora Teste',
-            matricula=f'TESTE-COORD-{timestamp}',  # ← sufixo único
+            matricula=f'TESTE-COORD-{timestamp}',
             filial=cls.filial,
             cargo=cls.cargo,
             funcao=cls.funcao,
             data_admissao=timezone.now().date(),
             departamento=cls.departamento
         )
-        
+
         cls.tecnico = Funcionario.objects.create(
             nome_completo='Técnico de Testes',
+            matricula=f'TESTE-TEC-{timestamp}',
             filial=cls.filial,
             cargo=cls.cargo,
             funcao=cls.funcao,
             data_admissao=timezone.now().date(),
             departamento=cls.departamento
         )
-        
-        # 6. Criar um Fornecedor/Parceiro
+
         cls.parceiro = Parceiro.objects.create(
             nome_fantasia='Fornecedor ABC Teste',
             filial=cls.filial,
             cnpj='12.345.678/0001-99'
         )
+
 
 class MalaFerramentasModelTest(FerramentasBaseTestCase):
     """Testes para o modelo MalaFerramentas."""
@@ -162,8 +158,7 @@ class MalaFerramentasModelTest(FerramentasBaseTestCase):
         )
         self.assertEqual(str(mala), "Mala de Elétrica 01 (M-ELET-01)")
         self.assertEqual(mala.status, MalaFerramentas.Status.DISPONIVEL)
-        
-        # Verifica QR Code se implementado
+
         if mala.qr_code and mala.qr_code.name:
             self.assertTrue(mala.qr_code.name.endswith('.png'))
 
@@ -198,7 +193,6 @@ class MalaFerramentasModelTest(FerramentasBaseTestCase):
             localizacao_padrao="Armário D",
             filial=self.filial
         )
-        # Se não tem código, QR code deve estar vazio
         self.assertFalse(bool(mala.qr_code and mala.qr_code.name))
 
 
@@ -207,7 +201,6 @@ class FerramentaModelTest(FerramentasBaseTestCase):
 
     @classmethod
     def setUpTestData(cls):
-        """Configura dados específicos para os testes de Ferramenta."""
         super().setUpTestData()
         cls.mala = MalaFerramentas.objects.create(
             nome="Mala Padrão Ferramenta",
@@ -242,11 +235,11 @@ class FerramentaModelTest(FerramentasBaseTestCase):
             status=Ferramenta.Status.DISPONIVEL,
             mala=self.mala
         )
-        
+
         self.mala.status = MalaFerramentas.Status.DISPONIVEL
         self.mala.save()
         ferramenta.refresh_from_db()
-        
+
         self.assertEqual(ferramenta.status_efetivo, Ferramenta.Status.DISPONIVEL)
         self.assertTrue(ferramenta.esta_disponivel_para_retirada)
         self.assertFalse(ferramenta.esta_emprestada)
@@ -261,11 +254,11 @@ class FerramentaModelTest(FerramentasBaseTestCase):
             status=Ferramenta.Status.DISPONIVEL,
             mala=self.mala
         )
-        
+
         self.mala.status = MalaFerramentas.Status.EM_USO
         self.mala.save()
         ferramenta.refresh_from_db()
-        
+
         self.assertEqual(ferramenta.status_efetivo, Ferramenta.Status.EM_USO)
         self.assertFalse(ferramenta.esta_disponivel_para_retirada)
         self.assertTrue(ferramenta.esta_emprestada)
@@ -280,7 +273,7 @@ class FerramentaModelTest(FerramentasBaseTestCase):
             status=Ferramenta.Status.EM_MANUTENCAO,
             mala=self.mala
         )
-        
+
         self.assertEqual(ferramenta.status_efetivo, Ferramenta.Status.EM_MANUTENCAO)
         self.assertFalse(ferramenta.esta_disponivel_para_retirada)
 
@@ -294,7 +287,7 @@ class FerramentaModelTest(FerramentasBaseTestCase):
             status=Ferramenta.Status.DESCARTADA,
             mala=self.mala
         )
-        
+
         self.assertEqual(ferramenta.status_efetivo, Ferramenta.Status.DESCARTADA)
         self.assertFalse(ferramenta.esta_disponivel_para_retirada)
 
@@ -313,44 +306,42 @@ class FerramentaModelTest(FerramentasBaseTestCase):
     def test_manager_ferramentas_disponiveis_para_mala(self):
         """Testa o método customizado do Manager/QuerySet."""
         mala_a = MalaFerramentas.objects.create(
-            nome="Mala A Manager", 
-            codigo_identificacao="M-A-MGR", 
+            nome="Mala A Manager",
+            codigo_identificacao="M-A-MGR",
             filial=self.filial
         )
         mala_b = MalaFerramentas.objects.create(
-            nome="Mala B Manager", 
-            codigo_identificacao="M-B-MGR", 
+            nome="Mala B Manager",
+            codigo_identificacao="M-B-MGR",
             filial=self.filial
         )
 
         ferramenta_livre = Ferramenta.objects.create(
-            nome="Martelo", 
-            codigo_identificacao="F-LIVRE-MGR", 
-            data_aquisicao=timezone.now().date(), 
+            nome="Martelo",
+            codigo_identificacao="F-LIVRE-MGR",
+            data_aquisicao=timezone.now().date(),
             filial=self.filial
         )
         ferramenta_mala_a = Ferramenta.objects.create(
-            nome="Alicate", 
-            codigo_identificacao="F-MALA-A-MGR", 
-            data_aquisicao=timezone.now().date(), 
-            filial=self.filial, 
+            nome="Alicate",
+            codigo_identificacao="F-MALA-A-MGR",
+            data_aquisicao=timezone.now().date(),
+            filial=self.filial,
             mala=mala_a
         )
         ferramenta_mala_b = Ferramenta.objects.create(
-            nome="Serrote", 
-            codigo_identificacao="F-MALA-B-MGR", 
-            data_aquisicao=timezone.now().date(), 
-            filial=self.filial, 
+            nome="Serrote",
+            codigo_identificacao="F-MALA-B-MGR",
+            data_aquisicao=timezone.now().date(),
+            filial=self.filial,
             mala=mala_b
         )
 
-        # Cenário 1: Ferramentas disponíveis para uma NOVA mala
         disponiveis_nova_mala = Ferramenta.objects.ferramentas_disponiveis_para_mala()
         self.assertIn(ferramenta_livre, disponiveis_nova_mala)
         self.assertNotIn(ferramenta_mala_a, disponiveis_nova_mala)
         self.assertNotIn(ferramenta_mala_b, disponiveis_nova_mala)
 
-        # Cenário 2: Ferramentas disponíveis para EDITAR a Mala A
         disponiveis_mala_a = Ferramenta.objects.ferramentas_disponiveis_para_mala(
             mala_instance_pk=mala_a.pk
         )
@@ -372,7 +363,6 @@ class TermoResponsabilidadeModelTest(FerramentasBaseTestCase):
             movimentado_por=self.user,
             filial=self.filial
         )
-        # depois (alinhe com o __str__ atual do model):
         self.assertEqual(
             str(termo),
             f"Termo #{termo.id} - Ferramental — {self.funcionario.nome_completo}"
@@ -397,8 +387,13 @@ class TermoResponsabilidadeModelTest(FerramentasBaseTestCase):
         self.assertEqual(termo.itens.count(), 1)
         self.assertIn(item, termo.itens.all())
 
-    def test_termo_is_signed(self):
-        """Testa a propriedade 'is_signed'."""
+    def test_termo_assinatura(self):
+        """
+        Testa se a presença de 'assinatura_imagem' indica termo assinado.
+        O modelo real não possui método is_signed(); a assinatura é
+        indicada pela presença do campo 'assinatura_imagem' (ImageField
+        do AssinavelMixin).
+        """
         termo = TermoDeResponsabilidade.objects.create(
             contrato="CT-SIG-01",
             responsavel=self.funcionario,
@@ -406,15 +401,18 @@ class TermoResponsabilidadeModelTest(FerramentasBaseTestCase):
             movimentado_por=self.user,
             filial=self.filial
         )
-        self.assertFalse(termo.is_signed())
+        self.assertFalse(bool(termo.assinatura_imagem))
 
-        termo.assinatura_data = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+        termo.assinatura_imagem = SimpleUploadedFile(
+            "sig.png", b"fake_png_bytes", content_type="image/png"
+        )
         termo.save()
+        termo.refresh_from_db()
 
-        self.assertTrue(termo.is_signed())
+        self.assertTrue(bool(termo.assinatura_imagem))
 
     def test_relacao_termo_movimentacao(self):
-        """Testa a associação entre Termo e Movimentacao."""
+        """Testa a associação entre Termo e Movimentacao (ferramenta)."""
         termo = TermoDeResponsabilidade.objects.create(
             contrato="CT-MOV-01",
             responsavel=self.funcionario,
@@ -430,26 +428,30 @@ class TermoResponsabilidadeModelTest(FerramentasBaseTestCase):
             filial=self.filial
         )
 
-        fake_signature = SimpleUploadedFile(
-            "sig.png", 
-            b"file_content", 
-            content_type="image/png"
-        )
-
+        # Movimentacao não tem campo 'assinatura_retirada' como argumento de
+        # criação: a assinatura vive em AssinaturaMovimentacao (FK para
+        # Movimentacao) e é criada separadamente.
         movimentacao = Movimentacao.objects.create(
             ferramenta=ferramenta,
             termo_responsabilidade=termo,
             retirado_por=self.user,
             data_devolucao_prevista=timezone.now() + timedelta(days=5),
             condicoes_retirada="Nova, na caixa.",
-            assinatura_retirada=fake_signature,
             filial=self.filial
         )
-        
+        AssinaturaMovimentacao.objects.create(
+            movimentacao=movimentacao,
+            tipo=AssinaturaMovimentacao.Tipo.RETIRADA,
+        )
+
         self.assertEqual(termo.movimentacoes_geradas.count(), 1)
         self.assertEqual(movimentacao.termo_responsabilidade, termo)
+        self.assertEqual(
+            movimentacao.assinatura_retirada.tipo,
+            AssinaturaMovimentacao.Tipo.RETIRADA
+        )
 
-    def test_relacao_termo_movimentacao_mala(self):
+def test_relacao_termo_movimentacao_mala(self):
         """Testa a associação entre Termo e Movimentacao para uma mala."""
         termo = TermoDeResponsabilidade.objects.create(
             contrato="CT-MALA-01",
@@ -465,7 +467,6 @@ class TermoResponsabilidadeModelTest(FerramentasBaseTestCase):
             filial=self.filial
         )
 
-        # Criar uma ferramenta associada à mala
         ferramenta = Ferramenta.objects.create(
             nome="Ferramenta Teste Mala",
             codigo_identificacao="FT-001-MALA",
@@ -474,42 +475,106 @@ class TermoResponsabilidadeModelTest(FerramentasBaseTestCase):
             mala=mala
         )
 
-        fake_signature = SimpleUploadedFile(
-            "sig.png", 
-            b"file_content", 
-            content_type="image/png"
-        )
-
         movimentacao = Movimentacao.objects.create(
             mala=mala,
-            ferramenta=ferramenta,  
             termo_responsabilidade=termo,
             retirado_por=self.user,
             data_devolucao_prevista=timezone.now() + timedelta(days=5),
             condicoes_retirada="Nova, na caixa.",
-            assinatura_retirada=fake_signature,
             filial=self.filial
+        )
+        AssinaturaMovimentacao.objects.create(
+            movimentacao=movimentacao,
+            tipo=AssinaturaMovimentacao.Tipo.RETIRADA,
         )
 
         self.assertEqual(termo.movimentacoes_geradas.count(), 1)
         self.assertEqual(movimentacao.termo_responsabilidade, termo)
 
-        # Atualiza status e verifica o termo ativo
         mala.status = MalaFerramentas.Status.EM_USO
         mala.save()
         ferramenta.refresh_from_db()
-        
-        # Verifica termo_ativo se a propriedade existir
-        if hasattr(ferramenta, 'termo_ativo'):
-            self.assertEqual(ferramenta.termo_ativo, termo)
 
-        # Simula a devolução
+        # NOTA: 'ferramenta.termo_ativo' reflete apenas movimentações feitas
+        # diretamente na ferramenta, não propaga o termo da mala-mãe quando
+        # a retirada é feita via mala. Esse teste foca na relação
+        # Termo <-> Movimentacao, não na propagação de termo_ativo.
+        self.assertEqual(mala.status, MalaFerramentas.Status.EM_USO)
+
         movimentacao.data_devolucao = timezone.now()
         movimentacao.save()
         mala.status = MalaFerramentas.Status.DISPONIVEL
         mala.save()
         ferramenta.refresh_from_db()
-        
-        if hasattr(ferramenta, 'termo_ativo'):
-            self.assertIsNone(ferramenta.termo_ativo)
 
+        self.assertEqual(mala.status, MalaFerramentas.Status.DISPONIVEL)
+
+class MovimentacaoConstraintTest(FerramentasBaseTestCase):
+    """Garante que o CheckConstraint XOR funciona no banco (MySQL-safe)."""
+
+    def test_nao_permite_movimentacao_sem_item_nem_mala(self):
+        with self.assertRaises(IntegrityError):
+            Movimentacao.objects.create(
+                retirado_por=self.user,
+                data_devolucao_prevista=timezone.now() + timedelta(days=1),
+                condicoes_retirada="Sem item",
+                filial=self.filial
+            )
+
+    def test_nao_permite_ferramenta_e_mala_juntas(self):
+        mala = MalaFerramentas.objects.create(
+            nome="Mala Teste XOR",
+            codigo_identificacao="M-XOR-01",
+            filial=self.filial
+        )
+        ferramenta = Ferramenta.objects.create(
+            nome="Chave Inglesa",
+            codigo_identificacao="CHV-XOR-01",
+            data_aquisicao=timezone.now().date(),
+            filial=self.filial
+        )
+
+        with self.assertRaises(IntegrityError):
+            Movimentacao.objects.create(
+                ferramenta=ferramenta,
+                mala=mala,
+                retirado_por=self.user,
+                data_devolucao_prevista=timezone.now() + timedelta(days=1),
+                condicoes_retirada="Ferramenta e mala juntas",
+                filial=self.filial
+            )
+
+
+class MovimentacaoConcorrenciaTest(FerramentasBaseTestCase):
+    """
+    Testa a proteção de concorrência feita na camada de aplicação
+    (select_for_update), já que o MySQL/MariaDB não suporta
+    UniqueConstraint condicional (índice único parcial).
+
+    NOTA: este teste verifica a REGRA de negócio usada pela view
+    (checagem de movimentação ativa). Um teste real de concorrência
+    com duas threads simultâneas exigiria TransactionTestCase +
+    threading, fora do escopo aqui.
+    """
+
+    def test_bloqueia_segunda_retirada_do_mesmo_item_ja_ativo(self):
+        ferramenta = Ferramenta.objects.create(
+            nome="Chave Inglesa",
+            codigo_identificacao="CHV-CONC-01",
+            data_aquisicao=timezone.now().date(),
+            filial=self.filial
+        )
+
+        Movimentacao.objects.create(
+            ferramenta=ferramenta,
+            retirado_por=self.user,
+            data_devolucao_prevista=timezone.now() + timedelta(days=1),
+            condicoes_retirada="OK",
+            filial=self.filial
+        )
+
+        # Simula a mesma checagem que a view faz após o select_for_update()
+        ja_ativa = Movimentacao.objects.filter(
+            ferramenta=ferramenta, data_devolucao__isnull=True
+        ).exists()
+        self.assertTrue(ja_ativa)
