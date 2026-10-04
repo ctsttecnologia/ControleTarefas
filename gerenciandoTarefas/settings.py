@@ -375,6 +375,10 @@ else:
     }
     logger.debug("📦 Usando WhiteNoise + Cloudinary (Produção)")
 
+# Compatibilidade com pacotes (ex: cloudinary_storage) que ainda leem a API antiga
+STATICFILES_STORAGE = STORAGES["staticfiles"]["BACKEND"]
+DEFAULT_FILE_STORAGE = STORAGES["default"]["BACKEND"]
+
 
 # =============================================================================
 # ARQUIVOS PRIVADOS (sendfile2 - mantém local em qualquer ambiente)
