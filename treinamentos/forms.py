@@ -9,15 +9,9 @@ class TipoCursoForm(forms.ModelForm):
     class Meta:
         model = TipoCurso
         fields = [
-            'nome',
-            'area',
-            'modalidade',
-            'validade_meses',
-            'descricao_no_certificado',
-            'referencia_normativa',
-            'grade_curricular',
-            'certificado',
-            'ativo'
+            'nome', 'area', 'modalidade', 'validade_meses',
+            'descricao_no_certificado', 'referencia_normativa',
+            'grade_curricular', 'certificado', 'ativo',
         ]
         widgets = {
             'descricao_no_certificado': forms.Textarea(attrs={'rows': 3}),
@@ -26,11 +20,10 @@ class TipoCursoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # ✅ Remove "Online" das opções — cursos online usam o fluxo EAD
+        # Remove "Online" das opções — cursos online usam o fluxo EAD
         self.fields['modalidade'].choices = [
             (k, v) for k, v in TipoCurso.MODALIDADE_CHOICES if k != 'O'
         ]
-
 
 class TreinamentoForm(forms.ModelForm):
     class Meta:
@@ -71,7 +64,7 @@ class TreinamentoForm(forms.ModelForm):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
 
-        # ✅ Só mostra tipos Presencial (P) e Híbrido (H) — Online usa o fluxo EAD
+        # Só mostra tipos Presencial (P) e Híbrido (H) — Online usa o fluxo EAD
         self.fields['tipo_curso'].queryset = TipoCurso.objects.filter(
             ativo=True,
         ).exclude(modalidade='O')

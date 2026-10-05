@@ -44,7 +44,7 @@ class TipoCurso(models.Model):
         ('TEC', 'Técnico'),
     ]
 
-    nome                      = models.CharField("Nome do Curso", max_length=100, unique=True)
+    nome                      = models.CharField("Nome do Curso", max_length=100)
     modalidade                = models.CharField("Modalidade", max_length=1, choices=MODALIDADE_CHOICES)
     area                      = models.CharField("Área de Conhecimento", max_length=3, choices=AREA_CHOICES)
     descricao_no_certificado  = models.TextField("Descrição (para frente do certificado)", blank=True, null=True)
@@ -71,6 +71,9 @@ class TipoCurso(models.Model):
         permissions = [
             ('ativar_tipocurso',   'Pode ativar/desativar tipo de curso'),
             ('relatorio_tipocurso','Pode gerar relatórios de tipos de curso'),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['nome', 'filial'], name='uniq_tipocurso_nome_filial'),
         ]
 
     def __str__(self):

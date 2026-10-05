@@ -22,6 +22,7 @@ from .services import (
     get_metricas_pgr,
     pgr_disponivel,
 )
+from .services import get_documentos_atualizados
 
 
 # =====================================================================
@@ -192,7 +193,9 @@ class DashboardDocumentosView(BaseDashboardView):
     title = 'Dashboard Documentos'
 
     def get_metricas(self, filial):
-        return get_metricas_documentos(filial, dias_alerta=30)
+        metricas = get_metricas_documentos(filial, dias_alerta=30)
+        metricas['documentos_atualizados'] = get_documentos_atualizados(filial)
+        return metricas
 
 
 # =====================================================================

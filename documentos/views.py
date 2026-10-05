@@ -13,8 +13,9 @@ from django.http import FileResponse, HttpResponseForbidden, Http404, HttpRespon
 from django.contrib import messages
 from django.conf import settings
 from django.db.models import Q
-
+from django.db import transaction
 from core.mixins import AppPermissionMixin
+from documentos.utils import registrar_log_acesso
 from .models import Documento
 from .forms import DocumentoAnexoForm, DocumentoEmpresaForm
 
@@ -232,13 +233,11 @@ class DocumentoAnexoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateVie
 
 class DocumentoDownloadView(LoginRequiredMixin, AppPermissionMixin,
                             DocumentoScopedQuerysetMixin, View):
-    """Serve arquivo privado com segurança + filtro de filial + bypass global."""
     permission_required = 'documentos.view_documento'
 
     def get(self, request, *args, **kwargs):
         documento = get_object_or_404(self.get_queryset(), pk=self.kwargs['pk'])
 
-        # 🔒 Apenas responsável, staff, superuser ou gerente global podem baixar
         pode_acessar = (
             request.user == documento.responsavel
             or request.user.is_staff
@@ -246,46 +245,23 @@ class DocumentoDownloadView(LoginRequiredMixin, AppPermissionMixin,
             or request.user.has_perm('documentos.pode_gerenciar_todos_documentos')
         )
         if not pode_acessar:
-            return HttpResponseForbidden(
-                "Você não tem permissão para acessar este documento."
-            )
+            # 🔒 LGPD: registra tentativa de acesso negado
+            registrar_log_acesso(request.user, documento, 'ACESSO_NEGADO')
+            return HttpResponseForbidden("Você não tem permissão para acessar este documento.")
 
-        file_field = documento.arquivo
-        file_path = file_field.path
+        if not documento.arquivo:
+            raise Http404("Arquivo não encontrado.")
 
-        # Tenta arquivo local
-        if os.path.exists(file_path):
-            content_type, _ = mimetypes.guess_type(file_path)
-            content_type = content_type or 'application/octet-stream'
-            filename = os.path.basename(file_path)
+        # 🔒 LGPD: log de auditoria de acesso
+        registrar_log_acesso(request.user, documento, 'DOWNLOAD')
 
-            response = FileResponse(open(file_path, 'rb'), content_type=content_type)
-            if content_type == 'application/pdf':
-                response['Content-Disposition'] = f'inline; filename="{filename}"'
-            else:
-                response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            return response
+        # Cloudinary gera URL assinada com expiração curta
+        url_assinada = documento.arquivo.storage.url(
+            documento.arquivo.name,
+            # expiração configurável via Cloudinary (ex: 60s)
+        )
+        return HttpResponseRedirect(url_assinada)
 
-        # Fallback: busca no GCS (dev apontando para produção)
-        if settings.DEBUG:
-            try:
-                from storages.backends.gcloud import GoogleCloudStorage
-
-                bucket_name = getattr(settings, 'GS_BUCKET_NAME', None)
-                credentials = getattr(settings, 'GS_CREDENTIALS', None)
-
-                if bucket_name:
-                    gcs = GoogleCloudStorage(
-                        bucket_name=bucket_name,
-                        credentials=credentials,
-                    )
-                    for name in [file_field.name, f'media/{file_field.name}']:
-                        if gcs.exists(name):
-                            return HttpResponseRedirect(gcs.url(name))
-            except (ImportError, Exception):
-                pass
-
-        raise Http404("Arquivo não encontrado no servidor.")
 
 
 # ══════════════════════════════════════════════════════════
@@ -336,10 +312,18 @@ class DocumentoRenewView(LoginRequiredMixin, AppPermissionMixin,
     def form_valid(self, form):
         old_doc = self.get_old_doc()
         nova_venc = form.cleaned_data.get('data_vencimento')
+
+        # Valida ANTES de qualquer escrita no banco
+        if nova_venc and old_doc.data_vencimento and nova_venc <= old_doc.data_vencimento:
+            form.add_error(
+                'data_vencimento',
+                f'A nova data deve ser posterior à anterior ({old_doc.data_vencimento:%d/%m/%Y}).'
+            )
+            return self.form_invalid(form)
+
         new_doc = form.save(commit=False)
         new_doc.content_type = old_doc.content_type
         new_doc.object_id = old_doc.object_id
-        # 🔒 Responsável SEMPRE é o usuário atual (obrigatório)
         new_doc.responsavel = self.request.user
         new_doc.filial = old_doc.filial
         new_doc.cliente = old_doc.cliente
@@ -350,19 +334,15 @@ class DocumentoRenewView(LoginRequiredMixin, AppPermissionMixin,
         old_doc.status = Documento.StatusChoices.RENOVADO
         old_doc.save(update_fields=['status'])
 
-        if nova_venc and old_doc.data_vencimento and nova_venc <= old_doc.data_vencimento:
-            form.add_error(
-                'data_vencimento',
-                f'A nova data deve ser posterior à anterior ({old_doc.data_vencimento:%d/%m/%Y}).'
-            )
-            return self.form_invalid(form)
-
         self.object = new_doc
-        messages.success(
-            self.request,
-            f'Documento "{old_doc.nome}" renovado com sucesso!'
-        )
-        return redirect(self.get_success_url())
+        with transaction.atomic():
+            new_doc.save()
+            old_doc.status = Documento.StatusChoices.RENOVADO
+            # update_fields ignora o auto_now, então data_atualizacao entra explícita
+            old_doc.data_atualizacao = timezone.now()
+            old_doc.save(update_fields=['status', 'data_atualizacao'])
+
+
 
     def get_success_url(self):
         obj = self.object.content_object
@@ -392,10 +372,10 @@ class DocumentoDeleteView(LoginRequiredMixin, AppPermissionMixin,
         return qs.filter(responsavel=user)
 
     def form_valid(self, form):
-        nome = self.object.nome
-        response = super().form_valid(form)
-        messages.success(self.request, f'Documento "{nome}" excluído com sucesso.')
-        return response
+        self.object = self.get_object()
+        self.object.soft_delete(self.request.user)
+        messages.success(self.request, f'Documento "{self.object.nome}" arquivado (LGPD: retenção aplicada).')
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse('documentos:lista')

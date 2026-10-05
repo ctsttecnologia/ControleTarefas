@@ -12,8 +12,8 @@ class DashboardPermission(models.Model):
     """
 
     class Meta:
-        managed = False          # ❌ Não cria tabela no banco
-        default_permissions = () # ❌ Remove add/change/delete/view padrão
+        managed = False 
+        default_permissions = () 
         permissions = [
             ('view_dashboard_geral',        'Pode visualizar o Dashboard Geral'),
             ('view_dashboard_treinamentos', 'Pode visualizar o Dashboard de Treinamentos'),

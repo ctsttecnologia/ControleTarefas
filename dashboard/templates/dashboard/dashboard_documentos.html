@@ -49,7 +49,7 @@
                     </div>
                     <div>
                         <div class="kpi-value text-primary">{{ total_documentos }}</div>
-                        <div class="kpi-label">Total Arquivado</div>
+                        <div class="kpi-label">Documentos Ativos</div>
                     </div>
                 </div>
             </div>
@@ -93,23 +93,18 @@
                 </div>
                 <div class="p-0">
                     {% for doc in proximos_vencimentos %}
-                    <div class="dash-list-item {% if doc.data_vencimento < today %}item-danger{% else %}item-warning{% endif %}">
+                    <div class="dash-list-item item-warning">
                         <div class="d-flex align-items-center gap-3">
-                            {% if doc.data_vencimento < today %}
-                            <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 1.25rem;"></i>
-                            {% else %}
                             <i class="bi bi-clock text-warning" style="font-size: 1.25rem;"></i>
-                            {% endif %}
                             <div>
-                                <div class="fw-bold" style="font-size: 0.9rem;">{{ doc.titulo }}</div>
-                                <small class="text-muted">Vence em: <strong>{{ doc.data_vencimento|date:"d/m/Y" }}</strong></small>
+                                <div class="fw-bold" style="font-size: 0.9rem;">{{ doc.nome }}</div>
+                                <small class="text-muted">
+                                    Vence em: <strong>{{ doc.data_vencimento|date:"d/m/Y" }}</strong>
+                                    ({{ doc.data_vencimento|timeuntil }})
+                                </small>
                             </div>
                         </div>
-                        {% if doc.data_vencimento < today %}
-                        <span class="badge bg-danger rounded-pill">VENCIDO</span>
-                        {% else %}
                         <span class="badge bg-warning text-dark rounded-pill">ATENÇÃO</span>
-                        {% endif %}
                     </div>
                     {% empty %}
                     <div class="dash-empty">
@@ -141,6 +136,41 @@
                 </div>
             </div>
         </div>
+
+        <!-- Atualizados recentemente -->
+        <div class="col-12">
+            <div class="card dash-card shadow-sm">
+                <div class="card-header">
+                    <h5><i class="bi bi-bell text-primary me-2"></i>Atualizados recentemente</h5>
+                </div>
+                <div class="p-0">
+                    {% for doc in documentos_atualizados %}
+                    <div class="dash-list-item">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-arrow-repeat text-primary" style="font-size: 1.25rem;"></i>
+                            <div>
+                                <div class="fw-bold" style="font-size: 0.9rem;">{{ doc.nome }}</div>
+                                <small class="text-muted">
+                                    {{ doc.data_atualizacao|timesince }} atrás
+                                    {% if doc.responsavel %}
+                                        · {{ doc.responsavel.get_full_name|default:doc.responsavel.username }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">
+                            {{ doc.get_status_display }}
+                        </span>
+                    </div>
+                    {% empty %}
+                    <div class="dash-empty">
+                        <i class="bi bi-inbox"></i>
+                        <h6>Sem atualizações</h6>
+                        <p>Nenhum documento atualizado nos últimos 7 dias.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}
-

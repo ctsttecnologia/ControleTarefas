@@ -19,6 +19,8 @@ from .realtime import (
 )
 
 from tarefas.models import HistoricoTarefa, Tarefas
+from django.db.models.signals import pre_save
+from documentos.models import Documento
 
 logger = logging.getLogger(__name__)
 
@@ -158,3 +160,41 @@ def push_notificacao_deletada(sender, instance, **kwargs):
             instance.pk, e, exc_info=True,
         )
 
+# =============================================================================
+# SIGNAL: Documento atualizado → Notificação + Push (sino)
+# =============================================================================
+
+@receiver(pre_save, sender=Documento)
+def capturar_estado_anterior_documento(sender, instance, **kwargs):
+    """Guarda o estado anterior do documento para comparação no post_save."""
+    if instance.pk:
+        try:
+            instance._old_instance = Documento.objects.get(pk=instance.pk)
+        except Documento.DoesNotExist:
+            instance._old_instance = None
+    else:
+        instance._old_instance = None
+
+
+@receiver(post_save, sender=Documento)
+def gerar_notificacao_documento(sender, instance, created, **kwargs):
+    """Notifica responsável/filial quando documento é criado ou atualizado."""
+    old = getattr(instance, '_old_instance', None)
+
+    # Evita notificação falsa em criação não "detectada" (sem _old_instance e not created)
+    if not created and old is None:
+        return
+
+    from .services import notificar_documento_atualizado
+
+    try:
+        notificar_documento_atualizado(
+            documento=instance,
+            criado=created,
+            instancia_anterior=old,
+        )
+    except Exception as e:
+        logger.error(
+            f'Erro ao notificar atualização do documento {instance.pk}: {e}',
+            exc_info=True,
+        )

@@ -88,6 +88,8 @@ class Documento(models.Model):
     )
     # ─────────────────────────────────────────────────────────────────────────
 
+    excluido_em = models.DateTimeField(null=True, blank=True)
+
     # ══════════════════════════════════════════════
     # DATAS E VENCIMENTO
     # ══════════════════════════════════════════════
@@ -205,6 +207,12 @@ class Documento(models.Model):
         safe_delete_file(self, 'arquivo')
         super().delete(*args, **kwargs)
 
+    def soft_delete(self, user):
+        self.excluido_em = timezone.now()
+        self.status = self.StatusChoices.ARQUIVADO
+        self.save(update_fields=['excluido_em', 'status'])
+        DocumentoAuditLog.objects.create(documento=self, usuario=user, acao='EXCLUSAO')
+
     # ══════════════════════════════════════════════
     # HELPERS / PROPERTIES
     # ══════════════════════════════════════════════
@@ -231,3 +239,20 @@ class Documento(models.Model):
         delta = (self.data_vencimento - timezone.now().date()).days
         return max(delta, 0)
 
+class DocumentoAuditLog(models.Model):
+    class AcaoChoices(models.TextChoices):
+        DOWNLOAD = 'DOWNLOAD', 'Download'
+        VISUALIZACAO = 'VIEW', 'Visualização'
+        CRIACAO = 'CRIACAO', 'Criação'
+        EDICAO = 'EDICAO', 'Edição'
+        EXCLUSAO = 'EXCLUSAO', 'Exclusão'
+        ACESSO_NEGADO = 'ACESSO_NEGADO', 'Acesso Negado'
+
+    documento = models.ForeignKey(Documento, on_delete=models.SET_NULL, null=True, related_name='logs')
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    acao = models.CharField(max_length=20, choices=AcaoChoices.choices)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-criado_em']

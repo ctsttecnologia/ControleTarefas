@@ -14,11 +14,13 @@ import datetime
 import json
 from django.db.models import Count, Q, Sum, Value, IntegerField
 from django.db.models.functions import Coalesce
+import tarefas as tarefas
+import treinamentos as treinamentos
+from datetime import timedelta
 from django.utils import timezone
+from documentos.models import Documento
 
-import tarefas
-import treinamentos
-
+STATUS_INATIVOS = ['RENOVADO', 'ARQUIVADO']
 
 # =====================================================================
 # IMPORTS DOS MODELS (lazy para evitar circular imports)
@@ -39,9 +41,14 @@ def _get_epi_models():
     return Equipamento, EntregaEPI, MovimentacaoEstoque
 
 
-def _get_documento_model():
-    from documentos.models import Documento
-    return Documento
+def get_documentos_atualizados(filial, dias=7, limite=8):
+    """Documentos criados/alterados nos últimos `dias` (persistente, sem WebSocket)."""
+    desde = timezone.now() - timedelta(days=dias)
+    return (
+        Documento.objects.filter(filial=filial, data_atualizacao__gte=desde)
+        .select_related('responsavel')
+        .order_by('-data_atualizacao')[:limite]
+    )
 
 
 def _get_pgr_models():
@@ -53,6 +60,7 @@ def _get_pgr_models():
         return PGRDocumento, RiscoIdentificado, PlanoAcaoPGR, GESGrupoExposicao
     except ImportError:
         return None, None, None, None
+
 
 
 # =====================================================================
@@ -287,44 +295,40 @@ def get_metricas_epi(filial=None):
 # MÉTRICAS: DOCUMENTOS
 # =====================================================================
 
-def get_metricas_documentos(filial=None, dias_alerta=30):
-    """
-    Retorna métricas de documentos.
+def _get_documento_model():
+    from documentos.models import Documento
+    return Documento
 
-    Args:
-        filial: Filial para filtrar ou None (admin global).
-        dias_alerta: Dias para considerar "próximo do vencimento".
 
-    Returns:
-        dict com todas as métricas de documentos.
-    """
+def get_metricas_documentos(filial=None, dias_alerta=30, incluir_atualizados=True):
     Documento = _get_documento_model()
     filtro = _filial_filter(filial)
     hoje = timezone.now().date()
     limite = hoje + datetime.timedelta(days=dias_alerta)
 
-    qs = Documento.objects.filter(**filtro)
-    total = qs.count()
+    base = Documento.objects.filter(**filtro)
+    qs = base.exclude(status__in=STATUS_INATIVOS)
 
-    status_data = list(qs.values('status').annotate(total=Count('id')))
-    vencidos = qs.filter(data_vencimento__lt=hoje).count()
-    a_vencer = qs.filter(
-        data_vencimento__gte=hoje,
-        data_vencimento__lte=limite
-    ).count()
-
-    proximos_vencimentos = qs.filter(
-        data_vencimento__gte=hoje
-    ).order_by('data_vencimento')[:6]
-
-    return {
-        'total_documentos': total,
-        'status_data': status_data,
-        'documentos_vencidos': vencidos,
-        'documentos_a_vencer': a_vencer,
-        'proximos_vencimentos': proximos_vencimentos,
+    dados = {
+        'total_documentos': qs.count(),
+        'status_data': list(qs.values('status').annotate(total=Count('id'))),
+        'documentos_vencidos': qs.filter(data_vencimento__lt=hoje).count(),
+        'documentos_a_vencer': qs.filter(
+            data_vencimento__gte=hoje, data_vencimento__lte=limite
+        ).count(),
+        'proximos_vencimentos': qs.filter(data_vencimento__gte=hoje)
+            .select_related('responsavel')
+            .order_by('data_vencimento')[:6],
     }
 
+    if incluir_atualizados:
+        desde = timezone.now() - datetime.timedelta(days=7)
+        dados['documentos_atualizados'] = (
+            base.filter(data_atualizacao__gte=desde)
+            .select_related('responsavel')
+            .order_by('-data_atualizacao')[:8]
+        )
+    return dados
 
 # =====================================================================
 # MÉTRICAS: PGR
@@ -421,7 +425,9 @@ def get_metricas_geral(filial=None):
     treinamentos = get_metricas_treinamentos(filial, dias_alerta=15)
     tarefas = get_metricas_tarefas(filial)
     epi = get_metricas_epi(filial)
-    documentos = get_metricas_documentos(filial, dias_alerta=30)
+    documentos = get_metricas_documentos(
+        filial, dias_alerta=30, incluir_atualizados=False
+    )
 
     # ── PGR (pode não estar disponível) ──
     total_pgr = 0

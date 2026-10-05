@@ -1433,6 +1433,34 @@ def notificar_lembrete_tarefa_prazo(tarefa, dias_antes):
 
     return resultados
 
+# =============================================================================
+# FUNÇÕES ESPECÍFICAS PARA DOCUMENTOS (atualização)
+# =============================================================================
+
+def notificar_documento_atualizado(documento, criado, instancia_anterior=None):
+    from .models import Notificacao
+
+    if criado:
+        acao = 'cadastrado'
+    elif instancia_anterior and instancia_anterior.status != documento.status:
+        acao = f'teve o status alterado para "{documento.get_status_display()}"'
+    elif instancia_anterior and instancia_anterior.arquivo != documento.arquivo:
+        acao = 'teve o arquivo substituído'
+    else:
+        acao = 'atualizado'
+
+    destinatarios = {documento.responsavel} if documento.responsavel else set()
+    # opcional: incluir gerentes da filial com permissão de gestão global
+    # destinatarios |= set(usuarios_com_permissao_na_filial(documento.filial, 'documentos.pode_gerenciar_todos_documentos'))
+
+    for usuario in destinatarios:
+        Notificacao.objects.create(
+            usuario=usuario,
+            titulo='Documento atualizado',
+            mensagem=f'"{documento.nome}" foi {acao}.',
+            link=documento.get_absolute_url(),
+        )
+
 
 # Alias para compatibilidade com imports antigos
 enviar_email_tarefa = enviar_email
