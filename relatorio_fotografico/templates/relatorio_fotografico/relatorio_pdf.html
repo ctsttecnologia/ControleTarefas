@@ -205,8 +205,9 @@
     </div>
     <div class="capa-conteudo">
         <div class="capa-data">{{ relatorio.data|date:"F Y"|upper }}</div>
-        <div class="capa-empresa">{{ relatorio.empresa|upper }} S.A.</div>
-        <div class="capa-titulo">RELATÓRIO<br>FOTOGRÁFICO</div>
+        <div class="capa-empresa">{{ relatorio.empresa|upper }}</div>
+        <div class="capa-titulo">{{ relatorio.titulo }}</div>
+        <div class="capa-subtitulo">RELATÓRIO FOTOGRÁFICO</div>
         <div class="capa-subtitulo">{{ relatorio.obra_contrato }}</div>
     </div>
 </div>

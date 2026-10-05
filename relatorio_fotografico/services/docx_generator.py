@@ -8,7 +8,7 @@ models.py. Nenhum processamento de imagem é feito neste módulo.
 """
 import io
 import os
-import requests  # ← novo import
+import requests
 from django.conf import settings
 from docx import Document
 from docx.shared import Cm, Pt, RGBColor
@@ -60,7 +60,7 @@ def _adicionar_capa(doc, relatorio, largura_util):
     # Empresa
     p_empresa = doc.add_paragraph()
     p_empresa.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run_empresa = p_empresa.add_run(f"{relatorio.empresa.upper()} S.A.")
+    run_empresa = p_empresa.add_run(f"{relatorio.empresa.upper()}")
     run_empresa.font.size = Pt(11)
     run_empresa.font.bold = True
     run_empresa.font.color.rgb = RGBColor(0x0A, 0x4A, 0x75)
@@ -70,10 +70,17 @@ def _adicionar_capa(doc, relatorio, largura_util):
     # Título principal
     p_titulo = doc.add_paragraph()
     p_titulo.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run_titulo = p_titulo.add_run('RELATÓRIO\nFOTOGRÁFICO')
+    run_titulo = p_titulo.add_run(f"{relatorio.titulo.upper()}")
     run_titulo.font.size = Pt(26)
     run_titulo.font.bold = True
     run_titulo.font.color.rgb = RGBColor(0x0A, 0x4A, 0x75)
+
+    p_sub_titulo = doc.add_paragraph()
+    p_sub_titulo.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run_sub_titulo = p_sub_titulo.add_run('RELATÓRIO FOTOGRÁFICO')
+    run_sub_titulo.font.size = Pt(15)
+    run_sub_titulo.font.bold = True
+    run_sub_titulo.font.color.rgb = RGBColor(0x0A, 0x4A, 0x75)
 
     p_sub = doc.add_paragraph()
     p_sub.alignment = WD_ALIGN_PARAGRAPH.RIGHT
