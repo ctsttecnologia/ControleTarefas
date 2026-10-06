@@ -22,6 +22,8 @@ android/app/build/
 
 # Diagnóstico interno (se não for mais usado)
 # diagnostico/
+debug_ficha
+pytest
 
 # Arquivos de texto temporários de debug
 showmigrations_atual.txt
