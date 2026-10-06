@@ -57,16 +57,12 @@ SECRET_KEY = config('SECRET_KEY')
 #   - campo `assinatura_recebimento` em seguranca_trabalho.EntregaEPI
 CRYPTOGRAPHY_KEY = config('CRYPTOGRAPHY_KEY')  # sem default — obrigatório
 
-
-
 # Usada pela lib "django-encrypted-model-fields" (EncryptedCharField)
-# Responsável por: campo `imei` em controle_de_telefone.models
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 # [REMOVIDO em 04/09/2026] FERNET_KEYS não é mais utilizada.
 # Era usada pelo módulo core/encryption.py (código morto, arquivado
 # em _deprecated_backup/). Não recriar sem necessidade real.
-
 
 
 DEBUG = config('DEBUG', default=IS_DEVELOPMENT, cast=bool)
