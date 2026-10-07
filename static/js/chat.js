@@ -1,3344 +1,1365 @@
 
-/**
- * Sistema de Chat Avançado v4.3 - Compatível com template Django
- * Com funcionalidades completas: troca de conversas, envio de arquivos, busca global
- */
+/* chat.js — PARTE 1/3: núcleo, bootstrap lazy, lista de salas, modais */
+
+const $ = (id) => document.getElementById(id);
 
 class ChatManager {
     constructor(urls, currentUserId) {
-        console.log('🚀 ChatManager v4.3 - Inicializando para template Django...');
+        if (window.chatManager) return window.chatManager; // singleton
+        window.chatManager = this;
 
-        // Configuração de debug
-        this.debugMode = localStorage.getItem('chat-debug-mode') === 'true';
-        
-        this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5; // LIMITE DE 5 TENTATIVAS
-
-        // Método helper para logs condicionais
-        this.log = {
-            info: (...args) => console.log('ℹ️', ...args),
-            warn: (...args) => console.warn('⚠️', ...args),
-            error: (...args) => console.error('❌', ...args),
-            debug: (...args) => this.debugMode && console.debug('🔍', ...args),
-            success: (...args) => console.log('✅', ...args)
-        };
-
-        // Validação inicial
-        if (!urls || typeof urls !== 'object') {
-            return this.handleCriticalError('URLs não fornecidas');
-        }
-        
-        // Configuração única de URLs baseada no template
         this.urls = {
-            active_room_list: urls.active_room_list || '/chat/api/rooms/',
-            user_list: urls.user_list || '/chat/api/users/',
-            task_list: urls.task_list || '/chat/api/tasks/',
-            start_dm_base: urls.start_dm_base || '/chat/api/start-dm/0/',
-            create_group_url: urls.create_group_url || '/chat/api/create-group/',
-            get_task_chat_base: urls.get_task_chat_base || '/chat/api/task/0/',
-            upload_file_url: urls.upload_file_url || '/chat/api/upload/',
-            search_messages_url: urls.search_messages_url || '/chat/api/search/',
-            ws_base: urls.ws_base || '/ws/chat/',
-            history_base: urls.history_base || '/chat/api/history/',
-            ...urls
+            bootstrap_url: '/chat/api/bootstrap/',
+            active_room_list: '/chat/api/rooms/',
+            start_dm_base: '/chat/api/start-dm/0/',
+            create_group_url: '/chat/api/create-group/',
+            get_task_chat_base: '/chat/api/task/0/',
+            upload_file_url: '/chat/api/upload/',
+            get_chat_history: '/chat/api/history/00000000-0000-0000-0000-000000000000/',
+            ...urls,
         };
-
-        // Validação de URLs obrigatórias
-        const requiredUrls = ['active_room_list', 'user_list', 'start_dm_base', 'create_group_url'];
-        const missingUrls = requiredUrls.filter(url => !this.urls[url]);
-        
-        if (missingUrls.length > 0) {
-            const errorMsg = `URLs obrigatórias faltando: ${missingUrls.join(', ')}`;
-            this.log.error(errorMsg);
-            return this.handleCriticalError(errorMsg);
-        }
-
-        // Core state
         this.currentUserId = currentUserId;
         this.currentRoom = null;
         this.currentRoomName = null;
-        this.websocket = null;
-        this.isConnected = false;
-        
-        // UI state
-        this.isMinimized = false;
-        
-        // Sistema de som e Cache
-        this.soundEnabled = localStorage.getItem('chat-sound-enabled') !== 'false';
-        this.soundInitialized = false;
-        this.audioContext = null;
-        this.audioElements = {};
-        this.cache = { users: [], tasks: [], rooms: [], messages: {}, searchResults: {} };
-        
-        // Outros states
-        this.uploadQueue = [];
-        this.isUploading = false;
-        this.maxFileSize = 10 * 1024 * 1024;
-        this.currentSearchQuery = '';
-        this.searchResults = [];
-        this.dragData = { isDragging: false, offsetX: 0, offsetY: 0 };
+        this.cache = { rooms: [], users: [], tasks: [], messages: {} };
+        this.loaded = false;
+        this.debug = localStorage.getItem('chat-debug-mode') === 'true';
 
-        // Inicia os processos DEPOIS de tudo configurado.
-        // this.connectNotificationSocket();
-        this.initialize();
-    }
-
-    // ==================== INICIALIZAÇÃO ====================
-
-    async initialize() {
-        try {
-            await this.waitForDOM();
-
-            // Pede permissão de notificação nativa (uma vez)
-            this.requestNotificationPermission();
-            
-            // Verifica elementos críticos do template
-            const criticalElements = ['chat-draggable-container', 'chat-log', 'chat-message-input'];
-            const missingElements = criticalElements.filter(id => !document.getElementById(id));
-            
-            if (missingElements.length > 0) {
-                this.log.warn(`Elementos críticos faltando: ${missingElements.join(', ')}`);
-            }
-            
-            // Configura elementos específicos do template
-            this.configureTemplateElements();
-            
-            await this.setupComponents();
-
-            this.connectNotificationSocket();
-            this.log.success('Chat inicializado com sucesso');
-            
-            // Dispara evento de inicialização completa
-            this.dispatchEvent('chatSystemFullyReady', { loadTime: Date.now() });
-            
-        } catch (error) {
-            this.log.error('Erro na inicialização:', error);
-            this.handleCriticalError('Falha na inicialização');
-        }
-    }
-
-    configureTemplateElements() {
-        console.log("Iniciando configureTemplateElements...");
-
-            // Configura botão flutuante
-            const floatingBtn = document.getElementById('chat-modal-trigger');
-
-            // 1. Verificamos se o botão foi encontrado no DOM
-            console.log("Elemento do botão encontrado:", floatingBtn);
-
-            if (floatingBtn) {
-                // 2. Verificamos se a função existe no 'this' atual
-                console.log("Função toggleChatListSidebar disponível em 'this':", this.toggleChatListSidebar);
-
-                floatingBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log("Botão flutuante clicado!");
-
-                    // 3. Verificamos se a função ainda está acessível no momento do clique
-                    if (typeof this.toggleChatListSidebar === 'function') {
-                        this.toggleChatListSidebar();
-                    } else {
-                        console.error("ERRO: 'this.toggleChatListSidebar' não é uma função no momento do clique.", "Contexto 'this':", this);
-                    }
-                });
-                console.log("Listener de clique adicionado com sucesso!");
-            } else {
-                console.error("ERRO: Botão com id 'chat-modal-trigger' não foi encontrado no DOM. Verifique se o script está sendo carregado após o HTML.");
-            }
-        
-
-        
-        // Configura overlay
-        const overlay = document.getElementById('chatOverlay');
-        if (overlay) {
-            overlay.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.toggleChatListSidebar();
-            });
-        }
-        
-        // Configura botão de fechar sidebar
-        // DIAGNÓSTICO: Verificando o botão de fechar
-        const closeBtn = document.querySelector('.chat-close-btn');
-        if (closeBtn) {
-            this.log.info('Botão de fechar (.chat-close-btn) encontrado. Adicionando listener de clique...');
-            closeBtn.addEventListener('click', (e) => {
-                this.log.info('--- CLIQUE NO BOTÃO DE FECHAR DETECTADO! ---');
-                e.preventDefault();
-                this.toggleChatListSidebar();
-            });
-        } else {
-            this.log.error('CRÍTICO: Botão de fechar (.chat-close-btn) NÃO foi encontrado no DOM.');
-        }
-        
-        // Configura botão de nova conversa no modal
-        const novaConversaBtn = document.getElementById('iniciar-nova-conversa');
-        if (novaConversaBtn) {
-            novaConversaBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const modal = new bootstrap.Modal(document.getElementById('novaConversaModal'));
-                modal.show();
-            });
-        }
-        
-        // Configura busca global
-        this.configureGlobalSearch();
-        
-        this.log.success('Elementos do template configurados');
-    }
-
-   configureGlobalSearch() {
-        const globalSearchBtn = document.getElementById('global-search-btn');
-        const globalSearchContainer = document.getElementById('global-search-container');
-        const globalSearchInput = document.getElementById('global-search-input');
-
-        // Restaura o evento de clique no ícone de lupa para mostrar/esconder a busca.
-        if (globalSearchBtn && globalSearchContainer) {
-            globalSearchBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const isVisible = globalSearchContainer.style.display !== 'none';
-                globalSearchContainer.style.display = isVisible ? 'none' : 'block';
-                
-                // Foca no campo de busca quando ele se torna visível.
-                if (!isVisible && globalSearchInput) {
-                    setTimeout(() => globalSearchInput.focus(), 100);
-                }
-            });
-        }
-        
-        // Mantém a busca em tempo real no campo de input.
-        if (globalSearchInput) {
-            globalSearchInput.addEventListener('input', () => {
-                const query = globalSearchInput.value;
-                this.performGlobalSearch(query);
-            });
-        }
-    }
-
-    performGlobalSearch(query) {
-        this.log.debug(`Filtrando conversas locais com: "${query}"`);
-
-        // Garante que o cache de salas existe.
-        if (!this.cache.rooms) {
-            this.log.warn('Cache de salas vazio, não é possível filtrar.');
-            return;
-        }
-
-        const lowerCaseQuery = query.toLowerCase().trim();
-        const container = document.getElementById('active-chats-list');
-
-        // Se a busca estiver vazia, mostra todas as conversas originais.
-        if (!lowerCaseQuery) {
-            this.renderRoomList(this.cache.rooms);
-            // Se o container estiver vazio após renderizar, mostra o estado de "nenhuma conversa".
-            if (container && this.cache.rooms.length === 0) {
-                 this.renderEmptyState(container, 'chat-dots', 'Nenhuma conversa ativa', 'Clique em "Nova Conversa" para começar');
-            }
-            return;
-        }
-
-        // Filtra a lista de conversas em cache com base no nome da sala.
-        const filteredRooms = this.cache.rooms.filter(room =>
-            room.room_name.toLowerCase().includes(lowerCaseQuery)
-        );
-
-        // Se houver resultados, renderiza a lista filtrada.
-        if (filteredRooms.length > 0) {
-            this.renderRoomList(filteredRooms);
-        } else {
-            // Se não houver resultados, mostra uma mensagem.
-            if (container) {
-                container.innerHTML = `
-                    <div class="text-center p-3 text-muted">
-                        <i class="bi bi-search"></i>
-                        <p class="mb-0">Nenhum resultado para "${query}"</p>
-                    </div>
-                `;
-            }
-        }
-    }
-
-    displayGlobalSearchResults(results, query, container) {
-        container.innerHTML = `
-            <div class="search-results-header p-2 border-bottom">
-                <small class="text-muted">${results.length} resultado(s) encontrado(s)</small>
-            </div>
-            ${results.map(result => `
-                <div class="search-result-item p-3 border-bottom" 
-                     onclick="chatManager.openChatDialog('${result.room_id}', '${this.escapeHtml(result.room_name)}'); 
-                              chatManager.highlightMessage('${result.message_id}')">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div>
-                            <strong class="d-block">${this.escapeHtml(result.room_name)}</strong>
-                            <small class="text-muted">${this.escapeHtml(result.username)}</small>
-                        </div>
-                        <small class="text-muted">${new Date(result.timestamp).toLocaleString('pt-BR')}</small>
-                    </div>
-                    <div class="search-result-text">
-                        ${this.highlightQuery(this.escapeHtml(result.message || '📎 Arquivo'), query)}
-                    </div>
-                </div>
-            `).join('')}
-        `;
-    }
-
-    highlightQuery(text, query) {
-        if (!query || !text) return text;
-        const regex = new RegExp(`(${this.escapeRegex(query)})`, 'gi');
-        return text.replace(regex, '<mark>$1</mark>');
-    }
-
-    escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
-    async setupComponents() {
-        const tasks = [
-            this.initializeDrag(),
-            this.setupEventListeners(),
-            this.loadInitialData(),
-            this.initializeModals(),
-            this.initializePreview(),
-            this.initializeChatSearch(),
-            this.initializeDynamicContent(),
-            this.initializeFileUpload(),
-            this.initializeSoundSystem()
-        ];
-        
-        await Promise.allSettled(tasks);
-    }
-
-    // ==================== TROCA DE CONVERSA ====================
-    
-    async openChatDialog(roomId, roomName) {
-        try {
-            this.log.info(`Abrindo conversa: ${roomName} (${roomId})`);
-            
-            // Fecha WebSocket anterior se existir
-            if (this.websocket) {
-                this.websocket.close();
-                this.websocket = null;
-                this.isConnected = false;
-            }
-            
-            // Fecha sidebar se estiver aberto
-            this.toggleChatListSidebar(false);
-            
-            const container = document.getElementById('chat-draggable-container');
-            const title = document.getElementById('chat-dialog-header-title');
-            const content = document.getElementById('chat-dialog-content');
-            
-            if (!container || !title || !content) {
-                throw new Error('Elementos do chat não encontrados');
-            }
-
-            // Atualiza estado atual
-            this.currentRoom = roomId;
-            this.currentRoomName = roomName;
-            
-            // Mostra container
-            container.style.display = 'flex';
-            container.classList.remove('minimized');
-            
-            // Atualiza título
-            title.textContent = roomName || 'Chat';
-            
-            // Atualiza status no header
-            this.updateConnectionStatus('connecting');
-            
-            // Limpa e exibe estado de carregamento
-            const chatLog = document.getElementById('chat-log');
-            if (chatLog) {
-                chatLog.innerHTML = `
-                    <div class="loading-state text-center p-4">
-                        <div class="spinner-border spinner-border-sm" role="status"></div>
-                        <p class="mt-2 mb-0">Carregando mensagens...</p>
-                    </div>
-                `;
-            }
-            
-            // Carrega histórico e conecta WebSocket em paralelo
-            await Promise.allSettled([
-                this.loadChatHistory(roomId),
-                this.connectWebSocket(roomId)
-            ]);
-            
-            // Atualiza lista de conversas (marca como lida)
-            this.markRoomAsRead(roomId);
-            
-            this.log.success(`Conversa aberta: ${roomName}`);
-            
-        } catch (error) {
-            this.log.error('Erro ao abrir conversa:', error);
-            this.showNotification('Falha ao abrir conversa', 'error');
-            
-            // Mostra estado de erro
-            const chatLog = document.getElementById('chat-log');
-            if (chatLog) {
-                chatLog.innerHTML = `
-                    <div class="error-state">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <p>Erro ao carregar conversa</p>
-                        <button class="btn btn-sm btn-outline-danger mt-2" onclick="chatManager.openChatDialog('${roomId}', '${roomName}')">
-                            Tentar Novamente
-                        </button>
-                    </div>
-                `;
-            }
-        }
-    }
-
-    async loadChatHistory(roomId) {
-        const chatLog = document.getElementById('chat-log');
-        if (!chatLog) return;
-
-        try {
-            this.log.info(`📜 Carregando histórico da sala ${roomId}...`);
-            
-            // Monta a URL correta
-            const historyUrl = this.urls.get_chat_history 
-                ? this.urls.get_chat_history.replace('00000000-0000-0000-0000-000000000000', roomId)
-                : `/chat/api/history/${roomId}/`;
-            
-            console.log('🔗 URL do histórico:', historyUrl);
-            
-            const response = await fetch(historyUrl);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            console.log('📦 Dados recebidos:', data);
-            
-            if (data.status === 'success') {
-                if (data.messages && data.messages.length > 0) {
-                    // Cache as mensagens
-                    this.cache.messages[roomId] = data.messages;
-                    
-                    // Renderiza as mensagens
-                    this.renderMessages(data.messages);
-                    
-                    this.log.success(`✅ ${data.messages.length} mensagens carregadas`);
-                } else {
-                    this.log.info('📭 Nenhuma mensagem encontrada');
-                    this.renderEmptyChatState();
-                }
-            } else {
-                throw new Error(data.error || 'Erro desconhecido');
-            }
-
-            // Marca todas como lidas após carregar histórico
-            this.markRoomAsRead(roomId);
-            
-        } catch (error) {
-            this.log.error('❌ Erro ao carregar histórico:', error);
-            this.renderErrorChatState(error.message);
-        }
-        
-    }
-    renderMessages(messages) {
-        const chatLog = document.getElementById('chat-log');
-        if (!chatLog) return;
-        
-        console.log(`🖼️ Renderizando ${messages.length} mensagens...`);
-        
-        // Limpa o chat
-        chatLog.innerHTML = '';
-        
-        if (messages.length === 0) {
-            this.renderEmptyChatState();
-            return;
-        }
-        
-        // Renderiza cada mensagem
-        messages.forEach((message, index) => {
-            const messageElement = this.createMessageElement(message);
-            chatLog.appendChild(messageElement);
-        });
-        
-        // Rola para a última mensagem
-        this.scrollToBottom();
-        
-        console.log('✅ Mensagens renderizadas com sucesso');
-    }
-
-    createMessageElement(data) {
-        const messageDiv = document.createElement('div');
-        const isOwn = data.user_id == this.currentUserId;
-        
-        messageDiv.className = `message ${isOwn ? 'own-message' : 'other-message'}`;
-        messageDiv.dataset.messageId = data.id || data.message_id;
-        
-        // ✅ CORREÇÃO: Trata timestamp inválido
-        let timestamp = 'Agora';
-        if (data.timestamp) {
-            const date = new Date(data.timestamp);
-            if (!isNaN(date.getTime())) {
-                timestamp = date.toLocaleTimeString('pt-BR', {
-                    hour: '2-digit', 
-                    minute: '2-digit'
-                });
-            }
-        }
-        
-        // Garante que username nunca seja vazio
-        const username = data.username || 'Usuário';
-        
-        // Conteúdo da mensagem (texto ou arquivo)
-        let contentHtml = '';
-        
-        if (data.message_type === 'file' && data.file_data) {
-            contentHtml = this.renderFileContent(data);
-        } else if (data.message_type === 'image' && data.image_url) {
-            contentHtml = `
-                <div class="message-image">
-                    <img src="${data.image_url}" alt="Imagem" class="img-fluid rounded" 
-                        style="max-width: 200px; cursor: pointer;"
-                        onclick="chatManager.viewImage('${data.image_url}')">
-                </div>
-            `;
-        } else {
-            // Mensagem de texto
-            const messageText = data.message || data.content || '';
-            contentHtml = `<div class="message-text">${this.formatMessageText(messageText)}</div>`;
-        }
-        
-        messageDiv.innerHTML = `
-            <div class="message-content">
-                <div class="message-header">
-                    <span class="message-sender">${this.escapeHtml(username)}</span>
-                    <span class="message-time">${timestamp}</span>
-                </div>
-                ${contentHtml}
-                ${data.is_edited ? '<small class="text-muted ms-2"><i class="bi bi-pencil"></i> editado</small>' : ''}
-            </div>
-        `;
-        
-        return messageDiv;
-    }
-
-
-    renderFileContent(data) {
-        try {
-            const fileData = typeof data.file_data === 'string' 
-                ? JSON.parse(data.file_data) 
-                : data.file_data;
-                
-            const fileName = fileData.name || 'arquivo';
-            const fileSize = fileData.size ? this.formatFileSize(fileData.size) : '';
-            const fileType = fileData.type || '';
-            const fileUrl = fileData.url || '';
-            
-            // Nome seguro para uso em atributos inline (escapa aspas simples e barras)
-            const safeName = fileName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-            const safeUrl = fileUrl.replace(/'/g, "\\'");
-            
-            let icon = 'bi-file-earmark';
-            if (fileType.includes('image')) icon = 'bi-file-image';
-            else if (fileType.includes('pdf')) icon = 'bi-file-pdf';
-            else if (fileType.includes('word') || fileType.includes('document')) icon = 'bi-file-word';
-            else if (fileType.includes('excel') || fileType.includes('sheet')) icon = 'bi-file-excel';
-            else if (fileType.includes('video')) icon = 'bi-file-play';
-            else if (fileType.includes('audio')) icon = 'bi-file-music';
-            else if (fileType.includes('zip') || fileType.includes('compressed')) icon = 'bi-file-zip';
-            
-            // 🖼️ Se for imagem, mostra preview com fallback para imagens quebradas
-            if (fileType.includes('image') && fileUrl) {
-                return `
-                    <div class="message-file">
-                        <div class="file-icon"><i class="bi ${icon}"></i></div>
-                        <div class="file-info">
-                            <div class="file-name">${this.escapeHtml(fileName)}</div>
-                            ${fileSize ? `<div class="file-size">${fileSize}</div>` : ''}
-                        </div>
-                    </div>
-                    <div class="image-preview mt-2">
-                        <img src="${fileUrl}" 
-                            alt="${this.escapeHtml(fileName)}" 
-                            class="img-fluid rounded" 
-                            style="max-width: 200px; cursor: pointer;"
-                            onclick="chatManager.viewImage('${safeUrl}')"
-                            onerror="chatManager.handleImageError(this, '${safeName}')">
-                    </div>
-                `;
-            }
-            
-            // 📄 Outros tipos de arquivo (PDF, docs, etc)
-            return `
-                <div class="message-file" style="cursor: pointer;" 
-                    onclick="chatManager.downloadFile('${safeUrl}', '${safeName}')">
-                    <div class="file-icon"><i class="bi ${icon}"></i></div>
-                    <div class="file-info">
-                        <div class="file-name">${this.escapeHtml(fileName)}</div>
-                        ${fileSize ? `<div class="file-size">${fileSize}</div>` : ''}
-                    </div>
-                    <button class="btn btn-sm btn-outline-primary ms-2">
-                        <i class="bi bi-download"></i>
-                    </button>
-                </div>
-            `;
-        } catch (error) {
-            console.error('Erro ao renderizar arquivo:', error);
-            return `<div class="message-text">📎 Arquivo anexado</div>`;
-        }
-    }
-
-    formatMessageText(text) {
-        if (!text) return '';
-        
-        // Substitui URLs por links
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
-        text = text.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener" class="message-link">$1</a>');
-        
-        // Substitui quebras de linha
-        text = text.replace(/\n/g, '<br>');
-        
-        // Destaca menções
-        const mentionRegex = /@(\w+)/g;
-        text = text.replace(mentionRegex, '<span class="mention">@$1</span>');
-        
-        return text;
-    }
-
-    formatFileSize(bytes) {
-        if (!bytes) return '';
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    scrollToBottom() {
-        const chatLog = document.getElementById('chat-log');
-        if (chatLog) {
-            setTimeout(() => {
-                chatLog.scrollTop = chatLog.scrollHeight;
-            }, 100);
-        }
-    }
-
-    renderEmptyChatState() {
-        const chatLog = document.getElementById('chat-log');
-        if (!chatLog) return;
-        
-        chatLog.innerHTML = `
-            <div class="welcome-state">
-                <i class="bi bi-chat-heart" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
-                <p>Nenhuma mensagem ainda</p>
-                <small>Seja o primeiro a enviar uma mensagem!</small>
-            </div>
-        `;
-    }
-
-    renderErrorChatState(error) {
-        const chatLog = document.getElementById('chat-log');
-        if (!chatLog) return;
-        
-        chatLog.innerHTML = `
-            <div class="error-state">
-                <i class="bi bi-exclamation-triangle"></i>
-                <p>Erro ao carregar mensagens</p>
-                <small>${this.escapeHtml(error)}</small>
-                <button class="btn btn-sm btn-outline-danger mt-2" onclick="chatManager.loadChatHistory('${this.currentRoom}')">
-                    Tentar Novamente
-                </button>
-            </div>
-        `;
-    }
-
-    
-    // ==================== EVENT LISTENERS ====================
-    
-    setupEventListeners() {
-        // Chat controls
-        this.bindElement('chat-message-submit', 'click', () => this.sendMessage());
-        this.bindElement('chat-message-input', 'keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.sendMessage();
-            }
-        });
-        
-        // Auto-expand textarea
-        this.bindElement('chat-message-input', 'input', (e) => {
-            this.autoExpandTextarea(e.target);
-        });
-        
-        // Window controls
-        this.bindElement('minimize-chat-btn', 'click', (e) => {
-            e.stopPropagation();
-            this.toggleMinimize();
-        });
-        this.bindElement('maximize-chat-btn', 'click', (e) => {
-            e.stopPropagation();
-            this.toggleMinimize();
-        });
-        this.bindElement('close-dialog-btn', 'click', (e) => {
-            e.stopPropagation();
-            this.closeChat();
-        });
-        
-        // Controles de sidebar
-        this.bindElement('chat-list-btn', 'click', () => this.toggleChatListSidebar());
-        
-        // Busca
-        this.bindElement('toggle-chat-search-btn', 'click', () => this.toggleChatSearch());
-        this.bindElement('close-chat-search-btn', 'click', () => this.closeChatSearch());
-        
-        // Informações
-        this.bindElement('chat-info-btn', 'click', () => this.showChatInfo());
-        
-        // Som
-        this.bindElement('chat-sound-toggle', 'click', () => this.toggleSound());
-        
-        // Anexar arquivo (usando o input do template)
-        this.bindElement('attach-image-btn', 'click', () => this.handleFileUpload());
-        
-        this.log.info('Event listeners configurados');
-    }
-
-    autoExpandTextarea(textarea) {
-        textarea.style.height = 'auto';
-        textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-    }
-
-    // ==================== ENVIO DE ARQUIVOS ====================
-    
-    initializeFileUpload() {
-        // Usa o input file já existente no template
-        this.fileInput = document.getElementById('image-upload-input');
-        
-        if (!this.fileInput) {
-            this.log.warn('Input de upload não encontrado no template');
-            return;
-        }
-        
-        // Configura o input file
-        this.fileInput.accept = 'image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar';
-        this.fileInput.multiple = true;
-        
-        // Event listener para seleção de arquivos
-        this.fileInput.addEventListener('change', (e) => {
-            this.handleFileSelection(e.target.files);
-            e.target.value = ''; // Reset para permitir selecionar o mesmo arquivo novamente
-        });
-        
-        this.log.success('Sistema de upload configurado');
-    }
-
-    handleFileUpload() {
-        // Abre o seletor de arquivos
-        if (this.fileInput) {
-            this.fileInput.click();
-        }
-    }
-
-    async handleFileSelection(files) {
-        if (!files || files.length === 0) return;
-        
-        const validFiles = Array.from(files).filter(file => {
-            if (file.size > this.maxFileSize) {
-                this.showNotification(`Arquivo ${file.name} excede 10MB`, 'warning');
-                return false;
-            }
-            return true;
-        });
-        
-        if (validFiles.length === 0) return;
-        
-        // Adiciona à fila de upload
-        this.uploadQueue.push(...validFiles);
-        
-        // Mostra notificação
-        this.showNotification(`${validFiles.length} arquivo(s) preparado(s) para envio`, 'info');
-        
-        // Inicia upload se não estiver em andamento
-        if (!this.isUploading) {
-            this.processUploadQueue();
-        }
-    }
-
-    async processUploadQueue() {
-        if (this.uploadQueue.length === 0) {
-            this.isUploading = false;
-            return;
-        }
-        
-        this.isUploading = true;
-        const file = this.uploadQueue.shift();
-        
-        try {
-            await this.uploadFile(file);
-        } catch (error) {
-            this.log.error('Erro no upload:', error);
-            this.showNotification(`Falha ao enviar ${file.name}`, 'error');
-        }
-        
-        // Processa próximo arquivo
-        setTimeout(() => this.processUploadQueue(), 500);
-    }
-
-    async uploadFile(file) {
-        if (!this.currentRoom) {
-            throw new Error('Nenhuma conversa selecionada');
-        }
-        
-        if (!this.urls.upload_file_url) {
-            throw new Error('URL de upload não configurada');
-        }
-        
-        // Cria FormData
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('room_id', this.currentRoom);
-        formData.append('message_type', 'file');
-        
-        // Mostra indicador de upload
-        this.showUploadIndicator(file.name);
-        
-        try {
-            // Envia via AJAX
-            const response = await fetch(this.urls.upload_file_url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': this.getCSRFToken()
-                },
-                body: formData
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log('📤 Resposta do upload:', data);
-            
-            if (data.status === 'success' && data.file_data) {
-                // Envia via WebSocket para broadcast
-                await this.sendFileMessage(data.file_data);
-                this.showNotification(`Arquivo ${file.name} enviado`, 'success');
-            } else {
-                throw new Error(data.error || 'Erro no upload');
-            }
-            
-        } finally {
-            // Remove indicador de upload
-            this.hideUploadIndicator(file.name);
-        }
-    }
-
-    // Adicione após o método uploadFile
-    async sendFileMessage(fileData) {
-        if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
-            this.log.error('WebSocket não conectado para enviar arquivo');
-            return;
-        }
-        
-        const message = {
-            type: 'file_message',  // Tipo específico para arquivo
-            file_data: fileData,
-            room_id: this.currentRoom,
-            timestamp: new Date().toISOString()
+        this.actions = {
+            'open-room': (t) => this.openRoom(t.dataset.roomId, t.dataset.roomName),
+            'start-dm': (t) => this.startDM(t.dataset.userId),
+            'open-task': (t) => this.openTaskChat(t.dataset.taskId),
+            'view-image': (t) => this.viewImage?.(t.dataset.url),
+            'download': (t) => this.downloadFile?.(t.dataset.url, t.dataset.name),
+            'reconnect': () => this.manualReconnect?.(),
+            'reload-rooms': () => this.loadBootstrap(true),
         };
-        
-        console.log('📤 Enviando arquivo via WebSocket:', message);
-        this.websocket.send(JSON.stringify(message));
+
+        this.init();
     }
 
-    showUploadIndicator(fileName) {
-        const chatLog = document.getElementById('chat-log');
-        if (!chatLog) return;
-        
-        const uploadDiv = document.createElement('div');
-        uploadDiv.id = `upload-${fileName.replace(/\s+/g, '-')}`;
-        uploadDiv.className = 'message own-message uploading';
-        uploadDiv.innerHTML = `
-            <div class="message-content">
-                <div class="message-header">
-                    <span class="message-sender">Você</span>
-                    <span class="message-time">Enviando...</span>
-                </div>
-                <div class="message-file">
-                    <div class="file-icon">
-                        <i class="bi bi-cloud-upload"></i>
-                    </div>
-                    <div class="file-info">
-                        <div class="file-name">${this.escapeHtml(fileName)}</div>
-                        <div class="upload-progress">
-                            <div class="progress" style="height: 4px;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        chatLog.appendChild(uploadDiv);
-        this.scrollToBottom();
+    // ───────────── infra ─────────────
+    log(level, ...a) {
+        if (level === 'debug' && !this.debug) return;
+        (console[level] || console.log)('[chat]', ...a);
     }
 
-    hideUploadIndicator(fileName) {
-        const uploadDiv = document.getElementById(`upload-${fileName.replace(/\s+/g, '-')}`);
-        if (uploadDiv) {
-            uploadDiv.remove();
-        }
+    esc(v) {
+        return String(v ?? '').replace(/[&<>"']/g, (c) => (
+            { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+        ));
     }
 
-    addMessageToCache(message) {
-        if (!this.cache.messages[this.currentRoom]) {
-            this.cache.messages[this.currentRoom] = [];
-        }
-        this.cache.messages[this.currentRoom].push(message);
+    csrf() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
     }
 
-    async downloadFile(url, fileName) {
-        if (!url) {
-            this.showNotification('Arquivo não disponível', 'warning');
-            return;
-        }
-        
-        try {
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                if (response.status === 404) {
-                    this.showNotification(
-                        `⚠️ "${fileName}" não está mais disponível no servidor`,
-                        'warning'
-                    );
-                } else {
-                    this.showNotification(
-                        `Erro ${response.status} ao baixar arquivo`,
-                        'error'
-                    );
-                }
-                return;
-            }
-            
-            const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(downloadUrl);
-            
-        } catch (error) {
-            console.error('Erro ao baixar arquivo:', error);
-            this.showNotification('Falha ao baixar arquivo', 'error');
-        }
+    /** Troca o "0" final da URL base pelo id. */
+    buildUrl(base, id) {
+        return base.replace(/\/0\/?$/, `/${encodeURIComponent(id)}/`);
     }
 
-    viewImage(url) {
-        // Remove modal anterior se existir
-        const existingModal = document.getElementById('imageViewModal');
-        if (existingModal) {
-            existingModal.remove();
-        }
-        
-        // Cria modal para visualização de imagem
-        const modal = document.createElement('div');
-        modal.className = 'modal fade';
-        modal.id = 'imageViewModal';
-        modal.setAttribute('tabindex', '-1');
-        modal.setAttribute('aria-labelledby', 'imageViewModalLabel');
-        modal.setAttribute('aria-hidden', 'true');
-        
-        modal.innerHTML = `
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="imageViewModalLabel">Visualizar Imagem</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                        <img src="${url}" class="img-fluid" alt="Imagem" style="max-height: 70vh;">
-                    </div>
-                    <div class="modal-footer">
-                        <a href="${url}" download class="btn btn-primary">
-                            <i class="bi bi-download"></i> Download
-                        </a>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        const bsModal = new bootstrap.Modal(modal);
-        
-        // Remove aria-hidden antes de mostrar
-        modal.removeAttribute('aria-hidden');
-        
-        bsModal.show();
-        
-        // Limpa o modal quando fechar
-        modal.addEventListener('hidden.bs.modal', () => {
-            // Remove foco de qualquer elemento antes de remover
-            document.activeElement?.blur();
-            modal.remove();
+    async getJSON(url) {
+        const r = await fetch(url, { credentials: 'same-origin' });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        if (d.status && d.status !== 'success') throw new Error(d.error || 'Erro');
+        return d;
+    }
+
+    async postForm(url, body) {
+        const r = await fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'X-CSRFToken': this.csrf() },
+            body,
         });
-        
-        // Também limpa se clicar fora
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                bsModal.hide();
-            }
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || d.status === 'error') throw new Error(d.error || `HTTP ${r.status}`);
+        return d;
+    }
+
+    toast(message, type = 'info') {
+        document.querySelector('.chat-notification')?.remove();
+        const bs = { info: 'primary', success: 'success', warning: 'warning', error: 'danger' }[type] || 'primary';
+        const el = document.createElement('div');
+        el.className = `chat-notification notification-${type}`;
+        el.textContent = message; // sem innerHTML
+        el.style.cssText = `position:fixed;top:20px;right:20px;z-index:9999;max-width:300px;
+            padding:12px 20px;border-radius:8px;color:#fff;background:var(--bs-${bs});
+            box-shadow:0 4px 12px rgba(0,0,0,.2)`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 5000);
+    }
+    showNotification(m, t) { this.toast(m, t); } // compat
+
+    closeModal(id) {
+        const el = $(id);
+        if (el) bootstrap.Modal.getInstance(el)?.hide();
+    }
+
+    // ───────────── init ─────────────
+    async init() {
+        if (document.readyState === 'loading') {
+            await new Promise((r) => document.addEventListener('DOMContentLoaded', r, { once: true }));
+        }
+        this.bindUI();
+        this.bindDelegation();
+        this.setupMessaging?.();      // Parte 2
+        this.setupNotifications?.();  // Parte 3
+        document.dispatchEvent(new CustomEvent('chatSystemFullyReady'));
+        this.log('info', 'ChatManager pronto');
+    }
+
+    bindUI() {
+        const on = (id, ev, fn) => $(id)?.addEventListener(ev, fn);
+
+        on('chat-modal-trigger', 'click', (e) => { e.preventDefault(); this.toggleSidebar(); });
+        on('chatOverlay', 'click', (e) => { e.preventDefault(); this.toggleSidebar(false); });
+        on('chat-list-btn', 'click', () => this.toggleSidebar());
+        document.querySelector('.chat-close-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.toggleSidebar(false);
+        });
+
+        on('iniciar-nova-conversa', 'click', (e) => {
+            e.preventDefault();
+            bootstrap.Modal.getOrCreateInstance($('novaConversaModal')).show();
+        });
+        $('novaConversaModal')?.addEventListener('shown.bs.modal', () => this.loadModalData());
+
+        // busca de conversas (filtra o cache local)
+        on('global-search-btn', 'click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const box = $('global-search-container');
+            if (!box) return;
+            const show = box.style.display === 'none';
+            box.style.display = show ? 'block' : 'none';
+            if (show) setTimeout(() => $('global-search-input')?.focus(), 50);
+        });
+        on('global-search-input', 'input', (e) => this.filterRooms(e.target.value));
+
+        // modais
+        on('dm-user-search', 'input', (e) => this.renderUsers(e.target.value));
+        on('task-search', 'input', (e) => this.renderTasks(e.target.value));
+        on('create-group-form', 'submit', (e) => this.createGroupChat(e));
+    }
+
+    /** Um único listener para todos os [data-action] (substitui onclick inline). */
+    bindDelegation() {
+        document.addEventListener('click', (e) => {
+            const t = e.target.closest('[data-action]');
+            const fn = t && this.actions[t.dataset.action];
+            if (fn) { e.preventDefault(); fn(t); }
         });
     }
 
-    // ==================== WEBSOCKET ====================
-    
-    connectWebSocket(room_id) {
-        // GARANTE QUE A RECONEXÃO NÃO OCORRA COM ID INDEFINIDA
-        if (!room_id) {
-            this.log.error("Tentativa de conectar WebSocket com room_id indefinido. Abortando.");
-            return;
-        }
+    // ───────────── sidebar + bootstrap lazy ─────────────
+    toggleSidebar(show = null) {
+        const sb = $('chatListContainer'), ov = $('chatOverlay');
+        if (!sb || !ov) return;
 
-        // Evita múltiplas conexões simultâneas
-        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-            this.log.warn('WebSocket já conectado. Ignorando nova tentativa.');
-            return;
-        }
+        const on = show ?? !sb.classList.contains('active');
+        sb.classList.toggle('active', on);
+        ov.classList.toggle('active', on);
+        clearTimeout(this._sbTimer);
 
-        // Evita spam de reconexões
-        if (this.isConnecting) {
-            this.log.warn('Conexão já em andamento. Ignorando nova tentativa.');
-            return;
-        }
-        
-        this.isConnecting = true;
-        
-        //const ws_path = `${this.urls.ws_base}${room_id}/`;
-        const ws_path = `/ws/chat/${room_id}/`;
-        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-        const ws_url = `${protocol}://${window.location.host}${ws_path}`;
-        
-        this.log.info(`Conectando WebSocket: ${ws_url} (Tentativa ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
-        
-        try {
-            this.websocket = new WebSocket(ws_url);
-            
-            this.websocket.onopen = (e) => {
-                this.log.success('WebSocket conectado com sucesso!');
-                this.isConnected = true;
-                this.isConnecting = false;
-                this.reconnectAttempts = 0; 
-                this.hideConnectionError();
-                this.updateConnectionStatus('online');
-                if (this._pendingReadRoom) {
-                    const roomId = this._pendingReadRoom;
-                    this._pendingReadRoom = null;
-                    
-                    // Pequeno delay pra garantir que o WS está 100% pronto
-                    setTimeout(() => {
-                        this.markRoomAsRead(roomId);
-                    }, 100);
-                }
-            };
-            
-            this.websocket.onmessage = (e) => {
-                try {
-                    const data = JSON.parse(e.data);
-                    this.handleWebSocketMessage(data);
-                    console.log('WebSocket message received:', data);
-                    if (data.type === 'read_receipt') {
-                        this.handleReadReceipt(data);
-                        return;
-                    }
-                } catch (error) {
-                    this.log.error('Erro ao processar mensagem WebSocket:', error);
-                }
-            };
-            
-            this.websocket.onclose = (e) => {
-                this.isConnected = false;
-                this.isConnecting = false;
-                this.updateConnectionStatus('offline');
-                
-                this.log.warn(`WebSocket desconectado: ${e.code} - ${e.reason || 'Sem razão'}`);
-
-                // **EVITA RECONEXÃO AUTOMÁTICA SE:**
-                // 1. Código 1000 = fechamento normal
-                // 2. Código 1001 = navegador saindo
-                // 3. Máximo de tentativas atingido
-                // 4. Sala atual mudou
-                if (e.code === 1000 || e.code === 1001) {
-                    this.log.info('Conexão fechada normalmente. Não reconectando.');
-                    return;
-                }
-
-                if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-                    this.log.error(`Máximo de ${this.maxReconnectAttempts} tentativas atingido. Parando reconexões.`);
-                    this.showConnectionError('Falha de conexão. Clique para tentar novamente.');
-                    this.updateConnectionStatus('error');
-                    return;
-                }
-
-                // Só reconecta se ainda estiver na mesma sala
-                if (this.currentRoom !== room_id) {
-                    this.log.info('Sala mudou durante desconexão. Cancelando reconexão.');
-                    return;
-                }
-
-                // **RECONEXÃO CONTROLADA COM BACKOFF**
-                this.reconnectAttempts++;
-                const delay = Math.min(Math.pow(2, this.reconnectAttempts) * 1000, 30000); // Max 30s
-                
-                this.log.warn(`Reagendando reconexão em ${delay / 1000}s... (tentativa ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-                this.showConnectionError(`Reconectando em ${delay / 1000}s...`);
-                
-                // Cancela timeout anterior se existir
-                if (this.reconnectTimeout) {
-                    clearTimeout(this.reconnectTimeout);
-                }
-                
-                this.reconnectTimeout = setTimeout(() => {
-                    if (this.pauseReconnections) {
-                        this.log.info('Reconexões pausadas (aba inativa)');
-                        this.reconnectTimeout = setTimeout(() => {
-                            if (!this.pauseReconnections && this.currentRoom === room_id) {
-                                this.connectWebSocket(room_id);
-                            }
-                        }, 5000);
-                        return;
-                    }
-                    if (this.currentRoom === room_id && !this.isConnected && !this.isConnecting) {
-                        this.connectWebSocket(room_id);
-                    }
-                }, delay);
-            };
-            
-            this.websocket.onerror = (e) => {
-                this.isConnecting = false;
-                this.log.error('Erro WebSocket:', e);
-                this.updateConnectionStatus('error');
-            };
-
-            // **TIMEOUT DE SEGURANÇA PARA CONEXÃO**
-            setTimeout(() => {
-                if (this.websocket && this.websocket.readyState === WebSocket.CONNECTING) {
-                    this.log.warn('Timeout na conexão WebSocket');
-                    this.websocket.close();
-                }
-            }, 10000); // 10 segundos
-
-        } catch (error) {
-            this.isConnecting = false;
-            this.log.error('Erro ao criar WebSocket:', error);
-            this.updateConnectionStatus('error');
-        }
-    }
-
-    // ==================== WEBSOCKET DE NOTIFICAÇÕES ====================
-
-    connectNotificationSocket() {
-        // EVITA MÚLTIPLAS CONEXÕES
-        if (this.notificationSocket && this.notificationSocket.readyState === WebSocket.OPEN) {
-            this.log.info('WebSocket de notificações já conectado.');
-            return;
-        }
-
-        // EVITA SPAM DE TENTATIVAS
-        if (this.notificationConnecting) {
-            this.log.warn('Conexão de notificações já em andamento.');
-            return;
-        }
-
-        this.notificationConnecting = true;
-        this.notificationReconnectAttempts = this.notificationReconnectAttempts || 0;
-
-        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-        const ws_url = `${protocol}://${window.location.host}/ws/notifications/`;
-
-        this.log.info(`Conectando WebSocket de Notificações: ${ws_url} (Tentativa ${this.notificationReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
-
-        try {
-            this.notificationSocket = new WebSocket(ws_url);
-
-            this.notificationSocket.onopen = (e) => {
-                this.log.success('WebSocket de Notificações conectado');
-                this.notificationConnecting = false;
-                this.notificationReconnectAttempts = 0;
-            };
-
-            this.notificationSocket.onmessage = (e) => {
-                try {
-                    const data = JSON.parse(e.data);
-
-                    switch (data.type) {
-                        // Nova conversa criada
-                        case 'new_chat_notification':
-                            this.log.info(`Nova conversa de ${data.room_name}`);
-                            this.handleNewChatRoomUI(data);
-                            this.playNotificationSound('connect');
-                            break;
-
-                        // Atualização do badge (contador) + dropdown
-                        case 'notification_count_update':
-                            this.log.info(`Badge atualizado: ${data.count}`);
-                            if (window.NotificacoesAPI) {
-                                window.NotificacoesAPI.atualizarBadge(data.count);
-                                window.NotificacoesAPI.recarregarDropdown();  // 🆕 atualiza lista do sino
-                            }
-                            break;
-                            
-                        // Nova notificação (toast + badge automático)
-                        case 'new_notification': {
-                            const notif = data.notification || {};
-                            this.log.info(`Nova notificação: ${notif.titulo}`);
-
-                            // Toca som conforme prioridade
-                            if (notif.prioridade === 'critica' || notif.prioridade === 'alta') {
-                                this.playNotificationSound('alert');
-                            } else {
-                                this.playNotificationSound('message');
-                            }
-
-                            // Toast in-app
-                            if (typeof this.showNotification === 'function') {
-                                this.showNotification(
-                                    `${notif.titulo}${notif.mensagem ? ': ' + notif.mensagem : ''}`,
-                                    notif.prioridade === 'critica' ? 'error' : 'info'
-                                );
-                            }
-
-                            // Notificação nativa do navegador
-                            this.showBrowserNotification(notif);
-
-                            // Recarrega o dropdown do sino com a notificação nova
-                            if (window.NotificacoesAPI) {
-                                window.NotificacoesAPI.recarregarDropdown();
-                            }
-                            break;
-                        }
-
-                        // Notificação marcada como lida (sincroniza abas)
-                        case 'notification_read':
-                            this.log.info(`Notificação ${data.notification_id} lida`);
-                            // O badge já é atualizado pelo notification_count_update
-                            if (window.NotificacoesAPI) {
-                                window.NotificacoesAPI.recarregarDropdown();  // 🆕 sincroniza lista entre abas
-                            }
-                            break;
-
-                        // Legado — mensagem de chat (compatibilidade)
-                        case 'new_message_notification':
-                            this.log.info('Nova mensagem (legado):', data);
-                            this.playNotificationSound('message');
-                            break;
-
-                        default:
-                            this.log.warn(`Tipo desconhecido: ${data.type}`);
-                    }
-                } catch (err) {
-                    this.log.error('Erro processando notificação:', err);
-                }
-            };
-
-            this.notificationSocket.onclose = (e) => {
-                this.notificationConnecting = false;
-                this.log.warn(`WebSocket de Notificações fechado: ${e.code}`);
-
-                // EVITA LOOP INFINITO
-                if (e.code === 1000 || e.code === 1001) {
-                    this.log.info('Notificações fechadas normalmente.');
-                    return;
-                }
-
-                if (this.notificationReconnectAttempts >= this.maxReconnectAttempts) {
-                    this.log.error('Máximo de tentativas para notificações atingido.');
-                    return;
-                }
-
-                // RECONEXÃO CONTROLADA
-                this.notificationReconnectAttempts++;
-                const delay = Math.min(this.notificationReconnectAttempts * 5000, 30000);
-
-                this.log.warn(`Reagendando reconexão de notificações em ${delay / 1000}s...`);
-
-                if (this.notificationReconnectTimeout) {
-                    clearTimeout(this.notificationReconnectTimeout);
-                }
-
-                this.notificationReconnectTimeout = setTimeout(() => {
-                    if (this.pauseReconnections) {
-                        this.log.info('Reconexão de notificações pausada');
-                        return;
-                    }
-                    if (!this.notificationSocket || this.notificationSocket.readyState === WebSocket.CLOSED) {
-                        this.connectNotificationSocket();
-                    }
-                }, delay);
-            };
-
-            this.notificationSocket.onerror = (e) => {
-                this.notificationConnecting = false;
-                this.log.error('Erro no WebSocket de Notificações:', e);
-            };
-
-        } catch (error) {
-            this.notificationConnecting = false;
-            this.log.error('Erro ao criar WebSocket de notificações:', error);
-        }
-    }
-
-    // ==================== NOTIFICAÇÕES NATIVAS DO BROWSER ====================
-
-    /**
-     * Pede permissão para mostrar notificações nativas do navegador.
-     * Só pede uma vez (se ainda for 'default'). Idempotente.
-     */
-    requestNotificationPermission() {
-        if (!('Notification' in window)) {
-            this.log.warn('Browser não suporta notificações nativas');
-            return;
-        }
-
-        if (Notification.permission === 'default') {
-            Notification.requestPermission().then(permission => {
-                this.log.info(`Permissão de notificação: ${permission}`);
-            });
+        if (on) {
+            sb.style.visibility = 'visible';
+            sb.style.transform = 'translateX(0)';
+            ov.style.display = 'block';
+            requestAnimationFrame(() => { ov.style.opacity = '1'; });
+            if (!this.loaded) this.loadBootstrap();
         } else {
-            this.log.debug(`Permissão de notificação já definida: ${Notification.permission}`);
+            sb.style.transform = 'translateX(100%)';
+            ov.style.opacity = '0';
+            this._sbTimer = setTimeout(() => {
+                sb.style.visibility = 'hidden';
+                ov.style.display = 'none';
+            }, 300);
         }
     }
+    toggleChatListSidebar(show) { this.toggleSidebar(show); } // compat
 
-    /**
-     * Mostra uma notificação nativa do navegador.
-     * Só dispara se: API suportada + permissão concedida + aba não focada.
-     * 
-     * @param {Object} notif - Objeto serializado de Notificacao
-     * @param {number} notif.id
-     * @param {string} notif.titulo
-     * @param {string} notif.mensagem
-     * @param {string} notif.prioridade - baixa | media | alta | critica
-     * @param {string} notif.url_destino - URL relativa para redirect ao clicar
-     */
-    showBrowserNotification(notif) {
-        if (!notif) return;
-        if (!('Notification' in window)) return;
-        if (Notification.permission !== 'granted') return;
-        if (document.hasFocus()) return; // não notifica se a aba já está ativa
-
+    /** 1 request: salas + usuários + tarefas. Só roda quando o usuário abre o chat. */
+    async loadBootstrap(force = false) {
+        if (this._loading || (this.loaded && !force)) return;
+        this._loading = true;
+        const box = $('active-chats-list');
         try {
-            const browserNotif = new Notification(notif.titulo || 'Nova notificação', {
-                body: notif.mensagem || '',
-                icon: '/static/images/logocetest.png',
-                tag: `notif-${notif.id}`,
-                requireInteraction: notif.prioridade === 'critica',
-            });
-
-            // Ao clicar, leva pra URL de destino
-            browserNotif.onclick = () => {
-                window.focus();
-                if (notif.url_destino) {
-                    window.location.href = notif.url_destino;
-                }
-                browserNotif.close();
-            };
-
-            // Auto-fecha em 8s (exceto críticas, que ficam até clique)
-            if (notif.prioridade !== 'critica') {
-                setTimeout(() => browserNotif.close(), 8000);
-            }
+            const d = await this.getJSON(this.urls.bootstrap_url);
+            this.cache.rooms = d.rooms || [];
+            this.cache.users = d.users || [];
+            this.cache.tasks = d.tasks || [];
+            this.loaded = true;
+            this.renderRooms(this.cache.rooms);
         } catch (err) {
-            this.log.warn('Erro ao mostrar notificação nativa:', err);
-        }
-    }
-
-
-    // função handleNewChatRoomUI :
-
-    handleNewChatRoomUI(roomData) {
-        // Verifica se a sala já existe na UI para não duplicar
-        const existingRoomElement = document.querySelector(`.chat-room-item[data-room-id="${roomData.room_id}"]`);
-        if (existingRoomElement) {
-            this.log.warn(`A sala ${roomData.room_id} já existe na UI. Apenas movendo para o topo.`);
-            existingRoomElement.parentElement.prepend(existingRoomElement);
-            return;
-        }
-
-        this.log.success(`Renderizando nova sala na UI: ${roomData.room_name}`);
-
-        // Encontra o container da lista de conversas
-        // **IMPORTANTE**: Verifique se o ID 'active-chat-list-container' corresponde ao seu HTML.
-        const chatListContainer = document.getElementById('active-chats-list');
-        
-        if (!chatListContainer) {
-            this.log.error("Container da lista de chats ('active-chat-list-container') não encontrado!");
-            return;
-        }
-        
-        // Remove a mensagem "Nenhuma conversa ativa", se ela existir
-        const emptyStateMessage = chatListContainer.querySelector('.chat-empty-state');
-        if (emptyStateMessage) {
-            emptyStateMessage.remove();
-        }
-
-        // Cria o elemento HTML para a nova sala
-        // **Adapte este HTML para ser exatamente igual ao de uma sala já existente**
-        const newRoomElement = document.createElement('div');
-        newRoomElement.className = 'chat-room-item'; // Use a classe correta do seu CSS
-        newRoomElement.setAttribute('data-room-id', roomData.room_id);
-        newRoomElement.innerHTML = `
-            <div class="avatar-placeholder"></div> <!-- Ou <img src="..."> -->
-            <div class="room-info">
-                <div class="room-name">${roomData.room_name}</div>
-                <div class="last-message-preview">Nova conversa iniciada...</div>
-            </div>
-            <div class="unread-badge">1</div>
-        `;
-
-        // Adiciona o evento de clique para abrir a conversa
-        newRoomElement.addEventListener('click', () => {
-            this.openChatDialog(roomData.room_id, roomData.room_name);
-        });
-
-        // Adiciona a nova sala no topo da lista
-        chatListContainer.prepend(newRoomElement);
-        
-        // Adiciona ao cache interno para consistência
-        if (!this.cache.rooms.some(room => room.room_id === roomData.room_id)) {
-            this.cache.rooms.unshift(roomData);
-        }
-    }
-    
-    handleWebSocketMessage(data) {
-        console.log('WebSocket message received:', data);
-    
-        switch (data.type) {
-            case 'new_message':
-            case 'chat_message':
-                this.handleNewMessage(data);
-                break;
-                
-            case 'file_message':
-                this.handleFileMessage(data);
-                break;
-                
-            case 'user_joined':
-                this.handleUserJoined(data);
-                break;
-                
-            case 'user_left':
-                this.handleUserLeft(data);
-                break;
-                
-            case 'typing':
-                this.handleTypingIndicator(data);
-                break;
-                
-            case 'message_edited':
-                this.handleMessageEdited(data);
-                break;
-                
-            case 'message_deleted':
-                this.handleMessageDeleted(data);
-                break;
-            
-            case 'message_read':
-            // Opcional: atualiza status de leitura
-            break;
-                
-            default:
-                this.log.debug('Mensagem WebSocket não tratada:', data);
-        }
-    }
-
-    handleNewMessage(data) {
-        console.log('Nova mensagem recebida:', data);
-        
-        // Verifica se a mensagem é para a sala atual
-        if (data.room_id && data.room_id !== this.currentRoom) {
-            console.log('Mensagem para outra sala, atualizando badge');
-            this.updateUnreadBadge(data.room_id);
-            return;
-        }
-        
-        // Prepara dados da mensagem com fallbacks
-        const messageData = {
-            id: data.message_id || data.id,
-            message: data.message || data.content || '',
-            message_type: data.message_type || 'text',
-            file_data: data.file_data || null,
-            image_url: data.image_url || null,
-            username: data.username || 'Usuário',
-            user_id: data.user_id,
-            timestamp: data.timestamp || new Date().toISOString(),
-            is_own: data.user_id == this.currentUserId
-        };
-        
-        // Exibe a mensagem na interface
-        this.displayMessage(messageData);
-        
-        // Toca som de notificação se não for própria mensagem
-        if (data.user_id != this.currentUserId) {
-            this.playNotificationSound('message');
-            
-            if (document.hidden || this.isMinimized) {
-                const preview = data.message_type === 'file' 
-                    ? '📎 Arquivo enviado' 
-                    : (data.message || data.content || '').substring(0, 50);
-                this.showDesktopNotification(`${data.username}: ${preview}`);
+            this.log('error', 'bootstrap', err);
+            if (box) {
+                box.innerHTML = `<div class="error-state text-center p-4">
+                    <p class="text-muted">Erro ao carregar conversas</p>
+                    <button class="btn btn-sm btn-outline-warning" data-action="reload-rooms">
+                        Tentar novamente</button></div>`;
             }
+        } finally {
+            this._loading = false;
         }
     }
 
-    handleFileMessage(data) {
-        this.handleNewMessage(data);
-    }
+    // ───────────── lista de salas ─────────────
+    renderRooms(rooms) {
+        const box = $('active-chats-list');
+        if (!box) return;
 
-    handleUserJoined(data) {
-        this.playNotificationSound('connect');
-        this.showSystemMessage(`${data.username} entrou no chat`);
-    }
-
-    handleUserLeft(data) {
-        this.showSystemMessage(`${data.username} saiu do chat`);
-    }
-
-    handleTypingIndicator(data) {
-        this.showTypingIndicator(data.user_id, data.username);
-    }
-
-    handleMessageEdited(data) {
-        // Atualiza mensagem no cache
-        if (this.cache.messages[this.currentRoom]) {
-            const index = this.cache.messages[this.currentRoom].findIndex(m => m.id === data.message_id);
-            if (index !== -1) {
-                this.cache.messages[this.currentRoom][index].message = data.new_content;
-                this.cache.messages[this.currentRoom][index].edited = true;
-                
-                // Atualiza na interface
-                this.updateMessageInUI(data.message_id, data.new_content);
-            }
-        }
-    }
-
-    handleMessageDeleted(data) {
-        // Remove do cache
-        if (this.cache.messages[this.currentRoom]) {
-            this.cache.messages[this.currentRoom] = this.cache.messages[this.currentRoom]
-                .filter(m => m.id !== data.message_id);
-        }
-        
-        // Remove da interface
-        this.removeMessageFromUI(data.message_id);
-    }
-
-    /** Atualiza a UI quando o servidor confirma leitura. **/
-    handleReadReceipt(data) {
-        const roomId = data.room_id;
-        if (!roomId) return;
-        
-        console.log(`🧹 Limpando badges da sala ${roomId} (${data.marked} marcadas)`);
-        
-        // 1️⃣ Remove badges DENTRO do item de conversa
-        const selectors = [
-            `[data-room-id="${roomId}"] .unread-badge`,
-            `[data-room-id="${roomId}"] .badge`,
-            `[data-room-id="${roomId}"] .conversation-unread-count`,
-            `[data-room="${roomId}"] .unread-badge`,
-            `#room-${roomId} .unread-badge`,
-            `#room-${roomId} .badge`,
-        ];
-        
-        selectors.forEach(sel => {
-            document.querySelectorAll(sel).forEach(el => {
-                el.style.display = 'none';
-                el.textContent = '0';
-                el.remove();
-            });
-        });
-        
-        // 2️⃣ Remove classes "has-unread" / "unread"
-        const items = document.querySelectorAll(
-            `[data-room-id="${roomId}"], [data-room="${roomId}"], #room-${roomId}`
-        );
-        items.forEach(item => {
-            item.classList.remove('has-unread', 'unread', 'is-unread', 'new-message');
-        });
-        
-        // 3️⃣ Atualiza estado interno (se existir)
-        if (this.rooms && Array.isArray(this.rooms)) {
-            const room = this.rooms.find(r => String(r.id) === String(roomId));
-            if (room) {
-                room.unread_count = 0;
-            }
-        }
-    }
-
-    updateMessageInUI(messageId, newContent) {
-        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-        if (messageElement) {
-            const textElement = messageElement.querySelector('.message-text');
-            if (textElement) {
-                textElement.innerHTML = this.formatMessageText(newContent);
-            }
-            
-            // Adiciona indicador de edição
-            const editedElement = messageElement.querySelector('.message-edited') || 
-                document.createElement('small');
-            editedElement.className = 'message-edited text-muted';
-            editedElement.innerHTML = '<i class="bi bi-pencil"></i> editado';
-            
-            if (!messageElement.querySelector('.message-edited')) {
-                messageElement.querySelector('.message-content').appendChild(editedElement);
-            }
-        }
-    }
-
-    removeMessageFromUI(messageId) {
-        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-        if (messageElement) {
-            messageElement.innerHTML = `
-                <div class="message-content">
-                    <div class="message-deleted">
-                        <i class="bi bi-trash"></i>
-                        <span>Mensagem excluída</span>
-                    </div>
-                </div>
-            `;
-            messageElement.classList.add('deleted-message');
-        }
-    }
-
-    showTypingIndicator(userId, username) {
-        const indicatorsContainer = document.getElementById('typing-indicators');
-        if (!indicatorsContainer) return;
-        
-        // Remove indicador anterior do mesmo usuário
-        const existingIndicator = indicatorsContainer.querySelector(`[data-user-id="${userId}"]`);
-        if (existingIndicator) {
-            existingIndicator.remove();
-        }
-        
-        // Cria novo indicador
-        const indicator = document.createElement('div');
-        indicator.className = 'typing-indicator';
-        indicator.dataset.userId = userId;
-        indicator.innerHTML = `
-            <div class="typing-dots">
-                <span></span><span></span><span></span>
-            </div>
-            <span class="typing-text">${username} está digitando...</span>
-        `;
-        
-        indicatorsContainer.appendChild(indicator);
-        
-        // Remove após 5 segundos
-        setTimeout(() => {
-            if (indicator.parentNode) {
-                indicator.remove();
-            }
-        }, 5000);
-    }
-
-    showSystemMessage(text) {
-        const chatLog = document.getElementById('chat-log');
-        if (!chatLog) return;
-        
-        const systemDiv = document.createElement('div');
-        systemDiv.className = 'system-message';
-        systemDiv.innerHTML = `
-            <div class="message-content">
-                <div class="system-text">${this.escapeHtml(text)}</div>
-            </div>
-        `;
-        
-        chatLog.appendChild(systemDiv);
-        this.scrollToBottom();
-    }
-
-    updateUnreadBadge(roomId) {
-        // Atualiza badge na lista de conversas
-        const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
-        if (roomElement) {
-            let unreadBadge = roomElement.querySelector('.chat-list-unread');
-            if (!unreadBadge) {
-                unreadBadge = document.createElement('div');
-                unreadBadge.className = 'chat-list-unread';
-                roomElement.appendChild(unreadBadge);
-                roomElement.classList.add('has-unread');
-            }
-            
-            const currentCount = parseInt(unreadBadge.textContent) || 0;
-            unreadBadge.textContent = currentCount + 1;
-        }
-        
-        // Atualiza badge no botão flutuante
-        const notificationIndicator = document.querySelector('.notification-indicator');
-        if (notificationIndicator) {
-            const currentCount = parseInt(notificationIndicator.textContent) || 0;
-            notificationIndicator.textContent = currentCount + 1;
-            notificationIndicator.style.display = 'block';
-        }
-    }
-
-    showDesktopNotification(message) {
-        if (!("Notification" in window)) return;
-        
-        if (Notification.permission === "granted") {
-            new Notification("Nova mensagem", {
-                body: message,
-                icon: '/static/images/chat-icon.png'
-            });
-        } else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") {
-                    new Notification("Nova mensagem", {
-                        body: message,
-                        icon: '/static/images/chat-icon.png'
-                    });
-                }
-            });
-        }
-    }
-
-    // ==================== ENVIO DE MENSAGENS ====================
-    
-    sendMessage() {
-        const input = document.getElementById('chat-message-input');
-        const message = input?.value?.trim();
-        
-        if (!message) {
-            this.showNotification('Digite uma mensagem', 'warning');
-            return;
-        }
-        
-        if (!this.websocket || !this.isConnected) {
-            this.showNotification('Reconectando...', 'info');
-            // Tenta reconectar
-            if (this.currentRoom) {
-                this.connectWebSocket(this.currentRoom);
-            }
-            return;
-        }
-
-        try {
-            // Envia via WebSocket
-            this.websocket.send(JSON.stringify({
-                type: 'chat_message',
-                message: message,
-                room_id: this.currentRoom,
-                timestamp: new Date().toISOString()
-            }));
-            
-            // Limpa input
-            input.value = '';
-            input.style.height = 'auto';
-            
-            // Fecha preview se estiver aberto
-            this.closePreview();
-            
-        } catch (error) {
-            this.log.error('Erro ao enviar mensagem:', error);
-            this.showNotification('Falha no envio', 'error');
-        }
-    }
-
-    displayMessage(data) {
-        const chatLog = document.getElementById('chat-log');
-        if (!chatLog) {
-            console.error('chat-log não encontrado');
-            return;
-        }
-        
-        console.log('Exibindo mensagem:', data);
-        
-        // Remove estados vazios
-        chatLog.querySelectorAll('.welcome-state, .loading-state').forEach(el => el.remove());
-        
-        // Cria elemento da mensagem
-        const messageDiv = document.createElement('div');
-        const isOwn = data.is_own || data.user_id == this.currentUserId;
-        messageDiv.className = `message ${isOwn ? 'own-message' : 'other-message'}`;
-        messageDiv.dataset.messageId = data.id || data.message_id;
-        
-        // CORREÇÃO: Trata timestamp inválido
-        let timestamp = 'Agora';
-        if (data.timestamp) {
-            const date = new Date(data.timestamp);
-            if (!isNaN(date.getTime())) {
-                timestamp = date.toLocaleTimeString('pt-BR', {
-                    hour: '2-digit', 
-                    minute: '2-digit'
-                });
-            }
-        }
-        
-        // CORREÇÃO: Garante que username nunca seja vazio
-        const username = data.username || 'Usuário';
-        
-        // CORREÇÃO: Detecta tipo de mensagem e renderiza corretamente
-        let contentHtml = '';
-        
-        if (data.message_type === 'file' && data.file_data) {
-            // Renderiza arquivo/imagem
-            contentHtml = this.renderFileContent(data);
-        } else if (data.message_type === 'image' && data.image_url) {
-            // Renderiza imagem direta
-            contentHtml = `
-                <div class="message-image">
-                    <img src="${data.image_url}" alt="Imagem" class="img-fluid rounded" 
-                        style="max-width: 200px; cursor: pointer;"
-                        onclick="chatManager.viewImage('${data.image_url}')">
-                </div>
-            `;
+        if (!rooms.length) {
+            box.innerHTML = `<div class="empty-state text-center p-4 text-muted">
+                <i class="bi bi-chat-dots" style="font-size:2rem"></i>
+                <p class="mt-2 mb-0">Nenhuma conversa</p>
+                <small>Clique em "Nova Conversa" para começar</small></div>`;
         } else {
-            // Mensagem de texto
-            const messageText = data.message || data.content || '';
-            contentHtml = `<div class="message-text">${this.formatMessageText(messageText)}</div>`;
+            box.innerHTML = rooms.map((r) => `
+                <div class="chat-list-item ${r.unread_count > 0 ? 'has-unread' : ''}"
+                     data-room-id="${this.esc(r.room_id)}"
+                     data-room-name="${this.esc(r.room_name)}" data-action="open-room">
+                    <div class="chat-list-avatar">
+                        <i class="bi ${r.room_type === 'DM' ? 'bi-person' : 'bi-people'}"></i>
+                    </div>
+                    <div class="chat-list-info">
+                        <div class="chat-list-name">${this.esc(r.room_name)}</div>
+                        <div class="chat-list-preview">${this.esc(r.last_message)}</div>
+                    </div>
+                    <div class="chat-list-meta">
+                        ${r.unread_count > 0 ? `<div class="chat-list-unread">${r.unread_count}</div>` : ''}
+                    </div>
+                </div>`).join('');
         }
-        
-        messageDiv.innerHTML = `
-            <div class="message-content">
-                <div class="message-header">
-                    <span class="message-sender">${this.escapeHtml(username)}</span>
-                    <span class="message-time">${timestamp}</span>
-                </div>
-                ${contentHtml}
-            </div>
-        `;
-        
-        chatLog.appendChild(messageDiv);
-        this.scrollToBottom();
-        
-        console.log('Mensagem exibida com sucesso');
+        this.updateTotalBadge();
     }
 
-    // ==================== BUSCA NO CHAT ====================
-    
-    initializeChatSearch() {
-        this.bindElement('toggle-chat-search-btn', 'click', () => this.toggleChatSearch());
-        this.bindElement('close-chat-search-btn', 'click', () => this.closeChatSearch());
-        this.bindElement('chat-search-input', 'input', (e) => this.performChatSearch(e.target.value));
-        this.bindElement('chat-search-input', 'keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.performChatSearch(e.target.value);
-            }
-        });
-    }
-
-    toggleChatSearch() {
-        const container = document.getElementById('chat-search-container');
-        const input = document.getElementById('chat-search-input');
-        
-        if (!container) return;
-        
-        const isVisible = container.style.display !== 'none';
-        
-        if (isVisible) {
-            container.style.display = 'none';
-            this.clearSearchHighlights();
-        } else {
-            container.style.display = 'block';
-            if (input) {
-                input.focus();
-                input.select();
-            }
-        }
-    }
-
-    closeChatSearch() {
-        const container = document.getElementById('chat-search-container');
-        if (container) {
-            container.style.display = 'none';
-        }
-        this.clearSearchHighlights();
-    }
-
-    async performChatSearch(query) {
-        this.currentSearchQuery = query;
-        
-        if (!query || query.length < 2) {
-            this.clearSearchResults();
+    filterRooms(q) {
+        const s = (q || '').toLowerCase().trim();
+        const list = s
+            ? this.cache.rooms.filter((r) => r.room_name.toLowerCase().includes(s))
+            : this.cache.rooms;
+        if (s && !list.length) {
+            const box = $('active-chats-list');
+            if (box) box.innerHTML = `<div class="text-center p-3 text-muted">
+                <i class="bi bi-search"></i><p class="mb-0">Nenhum resultado</p></div>`;
             return;
         }
-        
-        const resultsContainer = document.getElementById('chat-search-results');
-        if (!resultsContainer) return;
-        
-        // Mostrar loading
-        resultsContainer.innerHTML = `
-            <div class="text-center p-3">
-                <div class="spinner-border spinner-border-sm"></div>
-                <p class="mt-2 mb-0">Buscando "${query}"...</p>
-            </div>
-        `;
-        
-        try {
-            // Busca local primeiro
-            const localResults = this.searchLocalMessages(query);
-            
-            // Busca no servidor se necessário
-            const serverResults = await this.searchServerMessages(query);
-            
-            const allResults = [...localResults, ...serverResults];
-            this.searchResults = allResults;
-            this.displaySearchResults(allResults, query);
-            
-        } catch (error) {
-            this.log.error('Erro na busca:', error);
-            resultsContainer.innerHTML = `
-                <div class="text-center p-3 text-danger">
-                    <i class="bi bi-exclamation-circle"></i>
-                    <p>Erro na busca</p>
-                </div>
-            `;
-        }
+        this.renderRooms(list);
     }
 
-    searchLocalMessages(query) {
-        const chatLog = document.getElementById('chat-log');
-        if (!chatLog) return [];
-        
-        const messages = chatLog.querySelectorAll('.message');
-        const results = [];
-        
-        messages.forEach((message, index) => {
-            const textContent = message.textContent.toLowerCase();
-            if (textContent.includes(query.toLowerCase())) {
-                const messageText = message.querySelector('.message-text')?.textContent || '';
-                const sender = message.querySelector('.message-sender')?.textContent || '';
-                const time = message.querySelector('.message-time')?.textContent || '';
-                
-                results.push({
-                    index,
-                    sender,
-                    time,
-                    text: messageText,
-                    element: message
-                });
-            }
+    updateTotalBadge() {
+        const total = this.cache.rooms.reduce((n, r) => n + (r.unread_count || 0), 0);
+        const el = document.querySelector('.notification-indicator');
+        if (!el) return;
+        el.textContent = total;
+        el.style.display = total > 0 ? 'block' : 'none';
+    }
+
+    /** Mensagem nova em sala que não está aberta. */
+    bumpUnread(roomId, preview = '') {
+        const r = this.cache.rooms.find((x) => x.room_id === roomId);
+        if (!r) return this.loadBootstrap(true); // sala desconhecida → recarrega
+        r.unread_count = (r.unread_count || 0) + 1;
+        if (preview) r.last_message = preview;
+        this.cache.rooms = [r, ...this.cache.rooms.filter((x) => x !== r)];
+        this.renderRooms(this.cache.rooms);
+    }
+
+    clearUnread(roomId) {
+        const r = this.cache.rooms.find((x) => x.room_id === roomId);
+        if (!r || !r.unread_count) return;
+        r.unread_count = 0;
+        this.renderRooms(this.cache.rooms);
+    }
+
+    /** Sala criada por outra pessoa (evento new_chat_notification). */
+    addRoomFromEvent(d) {
+        if (this.cache.rooms.some((r) => r.room_id === d.room_id)) return;
+        this.cache.rooms.unshift({
+            room_id: d.room_id, room_name: d.room_name, room_type: 'DM',
+            last_message: 'Nova conversa iniciada', unread_count: 1,
         });
-        
-        return results;
+        this.renderRooms(this.cache.rooms);
     }
 
-    async searchServerMessages(query) {
-        if (!this.currentRoom || !this.urls.search_messages_url) return [];
-        
-        try {
-            const response = await fetch(this.urls.search_messages_url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': this.getCSRFToken()
-                },
-                body: JSON.stringify({ 
-                    query, 
-                    room_id: this.currentRoom,
-                    user_id: this.currentUserId 
-                })
-            });
-            
-            const data = await response.json();
-            return data.status === 'success' ? data.messages : [];
-            
-        } catch (error) {
-            this.log.warn('Busca no servidor falhou:', error);
-            return [];
-        }
-    }
-
-    displaySearchResults(results, query) {
-        const container = document.getElementById('chat-search-results');
-        if (!container) return;
-        
-        if (results.length === 0) {
-            container.innerHTML = `
-                <div class="text-center p-3 text-muted">
-                    <i class="bi bi-search"></i>
-                    <p>Nenhum resultado para "${query}"</p>
-                </div>
-            `;
-            return;
-        }
-        
-        container.innerHTML = `
-            <div class="search-results-header p-2 border-bottom">
-                <small class="text-muted">${results.length} resultado(s) encontrado(s)</small>
-            </div>
-            ${results.map((result, index) => `
-                <div class="search-result-item p-2 border-bottom" 
-                     onclick="chatManager.goToMessage(${result.index || index})">
-                    <div class="search-result-sender">
-                        <strong>${this.escapeHtml(result.sender)}</strong>
-                        <small class="text-muted ms-2">${result.time}</small>
-                    </div>
-                    <div class="search-result-text">${this.highlightQuery(result.text, query)}</div>
-                </div>
-            `).join('')}
-        `;
-        
-        // Destaca resultados no chat
-        this.highlightSearchResults(results);
-    }
-
-    highlightSearchResults(results) {
-        this.clearSearchHighlights();
-        
-        results.forEach(result => {
-            if (result.element) {
-                result.element.classList.add('search-highlighted');
-            }
-        });
-    }
-
-    clearSearchHighlights() {
-        document.querySelectorAll('.search-highlighted').forEach(el => {
-            el.classList.remove('search-highlighted');
-        });
-    }
-
-    clearSearchResults() {
-        const container = document.getElementById('chat-search-results');
-        if (container) {
-            container.innerHTML = '';
-        }
-    }
-
-    goToMessage(messageIndex) {
-        const chatLog = document.getElementById('chat-log');
-        const messages = chatLog?.querySelectorAll('.message');
-        
-        if (messages && messages[messageIndex]) {
-            messages[messageIndex].scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
-            });
-            
-            // Destaque temporário
-            messages[messageIndex].style.backgroundColor = 'rgba(var(--bs-primary-rgb), 0.1)';
-            setTimeout(() => {
-                messages[messageIndex].style.backgroundColor = '';
-            }, 2000);
-        }
-    }
-
-    highlightMessage(messageId) {
-        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-        if (messageElement) {
-            messageElement.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
-            });
-            
-            // Destaque temporário
-            messageElement.style.backgroundColor = 'rgba(var(--bs-primary-rgb), 0.1)';
-            setTimeout(() => {
-                messageElement.style.backgroundColor = '';
-            }, 2000);
-        }
-    }
-
-    // ==================== PREVIEW DE MENSAGENS ====================
-    
-    initializePreview() {
-        this.bindElement('close-preview-btn', 'click', () => this.closePreview());
-        this.bindElement('edit-preview-btn', 'click', () => this.editPreview());
-        this.bindElement('send-preview-btn', 'click', () => this.sendPreviewMessage());
-        
-        // Auto-preview para mensagens longas
-        const messageInput = document.getElementById('chat-message-input');
-        if (messageInput) {
-            messageInput.addEventListener('input', (e) => {
-                if (e.target.value.length > 100) {
-                    this.showPreview(e.target.value);
-                } else {
-                    this.closePreview();
-                }
-            });
-        }
-    }
-
-    showPreview(message) {
-        const container = document.getElementById('response-preview-container');
-        const content = document.getElementById('response-preview-content');
-        
-        if (!container || !content) return;
-        
-        const processedContent = this.processMessageContent(message);
-        
-        content.innerHTML = `
-            <div class="preview-message">
-                <div class="preview-message-content">${processedContent}</div>
-                <div class="preview-message-meta">
-                    <small class="text-muted">
-                        ${message.length} caracteres • 
-                        ${message.split('\n').length} linhas
-                    </small>
-                </div>
-            </div>
-        `;
-        
-        container.style.display = 'block';
-    }
-
-    closePreview() {
-        const container = document.getElementById('response-preview-container');
-        if (container) {
-            container.style.display = 'none';
-        }
-    }
-
-    editPreview() {
-        const input = document.getElementById('chat-message-input');
-        const content = document.getElementById('response-preview-content');
-        
-        if (input && content) {
-            const previewText = content.textContent || '';
-            input.value = previewText;
-            input.focus();
-            input.setSelectionRange(previewText.length, previewText.length);
-        }
-    }
-
-    sendPreviewMessage() {
-        this.sendMessage();
-        this.closePreview();
-    }
-
-    // ==================== CONTEÚDO DINÂMICO ====================
-    
-    initializeDynamicContent() {
-        this.loadDynamicSections();
-        
-        // Atualização periódica
-        setInterval(() => {
-            if (this.currentRoom) {
-                this.updateDynamicContent();
-            }
-        }, 30000);
-    }
-
-    async loadDynamicSections() {
-        const container = document.getElementById('dynamic-content-section');
-        if (!container) return;
-        
-        try {
-            // Carrega conteúdo dinâmico
-            const content = await this.loadDynamicContent();
-            container.innerHTML = content || this.getEmptyDynamicContent();
-            
-        } catch (error) {
-            this.log.error('Erro carregando conteúdo dinâmico:', error);
-            container.innerHTML = this.getErrorDynamicContent();
-        }
-    }
-
-    async loadDynamicContent() {
-        // Simula carregamento de conteúdo dinâmico
-        return `
-            <div class="dynamic-content-section">
-                <div class="dynamic-section user-status-section">
-                    <h6><i class="bi bi-people"></i> Status do Sistema</h6>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <span class="stat-number">0</span>
-                            <span class="stat-label">Online</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-number">0</span>
-                            <span class="stat-label">Ativos</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="dynamic-section quick-actions-section">
-                    <h6><i class="bi bi-lightning"></i> Ações Rápidas</h6>
-                    <div class="quick-actions-grid">
-                        <button class="btn btn-sm btn-outline-primary" onclick="chatManager.shareScreen()">
-                            <i class="bi bi-display"></i> Compartilhar
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="chatManager.createPoll()">
-                            <i class="bi bi-list-check"></i> Enquete
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    updateDynamicContent() {
-        // Atualiza contadores dinâmicos
-        this.updateUserCount();
-        this.updateMessageCount();
-    }
-
-    updateUserCount() {
-        const statNumbers = document.querySelectorAll('.stat-number');
-        if (statNumbers.length > 0) {
-            // Simula atualização
-            statNumbers[0].textContent = Math.floor(Math.random() * 10) + 1;
-        }
-    }
-
-    updateMessageCount() {
-        const chatLog = document.getElementById('chat-log');
-        const messageCount = chatLog?.querySelectorAll('.message').length || 0;
-        
-        const statElements = document.querySelectorAll('.stat-number');
-        if (statElements[1]) {
-            statElements[1].textContent = messageCount;
-        }
-    }
-
-    getEmptyDynamicContent() {
-        return `
-            <div class="text-center p-3 text-muted">
-                <i class="bi bi-inbox"></i>
-                <p>Conteúdo dinâmico não disponível</p>
-            </div>
-        `;
-    }
-
-    getErrorDynamicContent() {
-        return `
-            <div class="text-center p-3 text-danger">
-                <i class="bi bi-exclamation-triangle"></i>
-                <p>Erro ao carregar conteúdo</p>
-                <button class="btn btn-sm btn-outline-danger" onclick="chatManager.loadDynamicSections()">
-                    Tentar Novamente
-                </button>
-            </div>
-        `;
-    }
-
-    // ==================== MODAIS ====================
-    
-    async initializeModals() {
-        // Busca nos modais
-        this.bindElement('dm-user-search', 'input', (e) => this.filterUsers(e.target.value));
-        this.bindElement('task-search', 'input', (e) => this.filterTasks(e.target.value));
-        
-        // Form de grupo
-        this.bindElement('create-group-form', 'submit', (e) => this.createGroupChat(e));
-        
-        // Configura eventos dos modais
-        this.setupModalEvents();
-    }
-
-    setupModalEvents() {
-        const novaConversaModal = document.getElementById('novaConversaModal');
-        if (novaConversaModal) {
-            novaConversaModal.addEventListener('shown.bs.modal', () => {
-                this.loadModalData();
-            });
-        }
-    }
-
+    // ───────────── modais ─────────────
     async loadModalData() {
-        // Carrega dados dos modais quando necessário
-        await Promise.all([
-            this.renderUsersModal(),
-            this.renderTasksModal(),
-            this.renderGroupModal()
-        ]);
+        if (!this.loaded) await this.loadBootstrap();
+        this.renderUsers();
+        this.renderTasks();
+        this.renderGroupSelect();
     }
 
-    async renderUsersModal() {
-        const container = document.getElementById('dm-user-list-container');
-        if (!container) return;
-
-        try {
-            // Carrega usuários se não estiverem em cache
-            if (this.cache.users.length === 0) {
-                const response = await fetch(this.urls.user_list);
-                const data = await response.json();
-                if (data.status === 'success' && data.users) {
-                    this.cache.users = data.users;
-                }
-            }
-
-            if (this.cache.users.length > 0) {
-                container.innerHTML = this.cache.users.map(user => `
-                    <div class="user-list-item" onclick="chatManager.startDM('${user.id}')">
-                        <div class="user-avatar"><i class="bi bi-person-fill"></i></div>
-                        <div class="user-info">
-                            <div class="user-name">${this.escapeHtml(user.display_name || user.username)}</div>
-                            <div class="user-email">@${this.escapeHtml(user.username)}</div>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                container.innerHTML = `
-                    <div class="text-center p-4 text-muted">
-                        <i class="bi bi-people" style="font-size: 2rem;"></i>
-                        <p>Nenhum usuário encontrado</p>
-                    </div>
-                `;
-            }
-        } catch (error) {
-            this.log.error('Erro ao carregar usuários:', error);
-            container.innerHTML = `
-                <div class="text-center p-4 text-danger">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    <p>Erro ao carregar usuários</p>
+    renderUsers(q = '') {
+        const box = $('dm-user-list-container');
+        if (!box) return;
+        const s = q.toLowerCase();
+        const list = this.cache.users.filter((u) =>
+            u.username.toLowerCase().includes(s) || (u.display_name || '').toLowerCase().includes(s));
+        box.innerHTML = list.length ? list.map((u) => `
+            <div class="user-list-item" data-action="start-dm" data-user-id="${u.id}">
+                <div class="user-avatar"><i class="bi bi-person-fill"></i></div>
+                <div class="user-info">
+                    <div class="user-name">${this.esc(u.display_name || u.username)}</div>
+                    <div class="user-email">@${this.esc(u.username)}</div>
                 </div>
-            `;
-        }
+            </div>`).join('')
+            : `<div class="text-center p-3 text-muted"><i class="bi bi-search"></i>
+               <p class="mb-0">Nenhum usuário encontrado</p></div>`;
     }
 
-    async renderTasksModal() {
-        const container = document.getElementById('task-list-container');
-        if (!container) return;
-
-        try {
-            // Carrega tarefas se não estiverem em cache
-            if (this.cache.tasks.length === 0) {
-                const response = await fetch(this.urls.task_list);
-                const data = await response.json();
-                if (data.status === 'success' && data.tasks) {
-                    this.cache.tasks = data.tasks;
-                }
-            }
-
-            if (this.cache.tasks.length > 0) {
-                container.innerHTML = this.cache.tasks.map(task => `
-                    <div class="task-list-item" onclick="chatManager.openTaskChat(${task.id})">
-                        <div class="task-icon"><i class="bi bi-check-square-fill"></i></div>
-                        <div class="task-info">
-                            <div class="task-title">${this.escapeHtml(task.titulo)}</div>
-                            <div class="task-details">
-                                <span class="badge bg-secondary">${task.status || 'N/A'}</span>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                container.innerHTML = `
-                    <div class="text-center p-4 text-muted">
-                        <i class="bi bi-list-task" style="font-size: 2rem;"></i>
-                        <p>Nenhuma tarefa encontrada</p>
-                    </div>
-                `;
-            }
-        } catch (error) {
-            this.log.error('Erro ao carregar tarefas:', error);
-            container.innerHTML = `
-                <div class="text-center p-4 text-danger">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    <p>Erro ao carregar tarefas</p>
+    renderTasks(q = '') {
+        const box = $('task-list-container');
+        if (!box) return;
+        const s = q.toLowerCase();
+        const list = this.cache.tasks.filter((t) => t.titulo.toLowerCase().includes(s));
+        box.innerHTML = list.length ? list.map((t) => `
+            <div class="task-list-item" data-action="open-task" data-task-id="${t.id}">
+                <div class="task-icon"><i class="bi bi-check-square-fill"></i></div>
+                <div class="task-info">
+                    <div class="task-title">${this.esc(t.titulo)}</div>
+                    <span class="badge bg-secondary">${this.esc(t.status || 'N/A')}</span>
                 </div>
-            `;
-        }
+            </div>`).join('')
+            : `<div class="text-center p-3 text-muted"><i class="bi bi-list-task"></i>
+               <p class="mb-0">Nenhuma tarefa encontrada</p></div>`;
     }
 
-    renderGroupModal() {
-        const select = document.getElementById('group-participants-select');
-        if (!select || this.cache.users.length === 0) return;
-
-        select.innerHTML = this.cache.users.map(user => `
-            <option value="${user.id}">${this.escapeHtml(user.display_name || user.username)}</option>
-        `).join('');
+    renderGroupSelect() {
+        const sel = $('group-participants-select');
+        if (!sel) return;
+        sel.innerHTML = this.cache.users.map((u) =>
+            `<option value="${u.id}">${this.esc(u.display_name || u.username)}</option>`).join('');
     }
 
-    filterUsers(searchTerm) {
-        const container = document.getElementById('dm-user-list-container');
-        if (!container) return;
-        
-        const filtered = this.cache.users.filter(user => 
-            user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (user.display_name || '').toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        
-        if (filtered.length === 0) {
-            container.innerHTML = `
-                <div class="text-center p-3 text-muted">
-                    <i class="bi bi-search"></i>
-                    <p>Nenhum usuário encontrado</p>
-                </div>
-            `;
-        } else {
-            container.innerHTML = filtered.map(user => `
-                <div class="user-list-item" onclick="chatManager.startDM('${user.id}')">
-                    <div class="user-avatar"><i class="bi bi-person-fill"></i></div>
-                    <div class="user-info">
-                        <div class="user-name">${this.escapeHtml(user.display_name || user.username)}</div>
-                        <div class="user-email">@${this.escapeHtml(user.username)}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-    }
-
-    /**
-     * Handler chamado quando uma imagem falha ao carregar (404, etc)
-     * @param {HTMLImageElement} imgElement - A tag <img> que falhou
-     * @param {string} fileName - Nome do arquivo para exibir
-     */
-    handleImageError(imgElement, fileName = 'Imagem') {
-        imgElement.style.display = 'none';
-        
-        // Evita criar múltiplos placeholders se o erro disparar mais de uma vez
-        if (imgElement.dataset.errorHandled === 'true') return;
-        imgElement.dataset.errorHandled = 'true';
-        
-        const placeholder = document.createElement('div');
-        placeholder.className = 'image-unavailable text-muted small p-2 border rounded mt-1';
-        placeholder.style.cssText = 'max-width: 200px; background: #f8f9fa;';
-        placeholder.innerHTML = `
-            <i class="bi bi-exclamation-triangle text-warning"></i>
-            <strong>Imagem indisponível</strong><br>
-            <span style="font-size: 0.85em;">${this.escapeHtml(fileName)}</span>
-        `;
-        
-        imgElement.insertAdjacentElement('afterend', placeholder);
-    }
-
-    filterTasks(searchTerm) {
-        const container = document.getElementById('task-list-container');
-        if (!container) return;
-        
-        const filtered = this.cache.tasks.filter(task => 
-            task.titulo.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        
-        if (filtered.length === 0) {
-            container.innerHTML = `
-                <div class="text-center p-3 text-muted">
-                    <i class="bi bi-search"></i>
-                    <p>Nenhuma tarefa encontrada</p>
-                </div>
-            `;
-        } else {
-            container.innerHTML = filtered.map(task => `
-                <div class="task-list-item" onclick="chatManager.openTaskChat(${task.id})">
-                    <div class="task-icon"><i class="bi bi-check-square-fill"></i></div>
-                    <div class="task-info">
-                        <div class="task-title">${this.escapeHtml(task.titulo)}</div>
-                        <div class="task-details">
-                            <span class="badge bg-secondary">${task.status || 'N/A'}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-    }
-
-    // ==================== AÇÕES DO CHAT ====================
-    
+    // ───────────── criar / abrir conversas ─────────────
     async startDM(userId) {
         try {
-            this.log.info(`Iniciando DM com ${userId}`);
-            const response = await fetch(this.urls.start_dm_base.replace('0', userId));
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                await this.openChatDialog(data.room_id, data.room_name);
-                this.closeModal('novaConversaModal');
-                this.showNotification('Conversa iniciada!', 'success');
-            } else {
-                throw new Error(data.error);
-            }
-        } catch (error) {
-            this.log.error('Erro startDM:', error);
-            this.showNotification('Falha ao iniciar conversa', 'error');
+            const d = await this.getJSON(this.buildUrl(this.urls.start_dm_base, userId));
+            this.closeModal('novaConversaModal');
+            await this.openRoom(d.room_id, d.room_name);
+            if (d.created) this.loadBootstrap(true);
+        } catch (e) {
+            this.log('error', 'startDM', e);
+            this.toast('Falha ao iniciar conversa', 'error');
         }
     }
 
-    async createGroupChat(event) {
-        event.preventDefault();
-        
+    async createGroupChat(ev) {
+        ev.preventDefault();
+        const fd = new FormData(ev.target);
+        if (!fd.get('name')?.trim()) return this.toast('Nome obrigatório', 'warning');
+        if (!fd.getAll('participants').length) return this.toast('Selecione participantes', 'warning');
         try {
-            const formData = new FormData(event.target);
-            const name = formData.get('name')?.trim();
-            const participants = formData.getAll('participants');
-            
-            if (!name) return this.showNotification('Nome obrigatório', 'warning');
-            if (!participants.length) return this.showNotification('Selecione participantes', 'warning');
-
-            const response = await fetch(this.urls.create_group_url, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': this.getCSRFToken() },
-                body: formData
-            });
-            
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                await this.openChatDialog(data.room_id, data.room_name);
-                this.closeModal('novaConversaModal');
-                this.showNotification('Grupo criado!', 'success');
-                event.target.reset();
-            } else {
-                throw new Error(data.error);
-            }
-        } catch (error) {
-            this.log.error('Erro createGroup:', error);
-            this.showNotification('Falha ao criar grupo', 'error');
+            const d = await this.postForm(this.urls.create_group_url, fd);
+            ev.target.reset();
+            this.closeModal('novaConversaModal');
+            await this.openRoom(d.room_id, d.room_name);
+            this.loadBootstrap(true);
+        } catch (e) {
+            this.log('error', 'createGroup', e);
+            this.toast(e.message || 'Falha ao criar grupo', 'error');
         }
     }
 
     async openTaskChat(taskId) {
-        if (!this.urls.get_task_chat_base) {
-            return this.showNotification('Funcionalidade não disponível', 'warning');
-        }
-
         try {
-            const response = await fetch(this.urls.get_task_chat_base.replace('0', taskId));
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                await this.openChatDialog(data.room_id, data.room_name);
-                this.closeModal('novaConversaModal');
-                this.showNotification('Chat da tarefa aberto!', 'success');
-            } else {
-                throw new Error(data.error);
-            }
-        } catch (error) {
-            this.log.error('Erro openTaskChat:', error);
-            this.showNotification('Falha ao acessar chat da tarefa', 'error');
-        }
-    }
-
-    showChatInfo() {
-        const modalElement = document.getElementById('chatInfoModal');
-        const modalContent = document.getElementById('chat-info-content');
-        
-        if (!modalContent || !modalElement) return;
-
-                
-        modalContent.innerHTML = `
-            <div class="chat-info-details">
-                <h6>Detalhes da Conversa</h6>
-                <p><strong>Nome:</strong> ${this.currentRoomName || 'N/A'}</p>
-                <p><strong>ID da Sala:</strong> ${this.currentRoom || 'N/A'}</p>
-                <p><strong>Status:</strong> ${this.isConnected ? '🟢 Conectado' : '🔴 Desconectado'}</p>
-                <p><strong>Som:</strong> ${this.soundEnabled ? 'Ativado' : 'Desativado'}</p>
-                <hr>
-                <p><strong>Mensagens em cache:</strong> ${this.cache.messages[this.currentRoom]?.length || 0}</p>
-                <p><strong>Arquivos enviados:</strong> ${this.countFilesInRoom()}</p>
-            </div>
-        `;
-        
-        // Remove aria-hidden antes de mostrar
-        modalElement.removeAttribute('aria-hidden');
-        
-        const modal = new bootstrap.Modal(modalElement);
-        modal.show();
-        
-        // Restaura aria-hidden quando fechar
-        modalElement.addEventListener('hidden.bs.modal', () => {
-            document.activeElement?.blur();
-            modalElement.setAttribute('aria-hidden', 'true');
-        }, { once: true });
-    }
-
-
-    // ==================== SISTEMA DE SOM ====================
-    
-    async initializeSoundSystem() {
-        try {
-            // Verifica suporte a áudio
-            if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
-                this.audioContext = new (AudioContext || webkitAudioContext)();
-            }
-            
-            // Pre-carrega sons
-            await this.preloadSounds();
-            this.soundInitialized = true;
-            this.updateSoundButton();
-            
-            this.log.success('Sistema de som inicializado');
-        } catch (error) {
-            this.log.warn('Falha ao inicializar áudio:', error);
-            this.soundEnabled = false;
-            this.updateSoundButton();
-        }
-    }
-
-    async preloadSounds() {
-        const sounds = {
-            notification: 'https://storage.googleapis.com/ctst-bucket-estatico-2026/static/sounds/notification_1.mp3',
-            message: 'https://storage.googleapis.com/ctst-bucket-estatico-2026/static/sounds/notification_2.mp3',
-            connect: 'https://storage.googleapis.com/ctst-bucket-estatico-2026/static/sounds/notification_2.mp3',
-        };
-
-        for (const [key, url] of Object.entries(sounds)) {
-            try {
-                const audio = new Audio();
-                audio.preload = 'auto';
-                audio.volume = 0.3;
-                
-                // Fallback para sons sintéticos se o arquivo não existir
-                audio.onerror = () => {
-                    this.log.info(`Usando som sintético para ${key}`);
-                    this.audioElements[key] = this.createSyntheticSound(key);
-                };
-                
-                // Evento de sucesso
-                audio.oncanplaythrough = () => {
-                    this.audioElements[key] = audio;
-                    this.log.success(`Som ${key} carregado`);
-                };
-                
-                audio.src = url;
-                
-                // Timeout para fallback
-                setTimeout(() => {
-                    if (!this.audioElements[key]) {
-                        this.log.info(`Timeout no carregamento de ${key}, usando sintético`);
-                        this.audioElements[key] = this.createSyntheticSound(key);
-                    }
-                }, 1000);
-                
-            } catch (error) {
-                this.log.warn(`Erro carregando som ${key}:`, error);
-                this.audioElements[key] = this.createSyntheticSound(key);
-            }
-        }
-    }
-    createSyntheticSound(type) {
-        return {
-            play: () => {
-                if (!this.audioContext || !this.soundEnabled) return;
-                
-                try {
-                    const oscillator = this.audioContext.createOscillator();
-                    const gainNode = this.audioContext.createGain();
-                    
-                    oscillator.connect(gainNode);
-                    gainNode.connect(this.audioContext.destination);
-                    
-                    // Diferentes frequências para diferentes tipos
-                    const frequencies = {
-                        notification: [800, 1000, 1200],
-                        message: [400, 600],
-                        connect: [200, 400, 800]
-                    };
-                    
-                    const freq = frequencies[type] || [440];
-                    oscillator.frequency.setValueAtTime(freq[0], this.audioContext.currentTime);
-                    
-                    // Envelope de volume
-                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                    gainNode.gain.linearRampToValueAtTime(0.1, this.audioContext.currentTime + 0.01);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.3);
-                    
-                    oscillator.start(this.audioContext.currentTime);
-                    oscillator.stop(this.audioContext.currentTime + 0.3);
-                    
-                } catch (error) {
-                    this.log.warn('Erro reproduzindo som sintético:', error);
-                }
-            }
-        };
-    }
-
-    toggleSound() {
-        if (!this.soundInitialized) {
-            this.initializeSoundSystem();
-        }
-        
-        this.soundEnabled = !this.soundEnabled;
-        localStorage.setItem('chat-sound-enabled', this.soundEnabled.toString());
-        this.updateSoundButton();
-        
-        // Teste de som ao ativar
-        if (this.soundEnabled) {
-            this.playNotificationSound('connect');
-        }
-        
-        this.showNotification(
-            `Notificações de som ${this.soundEnabled ? 'ativadas' : 'desativadas'}`,
-            'info'
-        );
-    }
-
-    updateSoundButton() {
-        const button = document.getElementById('chat-sound-toggle');
-        const icon = button?.querySelector('i');
-        
-        if (icon) {
-            icon.className = this.soundEnabled && this.soundInitialized
-                ? 'bi bi-volume-up-fill' 
-                : 'bi bi-volume-mute-fill';
-        }
-        
-        if (button) {
-            button.title = this.soundEnabled ? 'Desativar som' : 'Ativar som';
-            button.classList.toggle('active', this.soundEnabled);
-        }
-    }
-
-    playNotificationSound(type = 'notification') {
-        if (!this.soundEnabled) return;
-        
-        const sound = this.audioElements?.[type];
-        
-        if (!sound) {
-            this.log.debug(`Som '${type}' não disponível, tentando fallback`);
-            const fallback = this.audioElements?.notification;
-            if (!fallback) {
-                this.log.debug('Nenhum som disponível ainda (sistema carregando)');
-                return;
-            }
-            return this._playSound(fallback);
-        }
-        
-        return this._playSound(sound);
-    }
-
-    _playSound(sound) {
-        try {
-            if (typeof sound === 'function') {
-                sound();
-                return;
-            }
-            if (sound && typeof sound.play === 'function') {
-                // Som sintético (objeto { play: fn }) OU HTMLAudioElement
-                if (sound instanceof HTMLAudioElement) {
-                    sound.currentTime = 0;
-                }
-                const p = sound.play();
-                if (p && typeof p.catch === 'function') {
-                    p.catch(err => this.log.warn('Erro ao tocar som:', err));
-                }
-            }
-        } catch (err) {
-            this.log.warn('Erro _playSound:', err);
-        }
-    }
-
-    countFilesInRoom() {
-        const messages = this.cache.messages[this.currentRoom] || [];
-        return messages.filter(m => m.message_type === 'file').length;
-    }
-
-
-    // ==================== DRAG AND DROP ====================
-
-    initializeDrag() {
-        const header = document.getElementById('chat-dialog-header');
-        const container = document.getElementById('chat-draggable-container');
-
-        if (!header || !container) {
-            this.log.warn('Elementos para drag não encontrados');
-            return;
-        }
-
-        // Configura posição inicial (do template)
-        container.style.position = 'fixed';
-        container.style.right = '20px';
-        container.style.bottom = '80px';
-
-        // Event listeners para drag
-        header.addEventListener('mousedown', (e) => this.startDrag(e));
-        document.addEventListener('mousemove', (e) => this.drag(e));
-        document.addEventListener('mouseup', () => this.stopDrag());
-        
-        this.log.success('Sistema de drag inicializado');
-    }
-
-    startDrag(e) {
-        // Ignora se clicar em um botão
-        if (e.target.closest('.btn') || e.target.closest('.header-buttons')) {
-            return;
-        }
-        
-        const container = document.getElementById('chat-draggable-container');
-        if (!container) return;
-        
-        this.dragData = {
-            isDragging: true,
-            offsetX: e.clientX - container.getBoundingClientRect().left,
-            offsetY: e.clientY - container.getBoundingClientRect().top
-        };
-        
-        container.style.transition = 'none';
-        container.style.cursor = 'grabbing';
-        
-        const header = document.getElementById('chat-dialog-header');
-        if (header) {
-            header.style.cursor = 'grabbing';
-        }
-    }
-
-    drag(e) {
-        if (!this.dragData.isDragging) return;
-        
-        const container = document.getElementById('chat-draggable-container');
-        if (!container) return;
-        
-        const newX = e.clientX - this.dragData.offsetX;
-        const newY = e.clientY - this.dragData.offsetY;
-        
-        // Limites da tela
-        const maxX = window.innerWidth - container.offsetWidth;
-        const maxY = window.innerHeight - container.offsetHeight;
-        
-        container.style.left = `${Math.max(0, Math.min(maxX, newX))}px`;
-        container.style.top = `${Math.max(0, Math.min(maxY, newY))}px`;
-        container.style.right = 'auto';
-        container.style.bottom = 'auto';
-    }
-
-    stopDrag() {
-        if (!this.dragData.isDragging) return;
-        
-        this.dragData.isDragging = false;
-        
-        const container = document.getElementById('chat-draggable-container');
-        const header = document.getElementById('chat-dialog-header');
-        
-        if (container) {
-            container.style.transition = 'all 0.3s ease';
-            container.style.cursor = 'default';
-        }
-        
-        if (header) {
-            header.style.cursor = 'grab';
-        }
-    }
-
-    // ==================== CONTROLES DE JANELA ====================
-    
-    toggleMinimize() {
-        const container = document.getElementById('chat-draggable-container');
-        const content = document.getElementById('chat-dialog-content');
-        const minimizeBtn = document.getElementById('minimize-chat-btn');
-        const maximizeBtn = document.getElementById('maximize-chat-btn');
-        
-        if (!container || !content) {
-            this.log.error('Elementos do chat não encontrados para minimizar');
-            return;
-        }
-        
-        this.isMinimized = !this.isMinimized;
-        
-        if (this.isMinimized) {
-            // Estado minimizado
-            content.style.display = 'none';
-            container.style.height = '60px';
-            container.classList.add('minimized');
-            
-            if (minimizeBtn) minimizeBtn.style.display = 'none';
-            if (maximizeBtn) maximizeBtn.style.display = 'inline-block';
-            
-            this.log.info('Chat minimizado');
-        } else {
-            // Estado normal
-            content.style.display = 'flex';
-            container.style.height = '500px';
-            container.classList.remove('minimized');
-            
-            if (minimizeBtn) minimizeBtn.style.display = 'inline-block';
-            if (maximizeBtn) maximizeBtn.style.display = 'none';
-            
-            this.log.info('Chat expandido');
-        }
-        
-        // Força o reflow
-        container.offsetHeight;
-    }
-
-    closeChat() {
-        const container = document.getElementById('chat-draggable-container');
-        if (container) {
-            container.style.display = 'none';
-            container.classList.remove('minimized');
-        }
-        
-        // **LIMPEZA COMPLETA DE WEBSOCKETS**
-        this.cleanupWebSockets();
-        
-        // Limpa estado
-        this.isMinimized = false;
-        this.currentRoom = null;
-        this.currentRoomName = null;
-        this.isConnected = false;
-        
-        this.log.info('Chat fechado e recursos limpos');
-    }
-
-    cleanupWebSockets() {
-        // **CANCELA TIMEOUTS DE RECONEXÃO**
-        if (this.reconnectTimeout) {
-            clearTimeout(this.reconnectTimeout);
-            this.reconnectTimeout = null;
-        }
-        
-        if (this.notificationReconnectTimeout) {
-            clearTimeout(this.notificationReconnectTimeout);
-            this.notificationReconnectTimeout = null;
-        }
-        
-        // **FECHA WEBSOCKETS**
-        if (this.websocket) {
-            this.websocket.onclose = null; // Remove listener para evitar reconexão
-            this.websocket.close(1000, 'Chat fechado pelo usuário');
-            this.websocket = null;
-        }
-        
-        // **RESETA CONTADORES**
-        this.reconnectAttempts = 0;
-        this.notificationReconnectAttempts = 0;
-        this.isConnecting = false;
-        this.notificationConnecting = false;
-        
-        this.log.success('🧹 WebSockets limpos');
-    }
-
-    // ==================== CONTROLE MANUAL DE RECONEXÃO ====================
-
-    manualReconnect() {
-        if (!this.currentRoom) {
-            this.showNotification('Nenhuma sala selecionada', 'warning');
-            return;
-        }
-        
-        this.log.info('Reconexão manual solicitada');
-        
-        // **RESETA CONTADORES**
-        this.reconnectAttempts = 0;
-        this.notificationReconnectAttempts = 0;
-        
-        // **LIMPA CONEXÕES ANTIGAS**
-        this.cleanupWebSockets();
-        
-        // **CONECTA NOVAMENTE**
-        setTimeout(() => {
-            this.connectWebSocket(this.currentRoom);
-            this.connectNotificationSocket();
-        }, 1000);
-        
-        this.showNotification('Reconectando...', 'info');
-    }
-
-    toggleChatListSidebar(show = null) {
-        this.log.info('A função toggleChatListSidebar() foi chamada.');
-        const overlay = document.getElementById('chatOverlay');
-        const sidebar = document.getElementById('chatListContainer');
-        
-        if (!overlay || !sidebar) {
-            this.log.error('CRÍTICO: Elementos da sidebar (overlay ou container) não encontrados.');
-            return;
-        }
-        
-        const shouldShow = show !== null ? show : !sidebar.classList.contains('active');
-        this.log.info(`Sidebar deve ser exibida: ${shouldShow}`);
-
-        // Mantém a lógica de classes para consistência de estado
-        sidebar.classList.toggle('active', shouldShow);
-        overlay.classList.toggle('active', shouldShow);
-
-        // ===== NOVO CÓDIGO PARA FORÇAR A MUDANÇA VISUAL =====
-        if (shouldShow) {
-            // MOSTRA a sidebar
-            sidebar.style.visibility = 'visible';
-            sidebar.style.transform = 'translateX(0)';
-            overlay.style.display = 'block';
-            setTimeout(() => {
-                overlay.style.opacity = '1';
-            }, 10);
-        } else {
-            // ESCONDE a sidebar
-            sidebar.style.transform = 'translateX(100%)';
-            overlay.style.opacity = '0';
-            
-            // Esconde os elementos após a transição para não atrapalharem
-            setTimeout(() => {
-                sidebar.style.visibility = 'hidden';
-                overlay.style.display = 'none';
-            }, 300); // Duração da animação em milissegundos
-        }
-        
-        if (shouldShow && this.cache.rooms.length === 0) {
-            this.loadActiveRoomList();
-        }
-    }
-
-    // ==================== CARREGAMENTO DE DADOS ====================
-    
-    async loadInitialData() {
-        const loadTasks = [
-            this.loadActiveRoomList(),
-            this.preloadUsers(),
-            this.preloadTasks()
-        ];
-        
-        await Promise.allSettled(loadTasks);
-    }
-
-    async loadActiveRoomList() {
-        const container = document.getElementById('active-chats-list');
-        if (!container) return;
-
-        try {
-            const response = await fetch(this.urls.active_room_list);
-            const data = await response.json();
-
-            if (data.status === 'success' && data.rooms?.length > 0) {
-                this.cache.rooms = data.rooms;
-                this.renderRoomList(data.rooms);
-                this.log.success(`${data.rooms.length} salas carregadas`);
-            } else {
-                this.renderEmptyState(container, 'chat-dots', 'Nenhuma conversa ativa', 'Clique em "Nova Conversa" para começar');
-            }
-        } catch (error) {
-            this.log.error('Erro ao carregar salas:', error);
-            this.renderErrorState(container, 'Erro ao carregar conversas', () => this.loadActiveRoomList());
-        }
-    }
-
-    renderRoomList(rooms) {
-        const container = document.getElementById('active-chats-list');
-        if (!container) return;
-
-        container.innerHTML = rooms.map(room => `
-            <div class="chat-list-item ${room.unread_count > 0 ? 'has-unread' : ''}" 
-                 data-room-id="${room.room_id}"
-                 onclick="chatManager.openChatDialog('${room.room_id}', '${this.escapeHtml(room.room_name)}')">
-                <div class="chat-list-avatar">
-                    <i class="bi ${room.room_type === 'DM' ? 'bi-person' : 'bi-people'}"></i>
-                </div>
-                <div class="chat-list-info">
-                    <div class="chat-list-name">${this.escapeHtml(room.room_name)}</div>
-                    <div class="chat-list-preview">${this.escapeHtml(room.last_message || '')}</div>
-                </div>
-                <div class="chat-list-meta">
-                    ${room.unread_count > 0 ? `<div class="chat-list-unread">${room.unread_count}</div>` : ''}
-                </div>
-            </div>
-        `).join('');
-    }
-
-    async preloadUsers() {
-        try {
-            const response = await fetch(this.urls.user_list);
-            const data = await response.json();
-            if (data.status === 'success' && data.users) {
-                this.cache.users = data.users;
-                this.log.success(`${data.users.length} usuários em cache`);
-            }
-        } catch (error) {
-            this.log.warn('Falha no preload de usuários:', error);
-        }
-    }
-
-    async preloadTasks() {
-        try {
-            const response = await fetch(this.urls.task_list);
-            const data = await response.json();
-            if (data.status === 'success' && data.tasks) {
-                this.cache.tasks = data.tasks;
-                this.log.success(`${data.tasks.length} tarefas em cache`);
-            }
-        } catch (error) {
-            this.log.warn('Falha no preload de tarefas:', error);
-        }
-    }
-
-    // ==================== UTILITY METHODS ====================
-    
-    bindElement(id, event, handler) {
-        const element = document.getElementById(id);
-        if (element) {
-            element.addEventListener(event, handler.bind(this));
-            return true;
-        } else {
-            this.log.debug(`Elemento opcional não encontrado: ${id}`);
-            return false;
-        }
-    }
-
-    waitForDOM() {
-        return new Promise(resolve => {
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                resolve();
-            } else {
-                window.addEventListener('DOMContentLoaded', resolve);
-            }
-        });
-    }
-
-    closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            const bsModal = bootstrap.Modal.getInstance(modal);
-            if (bsModal) bsModal.hide();
-        }
-    }
-
-    getCSRFToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-    }
-
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    countFilesInRoom() {
-        const messages = this.cache.messages[this.currentRoom] || [];
-        return messages.filter(m => m.message_type === 'file').length;
-    }
-
-    showNotification(message, type = 'info') {
-        // Remove notificação anterior
-        const existing = document.querySelector('.chat-notification');
-        if (existing) existing.remove();
-
-        const notification = document.createElement('div');
-        notification.className = `chat-notification notification-${type}`;
-        notification.innerHTML = `
-            <i class="bi bi-${this.getNotificationIcon(type)} me-2"></i>
-            <span>${message}</span>
-        `;
-        notification.style.cssText = `
-            position: fixed; top: 20px; right: 20px; z-index: 9999;
-            background: var(--bs-${type === 'info' ? 'primary' : type}); color: white;
-            padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            animation: slideInRight 0.3s ease-out; max-width: 300px;
-        `;
-
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 5000);
-    }
-
-    getNotificationIcon(type) {
-        const icons = {
-            'success': 'check-circle-fill',
-            'error': 'exclamation-circle-fill',
-            'warning': 'exclamation-triangle-fill',
-            'info': 'info-circle-fill'
-        };
-        return icons[type] || 'info-circle-fill';
-    }
-
-    dispatchEvent(name, detail) {
-        const event = new CustomEvent(name, { detail });
-        document.dispatchEvent(event);
-    }
-
-    handleCriticalError(message) {
-        this.log.error(`ERRO CRÍTICO: ${message}`);
-        
-        const errorDiv = document.createElement('div');
-        errorDiv.innerHTML = `
-            <div style="position: fixed; top: 20px; right: 20px; z-index: 999999; 
-                        background: #dc3545; color: white; padding: 15px; border-radius: 8px; 
-                        max-width: 300px; font-family: system-ui;">
-                <strong> Erro no Chat</strong>
-                <p style="margin: 8px 0; font-size: 13px;">${message}</p>
-                <button onclick="location.reload()" style="background: rgba(255,255,255,0.2); 
-                        border: 1px solid rgba(255,255,255,0.3); color: white; 
-                        padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-                        Recarregar
-                </button>
-            </div>
-        `;
-        
-        document.body.appendChild(errorDiv);
-        
-        // Dispara evento de emergência
-        this.dispatchEvent('chatEmergencyReady', { error: message });
-        
-        return null;
-    }
-
-    renderEmptyState(container, icon, title, subtitle) {
-        container.innerHTML = `
-            <div class="empty-state text-center p-4">
-                <i class="bi bi-${icon}" style="font-size: 2rem; color: var(--text-muted);"></i>
-                <p class="text-muted mt-2">${title}</p>
-                <small>${subtitle}</small>
-            </div>
-        `;
-    }
-
-    renderErrorState(container, message, retryCallback) {
-        container.innerHTML = `
-            <div class="error-state text-center p-4">
-                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
-                <p class="text-muted mt-2">${message}</p>
-                <button class="btn btn-sm btn-outline-warning mt-2" 
-                        onclick="${retryCallback?.name ? `chatManager.${retryCallback.name}()` : 'location.reload()'}">
-                    <i class="bi bi-arrow-clockwise"></i> Tentar Novamente
-                </button>
-            </div>
-        `;
-    }
-
-    // ==================== PLACEHOLDER METHODS ====================
-    
-    shareScreen() {
-        this.showNotification('Compartilhamento de tela não implementado', 'info');
-    }
-
-    createPoll() {
-        this.showNotification('Criação de enquetes não implementada', 'info');
-    }
-
-    showConnectionError(message) {
-        const errorContainer = document.getElementById('chat-connection-error') || this.createConnectionErrorElement();
-        
-        errorContainer.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-                <span>${message}</span>
-                <button class="btn btn-sm btn-outline-light" onclick="chatManager.manualReconnect()">
-                    <i class="bi bi-arrow-clockwise"></i> Reconectar
-                </button>
-            </div>
-        `;
-        errorContainer.style.display = 'block';
-    }
-
-    createConnectionErrorElement() {
-        const errorDiv = document.createElement('div');
-        errorDiv.id = 'chat-connection-error';
-        errorDiv.className = 'alert alert-warning mb-2';
-        errorDiv.style.cssText = 'display: none; margin: 10px; font-size: 12px;';
-        
-        const chatContainer = document.getElementById('chat-dialog-content');
-        if (chatContainer) {
-            chatContainer.insertBefore(errorDiv, chatContainer.firstChild);
-        }
-        
-        return errorDiv;
-    }
-
-    hideConnectionError() {
-        const errorContainer = document.getElementById('chat-connection-error');
-        if (errorContainer) {
-            errorContainer.style.display = 'none';
-        }
-    }   
-
-    // ==================== CONNECTION STATUS ====================
-
-    updateConnectionStatus(status) {
-        const statusIndicator = document.querySelector('.status-indicator');
-        const lastSeen = document.querySelector('.last-seen');
-        
-        if (statusIndicator) {
-            // Remove todas as classes de status
-            statusIndicator.classList.remove('online', 'offline', 'connecting', 'error');
-            
-            // Adiciona a classe correspondente
-            switch (status) {
-                case 'online':
-                    statusIndicator.classList.add('online');
-                    if (lastSeen) lastSeen.textContent = 'Online';
-                    break;
-                case 'offline':
-                    statusIndicator.classList.add('offline');
-                    if (lastSeen) lastSeen.textContent = 'Offline';
-                    break;
-                case 'connecting':
-                    statusIndicator.classList.add('connecting');
-                    if (lastSeen) lastSeen.textContent = 'Conectando...';
-                    break;
-                case 'error':
-                    statusIndicator.classList.add('error');
-                    if (lastSeen) lastSeen.textContent = 'Erro de conexão';
-                    break;
-                default:
-                    statusIndicator.classList.add('offline');
-            }
-        }
-        
-        this.log.debug(`Status de conexão atualizado: ${status}`);
-    }
-
-    /**
-     * Marca todas as mensagens da sala como lidas via WebSocket.
-     */
-    markRoomAsRead(roomId) {
-        if (!roomId) return;
-        
-        const ws = this.websocket;
-        
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-            // Marca pendente — o onopen vai pegar
-            this._pendingReadRoom = roomId;
-            console.log('⏳ WS não está OPEN — mark_as_read pendente para quando conectar');
-            return;
-        }
-        
-        try {
-            ws.send(JSON.stringify({
-                type: 'mark_as_read',
-                all: true,
-                room_id: roomId,
-            }));
-            console.log('✅ mark_as_read enviado para sala:', roomId);
-            this._pendingReadRoom = null;
-            
-            // Remove badge da UI localmente
-            const badge = document.querySelector(`[data-room-id="${roomId}"] .unread-badge`);
-            if (badge) badge.remove();
+            const d = await this.getJSON(this.buildUrl(this.urls.get_task_chat_base, taskId));
+            this.closeModal('novaConversaModal');
+            await this.openRoom(d.room_id, d.room_name);
+            this.loadBootstrap(true);
         } catch (e) {
-            console.error('❌ Erro ao enviar mark_as_read:', e);
+            this.log('error', 'openTaskChat', e);
+            this.toast('Falha ao acessar chat da tarefa', 'error');
         }
     }
 }
 
-// ==================== GLOBAL SETUP ====================
-// Funções globais para compatibilidade com o template
-window.toggleChatListSidebar = () => {
-    if (window.chatManager) {
-        window.chatManager.toggleChatListSidebar();
-    }
-};
-
-window.openChatDialog = (roomId, roomName) => {
-    if (window.chatManager) {
-        window.chatManager.openChatDialog(roomId, roomName);
-    }
-};
-
-// ==================== LIMPEZA GLOBAL ====================
-
-// Limpa recursos quando a página é fechada
-window.addEventListener('beforeunload', () => {
-    if (window.chatManager && typeof window.chatManager.cleanupWebSockets === 'function') {
-        window.chatManager.cleanupWebSockets();
-    }
-});
-
-// Pausa reconexões quando a aba perde o foco
-document.addEventListener('visibilitychange', () => {
-    // Verifica se chatManager existe E é um objeto antes de atribuir
-    if (!window.chatManager || typeof window.chatManager !== 'object') {
-        return;
-    }
-    
-    window.chatManager.pauseReconnections = document.hidden;
-});
-
-// 🆕 Quando o usuário volta pra aba, marca a sala atual como lida
-window.addEventListener('focus', () => {
-    if (this.currentRoom) {
-        this.markRoomAsRead(this.currentRoom);
-    }
-});
-// 🆕 Quando o usuário volta pra aba, marca a sala atual como lida
-window.addEventListener('focus', () => {
-    if (this.currentRoom) {
-        this.markRoomAsRead(this.currentRoom);
-        //window.chatManager.markRoomAsRead(window.chatManager.currentRoom);
-    }
-});
-
-console.log('Sistema de chat com controle de loop inicializado');
-console.log('ChatManager v4.3 - Refatorado para template Django');
-
-// Exporta o ChatManager para o objeto global (window)
 window.ChatManager = ChatManager;
+window.toggleChatListSidebar = () => window.chatManager?.toggleSidebar();
+window.openChatDialog = (id, name) => window.chatManager?.openRoom(id, name);
 
+/* chat.js — PARTE 2/3: sala aberta (histórico, WebSocket, envio, upload, leitura) */
+
+const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
+
+Object.assign(ChatManager.prototype, {
+
+    // ───────────── setup (chamado pelo init da Parte 1) ─────────────
+    setupMessaging() {
+        this.ws = null;
+        this.wsAttempts = 0;
+        this.wsTimer = null;
+        this.maxAttempts = 5;
+        this.reconnectOnShow = false;
+        this.openToken = 0;
+        this.uploadQueue = [];
+        this.uploading = false;
+        this.uploadSeq = 0;
+        this.maxFileSize = 10 * 1024 * 1024;
+
+        Object.assign(this.actions, {
+            'retry-room': () => this.openRoom(this.currentRoom, this.currentRoomName),
+        });
+
+        const on = (id, ev, fn) => $(id)?.addEventListener(ev, fn);
+
+        on('chat-message-submit', 'click', () => this.sendMessage());
+        on('chat-message-input', 'keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+                e.preventDefault();
+                this.sendMessage();
+            }
+        });
+        on('chat-message-input', 'input', (e) => {
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+        });
+        on('close-dialog-btn', 'click', (e) => { e.stopPropagation(); this.closeRoom(); });
+
+        const fi = $('image-upload-input');
+        if (fi) {
+            fi.multiple = true;
+            fi.accept = 'image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar';
+            fi.addEventListener('change', () => {
+                this.enqueueFiles(Array.from(fi.files));
+                fi.value = '';
+            });
+            on('attach-image-btn', 'click', () => fi.click());
+        }
+
+        // listeners globais da sala (singleton → registrados uma única vez)
+        window.addEventListener('focus', () => this.markRead());
+        window.addEventListener('beforeunload', () => this.closeSocket());
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) return;
+            if (this.reconnectOnShow && this.currentRoom && !this.ws) {
+                this.reconnectOnShow = false;
+                this.connectRoom(this.currentRoom);
+            }
+            this.markRead();
+        });
+    },
+
+    // ───────────── abrir / fechar sala ─────────────
+    async openRoom(roomId, roomName) {
+        const box = $('chat-draggable-container');
+        const log = $('chat-log');
+        if (!roomId) return;
+        if (!box || !log) return this.toast('Janela de chat indisponível', 'error');
+
+        const token = ++this.openToken;      // invalida aberturas anteriores em andamento
+        this.closeSocket();
+        this.toggleSidebar(false);
+
+        this.currentRoom = roomId;
+        this.currentRoomName = roomName || 'Chat';
+        this.uploadQueue = [];
+        this.wsAttempts = 0;
+
+        const title = $('chat-dialog-header-title');
+        if (title) title.textContent = this.currentRoomName;
+        box.style.display = 'flex';
+        box.classList.remove('minimized');
+        this.hideConnError();
+
+        log.innerHTML = `<div class="loading-state text-center p-4">
+            <div class="spinner-border spinner-border-sm" role="status"></div>
+            <p class="mt-2 mb-0">Carregando mensagens...</p></div>`;
+
+        await this.loadHistory(roomId, token);
+        if (token !== this.openToken) return;
+
+        this.connectRoom(roomId);
+        this.clearUnread(roomId);
+    },
+
+    closeRoom() {
+        this.openToken++;
+        this.closeSocket();
+        this.uploadQueue = [];
+        this.currentRoom = null;
+        this.currentRoomName = null;
+        this.hideConnError();
+        const box = $('chat-draggable-container');
+        if (box) {
+            box.style.display = 'none';
+            box.classList.remove('minimized');
+        }
+    },
+
+    // ───────────── histórico ─────────────
+    async loadHistory(roomId, token) {
+        const log = $('chat-log');
+        try {
+            const url = this.urls.get_chat_history.replace(ZERO_UUID, encodeURIComponent(roomId));
+            const d = await this.getJSON(url);
+            if (token !== this.openToken) return;
+
+            log.innerHTML = '';
+            if (!d.messages?.length) {
+                log.innerHTML = `<div class="welcome-state">
+                    <i class="bi bi-chat-heart" style="font-size:3rem"></i>
+                    <p>Nenhuma mensagem ainda</p><small>Seja o primeiro a enviar!</small></div>`;
+                return;
+            }
+            const frag = document.createDocumentFragment();
+            d.messages.forEach((m) => frag.appendChild(this.buildMessage(m)));
+            log.appendChild(frag);
+            log.scrollTop = log.scrollHeight;
+        } catch (e) {
+            if (token !== this.openToken) return;
+            this.log('error', 'history', e);
+            log.innerHTML = `<div class="error-state text-center p-4">
+                <i class="bi bi-exclamation-triangle"></i>
+                <p>Erro ao carregar mensagens</p>
+                <button class="btn btn-sm btn-outline-danger" data-action="retry-room">Tentar novamente</button></div>`;
+        }
+    },
+
+    // ───────────── renderização de mensagens ─────────────
+    safeUrl(u) {
+        return typeof u === 'string' && /^(https?:\/\/|\/(?!\/))/i.test(u) ? u : '';
+    },
+
+    fmtTime(ts) {
+        const d = ts ? new Date(ts) : null;
+        return d && !isNaN(d) ? d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora';
+    },
+
+    fmtSize(b) {
+        if (!b) return '';
+        const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), 3);
+        return `${parseFloat((b / 1024 ** i).toFixed(1))} ${['B', 'KB', 'MB', 'GB'][i]}`;
+    },
+
+    /** Escapa primeiro, depois aplica links/menções/quebras (sem brecha de XSS). */
+    formatText(text) {
+        return this.esc(text)
+            .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="message-link">$1</a>')
+            .replace(/(^|\s)@(\w+)/g, '$1<span class="mention">@$2</span>')
+            .replace(/\n/g, '<br>');
+    },
+
+    fileIcon(type = '') {
+        if (type.includes('image')) return 'bi-file-image';
+        if (type.includes('pdf')) return 'bi-file-pdf';
+        if (type.includes('word') || type.includes('document')) return 'bi-file-word';
+        if (type.includes('excel') || type.includes('sheet')) return 'bi-file-excel';
+        if (type.includes('video')) return 'bi-file-play';
+        if (type.includes('audio')) return 'bi-file-music';
+        if (type.includes('zip') || type.includes('compressed')) return 'bi-file-zip';
+        return 'bi-file-earmark';
+    },
+
+    parseFile(m) {
+        if (m.message_type !== 'file' || !m.file_data) return null;
+        try {
+            return typeof m.file_data === 'string' ? JSON.parse(m.file_data) : m.file_data;
+        } catch { return null; }
+    },
+
+    fileHtml(f) {
+        const name = this.esc(f.name || 'arquivo');
+        const url = this.esc(this.safeUrl(f.url));
+        const type = f.type || '';
+        const size = this.fmtSize(f.size);
+        const info = `<div class="file-icon"><i class="bi ${this.fileIcon(type)}"></i></div>
+            <div class="file-info"><div class="file-name">${name}</div>
+            ${size ? `<div class="file-size">${size}</div>` : ''}</div>`;
+
+        if (type.includes('image') && url) {
+            return `<div class="message-file">${info}</div>
+                <div class="image-preview mt-2">
+                    <img src="${url}" alt="${name}" class="img-fluid rounded"
+                         style="max-width:200px;cursor:pointer" data-action="view-image" data-url="${url}">
+                </div>`;
+        }
+        return `<div class="message-file" style="cursor:pointer" data-action="download"
+                     data-url="${url}" data-name="${name}">
+                ${info}
+                <button type="button" class="btn btn-sm btn-outline-primary ms-2"><i class="bi bi-download"></i></button>
+            </div>`;
+    },
+
+    messageBody(m) {
+        const f = this.parseFile(m);
+        if (f) return this.fileHtml(f);
+
+        const img = this.esc(this.safeUrl(m.image_url));
+        if (m.message_type === 'image' && img) {
+            return `<div class="message-image"><img src="${img}" alt="Imagem" class="img-fluid rounded"
+                    style="max-width:200px;cursor:pointer" data-action="view-image" data-url="${img}"></div>`;
+        }
+        return `<div class="message-text">${this.formatText(m.message ?? m.content ?? '')}</div>`;
+    },
+
+    isOwn(m) {
+        return String(m.user_id) === String(this.currentUserId);
+    },
+
+    buildMessage(m) {
+        const el = document.createElement('div');
+        el.className = `message ${this.isOwn(m) ? 'own-message' : 'other-message'}`;
+        const id = m.id ?? m.message_id;
+        if (id != null) el.dataset.messageId = id;
+
+        el.innerHTML = `<div class="message-content">
+            <div class="message-header">
+                <span class="message-sender">${this.esc(m.username || 'Usuário')}</span>
+                <span class="message-time">${this.fmtTime(m.timestamp)}</span>
+            </div>
+            ${this.messageBody(m)}
+            ${m.is_edited ? '<small class="message-edited text-muted"><i class="bi bi-pencil"></i> editado</small>' : ''}
+        </div>`;
+
+        // imagem quebrada → placeholder (sem onerror inline)
+        el.querySelectorAll('img').forEach((img) => img.addEventListener('error', () => {
+            const ph = document.createElement('div');
+            ph.className = 'image-unavailable text-muted small p-2 border rounded';
+            ph.textContent = 'Imagem indisponível';
+            img.replaceWith(ph);
+        }, { once: true }));
+        return el;
+    },
+
+    findMessage(id) {
+        return $('chat-log')?.querySelector(`[data-message-id="${CSS.escape(String(id))}"]`);
+    },
+
+    appendMessage(m) {
+        const log = $('chat-log');
+        if (!log) return;
+        const id = m.id ?? m.message_id;
+        if (id != null && this.findMessage(id)) return; // dedupe
+
+        log.querySelectorAll('.welcome-state,.loading-state,.error-state').forEach((n) => n.remove());
+        const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 120;
+        log.appendChild(this.buildMessage(m));
+        if (nearBottom || this.isOwn(m)) log.scrollTop = log.scrollHeight;
+    },
+
+    // ───────────── WebSocket da sala ─────────────
+    wsSend(obj) {
+        if (this.ws?.readyState !== WebSocket.OPEN) return false;
+        this.ws.send(JSON.stringify(obj));
+        return true;
+    },
+
+    closeSocket() {
+        clearTimeout(this.wsTimer);
+        const ws = this.ws;
+        this.ws = null; // handlers antigos se ignoram via checagem `this.ws !== ws`
+        if (ws) { try { ws.close(1000); } catch { /* noop */ } }
+    },
+
+    connectRoom(roomId) {
+        clearTimeout(this.wsTimer);
+        if (this.ws || !roomId) return;
+
+        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+        const ws = new WebSocket(`${proto}://${location.host}/ws/chat/${encodeURIComponent(roomId)}/`);
+        this.ws = ws;
+        this.setStatus('connecting');
+
+        const connTimeout = setTimeout(() => {
+            if (ws.readyState === WebSocket.CONNECTING) ws.close();
+        }, 10000);
+
+        ws.onopen = () => {
+            clearTimeout(connTimeout);
+            if (this.ws !== ws) return;
+            this.wsAttempts = 0;
+            this.setStatus('online');
+            this.hideConnError();
+            this.markRead();
+        };
+
+        ws.onmessage = (e) => {
+            if (this.ws !== ws) return;
+            let data;
+            try { data = JSON.parse(e.data); } catch { return; }
+            this.onRoomEvent(data);
+        };
+
+        ws.onclose = (e) => {
+            clearTimeout(connTimeout);
+            if (this.ws !== ws) return; // fechado de propósito / sala trocada
+            this.ws = null;
+            this.setStatus('offline');
+            if (e.code === 1000 || e.code === 1001 || this.currentRoom !== roomId) return;
+            this.scheduleReconnect(roomId);
+        };
+
+        ws.onerror = () => { /* onclose sempre vem em seguida */ };
+    },
+
+    scheduleReconnect(roomId) {
+        if (this.wsAttempts >= this.maxAttempts) {
+            this.setStatus('error');
+            return this.showConnError('Falha de conexão.', true);
+        }
+        this.wsAttempts++;
+        const delay = Math.min((2 ** this.wsAttempts) * 1000, 30000);
+        this.showConnError(`Reconectando em ${delay / 1000}s...`);
+        this.wsTimer = setTimeout(() => {
+            if (this.currentRoom !== roomId || this.ws) return;
+            if (document.hidden) { this.reconnectOnShow = true; return; }
+            this.connectRoom(roomId);
+        }, delay);
+    },
+
+    manualReconnect() {
+        if (!this.currentRoom) return;
+        this.wsAttempts = 0;
+        this.closeSocket();
+        this.hideConnError();
+        this.connectRoom(this.currentRoom);
+    },
+
+    onRoomEvent(d) {
+        switch (d.type) {
+            case 'chat_message':
+            case 'new_message':
+            case 'file_message':
+                return this.onIncoming(d);
+            case 'read_receipt':
+                return d.room_id && this.clearUnread(d.room_id);
+            case 'message_edited': {
+                const t = this.findMessage(d.message_id)?.querySelector('.message-text');
+                if (!t) return;
+                t.innerHTML = this.formatText(d.new_content);
+                const c = t.closest('.message-content');
+                if (c && !c.querySelector('.message-edited')) {
+                    c.insertAdjacentHTML('beforeend',
+                        '<small class="message-edited text-muted"><i class="bi bi-pencil"></i> editado</small>');
+                }
+                return;
+            }
+            case 'message_deleted': {
+                const el = this.findMessage(d.message_id);
+                if (!el) return;
+                el.classList.add('deleted-message');
+                el.innerHTML = `<div class="message-content"><div class="message-deleted">
+                    <i class="bi bi-trash"></i> <span>Mensagem excluída</span></div></div>`;
+                return;
+            }
+            default:
+                this.log('debug', 'evento ignorado', d);
+        }
+    },
+
+    onIncoming(d) {
+        if (d.room_id && d.room_id !== this.currentRoom) {
+            return this.bumpUnread(d.room_id, d.message || '📎 Arquivo');
+        }
+        this.appendMessage(d);
+        if (this.isOwn(d)) return;
+
+        this.playSound?.('message');                       // Parte 3
+        if (document.hidden || !document.hasFocus()) {
+            this.showBrowserNotification?.({               // Parte 3
+                id: `msg-${d.message_id ?? d.id ?? Date.now()}`,
+                titulo: d.username || 'Nova mensagem',
+                mensagem: d.message_type === 'file' ? '📎 Arquivo' : String(d.message || '').slice(0, 80),
+            });
+        } else {
+            this.markRead();
+        }
+    },
+
+    /** Marca a sala aberta como lida — só se a aba estiver visível e focada. */
+    markRead() {
+        const id = this.currentRoom;
+        if (!id || document.hidden || !document.hasFocus()) return;
+        if (this.wsSend({ type: 'mark_as_read', all: true, room_id: id })) this.clearUnread(id);
+    },
+
+    // ───────────── envio de texto ─────────────
+    sendMessage() {
+        const input = $('chat-message-input');
+        const text = input?.value.trim();
+        if (!text || !this.currentRoom) return;
+
+        const ok = this.wsSend({ type: 'chat_message', message: text, room_id: this.currentRoom });
+        if (!ok) {
+            this.toast('Sem conexão. Reconectando...', 'warning');
+            if (!this.ws) this.connectRoom(this.currentRoom);
+            return; // mantém o texto no campo
+        }
+        input.value = '';
+        input.style.height = 'auto';
+    },
+
+    // ───────────── upload (fila sequencial) ─────────────
+    enqueueFiles(files) {
+        if (!this.currentRoom) return this.toast('Abra uma conversa primeiro', 'warning');
+        const roomId = this.currentRoom;
+        files.forEach((file) => {
+            if (file.size > this.maxFileSize) {
+                return this.toast(`"${file.name}" excede 10MB`, 'warning');
+            }
+            this.uploadQueue.push({ file, roomId });
+        });
+        this.drainUploads();
+    },
+
+    async drainUploads() {
+        if (this.uploading) return;
+        this.uploading = true;
+        try {
+            let job;
+            while ((job = this.uploadQueue.shift())) {
+                if (job.roomId !== this.currentRoom) continue; // usuário trocou de sala
+                const tmp = this.uploadIndicator(job.file.name);
+                try {
+                    await this.uploadFile(job.file, job.roomId);
+                } catch (e) {
+                    this.log('error', 'upload', e);
+                    this.toast(`Falha ao enviar ${job.file.name}`, 'error');
+                } finally {
+                    tmp?.remove();
+                }
+            }
+        } finally {
+            this.uploading = false;
+        }
+    },
+
+    async uploadFile(file, roomId) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('room_id', roomId);
+        fd.append('message_type', 'file');
+
+        const d = await this.postForm(this.urls.upload_file_url, fd);
+        if (!d.file_data) throw new Error('Resposta inválida do servidor');
+        if (!this.wsSend({ type: 'file_message', file_data: d.file_data, room_id: roomId })) {
+            throw new Error('Sem conexão');
+        }
+    },
+
+    uploadIndicator(name) {
+        const log = $('chat-log');
+        if (!log) return null;
+        const el = document.createElement('div');
+        el.className = 'message own-message uploading';
+        el.dataset.uploadId = ++this.uploadSeq;
+        el.innerHTML = `<div class="message-content">
+            <div class="message-header"><span class="message-sender">Você</span>
+            <span class="message-time">Enviando...</span></div>
+            <div class="message-file"><div class="file-icon"><i class="bi bi-cloud-upload"></i></div>
+            <div class="file-info"><div class="file-name">${this.esc(name)}</div>
+            <div class="progress" style="height:4px"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%"></div></div>
+            </div></div></div>`;
+        log.appendChild(el);
+        log.scrollTop = log.scrollHeight;
+        return el;
+    },
+
+    // ───────────── imagem / download ─────────────
+    viewImage(url) {
+        const src = this.safeUrl(url);
+        if (!src) return;
+        $('imageViewModal')?.remove();
+
+        const m = document.createElement('div');
+        m.className = 'modal fade';
+        m.id = 'imageViewModal';
+        m.tabIndex = -1;
+        m.innerHTML = `<div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Imagem</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div>
+            <div class="modal-body text-center"><img class="img-fluid" style="max-height:70vh" alt="Imagem"></div>
+            <div class="modal-footer">
+                <a download class="btn btn-primary"><i class="bi bi-download"></i> Download</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button></div>
+            </div></div>`;
+        m.querySelector('img').src = src;   // via propriedade, não via template
+        m.querySelector('a').href = src;
+        document.body.appendChild(m);
+        m.addEventListener('hidden.bs.modal', () => m.remove(), { once: true });
+        bootstrap.Modal.getOrCreateInstance(m).show();
+    },
+
+    async downloadFile(url, name) {
+        const src = this.safeUrl(url);
+        if (!src) return this.toast('Arquivo não disponível', 'warning');
+        try {
+            const r = await fetch(src, { credentials: 'same-origin' });
+            if (!r.ok) {
+                return this.toast(r.status === 404
+                    ? `"${name}" não está mais disponível`
+                    : `Erro ${r.status} ao baixar`, r.status === 404 ? 'warning' : 'error');
+            }
+            const blobUrl = URL.createObjectURL(await r.blob());
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = name || 'arquivo';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(blobUrl);
+        } catch (e) {
+            this.log('error', 'download', e);
+            this.toast('Falha ao baixar arquivo', 'error');
+        }
+    },
+
+    // ───────────── status de conexão ─────────────
+    setStatus(status) {
+        const ind = document.querySelector('.status-indicator');
+        const seen = document.querySelector('.last-seen');
+        const labels = { online: 'Online', offline: 'Offline', connecting: 'Conectando...', error: 'Erro de conexão' };
+        if (ind) {
+            ind.classList.remove('online', 'offline', 'connecting', 'error');
+            ind.classList.add(labels[status] ? status : 'offline');
+        }
+        if (seen) seen.textContent = labels[status] || 'Offline';
+    },
+
+    showConnError(msg, withButton = false) {
+        let el = $('chat-connection-error');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'chat-connection-error';
+            el.className = 'alert alert-warning mb-2';
+            el.style.cssText = 'margin:10px;font-size:12px';
+            const host = $('chat-dialog-content');
+            if (!host) return;
+            host.insertBefore(el, host.firstChild);
+        }
+        el.innerHTML = `<div class="d-flex justify-content-between align-items-center">
+            <span>${this.esc(msg)}</span>
+            ${withButton ? '<button class="btn btn-sm btn-outline-dark" data-action="reconnect"><i class="bi bi-arrow-clockwise"></i> Reconectar</button>' : ''}
+            </div>`;
+        el.style.display = 'block';
+    },
+
+    hideConnError() {
+        const el = $('chat-connection-error');
+        if (el) el.style.display = 'none';
+    },
+});
+
+/* chat.js — PARTE 3/3: WS de notificações, som, janela (drag/minimizar), busca, info */
+
+const SOUND_URLS = {
+    alert: 'https://storage.googleapis.com/ctst-bucket-estatico-2026/static/sounds/notification_1.mp3',
+    message: 'https://storage.googleapis.com/ctst-bucket-estatico-2026/static/sounds/notification_2.mp3',
+    connect: 'https://storage.googleapis.com/ctst-bucket-estatico-2026/static/sounds/notification_2.mp3',
+};
+const BEEP_HZ = { alert: 900, message: 500, connect: 700 };
+const NO_RETRY_CODES = [1000, 1001, 4401];
+
+Object.assign(ChatManager.prototype, {
+
+    // ───────────── entrada (chamada pelo init da Parte 1) ─────────────
+    setupNotifications() {
+        this.nws = null;
+        this.nAttempts = 0;
+        this.nTimer = null;
+        this.nReconnectOnShow = false;
+        this.minimized = false;
+
+        Object.assign(this.actions, {
+            'goto-message': (t) => this.gotoMessage(t.dataset.messageId),
+        });
+
+        this.setupSound();
+        this.setupWindow();
+        this.setupSearch();
+        this.connectNotifications();
+
+        // O badge do botão flutuante precisa da contagem de não lidas.
+        // 1 request, fora do caminho crítico de carregamento da página.
+        setTimeout(() => this.loadBootstrap(), 2000);
+
+        window.addEventListener('beforeunload', () => this.closeNotifications());
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.nReconnectOnShow && !this.nws) {
+                this.nReconnectOnShow = false;
+                this.nAttempts = 0;
+                this.connectNotifications();
+            }
+        });
+        window.addEventListener('resize', () => this.clampWindow());
+    },
+
+    // ───────────── WebSocket de notificações ─────────────
+    connectNotifications() {
+        clearTimeout(this.nTimer);
+        if (this.nws) return;
+
+        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+        const ws = new WebSocket(`${proto}://${location.host}/ws/notifications/`);
+        this.nws = ws;
+
+        ws.onopen = () => {
+            if (this.nws !== ws) return;
+            this.nAttempts = 0;
+            this.emitWsStatus(true);
+        };
+
+        ws.onmessage = (e) => {
+            if (this.nws !== ws) return;
+            let d;
+            try { d = JSON.parse(e.data); } catch { return; }
+            try { this.onNotificationEvent(d); } catch (err) { this.log('error', 'notif event', err); }
+        };
+
+        ws.onclose = (e) => {
+            if (this.nws !== ws) return;
+            this.nws = null;
+            this.emitWsStatus(false);
+            if (NO_RETRY_CODES.includes(e.code)) return;
+
+            // backoff com teto de 60s e jitter; sem limite de tentativas
+            // (o polling do NotificacoesAPI cobre enquanto estiver offline)
+            this.nAttempts++;
+            const delay = Math.min(2 ** this.nAttempts * 1000, 60000) + Math.random() * 1000;
+            this.nTimer = setTimeout(() => {
+                if (this.nws) return;
+                if (document.hidden) { this.nReconnectOnShow = true; return; }
+                this.connectNotifications();
+            }, delay);
+        };
+
+        ws.onerror = () => { /* onclose vem em seguida */ };
+    },
+
+    closeNotifications() {
+        clearTimeout(this.nTimer);
+        const ws = this.nws;
+        this.nws = null;
+        if (ws) { try { ws.close(1000); } catch { /* noop */ } }
+    },
+
+    /** Permite ao NotificacoesAPI ligar/desligar o polling de fallback. */
+    emitWsStatus(connected) {
+        window.dispatchEvent(new CustomEvent('notifications:ws', { detail: { connected } }));
+    },
+
+    /** count_update + new_notification chegam juntos → 1 só recarga do dropdown. */
+    refreshBell() {
+        clearTimeout(this._bellTimer);
+        this._bellTimer = setTimeout(() => window.NotificacoesAPI?.recarregarDropdown?.(), 300);
+    },
+
+    onNotificationEvent(d) {
+        switch (d.type) {
+            case 'notification_count_update':
+                window.NotificacoesAPI?.atualizarBadge?.(d.count);
+                return this.refreshBell();
+
+            case 'new_notification': {
+                const n = d.notification || {};
+                window.NotificacoesAPI?.marcarVista?.(n);
+                const urgent = n.prioridade === 'critica' || n.prioridade === 'alta';
+                this.playSound(urgent ? 'alert' : 'message');
+                this.toast(n.mensagem ? `${n.titulo}: ${n.mensagem}` : (n.titulo || 'Nova notificação'),
+                    n.prioridade === 'critica' ? 'error' : 'info');
+                this.showBrowserNotification(n);
+                return this.refreshBell();
+            }
+
+            case 'notification_read':
+                window.NotificacoesAPI?.marcarVista?.(d.notification);
+                return this.refreshBell();
+
+            case 'new_message_notification': {
+                // sala aberta com WS ativo: o socket da sala já cuida de tudo
+                if (d.room_id === this.currentRoom && this.ws) return;
+                this.bumpUnread(d.room_id, d.preview || '');
+                this.playSound('message');
+                this.showBrowserNotification({
+                    id: `msg-${d.message_id}`,
+                    titulo: d.sender || 'Nova mensagem',
+                    mensagem: d.preview || '',
+                });
+                return;
+            }
+
+            case 'new_chat_notification':
+                this.addRoomFromEvent(d);
+                return this.playSound('connect');
+
+            case 'chat_room_read':
+                return this.clearUnread(d.room_id);
+
+            default:
+                this.log('debug', 'evento de notificação ignorado', d);
+        }
+    },
+
+    // ───────────── notificação nativa do navegador ─────────────
+    /** Só chamada a partir de um gesto do usuário (política dos navegadores). */
+    askBrowserPermission() {
+        if (!('Notification' in window) || Notification.permission !== 'default') return;
+        Notification.requestPermission().catch(() => {});
+    },
+
+    showBrowserNotification(n) {
+        if (!n || !('Notification' in window)) return;
+        if (Notification.permission !== 'granted' || document.hasFocus()) return;
+        try {
+            const critical = n.prioridade === 'critica';
+            const bn = new Notification(n.titulo || 'Nova notificação', {
+                body: n.mensagem || '',
+                icon: '/static/images/logocetest.png',
+                tag: `notif-${n.id}`,
+                requireInteraction: critical,
+            });
+            bn.onclick = () => {
+                window.focus();
+                const url = this.safeUrl(n.url_destino);
+                if (url) location.href = url;
+                bn.close();
+            };
+            if (!critical) setTimeout(() => bn.close(), 8000);
+        } catch (e) {
+            this.log('warn', 'notificação nativa', e);
+        }
+    },
+
+    // ───────────── som (carregado sob demanda) ─────────────
+    setupSound() {
+        this.soundEnabled = localStorage.getItem('chat-sound-enabled') !== 'false';
+        this.sounds = {};
+        this.audioCtx = null;
+        this._lastSound = 0;
+        this.updateSoundButton();
+
+        $('chat-sound-toggle')?.addEventListener('click', () => {
+            this.soundEnabled = !this.soundEnabled;
+            localStorage.setItem('chat-sound-enabled', String(this.soundEnabled));
+            this.updateSoundButton();
+            if (this.soundEnabled) this.playSound('connect', true);
+            this.toast(`Som ${this.soundEnabled ? 'ativado' : 'desativado'}`, 'info');
+        });
+
+        // primeiro gesto do usuário: libera permissão de notificação nativa
+        document.addEventListener('click', () => this.askBrowserPermission(), { once: true });
+    },
+
+    updateSoundButton() {
+        const b = $('chat-sound-toggle');
+        if (!b) return;
+        const i = b.querySelector('i');
+        if (i) i.className = this.soundEnabled ? 'bi bi-volume-up-fill' : 'bi bi-volume-mute-fill';
+        b.title = this.soundEnabled ? 'Desativar som' : 'Ativar som';
+        b.classList.toggle('active', this.soundEnabled);
+    },
+
+    playSound(type = 'message', force = false) {
+        if (!this.soundEnabled) return;
+        const now = Date.now();
+        if (!force && now - this._lastSound < 700) return; // evita rajadas
+        this._lastSound = now;
+
+        let a = this.sounds[type];
+        if (!a) {
+            a = this.sounds[type] = new Audio(SOUND_URLS[type] || SOUND_URLS.message);
+            a.volume = 0.3;
+        }
+        a.currentTime = 0;
+        a.play().catch(() => this.beep(type)); // arquivo falhou ou autoplay bloqueado
+    },
+
+    beep(type) {
+        try {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            this.audioCtx ||= new Ctx();
+            const ctx = this.audioCtx;
+            if (ctx.state === 'suspended') ctx.resume();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.frequency.value = BEEP_HZ[type] || 600;
+            gain.gain.setValueAtTime(0.001, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.1, ctx.currentTime + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            osc.connect(gain).connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.3);
+        } catch { /* sem áudio, sem problema */ }
+    },
+
+    // ───────────── janela: drag + minimizar ─────────────
+    setupWindow() {
+        const box = $('chat-draggable-container');
+        const head = $('chat-dialog-header');
+        if (box && head) {
+            box.style.position = 'fixed';
+            if (!box.style.left && !box.style.top) {
+                box.style.right = '20px';
+                box.style.bottom = '80px';
+            }
+            head.style.cursor = 'grab';
+
+            let drag = null;
+            head.addEventListener('pointerdown', (e) => {
+                if (e.button !== 0 || e.target.closest('button, .btn, .header-buttons')) return;
+                const r = box.getBoundingClientRect();
+                drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+                head.setPointerCapture(e.pointerId);
+                head.style.cursor = 'grabbing';
+            });
+            head.addEventListener('pointermove', (e) => {
+                if (!drag) return;
+                const x = Math.max(0, Math.min(window.innerWidth - box.offsetWidth, e.clientX - drag.dx));
+                const y = Math.max(0, Math.min(window.innerHeight - box.offsetHeight, e.clientY - drag.dy));
+                Object.assign(box.style, { left: `${x}px`, top: `${y}px`, right: 'auto', bottom: 'auto' });
+            });
+            const end = () => { drag = null; head.style.cursor = 'grab'; };
+            head.addEventListener('pointerup', end);
+            head.addEventListener('pointercancel', end);
+        }
+
+        const toggle = (e) => { e.stopPropagation(); this.toggleMinimize(); };
+        $('minimize-chat-btn')?.addEventListener('click', toggle);
+        $('maximize-chat-btn')?.addEventListener('click', toggle);
+        $('chat-info-btn')?.addEventListener('click', () => this.showChatInfo());
+    },
+
+    clampWindow() {
+        const box = $('chat-draggable-container');
+        if (!box || box.style.left === '' || box.style.display === 'none') return;
+        const x = Math.max(0, Math.min(window.innerWidth - box.offsetWidth, box.offsetLeft));
+        const y = Math.max(0, Math.min(window.innerHeight - box.offsetHeight, box.offsetTop));
+        box.style.left = `${x}px`;
+        box.style.top = `${y}px`;
+    },
+
+    toggleMinimize() {
+        const box = $('chat-draggable-container');
+        const content = $('chat-dialog-content');
+        if (!box || !content) return;
+
+        this.minimized = !this.minimized;
+        content.style.display = this.minimized ? 'none' : 'flex';
+        box.style.height = this.minimized ? '60px' : '500px';
+        box.classList.toggle('minimized', this.minimized);
+
+        const min = $('minimize-chat-btn'), max = $('maximize-chat-btn');
+        if (min) min.style.display = this.minimized ? 'none' : 'inline-block';
+        if (max) max.style.display = this.minimized ? 'inline-block' : 'none';
+
+        if (!this.minimized) this.markRead();
+    },
+
+    // ───────────── busca dentro da conversa (mensagens carregadas) ─────────────
+    setupSearch() {
+        const box = $('chat-search-container');
+        const input = $('chat-search-input');
+
+        $('toggle-chat-search-btn')?.addEventListener('click', () => {
+            if (!box) return;
+            const show = box.style.display === 'none' || !box.style.display;
+            show ? (box.style.display = 'block', input?.focus(), input?.select()) : this.closeSearch();
+        });
+        $('close-chat-search-btn')?.addEventListener('click', () => this.closeSearch());
+
+        let t;
+        input?.addEventListener('input', (e) => {
+            clearTimeout(t);
+            t = setTimeout(() => this.searchChat(e.target.value), 200);
+        });
+        input?.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.closeSearch(); });
+    },
+
+    closeSearch() {
+        const box = $('chat-search-container');
+        if (box) box.style.display = 'none';
+        const out = $('chat-search-results');
+        if (out) out.innerHTML = '';
+        this.clearHighlights();
+    },
+
+    clearHighlights() {
+        document.querySelectorAll('.search-highlighted').forEach((el) => el.classList.remove('search-highlighted'));
+    },
+
+    searchChat(query) {
+        const out = $('chat-search-results');
+        const log = $('chat-log');
+        if (!out || !log) return;
+        this.clearHighlights();
+
+        const q = (query || '').trim();
+        if (q.length < 2) { out.innerHTML = ''; return; }
+
+        const needle = q.toLowerCase();
+        const hits = [];
+        log.querySelectorAll('.message[data-message-id]').forEach((el) => {
+            const text = (el.querySelector('.message-text') || el.querySelector('.file-name'))?.textContent || '';
+            if (!text.toLowerCase().includes(needle)) return;
+            el.classList.add('search-highlighted');
+            hits.push({
+                id: el.dataset.messageId,
+                sender: el.querySelector('.message-sender')?.textContent || '',
+                time: el.querySelector('.message-time')?.textContent || '',
+                text,
+            });
+        });
+
+        if (!hits.length) {
+            out.innerHTML = `<div class="text-center p-3 text-muted"><i class="bi bi-search"></i>
+                <p class="mb-0">Nenhum resultado para "${this.esc(q)}"</p></div>`;
+            return;
+        }
+
+        const re = new RegExp(`(${this.esc(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        out.innerHTML = `<div class="search-results-header p-2 border-bottom">
+            <small class="text-muted">${hits.length} resultado(s)</small></div>` +
+            hits.map((h) => `
+            <div class="search-result-item p-2 border-bottom" style="cursor:pointer"
+                 data-action="goto-message" data-message-id="${this.esc(h.id)}">
+                <strong>${this.esc(h.sender)}</strong>
+                <small class="text-muted ms-2">${this.esc(h.time)}</small>
+                <div class="search-result-text">${this.esc(h.text).replace(re, '<mark>$1</mark>')}</div>
+            </div>`).join('');
+    },
+
+    gotoMessage(id) {
+        const el = this.findMessage(id);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.style.transition = 'background-color .4s';
+        el.style.backgroundColor = 'rgba(var(--bs-primary-rgb), .15)';
+        setTimeout(() => { el.style.backgroundColor = ''; }, 2000);
+    },
+
+    // ───────────── informações da conversa ─────────────
+    showChatInfo() {
+        const modal = $('chatInfoModal');
+        const body = $('chat-info-content');
+        if (!modal || !body) return;
+
+        const msgs = $('chat-log')?.querySelectorAll('.message[data-message-id]').length || 0;
+        const files = $('chat-log')?.querySelectorAll('.message-file:not(.uploading *)').length || 0;
+        const online = this.ws?.readyState === WebSocket.OPEN;
+
+        body.innerHTML = `<div class="chat-info-details">
+            <h6>Detalhes da Conversa</h6>
+            <p><strong>Nome:</strong> ${this.esc(this.currentRoomName || 'N/A')}</p>
+            <p><strong>ID da sala:</strong> ${this.esc(this.currentRoom || 'N/A')}</p>
+            <p><strong>Status:</strong> ${online ? '🟢 Conectado' : '🔴 Desconectado'}</p>
+            <p><strong>Som:</strong> ${this.soundEnabled ? 'Ativado' : 'Desativado'}</p>
+            <hr>
+            <p><strong>Mensagens carregadas:</strong> ${msgs}</p>
+            <p><strong>Arquivos:</strong> ${files}</p>
+        </div>`;
+        bootstrap.Modal.getOrCreateInstance(modal).show();
+    },
+});
+
+// ───────────── instância global ─────────────
+// O template deve instanciar uma única vez, depois de carregar este arquivo:
+//   new ChatManager({ bootstrap_url: "...", active_room_list: "...", ... }, {{ request.user.id }});
+// O construtor é singleton: chamadas repetidas devolvem window.chatManager.
 

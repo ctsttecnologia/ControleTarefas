@@ -98,9 +98,7 @@ class Notificacao(models.Model):
         verbose_name = 'Notificação'
         verbose_name_plural = 'Notificações'
         indexes = [
-            models.Index(fields=['usuario', 'lida']),
-            models.Index(fields=['usuario', 'categoria', 'lida']),
-            models.Index(fields=['-data_criacao']),
+            models.Index(fields=['usuario', 'categoria', 'lida', '-data_criacao'], name='notif_user_lida_dt_idx'),
         ]
     def __str__(self):
         status = '✔' if self.lida else '◉'

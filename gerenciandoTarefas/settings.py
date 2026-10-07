@@ -575,7 +575,7 @@ LOGGING = {
         },
         'django.request': {
             'handlers': ['console'],
-            'level': 'WARNING',
+            'level': 'INFO',
             'propagate': False,
         },
         'django.server': {
@@ -598,6 +598,12 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        'chat': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+
     },
 }
 
@@ -650,3 +656,5 @@ CACHES = {
         'LOCATION': 'unique-snowflake',
     }
 }
+
+

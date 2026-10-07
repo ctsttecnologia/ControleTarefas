@@ -2,25 +2,20 @@
 """
 WebSocket Consumers do app de Chat.
 
-Consumers:
-- NotificationConsumer: notificações em tempo real do usuário (badge, novos chats)
-- ChatConsumer: mensagens de chat em uma sala específica
+- NotificationConsumer: eventos do usuário (badge, novas mensagens/salas)
+- ChatConsumer: mensagens de uma sala específica
 """
 import json
 import logging
 import time
+from collections import deque
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
-from django.contrib.auth import get_user_model
-from django.core.cache import cache
 from django.utils import timezone
 
 from .utils import sanitize_message, validate_message_content
-from .validators import validate_uploaded_file
 
-
-User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
@@ -29,112 +24,63 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════
 
 class NotificationConsumer(AsyncWebsocketConsumer):
-    """
-    Consumer de notificações por usuário.
-
-    Cada usuário autenticado entra em um grupo `notifications_<user_id>`,
-    e recebe eventos de:
-        - new_message_notification     → nova mensagem em qualquer chat
-        - new_chat_notification        → nova sala/conversa criada
-        - notification_count_update    → atualização do badge de contagem
-    """
+    """Grupo `notifications_<user_id>`: badge, toasts, novas mensagens/salas."""
 
     async def connect(self):
         self.user = self.scope['user']
-
         if not self.user.is_authenticated:
             await self.close(code=4401)
             return
 
-        self.user_group_name = f"notifications_{self.user.id}"
+        self.user_group_name = f'notifications_{self.user.id}'
         await self.channel_layer.group_add(self.user_group_name, self.channel_name)
         await self.accept()
 
-        logger.info(
-            "NotificationConsumer conectado: user=%s group=%s",
-            self.user.username, self.user_group_name,
-        )
-
-        # Envia contagem inicial de notificações não lidas ao conectar
-        try:
-            count = await self.get_unread_count()
-            await self.send(text_data=json.dumps({
-                'type': 'notification_count_update',
-                'count': count,
-            }))
-        except Exception as e:
-            logger.exception("Erro ao enviar contagem inicial: %s", e)
+        count = await self.get_unread_count()
+        await self._send({'type': 'notification_count_update', 'count': count})
 
     async def disconnect(self, close_code):
         if hasattr(self, 'user_group_name'):
             await self.channel_layer.group_discard(
                 self.user_group_name, self.channel_name,
             )
-            logger.info(
-                "NotificationConsumer desconectado: user=%s code=%s",
-                getattr(self.user, 'username', '?'), close_code,
-            )
 
-    # ───── Handlers de eventos do channel layer ─────
+    async def _send(self, payload):
+        await self.send(text_data=json.dumps(payload))
 
+    # ── eventos do channel layer ──
     async def new_message_notification(self, event):
-        """Recebe evento de nova mensagem e repassa ao cliente."""
-        await self.send(text_data=json.dumps(event))
+        await self._send(event)
 
     async def new_chat_notification(self, event):
-        """Recebe evento de nova conversa criada."""
-        await self.send(text_data=json.dumps(event))
+        await self._send(event)
 
     async def notification_count_update(self, event):
-        """Recebe atualização do contador de notificações (push)."""
-        await self.send(text_data=json.dumps({
+        await self._send({
             'type': 'notification_count_update',
             'count': event.get('count', 0),
-        }))
+        })
 
-    async def new_message_notification(self, event):
-        """[LEGADO] Mantido para compatibilidade."""
-        await self.send(text_data=json.dumps(event))
-
-    async def new_chat_notification(self, event):
-        """Nova sala/conversa criada."""
-        await self.send(text_data=json.dumps(event))
-
-    async def notification_count_update(self, event):
-        """Atualização do badge (push de contagem)."""
-        await self.send(text_data=json.dumps({
-            'type': 'notification_count_update',
-            'count': event.get('count', 0),
-        }))
-
-    # Novos handlers
     async def new_notification(self, event):
-        """Nova notificação criada (envia toast + dados completos)."""
-        await self.send(text_data=json.dumps({
+        await self._send({
             'type': 'new_notification',
             'notification': event.get('notification', {}),
-        }))
+        })
 
     async def notification_read(self, event):
-        """Notificação marcada como lida (sincroniza outras abas)."""
-        await self.send(text_data=json.dumps({
+        await self._send({
             'type': 'notification_read',
             'notification_id': event.get('notification_id'),
-        }))
+        })
 
-    # ───── DB helpers ─────
+    async def chat_room_read(self, event):
+        """Sala lida em outra aba/dispositivo → zera só o badge daquela sala."""
+        await self._send({'type': 'chat_room_read', 'room_id': event['room_id']})
 
     @database_sync_to_async
     def get_unread_count(self):
-        """Conta notificações não lidas do usuário."""
-        try:
-            from notifications.models import Notificacao
-            return Notificacao.objects.filter(
-                usuario=self.user, lida=False,
-            ).count()
-        except Exception as e:
-            logger.exception("Erro ao contar não lidas: %s", e)
-            return 0
+        from notifications.models import Notificacao
+        return Notificacao.objects.filter(usuario=self.user, lida=False).count()
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -142,31 +88,30 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 # ═══════════════════════════════════════════════════════════════
 
 class ChatConsumer(AsyncWebsocketConsumer):
-    """
-    Consumer de uma sala de chat específica.
+    # mark_as_read e typing ficam fora do limite
+    RATE_LIMITED_TYPES = frozenset({'chat_message', 'file_message'})
+    RATE_LIMIT_MAX = 20       # eventos
+    RATE_LIMIT_WINDOW = 10    # por N segundos
+    FILE_KEYS = ('name', 'url', 'type', 'size')  # únicos campos repassados ao grupo
 
-    Mensagens recebidas:
-        - chat_message    → texto
-        - file_message    → arquivo/imagem
-        - typing          → indicador de digitação
-        - mark_as_read    → marcar mensagem como lida
-    """
-
-    RATE_LIMIT_MAX_MESSAGES = 60        # 60 msgs/min
-    RATE_LIMIT_WINDOW_SECONDS = 60
+    async def chat_message(self, event):
+        logger.info('chat_message → user=%s msg=%s', self.user.id, event.get('message_id'))
+    
+    # ───── ciclo de vida ─────
 
     async def connect(self):
         self.room_id = self.scope['url_route']['kwargs']['room_id']
         self.room_group_name = f'chat_{self.room_id}'
         self.user = self.scope['user']
+        self._rate_hits = deque()
 
         if not self.user.is_authenticated:
             await self.close(code=4401)
             return
 
-        if not await self.is_user_in_room(self.user, self.room_id):
+        if not await self.is_user_in_room():
             logger.warning(
-                "Acesso negado à sala %s para user=%s",
+                'Acesso negado à sala %s para user=%s',
                 self.room_id, self.user.username,
             )
             await self.close(code=4403)
@@ -174,11 +119,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
-
-        logger.info(
-            "ChatConsumer conectado: user=%s room=%s",
-            self.user.username, self.room_id,
-        )
+        logger.info('ChatConsumer conectado: user=%s room=%s', self.user.username, self.room_id)
 
     async def disconnect(self, close_code):
         if hasattr(self, 'room_group_name'):
@@ -186,155 +127,99 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.room_group_name, self.channel_name,
             )
             logger.info(
-                "ChatConsumer desconectado: user=%s room=%s code=%s",
-                getattr(self.user, 'username', '?'),
-                getattr(self, 'room_id', '?'),
-                close_code,
+                'ChatConsumer desconectado: user=%s room=%s code=%s',
+                getattr(self.user, 'username', '?'), self.room_id, close_code,
             )
 
-    # ───── Recebe mensagens do cliente ─────
+    # ───── entrada do cliente ─────
 
     async def receive(self, text_data):
-        """Despacha mensagens recebidas pelo tipo."""
         try:
             data = json.loads(text_data)
-        except json.JSONDecodeError as e:
-            logger.warning("JSON inválido recebido: %s", e)
+        except json.JSONDecodeError:
             await self._send_error('Dados inválidos (JSON malformado)')
+            return
+        if not isinstance(data, dict):
+            await self._send_error('Formato inválido')
             return
 
         message_type = data.get('type', 'chat_message')
 
-        # Rate limiting
-        if not await self.check_rate_limit():
-            await self._send_error('Muitas mensagens. Aguarde alguns segundos.')
+        if message_type in self.RATE_LIMITED_TYPES and not self.check_rate_limit():
+            await self._send_error('Muitas mensagens. Aguarde um instante.')
+            return
+
+        handlers = {
+            'chat_message': self.handle_chat_message,
+            'file_message': self.handle_file_message,
+            'typing': self.handle_typing,
+            'mark_as_read': self.handle_mark_as_read,
+        }
+        handler = handlers.get(message_type)
+        if handler is None:
+            await self._send_error(f'Tipo desconhecido: {message_type}')
             return
 
         try:
-            handlers = {
-                'chat_message': self.handle_chat_message,
-                'file_message': self.handle_file_message,
-                'typing': self.handle_typing,
-                'mark_as_read': self.handle_mark_as_read,
-            }
-            handler = handlers.get(message_type)
-
-            if handler is None:
-                logger.warning("Tipo de mensagem desconhecido: %s", message_type)
-                await self._send_error(f'Tipo desconhecido: {message_type}')
-                return
-
             await handler(data)
-
-        except Exception as e:
-            logger.exception("❌ Erro processando mensagem (%s): %s", message_type, e)
+        except Exception:
+            logger.exception('Erro processando mensagem (%s)', message_type)
             await self._send_error('Erro interno ao processar mensagem')
 
-    # ───── Handlers por tipo ─────
+    # ───── handlers por tipo ─────
 
     async def handle_chat_message(self, data):
-        """Processa e salva mensagem de texto."""
-        message_text = data.get('message', '').strip()
-
-        # 1 Valida vazio
-        if not message_text:
-            logger.debug("Mensagem vazia ignorada")
+        text = str(data.get('message', '')).strip()
+        if not text:
             return
 
-        # 2️ Valida conteúdo
-        is_valid, error = validate_message_content(message_text)
+        is_valid, error = validate_message_content(text)
         if not is_valid:
             await self._send_error(error)
             return
 
-        # 3️ Sanitiza
-        sanitized = sanitize_message(message_text)
+        sanitized = sanitize_message(text)
 
-        # 4️ Salva (UMA VEZ SÓ!)
-        message_obj = await self.save_message_to_db(sanitized)
-        if not message_obj:
+        msg = await self.save_message_to_db(sanitized)
+        if not msg:
             await self._send_error('Falha ao salvar mensagem')
             return
 
-        # 5️ Broadcast
-        message_data = {
-            'type': 'chat_message',
-            'message_id': str(message_obj.id),
-            'message': sanitized,
-            'message_type': 'text',
-            'username': self.user.get_full_name() or self.user.username,
-            'user_id': self.user.id,
-            'timestamp': message_obj.timestamp.isoformat(),
-            'room_id': str(self.room_id),
-        }
-
-        await self.channel_layer.group_send(self.room_group_name, message_data)
-        logger.info(
-            "Mensagem enviada: room=%s user=%s id=%s",
-            self.room_id, self.user.username, message_obj.id,
-        )
+        await self._broadcast(msg, message=sanitized, message_type='text')
+        await self._notify_recipients(msg, sanitized)
 
     async def handle_file_message(self, data):
-        """Processa mensagem com arquivo/imagem."""
-        file_data = data.get('file_data') or {}
-
-        if not file_data:
-            logger.warning("file_data vazio")
+        raw = data.get('file_data')
+        if not isinstance(raw, dict) or not raw.get('url'):
             await self._send_error('Dados do arquivo ausentes')
             return
 
-        file_name = file_data.get('name', 'arquivo')
-        logger.info(
-            "Processando arquivo: name=%s user=%s room=%s",
-            file_name, self.user.username, self.room_id,
-        )
+        file_data = {k: raw.get(k) for k in self.FILE_KEYS if k in raw}
 
-        message_obj = await self.save_file_message_to_db(file_data)
-        if not message_obj:
+        msg = await self.save_file_message_to_db(file_data)
+        if not msg:
             await self._send_error('Falha ao salvar arquivo')
             return
 
-        message_data = {
-            'type': 'chat_message',
-            'message_id': str(message_obj.id),
-            'message': '',
-            'message_type': 'file',
-            'file_data': file_data,
-            'username': self.user.get_full_name() or self.user.username,
-            'user_id': self.user.id,
-            'timestamp': message_obj.timestamp.isoformat(),
-            'room_id': str(self.room_id),
-        }
-
-        await self.channel_layer.group_send(self.room_group_name, message_data)
-        logger.info("Arquivo enviado: id=%s", message_obj.id)
+        await self._broadcast(msg, message='', message_type='file', file_data=file_data)
+        await self._notify_recipients(msg, f"📎 {file_data.get('name') or 'Arquivo'}")
 
     async def handle_typing(self, data):
-        """Indicador de digitação."""
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'typing_indicator',
-                'username': self.user.username,
-                'user_id': self.user.id,
-                'is_typing': bool(data.get('is_typing', False)),
-            },
-        )
+        await self.channel_layer.group_send(self.room_group_name, {
+            'type': 'typing_indicator',
+            'username': self.user.username,
+            'user_id': self.user.id,
+            'is_typing': bool(data.get('is_typing', False)),
+        })
 
     async def handle_mark_as_read(self, data):
-        """
-        Marca mensagem(ns) como lida(s).
-        
-        Aceita 2 modos:
-        - message_id: marca uma mensagem específica
-        - all: True → marca TODAS as mensagens da sala como lidas (bulk)
-        """
+        """`all: true` marca a sala toda; `message_id` marca uma mensagem."""
         if data.get('all'):
             count = await self.mark_all_room_messages_as_read()
-            # Atualiza badge no NotificationConsumer do próprio user
+            # avisa as outras abas/dispositivos do usuário
             await self.channel_layer.group_send(
-                f"notifications_{self.user.id}",
-                {'type': 'notification_count_update', 'count': 0}
+                f'notifications_{self.user.id}',
+                {'type': 'chat_room_read', 'room_id': str(self.room_id)},
             )
             await self.send(text_data=json.dumps({
                 'type': 'read_receipt',
@@ -347,189 +232,165 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if message_id:
             await self.mark_message_as_read(message_id)
 
-    # ───── Handlers de eventos do channel layer ─────
+    # ───── eventos do channel layer ─────
+    # O 'type' do evento é o nome do handler; o 'type' enviado ao cliente
+    # precisa sobrescrever por último, senão o front recebe o nome do handler.
 
     async def chat_message(self, event):
-        """Envia mensagem do grupo para o WebSocket do cliente."""
-        event_copy = dict(event)
-        event_copy['is_own'] = (event.get('user_id') == self.user.id)
-
-        await self.send(text_data=json.dumps({
-            'type': 'new_message',
-            **event_copy,
-        }))
+        payload = {k: v for k, v in event.items()}
+        payload['type'] = 'new_message'
+        payload['is_own'] = event.get('user_id') == self.user.id
+        await self.send(text_data=json.dumps(payload))
 
     async def typing_indicator(self, event):
-        """Envia indicador de digitação (exceto pro próprio usuário)."""
         if event.get('user_id') == self.user.id:
             return
+        payload = dict(event)
+        payload['type'] = 'typing'
+        await self.send(text_data=json.dumps(payload))
 
+    # ───── helpers ─────
+
+    def check_rate_limit(self):
+        """Janela deslizante em memória (por conexão). Síncrono: sem ORM, sem I/O."""
+        now = time.monotonic()
+        hits = self._rate_hits
+        while hits and now - hits[0] > self.RATE_LIMIT_WINDOW:
+            hits.popleft()
+        if len(hits) >= self.RATE_LIMIT_MAX:
+            return False
+        hits.append(now)
+        return True
+
+    async def _send_error(self, message):
+        # 'message' e 'error' para compatibilizar com qualquer leitura no front
         await self.send(text_data=json.dumps({
-            'type': 'typing',
-            **event,
+            'type': 'error', 'message': message, 'error': message,
         }))
 
-    # ───── Helpers ─────
+    async def _broadcast(self, msg, **extra):
+        await self.channel_layer.group_send(self.room_group_name, {
+            'type': 'chat_message',
+            'message_id': str(msg.id),
+            'username': self.user.get_full_name() or self.user.username,
+            'user_id': self.user.id,
+            'timestamp': msg.timestamp.isoformat(),
+            'room_id': str(self.room_id),
+            **extra,
+        })
 
-    async def _send_error(self, message: str):
-        """Envia mensagem de erro padronizada ao cliente."""
-        await self.send(text_data=json.dumps({
-            'type': 'error',
-            'message': message,
-        }))
-
-    # ───── Database operations ─────
-
-    @database_sync_to_async
-    def is_user_in_room(self, user, room_id):
-        """Verifica se o usuário pertence à sala."""
-        from .models import ChatRoom
-        return ChatRoom.objects.filter(id=room_id, participants=user).exists()
-
-    @database_sync_to_async
-    def save_message_to_db(self, message_text):
-        """Salva mensagem de texto no banco."""
+    async def _notify_recipients(self, msg, preview):
+        """Avisa os outros participantes (badge/som), mesmo sem a sala aberta."""
         try:
-            from .models import ChatRoom, Message
-
-            room = ChatRoom.objects.get(id=self.room_id)
-            message_obj = Message.objects.create(
-                room=room,
-                user=self.user,
-                content=message_text,
-            )
-
-            room.updated_at = timezone.now()
-            room.save(update_fields=['updated_at'])
-
-            logger.debug("Mensagem salva: id=%s", message_obj.id)
-            return message_obj
-
-        except Exception as e:
-            logger.exception("Erro ao salvar mensagem: %s", e)
-            return None
-
-    @database_sync_to_async
-    def save_file_message_to_db(self, file_data):
-        """Salva mensagem com arquivo no banco."""
-        try:
-            from .models import ChatRoom, Message
-
-            room = ChatRoom.objects.get(id=self.room_id)
-
-            file_url = file_data.get('url', '')
-            file_name = file_data.get('name', 'arquivo')
-            file_size = file_data.get('size', 0)
-            file_type = file_data.get('type', 'application/octet-stream')
-
-            is_image = file_type.startswith('image/')
-
-            message_obj = Message.objects.create(
-                room=room,
-                user=self.user,
-                content='',
-                original_filename=file_name,
-                file_size=file_size,
-                file_type=file_type,
-            )
-
-            # Remove prefixos de mídia da URL para salvar caminho relativo
-            relative_path = self._strip_media_prefix(file_url)
-
-            if is_image:
-                message_obj.image = relative_path
-            else:
-                message_obj.file_attachment = relative_path
-
-            message_obj.save()
-
-            room.updated_at = timezone.now()
-            room.save(update_fields=['updated_at'])
-
-            logger.debug(
-                "Arquivo salvo: id=%s image=%s file=%s",
-                message_obj.id, message_obj.image, message_obj.file_attachment,
-            )
-            return message_obj
-
-        except Exception as e:
-            logger.exception("Erro ao salvar arquivo: %s", e)
-            return None
+            ids = await self.get_recipient_ids()
+            payload = {
+                'type': 'new_message_notification',
+                'room_id': str(self.room_id),
+                'message_id': str(msg.id),
+                'sender': self.user.get_full_name() or self.user.username,
+                'sender_id': self.user.id,
+                'preview': (preview or '')[:100],
+                'timestamp': msg.timestamp.isoformat(),
+            }
+            for uid in ids:
+                await self.channel_layer.group_send(f'notifications_{uid}', payload)
+        except Exception:
+            # a mensagem já foi salva e entregue; falha aqui não pode derrubar o fluxo
+            logger.exception('Falha ao notificar destinatários')
 
     @staticmethod
-    def _strip_media_prefix(url: str) -> str:
-        """Remove prefixos /midia/ ou /media/ para obter caminho relativo."""
-        if not url:
-            return ''
+    def _strip_media_prefix(url):
         for prefix in ('/midia/', '/media/'):
             if url.startswith(prefix):
                 return url[len(prefix):]
         return url
 
+    # ───── banco de dados ─────
+
+    @database_sync_to_async
+    def is_user_in_room(self):
+        from .models import ChatRoom
+        return ChatRoom.objects.filter(id=self.room_id, participants=self.user).exists()
+
+    @database_sync_to_async
+    def get_recipient_ids(self):
+        from .models import ChatRoom
+        room = ChatRoom.objects.filter(id=self.room_id).first()
+        if not room:
+            return []
+        return list(room.participants.exclude(id=self.user.id).values_list('id', flat=True))
+
+    @database_sync_to_async
+    def save_message_to_db(self, text):
+        from .models import ChatRoom, Message
+        try:
+            msg = Message.objects.create(room_id=self.room_id, user=self.user, content=text)
+            ChatRoom.objects.filter(id=self.room_id).update(updated_at=timezone.now())
+            return msg
+        except Exception:
+            logger.exception('Erro ao salvar mensagem')
+            return None
+
+    @database_sync_to_async
+    def save_file_message_to_db(self, file_data):
+        from .models import ChatRoom, Message
+        try:
+            path = self._strip_media_prefix(str(file_data.get('url', '')))
+            if not path or '..' in path or path.startswith(('/', 'http')):
+                logger.warning('Caminho de arquivo inválido: %r', path)
+                return None
+
+            file_type = file_data.get('type') or 'application/octet-stream'
+            extra = {'image': path} if file_type.startswith('image/') else {'file_attachment': path}
+
+            msg = Message.objects.create(
+                room_id=self.room_id,
+                user=self.user,
+                content='',
+                original_filename=file_data.get('name') or 'arquivo',
+                file_size=file_data.get('size') or 0,
+                file_type=file_type,
+                **extra,
+            )
+            ChatRoom.objects.filter(id=self.room_id).update(updated_at=timezone.now())
+            return msg
+        except Exception:
+            logger.exception('Erro ao salvar arquivo')
+            return None
+
     @database_sync_to_async
     def mark_message_as_read(self, message_id):
-        """Registra leitura de mensagem."""
+        from .models import Message, MessageRead
         try:
-            from .models import Message, MessageRead
-            message = Message.objects.get(id=message_id)
-            MessageRead.objects.get_or_create(
-                message=message,
-                user=self.user,
+            msg = (
+                Message.objects.filter(id=message_id, room_id=self.room_id)
+                .exclude(user=self.user)
+                .first()
             )
-        except Exception as e:
-            logger.exception("Erro ao marcar como lida: %s", e)
+            if msg:
+                MessageRead.objects.get_or_create(message=msg, user=self.user)
+        except Exception:
+            logger.exception('Erro em mark_message_as_read')
 
     @database_sync_to_async
     def mark_all_room_messages_as_read(self):
-        """Marca TODAS as mensagens da sala como lidas pelo usuário (bulk)."""
+        from .models import Message, MessageRead
         try:
-            from .models import ChatRoom, Message, MessageRead
-            
-            # Pega só mensagens NÃO lidas e que NÃO são do próprio user
-            nao_lidas = Message.objects.filter(
-                room_id=self.room_id,
-            ).exclude(
-                message_reads__user=self.user,
-            ).exclude(
-                user=self.user,
+            pending = (
+                Message.objects.filter(room_id=self.room_id)
+                .exclude(user=self.user)
+                .exclude(message_reads__user=self.user)
+                .values_list('pk', flat=True)
             )
-            
-            # Bulk create com ignore_conflicts (idempotente)
-            reads = [MessageRead(message=m, user=self.user) for m in nao_lidas]
+            reads = [MessageRead(message_id=pk, user=self.user) for pk in pending]
             if reads:
                 MessageRead.objects.bulk_create(reads, ignore_conflicts=True)
-            
             logger.info(
-                "✅ Bulk read: room=%s user=%s marcadas=%s",
+                'Bulk read: room=%s user=%s marcadas=%s',
                 self.room_id, self.user.username, len(reads),
             )
             return len(reads)
-        except Exception as e:
-            logger.exception("Erro mark_all_room_messages_as_read: %s", e)
+        except Exception:
+            logger.exception('Erro em mark_all_room_messages_as_read')
             return 0
 
-
-    @database_sync_to_async
-    def check_rate_limit(self):
-        """
-        Rate limit: máx N mensagens por janela de tempo, por usuário.
-        
-        Implementação atômica usando cache.add + cache.incr para evitar
-        race conditions em ambientes multi-worker.
-        """
-        cache_key = f"ws_rate_{self.user.id}"
-
-        # Tenta criar contador novo (atômico)
-        added = cache.add(cache_key, 1, timeout=self.RATE_LIMIT_WINDOW_SECONDS)
-        if added:
-            return True
-
-        # Já existia → incrementa atomicamente
-        try:
-            count = cache.incr(cache_key)
-        except ValueError:
-            # Chave expirou entre add e incr — recria
-            cache.set(cache_key, 1, timeout=self.RATE_LIMIT_WINDOW_SECONDS)
-            return True
-
-        return count <= self.RATE_LIMIT_MAX_MESSAGES

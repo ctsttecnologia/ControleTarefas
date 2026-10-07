@@ -1,249 +1,95 @@
 
-/**
- * Chat Loader Ultra-Resiliente v2.0
- * Resolve ERR_HTTP2_PROTOCOL_ERROR e ChatManager não carregada
- */
-if (typeof ChatSystemLoader === 'undefined') {
+/* chat-loader.js v3 — carrega chat.js com retry e inicializa o ChatManager */
+(() => {
+    if (window.ChatSystemLoader) return; // já carregado
+
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
     class ChatSystemLoader {
-        constructor() {
-            this.loadAttempts = 0;
-            this.maxAttempts = 3;
-            this.chatUrls = null;
-            this.currentUserId = null;
+        constructor(maxAttempts = 3) {
+            this.maxAttempts = maxAttempts;
+            this.src = '/static/js/chat.js';
         }
 
         async init(urls, userId) {
-            this.chatUrls = urls;
-            this.currentUserId = userId;
-            
-            console.log('🚀 Iniciando Chat Loader Resiliente...');
-            
-            // Tentar carregamento principal
-            const success = await this.tryLoadChatSystem();
-            
-            if (success) {
-                console.log('✅ Chat carregado com sucesso!');
-                this.setupGlobalFallbacks();
-                return true;
-            }
-            
-            console.error('💥 Falha total no carregamento do chat');
-            this.showCriticalError();
-            return false;
-        }
+            if (window.chatManager) return true; // evita dupla inicialização
 
-        async tryLoadChatSystem() {
-            for (let attempt = 1; attempt <= this.maxAttempts; attempt++) {
-                console.log(`🔄 Tentativa ${attempt}/${this.maxAttempts}`);
-                
-                try {
-                    // Método 1: Import dinâmico (HTTP/2)
-                    if (attempt === 1) {
-                        const success = await this.loadViaImport();
-                        if (success) return true;
-                    }
-                    
-                    // Método 2: Script tag com cache bypass (HTTP/1.1)
-                    if (attempt === 2) {
-                        const success = await this.loadViaScript(true);
-                        if (success) return true;
-                    }
-                    
-                    // Método 3: Fetch + eval (último recurso)
-                    if (attempt === 3) {
-                        const success = await this.loadViaFetch();
-                        if (success) return true;
-                    }
-                    
-                } catch (error) {
-                    console.warn(`❌ Tentativa ${attempt} falhou:`, error);
-                    await this.sleep(1000 * attempt); // Delay progressivo
-                }
-            }
-            
-            return false;
-        }
-
-        async loadViaImport() {
-            try {
-                console.log('📥 Tentando import dinâmico...');
-                
-                // Tenta importar como módulo
-                const chatModule = await import(`/static/js/chat.js?v=${this.getCacheKey()}`);
-                
-                // Aguarda um momento para garantir que a classe foi registrada
-                await this.sleep(100);
-                
-                if (typeof window.ChatManager !== 'undefined') {
-                    this.initializeChatManager();
-                    return true;
-                }
-                
-                throw new Error('ChatManager não encontrado após import');
-                
-            } catch (error) {
-                console.warn('Import dinâmico falhou:', error);
+            if (!urls || typeof urls !== 'object') {
+                console.error('[chat-loader] URLs não fornecidas');
                 return false;
             }
+            this.src = urls.chat_script_url || this.src;
+
+            let ok = !!window.ChatManager; // chat.js já incluído no template
+            for (let i = 1; !ok && i <= this.maxAttempts; i++) {
+                ok = !!window.ChatManager || await this.loadScript(i > 1);
+                if (!ok && i < this.maxAttempts) await sleep(1000 * i);
+            }
+            if (!ok) {
+                this.showError();
+                return false;
+            }
+
+            try {
+                // o construtor é singleton: se já existir, devolve a instância atual
+                window.chatManager = window.chatManager || new window.ChatManager(urls, userId);
+            } catch (e) {
+                console.error('[chat-loader] erro ao iniciar ChatManager', e);
+                this.showError();
+                return false;
+            }
+
+            document.dispatchEvent(new CustomEvent('chatSystemReady', {
+                detail: { chatManager: window.chatManager },
+            }));
+            return true;
         }
 
-        async loadViaScript(bypassCache = false) {
+        /** Injeta <script>. Só adiciona cache-bust nas tentativas de retry. */
+        loadScript(bust = false) {
             return new Promise((resolve) => {
-                console.log('📜 Tentando script tag...');
-                
-                const script = document.createElement('script');
-                script.src = `/static/js/chat.js?v=${bypassCache ? Date.now() : this.getCacheKey()}`;
-                script.type = 'text/javascript';
-                script.async = true;
-                
-                let resolved = false;
-                
-                const checkSuccess = () => {
-                    if (resolved) return;
-                    
-                    if (typeof window.ChatManager !== 'undefined') {
-                        resolved = true;
-                        this.initializeChatManager();
-                        resolve(true);
-                    } else {
-                        resolved = true;
-                        resolve(false);
-                    }
+                const s = document.createElement('script');
+                s.src = bust
+                    ? `${this.src}${this.src.includes('?') ? '&' : '?'}r=${Date.now()}`
+                    : this.src;
+                s.async = true;
+
+                let done = false;
+                const finish = (val) => {
+                    if (done) return;
+                    done = true;
+                    clearTimeout(timer);
+                    if (!val) s.remove();
+                    resolve(val);
                 };
-                
-                script.onload = () => {
-                    setTimeout(checkSuccess, 200); // Aguarda processamento
-                };
-                
-                script.onerror = () => {
-                    resolved = true;
-                    resolve(false);
-                };
-                
-                // Timeout de segurança
-                setTimeout(() => {
-                    if (!resolved) {
-                        resolved = true;
-                        resolve(false);
-                    }
-                }, 8000);
-                
-                document.head.appendChild(script);
+                const timer = setTimeout(() => finish(false), 10000);
+
+                s.onload = () => finish(!!window.ChatManager);
+                s.onerror = () => finish(false);
+                document.head.appendChild(s);
             });
         }
 
-        async loadViaFetch() {
-            try {
-                console.log('🌐 Tentando fetch + eval...');
-                
-                const response = await fetch(`/static/js/chat.js?bypass=${Date.now()}`, {
-                    headers: {
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const code = await response.text();
-                
-                // Executa o código de forma segura
-                eval(code);
-                
-                await this.sleep(100);
-                
-                if (typeof window.ChatManager !== 'undefined') {
-                    this.initializeChatManager();
-                    return true;
-                }
-                
-                throw new Error('ChatManager não inicializada após eval');
-                
-            } catch (error) {
-                console.warn('Fetch falhou:', error);
-                return false;
-            }
-        }
-
-        initializeChatManager() {
-            try {
-                console.log('🎯 Inicializando ChatManager...');
-                window.chatManager = new window.ChatManager(this.chatUrls, this.currentUserId);
-                
-                // Dispatch evento para outros scripts
-                document.dispatchEvent(new CustomEvent('chatSystemReady', {
-                    detail: { chatManager: window.chatManager }
-                }));
-                
-            } catch (error) {
-                console.error('Erro na inicialização:', error);
-                throw error;
-            }
-        }
-
-        setupGlobalFallbacks() {
-            // Garante que as funções globais funcionem mesmo se houver erros
-            if (!window.toggleChatListSidebar) {
-                window.toggleChatListSidebar = () => {
-                    const sidebar = document.getElementById('chatListContainer');
-                    const overlay = document.getElementById('chatOverlay');
-                    
-                    if (sidebar && overlay) {
-                        sidebar.classList.toggle('active');
-                        overlay.classList.toggle('active');
-                    }
-                };
-            }
-            
-            if (!window.openChatDialog) {
-                window.openChatDialog = (roomId, roomName) => {
-                    if (window.chatManager && window.chatManager.openChatDialog) {
-                        window.chatManager.openChatDialog(roomId, roomName);
-                    } else {
-                        console.warn('Chat ainda não está pronto');
-                    }
-                };
-            }
-        }
-
-        showCriticalError() {
-            const errorHtml = `
-                <div id="chat-critical-error" style="position: fixed; top: 20px; right: 20px; z-index: 999999; background: #dc3545; color: white; padding: 15px; border-radius: 8px; font-family: system-ui; max-width: 300px;">
-                    <strong>❌ Erro no Sistema de Chat</strong>
-                    <p style="margin: 8px 0; font-size: 13px;">Não foi possível carregar o chat. Possível problema de rede ou servidor.</p>
-                    <button onclick="location.reload()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-                        🔄 Recarregar Página
-                    </button>
-                    <button onclick="document.getElementById('chat-critical-error').remove()" style="background: none; border: none; color: white; float: right; cursor: pointer; font-size: 16px;">×</button>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', errorHtml);
-        }
-
-        getCacheKey() {
-            // Use versão do seu sistema + timestamp para forçar reload quando necessário
-            return `2.0.0.${Date.now()}`;
-        }
-
-        sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
+        showError() {
+            const render = () => {
+                if (document.getElementById('chat-critical-error')) return;
+                const box = document.createElement('div');
+                box.id = 'chat-critical-error';
+                box.style.cssText = 'position:fixed;top:20px;right:20px;z-index:999999;background:#dc3545;'
+                    + 'color:#fff;padding:15px;border-radius:8px;font-family:system-ui;max-width:300px';
+                box.innerHTML = `<strong>Erro no chat</strong>
+                    <p style="margin:8px 0;font-size:13px">Não foi possível carregar o chat. Verifique a conexão.</p>
+                    <button data-r style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;padding:5px 10px;border-radius:4px;cursor:pointer">Recarregar</button>
+                    <button data-x style="background:none;border:none;color:#fff;float:right;cursor:pointer;font-size:16px">×</button>`;
+                box.querySelector('[data-r]').addEventListener('click', () => location.reload());
+                box.querySelector('[data-x]').addEventListener('click', () => box.remove());
+                document.body.appendChild(box);
+            };
+            if (document.body) render();
+            else document.addEventListener('DOMContentLoaded', render, { once: true });
         }
     }
 
-    // Função global de inicialização
-    window.initializeChatSystem = function(chatUrls, currentUserId) {
-        const loader = new ChatSystemLoader();
-        return loader.init(chatUrls, currentUserId);
-    };
-    console.log('ChatLoader version:', '3.1.0', 'loaded at:', new Date().toISOString());
-        if (window.ChatSystemLoader) {
-            console.warn('ChatSystemLoader já foi definido anteriormente');
-        }
-
-    // Auto-export
     window.ChatSystemLoader = ChatSystemLoader;
-}
-
+    window.initializeChatSystem = (urls, userId) => new ChatSystemLoader().init(urls, userId);
+})();

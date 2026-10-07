@@ -196,7 +196,7 @@ class LogradouroDetailView(LoginRequiredMixin, AppPermissionMixin, SSTPermission
 
 class LogradouroExportExcelView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
     app_label_required = 'logradouro'
-    permission_required = 'logradouro.view_logradouro'
+    permission_required = 'logradouro.add_logradouro'
 
     def get(self, request, *args, **kwargs):
         logradouros = Logradouro.objects.for_request(request).order_by('endereco')
