@@ -1458,7 +1458,7 @@ def notificar_documento_atualizado(documento, criado, instancia_anterior=None):
             usuario=usuario,
             titulo='Documento atualizado',
             mensagem=f'"{documento.nome}" foi {acao}.',
-            link=documento.get_absolute_url(),
+            url_destino=documento.get_absolute_url(),
         )
 
 

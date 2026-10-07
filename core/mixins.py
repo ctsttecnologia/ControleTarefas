@@ -160,7 +160,7 @@ class AppPermissionMixin(PermissionRequiredMixin):
     Mixin que verifica se o usuário tem pelo menos UMA permissão
     do app especificado. Superusers passam direto.
 
-    ✅ Tolerante à presença (ou ausência) de LoginRequiredMixin na cadeia.
+    Tolerante à presença (ou ausência) de LoginRequiredMixin na cadeia.
        Se o usuário não estiver autenticado, o handle_no_permission delega
        para o fluxo padrão do Django (redireciona para LOGIN_URL).
 
@@ -178,7 +178,7 @@ class AppPermissionMixin(PermissionRequiredMixin):
     """
     app_label_required = None
     permission_required = None
-    raise_exception = False  # ✅ False = redireciona pro login; True = 403
+    raise_exception = False  # False = redireciona pro login; True = 403
 
     def get_permission_required(self):
         if self.permission_required:
@@ -258,7 +258,7 @@ class FilialCreateMixin:
             raise PermissionDenied("Nenhuma filial selecionada para criação de objeto.")
 
         form.instance.filial_id = filial_id
-        response = super().form_valid(form)  # ✅ save primeiro
+        response = super().form_valid(form)  # save primeiro
 
         # Só envia mensagem se a view NÃO estiver usando SuccessMessageMixin
         if not hasattr(self, 'success_message') or not self.success_message:
@@ -360,13 +360,13 @@ class AtividadeLogMixin:
     """
 
     def _log_atividade(self, ferramenta=None, tipo=None, descricao="", mala=None):
-        # ✅ Validação: precisa de ferramenta OU mala
+        # Validação: precisa de ferramenta OU mala
         if ferramenta is None and mala is None:
             raise ValueError("_log_atividade requer 'ferramenta' ou 'mala'.")
 
         item = ferramenta if ferramenta is not None else mala
 
-        # ✅ Validação: item precisa ter atributo 'filial' (proteção contra args trocados)
+        # Validação: item precisa ter atributo 'filial' (proteção contra args trocados)
         if not hasattr(item, 'filial'):
             raise TypeError(
                 f"_log_atividade recebeu item inválido: {item!r} "
@@ -381,7 +381,7 @@ class AtividadeLogMixin:
                 f"O {self.__class__.__name__} deve ter acesso ao 'request.user' para logar atividades."
             )
 
-        # ✅ Import lazy — evita circular import
+        # Import lazy — evita circular import
         from ferramentas.models import Atividade
 
         Atividade.objects.create(

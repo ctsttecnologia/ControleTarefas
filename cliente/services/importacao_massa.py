@@ -12,7 +12,6 @@ import re
 from datetime import datetime
 from io import BytesIO
 
-from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import (
@@ -29,7 +28,13 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from cliente.models import Cliente
 from logradouro.constant import ESTADOS_BRASIL, TIPOS_LOGRADOURO
 from logradouro.models import Logradouro
+import logging
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 
+logger = logging.getLogger(__name__)
+
+MAX_LINHAS = 500
 
 # ============================================================================
 # CONSTANTES
@@ -295,7 +300,7 @@ def _criar_aba_dados(ws):
             cell.alignment = Alignment(vertical="center")
             cell.protection = Protection(locked=False)  # ← DESBLOQUEADA
 
-            # ✅ Forçar formato TEXTO para CEP, CNPJ, Telefone, etc.
+            # Forçar formato TEXTO para CEP, CNPJ, Telefone, etc.
             if i in indices_texto:
                 cell.number_format = FORMAT_TEXT
 
@@ -357,7 +362,7 @@ def _criar_aba_dados(ws):
     ws.freeze_panes = "A3"
 
     # =====================================================================
-    # ✅ PROTEÇÃO: Apenas linhas 1 e 2 bloqueadas, dados editáveis
+    # PROTEÇÃO: Apenas linhas 1 e 2 bloqueadas, dados editáveis
     # =====================================================================
     ws.protection.sheet = True
     ws.protection.password = "modelo"
@@ -497,6 +502,14 @@ def _criar_aba_referencia(ws):
         ws.cell(row=i, column=col_offset + 1, value=nome).font = TEXT_FONT
         ws.cell(row=i, column=col_offset + 1).border = THIN_BORDER
 
+def _mensagem_erro_segura(exc, row_idx):
+    """Só expõe erros de validação; o resto vai para o log."""
+    if isinstance(exc, ValidationError):
+        return "; ".join(exc.messages)
+    if isinstance(exc, IntegrityError):
+        return "Registro duplicado ou conflito de dados (ex.: CNPJ já cadastrado)."
+    logger.exception("Erro inesperado na importação de clientes (linha %s)", row_idx)
+    return "Erro inesperado ao salvar esta linha. Contate o suporte."
 
 # ============================================================================
 # PROCESSAMENTO DA PLANILHA ENVIADA
@@ -504,92 +517,84 @@ def _criar_aba_referencia(ws):
 
 
 def processar_planilha(arquivo, filial):
-    """
-    Processa planilha Excel enviada e cria Logradouros + Clientes.
-
-    Args:
-        arquivo: InMemoryUploadedFile (arquivo .xlsx)
-        filial: Instância de Filial do usuário logado
-
-    Returns:
-        dict com total, sucessos, erros, detalhes_sucesso, detalhes_erro
-    """
     resultado = {
-        "total": 0,
-        "sucessos": 0,
-        "erros": 0,
-        "detalhes_sucesso": [],
-        "detalhes_erro": [],
+        "total": 0, "sucessos": 0, "erros": 0,
+        "detalhes_sucesso": [], "detalhes_erro": [],
     }
 
     try:
-        wb = load_workbook(arquivo, data_only=True)
+        wb = load_workbook(arquivo, data_only=True, read_only=True)
     except Exception:
+        logger.exception("Falha ao abrir planilha de clientes")
         resultado["detalhes_erro"].append(
             {"linha": 0, "erros": ["Arquivo inválido. Envie um arquivo .xlsx válido."]}
         )
         return resultado
 
-    # Procura aba "Dados Clientes"
-    if "Dados Clientes" in wb.sheetnames:
-        ws = wb["Dados Clientes"]
-    else:
-        ws = wb.worksheets[0]
+    try:
+        ws = wb["Dados Clientes"] if "Dados Clientes" in wb.sheetnames else wb.worksheets[0]
 
-    start_row = 3  # Linha 1=dica, 2=header, 3+=dados
-    total_colunas = len(TODAS_COLUNAS)
+        start_row = 3
+        total_colunas = len(TODAS_COLUNAS)
+        ultima_linha = start_row + MAX_LINHAS - 1
 
-    for row_idx in range(start_row, ws.max_row + 1):
-        valores = []
-        for col_idx in range(1, total_colunas + 1):
-            cell_value = ws.cell(row=row_idx, column=col_idx).value
-            valores.append(cell_value)
+        linhas = ws.iter_rows(
+            min_row=start_row, max_row=ultima_linha + 1,  # +1 para detectar excesso
+            max_col=total_colunas, values_only=True,
+        )
 
-        # Pular linhas vazias
-        if all(v is None or str(v).strip() == "" for v in valores):
-            continue
+        for row_idx, valores in enumerate(linhas, start=start_row):
+            valores = list(valores) + [None] * (total_colunas - len(valores))
 
-        resultado["total"] += 1
-        erros_linha = []
+            if all(v is None or str(v).strip() == "" for v in valores):
+                continue
 
-        # Mapear valores
-        dados_cliente = {}
-        for i, (_, campo, _, _, _) in enumerate(COLUNAS_CLIENTE):
-            dados_cliente[campo] = valores[i]
+            if row_idx > ultima_linha:
+                resultado["erros"] += 1
+                resultado["detalhes_erro"].append({
+                    "linha": row_idx,
+                    "erros": [f"Limite de {MAX_LINHAS} linhas excedido. "
+                              f"Divida a planilha em arquivos menores."],
+                })
+                break
 
-        dados_endereco = {}
-        offset = len(COLUNAS_CLIENTE)
-        for i, (_, campo, _, _, _) in enumerate(COLUNAS_ENDERECO):
-            dados_endereco[campo] = valores[offset + i]
+            resultado["total"] += 1
 
-        # Validações
-        erros_linha.extend(_validar_cliente(dados_cliente))
-        erros_linha.extend(_validar_endereco(dados_endereco))
+            dados_cliente = {
+                campo: valores[i]
+                for i, (_, campo, _, _, _) in enumerate(COLUNAS_CLIENTE)
+            }
+            offset = len(COLUNAS_CLIENTE)
+            dados_endereco = {
+                campo: valores[offset + i]
+                for i, (_, campo, _, _, _) in enumerate(COLUNAS_ENDERECO)
+            }
 
-        if erros_linha:
-            resultado["erros"] += 1
-            resultado["detalhes_erro"].append(
-                {"linha": row_idx, "erros": erros_linha}
-            )
-            continue
+            erros_linha = _validar_cliente(dados_cliente) + _validar_endereco(dados_endereco)
+            if erros_linha:
+                resultado["erros"] += 1
+                resultado["detalhes_erro"].append({"linha": row_idx, "erros": erros_linha})
+                continue
 
-        # Criar registros
-        try:
-            with transaction.atomic():
-                logradouro = _criar_ou_buscar_logradouro(dados_endereco, filial)
-                cliente = _criar_cliente(dados_cliente, logradouro, filial)
+            try:
+                with transaction.atomic():
+                    logradouro = _criar_ou_buscar_logradouro(dados_endereco, filial)
+                    cliente = _criar_cliente(dados_cliente, logradouro, filial)
                 resultado["sucessos"] += 1
                 resultado["detalhes_sucesso"].append(
                     f"Linha {row_idx}: {cliente.razao_social} "
                     f"(CNPJ: {cliente.cnpj}) — importado com sucesso."
                 )
-        except Exception as e:
-            resultado["erros"] += 1
-            resultado["detalhes_erro"].append(
-                {"linha": row_idx, "erros": [f"Erro ao salvar: {str(e)}"]}
-            )
+            except Exception as e:
+                resultado["erros"] += 1
+                resultado["detalhes_erro"].append(
+                    {"linha": row_idx, "erros": [_mensagem_erro_segura(e, row_idx)]}
+                )
+    finally:
+        wb.close()
 
     return resultado
+
 
 
 # ============================================================================
@@ -663,6 +668,9 @@ def _validar_cliente(dados):
         email_str = str(email).strip()
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email_str):
             erros.append(f"E-mail inválido: '{email_str}'.")
+            
+    if val < 1:
+       erros.append("Unidade deve ser um número inteiro positivo (mín. 1).")
 
     return erros
 
@@ -698,7 +706,7 @@ def _validar_endereco(dados):
         except (ValueError, TypeError):
             erros.append(f"Número deve ser inteiro. Valor: '{numero}'.")
 
-    # ✅ CEP — Tratar zero à esquerda
+    # CEP — Tratar zero à esquerda
     cep = dados.get("cep")
     if not cep or str(cep).strip() == "":
         erros.append("CEP é obrigatório.")
@@ -758,7 +766,7 @@ def _criar_ou_buscar_logradouro(dados, filial):
     endereco = str(dados["endereco"]).strip()
     numero = int(float(str(dados["numero"])))
 
-    # ✅ CEP — Recompor zero à esquerda
+    # CEP — Recompor zero à esquerda
     cep = re.sub(r"\D", "", str(dados["cep"]).strip()).zfill(8)
 
     complemento = (
@@ -785,7 +793,7 @@ def _criar_ou_buscar_logradouro(dados, filial):
 
     # Busca existente
     try:
-        logradouro = Logradouro.objects.model.objects.filter(
+        logradouro = Logradouro._base_manager.filter(
             tipo_logradouro=tipo_logradouro,
             endereco__iexact=endereco,
             numero=numero,
@@ -793,6 +801,8 @@ def _criar_ou_buscar_logradouro(dados, filial):
             cep=cep,
             filial=filial,
         ).first()
+        if logradouro:
+            return logradouro
     except Exception:
         logradouro = None
 

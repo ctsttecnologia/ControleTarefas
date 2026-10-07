@@ -234,17 +234,22 @@ class SecureFileValidator:
                 code='invalid_mime',
             )
 
+    def _get_file_size(self, file):
+        """Retorna o tamanho em bytes, mesmo se file.size for None."""
+        size = file.size  # pode levantar FileNotFoundError/OSError (tratado fora)
+        if size is None:
+            f = getattr(file, 'file', file)
+            pos = f.tell()
+            f.seek(0, os.SEEK_END)
+            size = f.tell()
+            f.seek(pos)
+        return size
+
     def _validate_size(self, file):
-        """
-        Valida tamanho do arquivo. Se o arquivo físico já não existir
-        no storage (registro órfão no banco), ignora a validação
-        silenciosamente em vez de propagar o erro.
-        """
         try:
-            file_size = file.size
-        except (FileNotFoundError, OSError):
-            # Arquivo referenciado no banco mas ausente no disco — ignora
-            return
+            file_size = self._get_file_size(file)
+        except (FileNotFoundError, OSError, ValueError):
+            return  # arquivo órfão/sem arquivo associado
 
         max_bytes = self._get_max_size_mb() * 1024 * 1024
         if file_size > max_bytes:
@@ -304,20 +309,25 @@ class SecureImageValidator(SecureFileValidator):
     """
 
     def __call__(self, file):
+        # Arquivo já persistido (edição sem novo upload): não revalida
+        if getattr(file, '_committed', False):
+            return
+
         self.config = get_upload_config(self.app_name)
         self._validate_filename(file)
         self._validate_extension(file)
         self._validate_mime_type(file)
         self._validate_size(file)
         self._validate_mime_extension_match(file)
-        self._validate_image_integrity(file)
+        if self._is_image(file):
+            self._validate_image_integrity(file)
 
-    def deconstruct(self):
-        return (
-            f'{self.__class__.__module__}.{self.__class__.__qualname__}',
-            [],
-            {'app_name': self.app_name},
-        )
+        def deconstruct(self):
+            return (
+                f'{self.__class__.__module__}.{self.__class__.__qualname__}',
+                [],
+                {'app_name': self.app_name},
+            )
 
     def __eq__(self, other):
         return isinstance(other, SecureImageValidator) and self.app_name == other.app_name

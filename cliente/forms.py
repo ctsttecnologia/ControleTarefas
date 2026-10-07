@@ -2,7 +2,10 @@ from django import forms
 from .models import Cliente
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+import zipfile
 
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+MAX_DESCOMPACTADO_BYTES = 50 * 1024 * 1024
 
 class ClienteForm(forms.ModelForm):
     class Meta:
@@ -76,24 +79,38 @@ class ImportacaoMassaForm(forms.Form):
     arquivo = forms.FileField(
         label=_("Planilha Excel (.xlsx)"),
         help_text=_("Envie o arquivo .xlsx preenchido com base no modelo."),
-        widget=forms.ClearableFileInput(
-            attrs={
-                "accept": ".xlsx",
-                "class": "form-control",
-            }
-        ),
+        widget=forms.ClearableFileInput(attrs={"accept": ".xlsx", "class": "form-control"}),
     )
 
     def clean_arquivo(self):
         arquivo = self.cleaned_data.get("arquivo")
-        if arquivo:
-            if not arquivo.name.endswith(".xlsx"):
-                raise forms.ValidationError(
-                    _("Apenas arquivos .xlsx são aceitos.")
-                )
-            if arquivo.size > 5 * 1024 * 1024:
-                raise forms.ValidationError(
-                    _("Arquivo muito grande. Tamanho máximo: 5MB.")
-                )
+        if not arquivo:
+            return arquivo
+
+        if not arquivo.name.lower().endswith(".xlsx"):
+            raise forms.ValidationError(_("Apenas arquivos .xlsx são aceitos."))
+
+        if arquivo.size > MAX_UPLOAD_BYTES:
+            raise forms.ValidationError(_("Arquivo muito grande. Tamanho máximo: 5MB."))
+
+        # Assinatura ZIP (xlsx é um zip)
+        cabecalho = arquivo.read(4)
+        arquivo.seek(0)
+        if cabecalho != b"PK\x03\x04":
+            raise forms.ValidationError(_("O arquivo não é um .xlsx válido."))
+
+        # Proteção contra zip bomb + estrutura mínima de xlsx
+        try:
+            with zipfile.ZipFile(arquivo) as zf:
+                nomes = zf.namelist()
+                if "xl/workbook.xml" not in nomes:
+                    raise forms.ValidationError(_("O arquivo não é um .xlsx válido."))
+                if sum(i.file_size for i in zf.infolist()) > MAX_DESCOMPACTADO_BYTES:
+                    raise forms.ValidationError(_("Arquivo excede o tamanho permitido."))
+        except zipfile.BadZipFile:
+            raise forms.ValidationError(_("O arquivo está corrompido ou não é um .xlsx."))
+        finally:
+            arquivo.seek(0)
+
         return arquivo
 

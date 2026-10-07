@@ -10,7 +10,7 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.forms import SetPasswordForm
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.views import (
     LoginView, LogoutView, PasswordChangeView,
     PasswordResetView, PasswordResetDoneView,
@@ -214,24 +214,36 @@ class ProfileView(LoginRequiredMixin, DetailView):
         return context
 
     def _build_visible_cards(self, user):
-        allowed_ids = self._get_allowed_card_ids(user)
-        visible = []
+            allowed_ids = self._get_allowed_card_ids(user)
+            visible = []
 
-        for card in ALL_CARDS:
-            if not self._user_can_see_card(user, card, allowed_ids):
-                continue
+            for card in ALL_CARDS:
+                if not self._user_can_see_card(user, card, allowed_ids):
+                    continue
 
-            filtered_links = [
-                link for link in card['links']
-                if user.is_superuser
-                or user.has_perm(link.get('permission', ''))
-                or card['id'] in allowed_ids
-            ]
+                filtered_links = [
+                    link for link in card['links']
+                    if self._user_can_see_link(user, link, card['id'], allowed_ids)
+                ]
 
-            if filtered_links:
-                visible.append({**card, 'links': filtered_links})
+                if filtered_links:
+                    visible.append({**card, 'links': filtered_links})
 
-        return visible
+            return visible
+
+    def _user_can_see_link(self, user, link, card_id, allowed_ids):
+        perm = link.get('permission')
+
+        if user.is_superuser or not perm:
+            return True
+
+        # Links de cadastro (add_*) exigem a permissão de verdade,
+        # mesmo que o card tenha sido liberado para o grupo.
+        if perm.split('.')[-1].startswith('add_'):
+            return user.has_perm(perm)
+
+        # Demais links: permissão OU card liberado para o grupo
+        return user.has_perm(perm) or card_id in allowed_ids
 
     def _user_can_see_card(self, user, card, allowed_ids):
         return (

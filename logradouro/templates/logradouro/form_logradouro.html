@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (cep.length !== 8) return;
 
         // Loading
-        cepStatus.innerHTML = '<span class="spinner-border spinner-border-sm text-primary"></span>';
+        cepStatus.textContent = '<span class="spinner-border spinner-border-sm text-primary"></span>';
         cepInput.classList.remove('is-invalid', 'is-valid');
 
         const url = `{% url 'logradouro:consulta_cep' %}?cep=${cep}`;
@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(data => {
                 if (data.erro) {
-                    cepStatus.innerHTML = '<i class="bi bi-x-circle text-danger"></i>';
+                    cepStatus.textContent = '<i class="bi bi-x-circle text-danger"></i>';
                     cepInput.classList.add('is-invalid');
 
                     // Limpar campos
@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (cidadeInp)   cidadeInp.value = '';
                     if (estadoSel)   estadoSel.value = '';
                 } else {
-                    cepStatus.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+                    cepStatus.textContent = '<i class="bi bi-check-circle-fill text-success"></i>';
                     cepInput.classList.add('is-valid');
 
                     // Preencher campos
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(error => {
-                cepStatus.innerHTML = '<i class="bi bi-exclamation-triangle text-warning"></i>';
+                cepStatus.textContent = '<i class="bi bi-exclamation-triangle text-warning"></i>';
                 console.error('Falha ao buscar CEP:', error);
             });
     });

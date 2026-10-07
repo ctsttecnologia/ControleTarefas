@@ -3,6 +3,7 @@
 
 import os
 import mimetypes
+from pydoc import doc
 from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, View
@@ -36,7 +37,7 @@ class DocumentoScopedQuerysetMixin:
         user = self.request.user
 
         if user.is_superuser or user.has_perm('documentos.pode_gerenciar_todos_documentos'):
-            qs = Documento.objects.all()
+            qs = Documento.objects.all_filiais()
         else:
             qs = Documento.objects.for_request(self.request)
 
@@ -255,12 +256,15 @@ class DocumentoDownloadView(LoginRequiredMixin, AppPermissionMixin,
         # 🔒 LGPD: log de auditoria de acesso
         registrar_log_acesso(request.user, documento, 'DOWNLOAD')
 
-        # Cloudinary gera URL assinada com expiração curta
-        url_assinada = documento.arquivo.storage.url(
-            documento.arquivo.name,
-            # expiração configurável via Cloudinary (ex: 60s)
+        
+        return redirect(
+            'core:secure_download',
+            app='documentos', model='documento',
+            pk=documento.pk, field='arquivo',
         )
-        return HttpResponseRedirect(url_assinada)
+
+
+
 
 
 
@@ -329,26 +333,15 @@ class DocumentoRenewView(LoginRequiredMixin, AppPermissionMixin,
         new_doc.cliente = old_doc.cliente
         new_doc.dias_aviso = old_doc.dias_aviso
         new_doc.substitui = old_doc
-        new_doc.save()
 
-        old_doc.status = Documento.StatusChoices.RENOVADO
-        old_doc.save(update_fields=['status'])
-
-        self.object = new_doc
         with transaction.atomic():
             new_doc.save()
             old_doc.status = Documento.StatusChoices.RENOVADO
-            # update_fields ignora o auto_now, então data_atualizacao entra explícita
             old_doc.data_atualizacao = timezone.now()
             old_doc.save(update_fields=['status', 'data_atualizacao'])
 
-
-
-    def get_success_url(self):
-        obj = self.object.content_object
-        if obj and hasattr(obj, 'get_absolute_url'):
-            return obj.get_absolute_url()
-        return reverse('documentos:lista')
+        self.object = new_doc
+        return redirect(self.get_success_url())
 
 
 # ══════════════════════════════════════════════════════════

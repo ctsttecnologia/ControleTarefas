@@ -16,6 +16,8 @@ from django.urls import reverse, NoReverseMatch
 from typing import Optional
 
 
+_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
 """
 core/utils.py
 Utilitários globais. A função get_filial_ativa() é a FONTE ÚNICA
@@ -133,4 +135,17 @@ def mascarar_cpf(cpf: str) -> str:
         return cpf or ''
     return f"***.{digits[3:6]}.***-{digits[9:11]}"
 
+def excel_safe(value):
+    """Para pandas: prefixa com ' textos que o Excel interpretaria como fórmula."""
+    if isinstance(value, str) and value[:1] in _FORMULA_PREFIXES:
+        return "'" + value
+    return value
+
+
+def write_cell(ws, row, col, value):
+    """Para openpyxl: grava a célula e força tipo texto se parecer fórmula."""
+    cell = ws.cell(row=row, column=col, value=value)
+    if isinstance(value, str) and value[:1] in _FORMULA_PREFIXES:
+        cell.data_type = "s"
+    return cell
 

@@ -43,21 +43,10 @@ urlpatterns = [
     # ===========================================================
     # 🔑 REDEFINIÇÃO DE SENHA (Esqueci minha senha)
     # ===========================================================
-    path('senha/reset/',
-         CustomPasswordResetView.as_view(),
-         name='password_reset'),
-
-    path('senha/reset/enviado/',
-         CustomPasswordResetDoneView.as_view(),
-         name='password_reset_done'),
-
-    path('senha/reset/<uidb64>/<token>/',
-         CustomPasswordResetConfirmView.as_view(),
-         name='password_reset_confirm'),
-
-    path('senha/reset/concluido/',
-         CustomPasswordResetCompleteView.as_view(),
-         name='password_reset_complete'),
+    path('senha/reset/', CustomPasswordResetView.as_view(), name='password_reset'),
+    path('senha/reset/enviado/', CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('senha/reset/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('senha/reset/concluido/', CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
 
     # ===========================================================
     # 👥 GERENCIAMENTO DE USUÁRIOS (CRUD)

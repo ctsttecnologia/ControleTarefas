@@ -7,7 +7,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.views import View
 from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
-from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden
 from django.apps import apps
 from django.views.generic import TemplateView
 from prompt_toolkit.validation import ValidationError
@@ -23,6 +23,9 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 from .models import TokenAssinaturaRemota
+from django.db import close_old_connections, models
+from django.core.exceptions import ValidationError 
+
 
 
 
@@ -32,95 +35,122 @@ class HttpResponseTooManyRequests(HttpResponse):
     status_code = 429
 class SecureFileDownloadView(LoginRequiredMixin, View):
     """
-    View genérica para servir qualquer arquivo de mídia de forma segura.
-    Compatível com qualquer storage backend (local, GCS, S3, etc.)
+    Serve arquivos de FileFields de forma segura, passando sempre pelo storage
+    do próprio campo (ex.: PrivateMediaStorage/Cloudinary authenticated).
+    A URL do CDN nunca é exposta ao navegador.
     """
 
+def _regra_documento(user, obj):
+    return (
+        user == obj.responsavel
+        or user.is_staff
+        or user.has_perm('documentos.pode_gerenciar_todos_documentos')
+    )
+
+
+# label_lower -> função(user, obj) -> bool
+DOWNLOAD_RULES = {
+    'documentos.documento': _regra_documento,
+}
+
+# label_lower -> permissão que remove o filtro de filial
+GLOBAL_SCOPE_PERMS = {
+    'documentos.documento': 'documentos.pode_gerenciar_todos_documentos',
+}
+
+class SecureFileDownloadView(LoginRequiredMixin, View):
+    """
+    Serve arquivos de FileFields pelo storage do próprio campo
+    (ex.: PrivateMediaStorage/Cloudinary authenticated).
+    A URL do CDN nunca é exposta ao navegador.
+    """
+
+    INLINE_TYPES = {
+        'application/pdf',
+        'image/jpeg', 'image/png', 'image/gif',
+        'image/webp', 'image/svg+xml',
+    }
+
+    def _pode_baixar(self, user, obj, field):
+        if user.is_superuser:
+            return True
+
+        if hasattr(obj, 'pode_baixar_arquivo'):
+            return bool(obj.pode_baixar_arquivo(user, field))
+
+        regra = DOWNLOAD_RULES.get(obj._meta.label_lower)
+        if regra:
+            return bool(regra(user, obj))
+
+        m = obj._meta
+        return user.has_perm(f'{m.app_label}.view_{m.model_name}')
+
+    def _get_queryset(self, request, ModelClass):
+        """Escopo por filial; superuser e permissão global bypassam o thread-local."""
+        manager = ModelClass._default_manager
+        user = request.user
+        perm_global = GLOBAL_SCOPE_PERMS.get(ModelClass._meta.label_lower)
+
+        if user.is_superuser or (perm_global and user.has_perm(perm_global)):
+            if hasattr(manager, 'all_filiais'):
+                return manager.all_filiais()
+            return manager.all()
+
+        if hasattr(manager, 'for_request'):
+            return manager.for_request(request)
+        return manager.all()
+
     def get(self, request, app, model, pk, field):
-        # 1. Obter o model dinamicamente
+        # 1. Model
         try:
             ModelClass = apps.get_model(app, model)
         except LookupError:
             raise Http404("Recurso não encontrado.")
 
-        # 2. Obter o objeto
-        obj = get_object_or_404(ModelClass, pk=pk)
-
-        # 3. Obter o campo de arquivo
-        if not hasattr(obj, field):
+        # 2. Campo (só FileField de verdade)
+        try:
+            model_field = ModelClass._meta.get_field(field)
+        except Exception:
             raise Http404("Campo não encontrado.")
+        if not isinstance(model_field, models.FileField):
+            raise Http404("Campo não encontrado.")
+
+        # 3. Objeto (com escopo de filial)
+        obj = get_object_or_404(self._get_queryset(request, ModelClass), pk=pk)
 
         file_field = getattr(obj, field)
         if not file_field:
             raise Http404("Nenhum arquivo associado.")
 
-        # 4. Verificar se o arquivo existe no storage
-        try:
-            exists = file_field.storage.exists(file_field.name)
-        except Exception:
-            exists = False
+        # 4. Permissão
+        if not self._pode_baixar(request.user, obj, field):
+            logger.warning(
+                "Download negado user_id=%s %s.%s pk=%s",
+                request.user.pk, app, model, pk,
+            )
+            return HttpResponseForbidden("Você não tem permissão para acessar este arquivo.")
 
-        if not exists:
-            # ══════════════════════════════════════════════
-            # FALLBACK: busca no GCS quando o storage local
-            # não encontra o arquivo (dev apontando para produção)
-            # ══════════════════════════════════════════════
-            if settings.DEBUG:
-                try:
-                    import importlib
-                    gcloud_module = importlib.import_module('storages.backends.gcloud')
-                    GoogleCloudStorage = gcloud_module.GoogleCloudStorage
-
-                    bucket_name = getattr(settings, 'GS_BUCKET_NAME', None)
-                    credentials = getattr(settings, 'GS_CREDENTIALS', None)
-
-                    if bucket_name:
-                        gcs = GoogleCloudStorage(
-                            bucket_name=bucket_name,
-                            credentials=credentials,  # None = usa ADC
-                        )
-
-                        # Tenta caminho direto, depois com prefixo media/
-                        for name in [file_field.name, f'media/{file_field.name}']:
-                            if gcs.exists(name):
-                                return HttpResponseRedirect(gcs.url(name))
-                except (ImportError, Exception):
-                    pass
-
-            raise Http404("Arquivo não encontrado no servidor.")
-
-        # 5. Extrair o nome do arquivo
-        filename = file_field.name.split('/')[-1]
-
-        # 6. Determinar Content-Type
-        content_type, _ = mimetypes.guess_type(filename)
-        if content_type is None:
-            content_type = 'application/octet-stream'
-
-        # 7. Servir o arquivo (compatível com qualquer storage)
+        # 5. Abre pelo storage do campo
         try:
             file_obj = file_field.open('rb')
+        except FileNotFoundError:
+            logger.warning("Arquivo ausente no storage: %s", file_field.name)
+            raise Http404("Arquivo não encontrado no servidor.")
         except Exception:
+            logger.exception("Falha ao abrir %s (%s.%s pk=%s)", file_field.name, app, model, pk)
             raise Http404("Erro ao acessar o arquivo.")
 
-        response = FileResponse(
-            file_obj,
-            content_type=content_type,
-        )
+        # 6. Resposta
+        filename = file_field.name.split('/')[-1]
+        content_type, _ = mimetypes.guess_type(filename)
+        content_type = content_type or 'application/octet-stream'
 
-        # PDFs e imagens abrem inline; outros fazem download
-        inline_types = [
-            'application/pdf',
-            'image/jpeg', 'image/png', 'image/gif',
-            'image/webp', 'image/svg+xml',
-        ]
-        if content_type in inline_types:
-            response['Content-Disposition'] = f'inline; filename="{filename}"'
-        else:
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-
+        response = FileResponse(file_obj, content_type=content_type)
+        disposition = 'inline' if content_type in self.INLINE_TYPES else 'attachment'
+        response['Content-Disposition'] = f'{disposition}; filename="{filename}"'
+        response['X-Content-Type-Options'] = 'nosniff'
+        response['Cache-Control'] = 'private, no-store'
         return response
-
 
 # ============================================================
 # VIEWS DE SELEÇÃO DE FILIAL

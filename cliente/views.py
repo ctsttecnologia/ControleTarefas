@@ -5,7 +5,7 @@
 import openpyxl
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
-
+from documentos.models import Documento
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -28,7 +28,12 @@ from usuario.models import Filial
 from .forms import ClienteForm, ImportacaoMassaForm
 from .models import Cliente
 from .services.importacao_massa import gerar_planilha_modelo, processar_planilha
+import logging
+from core.utils import write_cell
 
+
+logger = logging.getLogger(__name__)
+audit_logger = logging.getLogger('audit')
 
 _APP = 'cliente'
 
@@ -245,19 +250,18 @@ class ClienteDeleteView(ClienteBaseMixin, DeleteView):
         return self.apply_visibility(qs)
 
     def post(self, request, *args, **kwargs):
-        """
-        Controla exclusão manualmente para tratar ProtectedError
-        e evitar problemas do SuccessMessageMixin com DeleteView no Django 5.x.
-        """
         self.object = self.get_object()
+        cliente_pk = self.object.pk
         nome_cliente = str(self.object)
 
         try:
             self.object.delete()
-            messages.success(
-                request,
-                f'🗑️ Cliente "{nome_cliente}" excluído com sucesso!'
+            audit_logger.warning(
+                "DELETE_CLIENTE user_id=%s cliente_id=%s filial=%s ip=%s",
+                request.user.pk, cliente_pk, self.get_filial_ativa_id(),
+                request.META.get('REMOTE_ADDR', '-'),
             )
+            messages.success(request, f'🗑️ Cliente "{nome_cliente}" excluído com sucesso!')
             return redirect(self.get_success_url())
 
         except db_models.ProtectedError:
@@ -269,14 +273,10 @@ class ClienteDeleteView(ClienteBaseMixin, DeleteView):
             )
             return redirect('cliente:lista_clientes')
 
-        except Exception as e:
-            messages.error(request, f"❌ Erro inesperado ao excluir: {e}")
+        except Exception:
+            logger.exception("Erro ao excluir cliente pk=%s", cliente_pk)
+            messages.error(request, "❌ Erro inesperado ao excluir. Contate o suporte.")
             return redirect('cliente:lista_clientes')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['filial_ativa'] = self.get_filial_ativa()
-        return context
 
 
 class ClienteDetailView(ClienteBaseMixin, DetailView):
@@ -291,7 +291,13 @@ class ClienteDetailView(ClienteBaseMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['arquivos_cliente'] = self.object.documentos_cliente.all()
+        context['arquivos_cliente'] = (
+            self.object.documentos_cliente
+            .filter(excluido_em__isnull=True)
+            .exclude(status__in=[Documento.StatusChoices.RENOVADO,
+                                Documento.StatusChoices.ARQUIVADO])
+            .order_by('data_vencimento')
+        )
         context['filial_ativa'] = self.get_filial_ativa()
         return context
 
@@ -336,22 +342,26 @@ class ExportarClientesExcelView(ClienteBaseMixin, ListView):
             ws.column_dimensions[get_column_letter(col_num)].width = 25
 
         for row_num, cliente in enumerate(clientes, 2):
-            ws.cell(row=row_num, column=1, value=cliente.pk)
-            ws.cell(row=row_num, column=2, value=cliente.nome)
-            ws.cell(row=row_num, column=3, value=cliente.razao_social)
-            ws.cell(row=row_num, column=4, value=cliente.cnpj_formatado)
-            ws.cell(row=row_num, column=5, value=cliente.contrato)
-            ws.cell(row=row_num, column=6, value=cliente.data_de_inicio)
-            ws.cell(
-                row=row_num, column=7,
-                value=str(cliente.logradouro) if cliente.logradouro else "-"
-            )
-            ws.cell(row=row_num, column=8, value=cliente.telefone)
-            ws.cell(row=row_num, column=9, value=cliente.email)
-            ws.cell(
-                row=row_num, column=10,
-                value="Ativo" if cliente.estatus else "Inativo"
-            )
+            valores = [
+                cliente.pk,
+                cliente.nome,
+                cliente.razao_social,
+                cliente.cnpj_formatado,
+                cliente.contrato,
+                cliente.data_de_inicio,
+                str(cliente.logradouro) if cliente.logradouro else "-",
+                cliente.telefone,
+                cliente.email,
+                "Ativo" if cliente.estatus else "Inativo",
+            ]
+            for col_num, valor in enumerate(valores, 1):
+                write_cell(ws, row_num, col_num, valor)
+
+        audit_logger.info(
+            "EXPORT_CLIENTES user_id=%s filial=%s linhas=%s ip=%s",
+            request.user.pk, self.get_filial_ativa_id(), clientes.count(),
+            request.META.get('REMOTE_ADDR', '-'),
+        )        
 
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -408,18 +418,16 @@ def cliente_autocomplete_view(request):
 
 
 @login_required
-@app_permission_required(_APP)
 def ajax_buscar_logradouros(request):
-    """
-    Autocomplete TomSelect de logradouros.
-    GET /cliente/ajax/logradouros/?q=termo
-    """
-    q = request.GET.get("q", "").strip()
+    if not (request.user.has_perm('cliente.add_cliente')
+            or request.user.has_perm('cliente.change_cliente')):
+        return JsonResponse([], safe=False, status=403)
 
+    q = request.GET.get("q", "").strip()
     if len(q) < 2:
         return JsonResponse([], safe=False)
 
-    qs = Logradouro.objects.filter(
+    qs = Logradouro.objects.for_request(request).filter(
         Q(endereco__icontains=q)
         | Q(bairro__icontains=q)
         | Q(cidade__icontains=q)
@@ -495,6 +503,12 @@ def importacao_massa_view(request):
 
             arquivo = form.cleaned_data["arquivo"]
             resultado = processar_planilha(arquivo, filial)
+            audit_logger.info(
+                "IMPORT_CLIENTES user_id=%s filial=%s total=%s ok=%s erros=%s ip=%s",
+                request.user.pk, filial.pk if filial else None,
+                resultado["total"], resultado["sucessos"], resultado["erros"],
+                request.META.get("REMOTE_ADDR", "-"),
+            )
 
             return render(
                 request,

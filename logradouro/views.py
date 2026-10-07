@@ -7,7 +7,7 @@ import base64
 import logging
 from urllib.request import urlopen
 from urllib.error import URLError, HTTPError
-
+from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -35,9 +35,26 @@ from core.mixins import (
 from .models import Logradouro, Filial
 from .forms import LogradouroForm, UploadFileForm
 from .constant import ESTADOS_BRASIL
+from core.utils import excel_safe, write_cell
+from core.temp_reports import save_report, pop_report
+
 
 logger = logging.getLogger(__name__)
+audit_logger = logging.getLogger('audit')
 
+
+def _client_ip(request):
+    return request.META.get('REMOTE_ADDR', '-')
+
+
+def _erro_linha(exc):
+    """Mensagem de erro por linha: só erros de validação são exibidos; o resto é genérico."""
+    if isinstance(exc, ValidationError):
+        return "; ".join(exc.messages)
+    if isinstance(exc, (ValueError, TypeError, KeyError)):
+        return str(exc)
+    logger.exception("Erro inesperado na importação de logradouros")
+    return "Erro inesperado ao processar esta linha."
 
 # =============================================================================
 # CRUD — Logradouro
@@ -118,18 +135,20 @@ class LogradouroCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermission
         response = super().form_valid(form)
         if self.request.GET.get("popup") == "1":
             obj = self.object
-            html = f"""
-            <script>
-                (function() {{
-                    if (window.opener && window.opener.dismissLogradouroPopup) {{
-                        window.opener.dismissLogradouroPopup({obj.pk}, "{obj}");
-                    }}
-                    window.close();
-                }})();
-            </script>
-            """
+            payload = (
+                json.dumps({"pk": obj.pk, "label": str(obj)})
+                .replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+            )
+            html = (
+                "<script>(function(){"
+                f"var d={payload};"
+                "if(window.opener&&window.opener.dismissLogradouroPopup){"
+                "window.opener.dismissLogradouroPopup(d.pk,d.label);}"
+                "window.close();})();</script>"
+            )
             return HttpResponse(html)
         return response
+
 
     def form_invalid(self, form):
         messages.error(self.request, _('Por favor, corrija os erros abaixo.'))
@@ -217,8 +236,9 @@ class LogradouroExportExcelView(LoginRequiredMixin, AppPermissionMixin, SSTPermi
                 log.data_atualizacao.strftime('%d/%m/%Y %H:%M') if log.data_atualizacao else "",
             ]
             for col_num, value in enumerate(row_data, 1):
-                cell = ws.cell(row=row_num, column=col_num, value=value)
+                cell = write_cell(ws, row_num, col_num, value)
                 cell.border = thin_border
+
 
         ws.freeze_panes = 'A2'
 
@@ -227,6 +247,11 @@ class LogradouroExportExcelView(LoginRequiredMixin, AppPermissionMixin, SSTPermi
             headers={'Content-Disposition': 'attachment; filename="logradouros.xlsx"'},
         )
         wb.save(response)
+
+        audit_logger.info(
+            "EXPORT_LOGRADOUROS user_id=%s linhas=%s ip=%s",
+            request.user.pk, len(logradouros), _client_ip(request),
+        )
         return response
 
 
@@ -259,11 +284,14 @@ class UploadLogradourosView(LoginRequiredMixin, AppPermissionMixin, SSTPermissio
         try:
             df = pd.read_excel(file)
             df.dropna(how='all', inplace=True)
-        except Exception as e:
+        except Exception:
+            logger.exception(
+                "Falha ao ler planilha de logradouros user_id=%s", request.user.pk
+            )
             messages.error(
                 request,
-                f"Não foi possível ler o arquivo. Pode estar corrompido ou "
-                f"em formato inválido. Erro: {e}",
+                "Não foi possível ler o arquivo. Ele pode estar corrompido ou "
+                "em formato inválido. Baixe o modelo e tente novamente.",
             )
             return render(request, self.template_name, context)
 
@@ -290,19 +318,16 @@ class UploadLogradourosView(LoginRequiredMixin, AppPermissionMixin, SSTPermissio
 
         for index, row in df.iterrows():
             try:
-                # Valida campos obrigatórios
                 if row[required_cols].isnull().any():
                     raise ValueError("Contém valores vazios em colunas obrigatórias.")
 
-                # ✅ Usa filial do usuário se não vier na planilha, ou valida a informada
                 filial_id_planilha = row.get('filial_id')
                 if pd.notna(filial_id_planilha):
                     filial_id_int = int(filial_id_planilha)
-                    # Só permite importar para a própria filial (ou se superuser)
                     if not request.user.is_superuser and filial_id_int != filial_ativa.pk:
                         raise ValueError(
-                            f"Filial {filial_id_int} diferente da sua filial ativa ({filial_ativa.pk}). "
-                            f"Você só pode importar para sua própria filial."
+                            f"Filial {filial_id_int} diferente da sua filial ativa "
+                            f"({filial_ativa.pk}). Você só pode importar para sua própria filial."
                         )
                     filial = Filial.objects.get(pk=filial_id_int)
                 else:
@@ -329,57 +354,53 @@ class UploadLogradourosView(LoginRequiredMixin, AppPermissionMixin, SSTPermissio
                 logradouro_obj.full_clean()
                 enderecos_para_criar.append(logradouro_obj)
 
+            except Filial.DoesNotExist:
+                linha_original = row.to_dict()
+                linha_original['Erro_Detectado'] = f"Linha {index + 2}: filial informada não existe."
+                linhas_com_erro.append(linha_original)
             except Exception as e:
                 linha_original = row.to_dict()
-                linha_original['Erro_Detectado'] = f"Linha {index + 2}: {e}"
+                linha_original['Erro_Detectado'] = f"Linha {index + 2}: {_erro_linha(e)}"
                 linhas_com_erro.append(linha_original)
 
         # ── Etapa 5: Salva ou gera relatório de erros ──
         if linhas_com_erro:
-            messages.error(
-                request,
-                "A importação falhou. Verifique os erros no relatório abaixo.",
+            audit_logger.warning(
+                "IMPORT_LOGRADOUROS_FALHA user_id=%s filial=%s linhas_total=%s linhas_erro=%s ip=%s",
+                request.user.pk, filial_ativa.pk, len(df), len(linhas_com_erro), _client_ip(request),
             )
-            df_erros = pd.DataFrame(linhas_com_erro)
+            messages.error(request, "A importação falhou. Verifique os erros no relatório abaixo.")
+
+            df_erros = pd.DataFrame(linhas_com_erro).astype(object)
+            df_erros = df_erros.apply(lambda col: col.map(excel_safe))
             buffer = io.BytesIO()
             df_erros.to_excel(buffer, index=False)
-            buffer.seek(0)
 
-            file_base64 = base64.b64encode(buffer.read()).decode('utf-8')
+            token = save_report(buffer.getvalue(), request.user.pk)
             request.session['relatorio_erros'] = {
+                'token': token,
                 'filename': 'relatorio_de_erros_logradouros.xlsx',
-                'content': file_base64,
             }
             context['relatorio_disponivel'] = True
             context['total_erros'] = len(linhas_com_erro)
             return render(request, self.template_name, context)
 
-        # ✅ Salva tudo atomicamente
-        with transaction.atomic():
-            Logradouro.objects.bulk_create(enderecos_para_criar)
-
-        messages.success(request, f"{len(enderecos_para_criar)} endereços importados com sucesso!")
-        return redirect('logradouro:listar_logradouros')
-
-
-class DownloadErroRelatorioView(LoginRequiredMixin, AppPermissionMixin, View):
-    """Download do relatório de erros da importação."""
-    app_label_required = 'logradouro'
+class DownloadErroRelatorioView(AppPermissionMixin, View):
+    """Download único do relatório de erros da importação."""
+    permission_required = 'logradouro.add_logradouro'
 
     def get(self, request, *args, **kwargs):
-        relatorio_data = request.session.get('relatorio_erros')
-        if not relatorio_data:
-            raise Http404("Nenhum relatório de erros encontrado.")
-
-        file_content = base64.b64decode(relatorio_data['content'])
-        filename = relatorio_data['filename']
-        del request.session['relatorio_erros']
+        meta = request.session.pop('relatorio_erros', None)
+        data = pop_report(meta.get('token'), request.user.pk) if meta else None
+        if not data:
+            raise Http404("Relatório não encontrado ou expirado.")
 
         response = HttpResponse(
-            file_content,
+            data,
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response['Content-Disposition'] = f'attachment; filename="{meta["filename"]}"'
+        response['Cache-Control'] = 'no-store'
         return response
 
 
@@ -517,8 +538,9 @@ def consulta_cep(request):
         return JsonResponse({"erro": "CEP não encontrado."}, status=404)
     except URLError:
         return JsonResponse({"erro": "Não foi possível conectar ao serviço de CEP."}, status=504)
-    except Exception as e:
-        logger.exception("Erro na consulta de CEP: %s", cep)
-        return JsonResponse({"erro": f"Erro inesperado: {e}"}, status=500)
+    except Exception:
+       logger.exception("Erro na consulta de CEP: %s", cep)
+       return JsonResponse({"erro": "Erro inesperado na consulta do CEP."}, status=500)
+
 
 

@@ -19,7 +19,7 @@ ALL_CARDS = [
     {
         'id': 'dp',
         'title': 'Departamento Pessoal',
-        'permission': 'departamento_pessoal.view_painel_dp',
+        'permission': 'departamento_pessoal.view_funcionario',
         'icon': 'images/dp.gif',
         'links': [
             {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel',
