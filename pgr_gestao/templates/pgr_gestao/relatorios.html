@@ -208,13 +208,7 @@
                         </td>
                         <td>{{ risco.ges.nome|default:"N/A"|truncatewords:3 }}</td>
                         <td>
-                            {% if risco.status_controle == 'controlado' %}
-                            <span class="badge bg-success">{{ risco.get_status_controle_display }}</span>
-                            {% elif risco.status_controle == 'parcialmente_controlado' %}
-                            <span class="badge bg-warning text-dark">{{ risco.get_status_controle_display }}</span>
-                            {% else %}
-                            <span class="badge bg-danger">{{ risco.get_status_controle_display }}</span>
-                            {% endif %}
+                            <span class="badge pgr-badge pgr-status_controle-{{ risco.status_controle }}">{{ risco.get_status_controle_display }}</span>
                         </td>
                         <td class="text-center">{{ risco.gravidade_g|default:"-" }}</td>
                         <td class="text-center">{{ risco.exposicao_e|default:"-" }}</td>
@@ -317,13 +311,12 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 🆕 Detecta tema para cores adaptativas
-    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
     const rootStyles = getComputedStyle(document.documentElement);
     const textColor = rootStyles.getPropertyValue('--bs-body-color').trim();
     const borderColor = rootStyles.getPropertyValue('--bs-border-color').trim();
     const mutedColor = rootStyles.getPropertyValue('--bs-text-muted').trim();
     const primaryColor = rootStyles.getPropertyValue('--bs-primary').trim();
+    const surfaceColor = rootStyles.getPropertyValue('--surface-elevated').trim();
 
     let dadosClassificacao, dadosCategoria, dadosStatusControle, dadosPlanosStatus;
 
@@ -344,8 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function semDados(canvasId) {
         const el = document.getElementById(canvasId);
         if (el) {
-            const wrapper = el.parentElement;
-            wrapper.innerHTML =
+            el.parentElement.innerHTML =
                 '<div class="d-flex align-items-center justify-content-center h-100">' +
                 '<p class="text-muted mb-0"><i class="bi bi-info-circle me-2"></i>Nenhum dado disponível</p></div>';
         }
@@ -375,9 +367,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 labels: dadosClassificacao.labels,
                 datasets: [{
                     data: dadosClassificacao.valores,
-                    backgroundColor: ['#28a745', '#17a2b8', '#ffc107', '#fd7e14', '#dc3545', '#6f0000', '#4a0000'],
+                    backgroundColor: ['#198754', '#ffc107', '#fd7e14', '#dc3545', '#6f0000'],
                     borderWidth: 2,
-                    borderColor: rootStyles.getPropertyValue('--surface-elevated').trim()
+                    borderColor: surfaceColor
                 }]
             },
             options: baseOpts
@@ -413,9 +405,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 labels: dadosStatusControle.labels,
                 datasets: [{
                     data: dadosStatusControle.valores,
-                    backgroundColor: ['#dc3545', '#ffc107', '#28a745', '#6c757d'],
+                    backgroundColor: ['#ffc107', '#0dcaf0', '#198754', '#495057'],
                     borderWidth: 2,
-                    borderColor: rootStyles.getPropertyValue('--surface-elevated').trim()
+                    borderColor: surfaceColor
                 }]
             },
             options: baseOpts
@@ -431,7 +423,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     label: 'Planos de Ação',
                     data: dadosPlanosStatus.valores,
-                    backgroundColor: ['#ffc107', '#0dcaf0', '#28a745', '#6c757d'],
+                    backgroundColor: ['#ffc107', '#0dcaf0', '#198754', '#dc3545', '#6c757d'],
                     borderRadius: 6,
                 }]
             },

@@ -3,6 +3,14 @@
 Services do PGR - Lógica de negócio
 """
 from pgr_gestao.models import PGRSecaoTexto, PGRSecaoTextoPadrao
+from datetime import timedelta
+from django.utils import timezone
+
+PRAZO_DIAS_POR_CLASSIFICACAO = {
+    'critico': 15,
+    'muito_grave': 30,
+    'moderado': 90,
+}
 
 
 def inicializar_secoes_pgr(pgr_documento):
@@ -86,3 +94,7 @@ def get_titulo_secao(pgr_documento, secao_key):
     except PGRSecaoTextoPadrao.DoesNotExist:
         return ''
 
+def prazo_para(classificacao, hoje=None):
+    """Data-limite sugerida para o plano de ação, conforme a classificação do risco."""
+    hoje = hoje or timezone.localdate()
+    return hoje + timedelta(days=PRAZO_DIAS_POR_CLASSIFICACAO.get(classificacao, 180))

@@ -1308,3 +1308,64 @@ body.has-submenu {
 .page-actions .btn.btn-main:hover {
     background-color: rgba(255, 255, 255, 0.9) !important;
 }
+
+/* pgr_gestao/static/pgr_gestao/css/pgr.css — depende de global.css */
+:root,
+[data-bs-theme="light"] {
+  --pgr-risco-negligenciavel: var(--chart-color-2);
+  --pgr-risco-marginal: var(--chart-color-1);
+  --pgr-risco-moderado: var(--chart-color-3);
+  --pgr-risco-muito-grave: #fd7e14;
+  --pgr-risco-critico: var(--chart-color-4);
+}
+[data-bs-theme="dark"] {
+  --pgr-risco-muito-grave: #feb272;
+}
+
+/* Badge de classificação: <span class="pgr-risco" data-nivel="critico"> */
+.pgr-risco {
+  --_c: var(--bs-border-color);
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .3em .7em;
+  border-radius: 6px;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--_c) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--_c) 35%, transparent);
+  border-left: 4px solid var(--_c);
+}
+.pgr-risco[data-nivel="negligenciavel"] { --_c: var(--pgr-risco-negligenciavel); }
+.pgr-risco[data-nivel="marginal"]       { --_c: var(--pgr-risco-marginal); }
+.pgr-risco[data-nivel="moderado"]       { --_c: var(--pgr-risco-moderado); }
+.pgr-risco[data-nivel="muito_grave"]    { --_c: var(--pgr-risco-muito-grave); }
+.pgr-risco[data-nivel="critico"]        { --_c: var(--pgr-risco-critico); }
+
+/* KPI do dashboard */
+.pgr-kpi {
+  background: var(--surface-elevated);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  color: var(--bs-body-color);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.pgr-kpi:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+.pgr-kpi__valor { font-size: 1.75rem; font-weight: 700; color: var(--text-strong); line-height: 1.1; }
+.pgr-kpi__label { font-size: .8rem; color: var(--bs-text-muted); text-transform: uppercase; letter-spacing: .5px; }
+
+/* Blocos internos (substitui bg-light p-3 rounded border) */
+
+.pgr-bloco { background: var(--surface-subtle); border: 1px solid var(--bs-border-color); border-radius: .5rem; padding: 1rem; }
+
+/* Barra de progresso de plano/cronograma */
+.pgr-progress { height: 8px; border-radius: 99px; background: var(--surface-muted); overflow: hidden; }
+.pgr-progress > span { display: block; height: 100%; background: var(--bs-primary); }
+
+/* Linha atrasada em tabelas */
+.table tr.pgr-atrasado > td { box-shadow: inset 4px 0 0 var(--chart-color-4); background: var(--chart-color-4-light); }
+
+@media print { .pgr-kpi { box-shadow: none !important; } }
+

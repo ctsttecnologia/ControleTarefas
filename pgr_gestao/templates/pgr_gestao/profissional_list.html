@@ -1,6 +1,5 @@
 {# Lista de Profissionais Responsáveis #}
 {% extends 'pgr_gestao/pgr_base.html' %}
-{% load static %}
 
 {% block title %}Profissionais Responsáveis{% endblock %}
 
@@ -25,28 +24,26 @@
 
 <!-- Filtros -->
 <div class="card mb-4">
-    <div class="card-header">
-        <i class="bi bi-funnel"></i> Filtros de Pesquisa
-    </div>
+    <div class="card-header"><i class="bi bi-funnel"></i> Filtros de Pesquisa</div>
     <div class="card-body">
         <form method="get" class="row g-3">
             <div class="col-md-3">
-                <label class="form-label">Status</label>
-                <select name="ativo" class="form-select">
+                <label class="form-label" for="f-ativo">Status</label>
+                <select id="f-ativo" name="ativo" class="form-select">
                     <option value="">Todos</option>
                     <option value="true" {% if request.GET.ativo == 'true' %}selected{% endif %}>Ativos</option>
                     <option value="false" {% if request.GET.ativo == 'false' %}selected{% endif %}>Inativos</option>
                 </select>
             </div>
             <div class="col-md-4">
-                <label class="form-label">Função</label>
-                <input type="text" name="funcao" class="form-control" placeholder="Engenheiro, Técnico..."
-                       value="{{ request.GET.funcao }}">
+                <label class="form-label" for="f-funcao">Função</label>
+                <input id="f-funcao" type="text" name="funcao" class="form-control"
+                       placeholder="Engenheiro, Técnico..." value="{{ request.GET.funcao }}">
             </div>
             <div class="col-md-4">
-                <label class="form-label">Buscar</label>
-                <input type="text" name="search" class="form-control" placeholder="Nome, registro, e-mail..."
-                       value="{{ request.GET.search }}">
+                <label class="form-label" for="f-search">Buscar</label>
+                <input id="f-search" type="text" name="search" class="form-control"
+                       placeholder="Nome, registro, e-mail..." value="{{ request.GET.search }}">
             </div>
             <div class="col-md-1 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100" title="Filtrar">
@@ -54,14 +51,16 @@
                 </button>
             </div>
         </form>
+        {% if request.GET.ativo or request.GET.funcao or request.GET.search %}
+        <a href="{% url 'pgr_gestao:profissional_list' %}" class="small mt-2 d-inline-block">
+            <i class="bi bi-x-circle"></i> Limpar filtros</a>
+        {% endif %}
     </div>
 </div>
 
 <!-- Tabela -->
 <div class="card">
-    <div class="card-header">
-        <i class="bi bi-list-ul"></i> Lista de Profissionais
-    </div>
+    <div class="card-header"><i class="bi bi-list-ul"></i> Lista de Profissionais</div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -101,13 +100,9 @@
                         </td>
                         <td class="text-center">
                             {% if profissional.ativo %}
-                            <span class="badge bg-success">
-                                <i class="bi bi-check-circle"></i> Ativo
-                            </span>
+                            <span class="badge pgr-badge pgr-ativo-ativo"><i class="bi bi-check-circle"></i> Ativo</span>
                             {% else %}
-                            <span class="badge bg-secondary">
-                                <i class="bi bi-slash-circle"></i> Inativo
-                            </span>
+                            <span class="badge pgr-badge pgr-ativo-inativo"><i class="bi bi-slash-circle"></i> Inativo</span>
                             {% endif %}
                         </td>
                         <td class="text-center">
@@ -118,7 +113,6 @@
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
                                 {% endif %}
-
                                 {% if perms.pgr_gestao.delete_profissionalresponsavel %}
                                 <a href="{% url 'pgr_gestao:profissional_delete' profissional.pk %}"
                                    class="btn btn-outline-danger" title="Excluir">
@@ -132,10 +126,10 @@
                     <tr>
                         <td colspan="6" class="text-center table-empty-state">
                             <i class="bi bi-person-x d-block"></i>
-                            <p>Nenhum profissional cadastrado.</p>
+                            <p>Nenhum profissional encontrado.</p>
                             {% if perms.pgr_gestao.add_profissionalresponsavel %}
                             <a href="{% url 'pgr_gestao:profissional_create' %}" class="btn btn-primary">
-                                <i class="bi bi-plus-lg"></i> Cadastrar Primeiro Profissional
+                                <i class="bi bi-plus-lg"></i> Cadastrar Profissional
                             </a>
                             {% endif %}
                         </td>
@@ -145,27 +139,23 @@
             </table>
         </div>
 
-        <!-- Paginação -->
-        {% if profissionais.has_other_pages %}
+        <!-- Paginação (page_obj: "profissionais" é só a lista da página) -->
+        {% if is_paginated %}
         <nav class="mt-4" aria-label="Paginação">
             <ul class="pagination justify-content-center mb-0">
-                {% if profissionais.has_previous %}
+                {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ profissionais.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">
                         <i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
                 {% endif %}
-
                 <li class="page-item disabled">
-                    <span class="page-link">
-                        Página {{ profissionais.number }} de {{ profissionais.paginator.num_pages }}
-                    </span>
+                    <span class="page-link">Página {{ page_obj.number }} de {{ paginator.num_pages }}</span>
                 </li>
-
-                {% if profissionais.has_next %}
+                {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ profissionais.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">
                         <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>

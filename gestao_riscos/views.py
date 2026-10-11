@@ -2,7 +2,7 @@
 
 import datetime
 import logging
-
+from core.scope import escopo_total
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Q, Count
@@ -18,6 +18,7 @@ from core.mixins import FilialCreateMixin
 from seguranca_trabalho.mixins import GestaoRiscosBaseMixin, GestaoRiscosTecnicoMixin
 from seguranca_trabalho.models import EntregaEPI
 from .forms import IncidenteForm, InspecaoForm, CartaoTagForm, TipoRiscoForm
+from django.db.models import ProtectedError
 from .models import CartaoTag, Incidente, Inspecao, TipoRisco, CATEGORIA_RISCO_CHOICES
 
 
@@ -28,18 +29,8 @@ logger = logging.getLogger(__name__)
 # HELPER - Escopo de tecnico reutilizavel
 # =============================================================================
 
-def filtrar_queryset_por_tecnico(queryset, request, lookup_field, permissao_view_all=None):
-    """
-    Aplica escopo de tecnico a um queryset, respeitando permissao 'view_all'.
-    """
-    user = request.user
-    if user.is_superuser:
-        return queryset
-    if permissao_view_all and user.has_perm(permissao_view_all):
-        return queryset
-    if getattr(user, 'is_tecnico', False):
-        return queryset.filter(**{lookup_field: user})
-    return queryset
+def _scoped(qs, request, lookup, perm):
+    return qs if escopo_total(request.user, perm) else qs.filter(**{lookup: request.user})
 
 
 
@@ -64,9 +55,9 @@ class GestaoRiscosDashboardView(GestaoRiscosTecnicoMixin, ListView):
         qs_inspecoes_base = Inspecao.objects.for_request(self.request)
 
         # Aplica escopo de tecnico via funcao utilitaria (sem instanciar mixin)
-        qs_inspecoes_scoped = filtrar_queryset_por_tecnico(
+        qs_inspecoes_scoped = _scoped(
             qs_inspecoes_base, self.request, 'responsavel',
-            permissao_view_all='gestao_riscos.view_all_inspecao'
+            perm='gestao_riscos.view_all_inspecao'
         )
 
         context['inspecoes_pendentes'] = qs_inspecoes_scoped.filter(
@@ -534,19 +525,22 @@ class TipoRiscoDeleteView(
     model = TipoRisco
     template_name = 'gestao_riscos/tipo_risco_confirm_delete.html'
     success_url = reverse_lazy('gestao_riscos:tipo_risco_list')
-    success_message = "Tipo de Risco excluido com sucesso!"
 
     def get_queryset(self):
         # Garante escopo de filial na exclusao
         return TipoRisco.objects.for_request(self.request)
 
     def form_valid(self, form):
-        messages.success(
-            self.request,
-            f'Tipo de Risco "{self.object.nome}" excluido com sucesso!'
-        )
-        return super().form_valid(form)
-
+        try:
+            response = super().form_valid(form)
+        except ProtectedError:
+            messages.error(
+                self.request,
+                "Este tipo está em uso em riscos do PGR. Inative-o em vez de excluir.",
+            )
+            return redirect("gestao_riscos:tipo_risco_list")
+        messages.success(self.request, "Tipo de Risco excluído com sucesso!")
+        return response
 
 class TipoRiscoToggleAtivoView(GestaoRiscosBaseMixin, View):
     """Toggle ativo/inativo via AJAX - filtrado por filial."""

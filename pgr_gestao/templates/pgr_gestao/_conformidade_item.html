@@ -1,0 +1,31 @@
+{# Item do checklist. Uso: {% include 'pgr_gestao/_conformidade_item.html' with item=item %} #}
+<div class="conf-item {{ item.css }} d-flex gap-3 p-3">
+    <i class="bi {{ item.icone }} text-{{ item.cor }} fs-4 flex-shrink-0"></i>
+    <div class="flex-grow-1">
+        <div class="d-flex justify-content-between flex-wrap gap-2">
+            <div>
+                <span class="badge text-bg-secondary me-1">{{ item.codigo }}</span>
+                <strong>{{ item.titulo }}</strong>
+                <div class="small text-body-secondary">{{ item.nr }}</div>
+            </div>
+            <span class="badge text-bg-{{ item.cor }} align-self-start">{{ item.rotulo }}</span>
+        </div>
+
+        <p class="small mt-2 mb-1">{{ item.detalhe }}</p>
+
+        {% if item.estado != "conforme" and item.acao %}
+        <p class="small text-body-secondary mb-2">
+            <i class="bi bi-arrow-right-circle"></i> {{ item.acao }}
+        </p>
+        {% endif %}
+
+        {% if item.links %}
+        <div class="d-flex gap-2 flex-wrap no-print">
+            {% for l in item.links %}
+            <a href="{{ l.url }}" class="btn btn-sm btn-outline-primary">{{ l.rotulo }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+

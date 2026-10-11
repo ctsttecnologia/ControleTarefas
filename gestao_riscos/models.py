@@ -296,7 +296,7 @@ class Inspecao(models.Model):
         if self.entrega_epi:
             if not self.equipamento_id:
                 self.equipamento = self.entrega_epi.equipamento
-            if not self.filial_id:
+            if not self.filial_ativa:
                 self.filial = self.entrega_epi.filial
 
         if not self.equipamento_id and not self.entrega_epi_id:

@@ -1,4 +1,4 @@
-# gestao_riscos/mixins.py
+# seguranca_trabalho/mixins.py
 
 from core.mixins import (
     AppPermissionMixin,

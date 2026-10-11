@@ -530,157 +530,105 @@
 {% endblock %}
 
 {% block extra_pgr_js %}
-
 <script>
-$(document).ready(function() {
-    // Ignora campo desabilitado na edição
-    const dataElabInput = $('#id_data_elaboracao');
-    if (dataElabInput.is(':disabled')) {
-        dataElabInput.removeAttr('required');
+document.addEventListener('DOMContentLoaded', function () {
+    const CSRF       = '{{ csrf_token }}';
+    const URL_LOCAIS = "{% url 'pgr_gestao:ajax_load_locais' 0 %}";
+    const URL_LOCAL  = "{% url 'pgr_gestao:local_prestacao_create' %}";
+    const selEmpresa = document.getElementById('id_empresa');
+    const selLocal   = document.getElementById('select-local');
+    const jq         = window.jQuery;
+
+    function msgErros(errors) {
+        return Object.entries(errors || {})
+            .map(([c, e]) => `${c}: ${[].concat(e).join(', ')}`).join('\n') || 'Erro ao salvar.';
     }
 
-    $(document).ready(function() {
-    // 🆕 Configuração PT-BR do Select2
-    $.fn.select2.defaults.set('language', {
-        errorLoading: () => 'Os resultados não puderam ser carregados.',
-        inputTooLong: (args) => {
-            const overChars = args.input.length - args.maximum;
-            return `Por favor, apague ${overChars} caractere${overChars !== 1 ? 's' : ''}.`;
-        },
-        inputTooShort: (args) => {
-            const remainingChars = args.minimum - args.input.length;
-            return `Digite ${remainingChars} ou mais caractere${remainingChars !== 1 ? 's' : ''}.`;
-        },
-        loadingMore: () => 'Carregando mais resultados...',
-        maximumSelected: (args) => `Você pode selecionar somente ${args.maximum} item${args.maximum !== 1 ? 's' : ''}.`,
-        noResults: () => 'Nenhum resultado encontrado.',
-        searching: () => 'Buscando...',
-        removeAllItems: () => 'Remover todos os itens'
-    });
+    async function carregarLocais(empresaId, selecionarId) {
+        selLocal.innerHTML = '';
+        selLocal.add(new Option('---------', ''));
+        if (!empresaId) return;
+        try {
+            const r = await fetch(URL_LOCAIS.replace(/0\/$/, empresaId + '/'), {
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                credentials: 'same-origin',
+            });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            const dados = await r.json();
+            dados.forEach(l => selLocal.add(new Option(l.razao_social, l.id)));
+            if (selecionarId) selLocal.value = String(selecionarId);
+        } catch (e) {
+            console.error('Falha ao carregar locais:', e);
+        }
+    }
 
-    $('.select2').select2({
-        language: 'pt-BR',
-        theme: 'bootstrap-5',  // se estiver usando o tema bootstrap
-        width: '100%'
-    });
+    // Select2 dispara "change" só via jQuery; cobrimos os dois casos
+    selEmpresa.addEventListener('change', () => carregarLocais(selEmpresa.value));
+    if (jq && jq.fn && jq.fn.on) {
+        jq(selEmpresa).on('select2:select select2:clear', () => carregarLocais(selEmpresa.value));
+    }
 
     // Calcular vencimento (+2 anos)
-    $('#btn-calcular-vencimento').on('click', function() {
-        const dataElaboracao = $('#id_data_elaboracao').val();
-        if (dataElaboracao) {
-            const data = new Date(dataElaboracao);
-            data.setFullYear(data.getFullYear() + 2);
-            $('#id_data_vencimento').val(data.toISOString().split('T')[0]);
-        } else {
-            alert('Por favor, preencha a Data de Elaboração primeiro.');
-        }
-    });
-
-    // Carregar locais por empresa
-    $('#id_empresa').on('change', function() {
-        const empresaId = $(this).val();
-        if (!empresaId) return;
-
-        $.ajax({
-            url: `/pgr/ajax/locais/${empresaId}/`,
-            success: function(data) {
-                const localSelect = $('#select-local');
-                localSelect.empty().append('<option value="">---------</option>');
-                data.forEach(local => {
-                    localSelect.append(`<option value="${local.id}">${local.razao_social}</option>`);
-                });
-            }
-        });
+    document.getElementById('btn-calcular-vencimento')?.addEventListener('click', function () {
+        const v = document.getElementById('id_data_elaboracao').value;
+        if (!v) { alert('Por favor, preencha a Data de Elaboração primeiro.'); return; }
+        const [a, m, d] = v.split('-').map(Number);
+        const dt  = new Date(a + 2, m - 1, d);
+        const pad = n => String(n).padStart(2, '0');
+        document.getElementById('id_data_vencimento').value =
+            `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
     });
 
     // Validação
-    $('#formPGR').on('submit', function(e) {
-        let valid = true;
-        if (!$('#id_empresa').val()) {
-            alert('Por favor, selecione uma Empresa.');
-            valid = false;
-        }
-        const dataElab = $('#id_data_elaboracao');
-        if (!dataElab.is(':disabled') && !dataElab.val()) {
-            alert('Por favor, preencha a Data de Elaboração.');
-            valid = false;
-        }
-        const dataVenc = $('#id_data_vencimento');
-        if (!dataVenc.is(':disabled') && !dataVenc.val()) {
-            alert('Por favor, preencha a Data de Vencimento.');
-            valid = false;
-        }
-        if (!valid) e.preventDefault();
+    document.getElementById('formPGR').addEventListener('submit', function (e) {
+        const faltando = [];
+        const elab = document.getElementById('id_data_elaboracao');
+        const venc = document.getElementById('id_data_vencimento');
+        if (!selEmpresa.value) faltando.push('Empresa');
+        if (elab && !elab.disabled && !elab.value) faltando.push('Data de Elaboração');
+        if (venc && !venc.disabled && !venc.value) faltando.push('Data de Vencimento');
+        if (faltando.length) { alert('Preencha: ' + faltando.join(', ') + '.'); e.preventDefault(); }
     });
+
+    // Novo Local (onclick="salvarNovoLocal()")
+    window.salvarNovoLocal = async function () {
+        if (!selEmpresa.value) { alert('Selecione uma empresa primeiro.'); return; }
+        const form = document.getElementById('formNovoLocal');
+        const fd = new FormData(form);
+        fd.set('empresa', selEmpresa.value);
+        fd.set('ativo', 'on');
+        fd.set('estado', (fd.get('estado') || '').toString().toUpperCase());
+
+        try {
+            const r = await fetch(URL_LOCAL, {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin',
+                headers: {'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest'},
+            });
+            const dados = await r.json();
+            if (dados.success) {
+                await carregarLocais(selEmpresa.value, dados.id);
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNovoLocal')).hide();
+                form.reset();
+            } else {
+                alert(msgErros(dados.errors));
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erro de comunicação ao salvar o local.');
+        }
+    };
+
+    // Edição: já tem empresa, popula os locais mantendo o selecionado
+    if (selEmpresa.value && selLocal.options.length <= 1) {
+        carregarLocais(selEmpresa.value, selLocal.value);
+    }
 });
-
-function salvarNovaEmpresa() {
-    const formData = $('#formNovaEmpresa').serialize();
-    $.ajax({
-        url: '{% url "pgr_gestao:documento_create" %}',
-        method: 'POST',
-        data: formData,
-        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-        success: function(response) {
-            if (response.success) {
-                $('#id_empresa').append(
-                    $('<option>', { value: response.id, text: response.razao_social, selected: true })
-                );
-                $('#modalNovaEmpresa').modal('hide');
-                $('#formNovaEmpresa')[0].reset();
-                alert('Empresa cadastrada com sucesso!');
-            } else {
-                alert('Erro: ' + (response.message || 'desconhecido'));
-            }
-        },
-        error: () => alert('Erro ao salvar empresa.')
-    });
-}
-
-function salvarNovoLocal() {
-    const empresaId = $('#id_empresa').val();
-    if (!empresaId) {
-        alert('Selecione uma empresa primeiro.');
-        return;
-    }
-    const formData = $('#formNovoLocal').serialize() + '&empresa=' + empresaId;
-    $.ajax({
-        url: '{% url "pgr_gestao:local_prestacao_create" %}',
-        method: 'POST',
-        data: formData,
-        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-        success: function(response) {
-            if (response.success) {
-                $('#select-local').append(
-                    $('<option>', { value: response.id, text: response.razao_social, selected: true })
-                );
-                $('#modalNovoLocal').modal('hide');
-                $('#formNovoLocal')[0].reset();
-                alert('Local cadastrado com sucesso!');
-            } else {
-                let errorMsg = 'Erro:\n';
-                for (const field in response.errors) {
-                    errorMsg += `${field}: ${response.errors[field][0]}\n`;
-                }
-                alert(errorMsg);
-            }
-        },
-        error: () => alert('Erro de comunicação.')
-    });
-}
-
-function confirmarExclusaoAnexo(anexoId) {
-    if (confirm('Deseja realmente excluir este anexo?')) {
-        $.ajax({
-            url: `/pgr/anexo/${anexoId}/delete/`,
-            method: 'POST',
-            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-            success: () => location.reload()
-        });
-    }
-}
 </script>
 {% endblock %}
+
+
 
 
 

@@ -1,4 +1,3 @@
-
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
@@ -161,24 +160,10 @@
                         <td>{{ risco.ges.nome|default:"N/A"|truncatewords:3 }}</td>
                         <td><span class="badge badge-risco-{{ risco.classificacao_risco }}">{{ risco.get_classificacao_risco_display }}</span></td>
                         <td>
-                            {% if risco.status_controle == 'controlado' %}
-                            <span class="badge bg-success">{{ risco.get_status_controle_display }}</span>
-                            {% elif risco.status_controle == 'em_controle' %}
-                            <span class="badge bg-info">{{ risco.get_status_controle_display }}</span>
-                            {% else %}
-                            <span class="badge bg-warning text-dark">{{ risco.get_status_controle_display }}</span>
-                            {% endif %}
+                            <span class="badge pgr-badge pgr-status_controle-{{ risco.status_controle }}">{{ risco.get_status_controle_display }}</span>
                         </td>
                         <td>
-                            {% if risco.prioridade_acao == 'critica' %}
-                            <span class="badge bg-danger">{{ risco.get_prioridade_acao_display }}</span>
-                            {% elif risco.prioridade_acao == 'alta' %}
-                            <span class="badge bg-warning text-dark">{{ risco.get_prioridade_acao_display }}</span>
-                            {% elif risco.prioridade_acao == 'media' %}
-                            <span class="badge bg-info">{{ risco.get_prioridade_acao_display }}</span>
-                            {% else %}
-                            <span class="badge bg-secondary">{{ risco.get_prioridade_acao_display }}</span>
-                            {% endif %}
+                            <span class="badge pgr-badge pgr-prioridade-{{ risco.prioridade_acao }}">{{ risco.get_prioridade_acao_display }}</span>
                         </td>
                         <td class="text-center"><small>{{ risco.gravidade_g }}</small></td>
                         <td class="text-center"><small>{{ risco.exposicao_e }}</small></td>

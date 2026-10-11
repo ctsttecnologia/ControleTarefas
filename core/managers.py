@@ -1,9 +1,8 @@
 # core/managers.py
 
 from django.db import models
+from core.utils import get_filial_ativa, usuario_ve_todas_filiais
 from .middleware import get_current_filial
-from core.utils import get_filial_ativa
-
 
 class FilialQuerySet(models.QuerySet):
     """
@@ -14,24 +13,20 @@ class FilialQuerySet(models.QuerySet):
     """
 
     def for_request(self, request):
-        """Filtra pelo escopo da filial ativa do request."""
-        if request is None:
-            return self.none()
+        """Filtra pelo escopo da filial ativa do request (falha fechado)."""
         user = getattr(request, "user", None)
         if user is None or not getattr(user, "is_authenticated", False):
             return self.none()
 
-        # Superuser vê tudo (opcional — remova se não quiser esse comportamento)
-        if getattr(user, "is_superuser", False):
+        # Regra unificada: superuser ou administrador veem todas as filiais
+        if usuario_ve_todas_filiais(user):
             return self
 
         filial = get_filial_ativa(user, request)
         if filial is None:
             return self.none()
 
-        lookup = self._get_filial_field()
-        # filial_id aceita o objeto direto também
-        return self.filter(**{lookup: filial})
+        return self.filter(**{self._get_filial_field(): filial.pk})
 
     def _get_filial_field(self):
         """
@@ -40,9 +35,9 @@ class FilialQuerySet(models.QuerySet):
         2. Se não -> usa 'filial_id' (campo direto)
         """
         model = self.model
-        if hasattr(model, '_filial_lookup'):
+        if hasattr(model, "_filial_lookup"):
             return model._filial_lookup
-        return 'filial_id'
+        return "filial_id"
 
 
 class FilialManager(models.Manager.from_queryset(FilialQuerySet)):
@@ -56,8 +51,9 @@ class FilialManager(models.Manager.from_queryset(FilialQuerySet)):
         qs = super().get_queryset()  # já é FilialQuerySet
         filial = get_current_filial()
         if filial is not None:
-            lookup = qs._get_filial_field()
-            return qs.filter(**{lookup: filial})
+            # aceita objeto Filial ou id puro
+            filial_pk = getattr(filial, "pk", filial)
+            return qs.filter(**{qs._get_filial_field(): filial_pk})
         return qs
 
     def all_filiais(self):

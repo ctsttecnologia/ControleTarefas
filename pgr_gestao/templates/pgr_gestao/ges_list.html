@@ -1,6 +1,5 @@
 {# GES - Lista de Grupos de Exposição Similar #}
 {% extends "pgr_gestao/pgr_base.html" %}
-{% load static %}
 
 {% block title %}GES - Grupos de Exposição Similar{% endblock %}
 
@@ -15,7 +14,7 @@
             <h1><i class="bi bi-people-fill"></i> GES - Grupos de Exposição Similar</h1>
             <p class="mb-0">Gerenciamento de Grupos Homogêneos de Exposição</p>
         </div>
-        {% if perms.pgr_gestao.add_gesgrupoexposicaosimilar %}
+        {% if perms.pgr_gestao.add_gesgrupoexposicao %}
         <a href="{% url 'pgr_gestao:ges_create' %}" class="btn btn-light btn-lg">
             <i class="bi bi-plus-lg"></i> Novo GES
         </a>
@@ -23,66 +22,38 @@
     </div>
 </div>
 
-<!-- Estatísticas -->
 <div class="row mb-4 g-3">
-    <div class="col-md-3 col-6">
-        <div class="card stats-card text-center h-100">
-            <div class="card-body">
-                <h3>{{ total_ges }}</h3>
-                <small class="text-muted">Total de GES</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="card stats-card info text-center h-100">
-            <div class="card-body">
-                <h3 class="text-info">{{ total_trabalhadores }}</h3>
-                <small class="text-muted">Trabalhadores</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="card stats-card warning text-center h-100">
-            <div class="card-body">
-                <h3 class="text-warning">{{ total_riscos }}</h3>
-                <small class="text-muted">Riscos Identificados</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="card stats-card success text-center h-100">
-            <div class="card-body">
-                <h3 class="text-success">{{ ges_ativos }}</h3>
-                <small class="text-muted">GES Ativos</small>
-            </div>
-        </div>
-    </div>
+    <div class="col-md-3 col-6"><div class="card stats-card text-center h-100"><div class="card-body">
+        <h3>{{ total_ges }}</h3><small class="text-muted">Total de GES</small></div></div></div>
+    <div class="col-md-3 col-6"><div class="card stats-card info text-center h-100"><div class="card-body">
+        <h3 class="text-info">{{ total_trabalhadores }}</h3><small class="text-muted">Trabalhadores</small></div></div></div>
+    <div class="col-md-3 col-6"><div class="card stats-card warning text-center h-100"><div class="card-body">
+        <h3 class="text-warning">{{ total_riscos }}</h3><small class="text-muted">Riscos Identificados</small></div></div></div>
+    <div class="col-md-3 col-6"><div class="card stats-card success text-center h-100"><div class="card-body">
+        <h3 class="text-success">{{ ges_ativos }}</h3><small class="text-muted">GES Ativos</small></div></div></div>
 </div>
 
-<!-- Filtros -->
 <div class="card mb-4">
-    <div class="card-header">
-        <i class="bi bi-funnel"></i> Filtros de Pesquisa
-    </div>
+    <div class="card-header"><i class="bi bi-funnel"></i> Filtros de Pesquisa</div>
     <div class="card-body">
         <form method="get" class="row g-3">
             <div class="col-md-4">
-                <label class="form-label">Documento PGR</label>
-                <select name="pgr" class="form-select">
+                <label class="form-label" for="f-pgr">Documento PGR</label>
+                <select id="f-pgr" name="pgr" class="form-select">
                     <option value="">Todos</option>
                     {% for doc in documentos_pgr %}
-                    <option value="{{ doc.id }}" {% if request.GET.pgr == doc.id|stringformat:"s" %}selected{% endif %}>
+                    <option value="{{ doc.pk }}" {% if request.GET.pgr == doc.pk|stringformat:"s" %}selected{% endif %}>
                         {{ doc.codigo_documento }}
                     </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Ambiente</label>
-                <select name="ambiente" class="form-select">
+                <label class="form-label" for="f-amb">Ambiente</label>
+                <select id="f-amb" name="ambiente" class="form-select">
                     <option value="">Todos</option>
                     {% for amb in ambientes %}
-                    <option value="{{ amb.id }}" {% if request.GET.ambiente == amb.id|stringformat:"s" %}selected{% endif %}>
+                    <option value="{{ amb.pk }}" {% if request.GET.ambiente == amb.pk|stringformat:"s" %}selected{% endif %}>
                         {{ amb.nome }}
                     </option>
                     {% endfor %}
@@ -91,65 +62,58 @@
             <div class="col-md-2 d-flex align-items-end">
                 <div class="form-check form-switch mb-2">
                     <input class="form-check-input" type="checkbox" name="ativo" value="true"
-                           {% if request.GET.ativo == 'true' %}checked{% endif %} id="filtroAtivo" role="switch">
+                           id="filtroAtivo" role="switch" {% if request.GET.ativo == 'true' %}checked{% endif %}>
                     <label class="form-check-label" for="filtroAtivo">Apenas Ativos</label>
                 </div>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Buscar</label>
-                <input type="text" name="search" class="form-control" placeholder="Código, nome..."
-                       value="{{ request.GET.search }}">
+                <label class="form-label" for="f-search">Buscar</label>
+                <input id="f-search" type="text" name="search" class="form-control"
+                       placeholder="Código, nome..." value="{{ request.GET.search }}">
             </div>
             <div class="col-md-1 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100" title="Filtrar">
+                <button type="submit" class="btn btn-primary w-100" title="Filtrar" aria-label="Filtrar">
                     <i class="bi bi-search"></i>
                 </button>
             </div>
         </form>
+        {% if filtrando %}
+        <a href="{% url 'pgr_gestao:ges_list' %}" class="small mt-2 d-inline-block">
+            <i class="bi bi-x-circle"></i> Limpar filtros</a>
+        {% endif %}
     </div>
 </div>
 
-<!-- Tabela GES -->
 <div class="card">
-    <div class="card-header">
-        <i class="bi bi-list-ul"></i> Lista de GES
-    </div>
+    <div class="card-header"><i class="bi bi-list-ul"></i> Lista de GES</div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover table-clickable align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Código</th>
-                        <th>Nome</th>
-                        <th>Cargo/Função</th>
-                        <th>Ambiente</th>
-                        <th class="text-center">Trabalhadores</th>
-                        <th class="text-center">Riscos</th>
-                        <th>Jornada</th>
-                        <th class="text-center">Status</th>
-                        <th class="text-center">Ações</th>
+                        <th>Código</th><th>Nome</th><th>Cargo/Função</th><th>Ambiente</th>
+                        <th class="text-center">Trabalhadores</th><th class="text-center">Riscos</th>
+                        <th>Jornada</th><th class="text-center">Status</th><th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for ges in grupos_exposicao %}
-                    <tr onclick="window.location='{% url 'pgr_gestao:ges_detail' ges.pk %}'">
-                        <td><strong>{{ ges.codigo }}</strong></td>
+                    <tr data-href="{% url 'pgr_gestao:ges_detail' ges.pk %}">
+                        <td>
+                            <a href="{% url 'pgr_gestao:ges_detail' ges.pk %}" class="fw-bold text-decoration-none">{{ ges.codigo }}</a>
+                            <br><small class="text-muted">{{ ges.pgr_documento.codigo_documento }}</small>
+                        </td>
                         <td>{{ ges.nome|truncatewords:5 }}</td>
                         <td>
                             {{ ges.cargo.nome|default:"N/A" }}
-                            {% if ges.funcao.nome %}
-                            <br><small class="text-muted">{{ ges.funcao.nome }}</small>
-                            {% endif %}
+                            {% if ges.funcao.nome %}<br><small class="text-muted">{{ ges.funcao.nome }}</small>{% endif %}
                         </td>
                         <td>{{ ges.ambiente_trabalho.nome|default:"N/A"|truncatewords:3 }}</td>
+                        <td class="text-center"><span class="badge text-bg-info">{{ ges.numero_trabalhadores|default:0 }}</span></td>
+                        <td class="text-center"><span class="badge text-bg-warning">{{ ges.num_riscos }}</span></td>
+                        <td><small>{{ ges.jornada_trabalho|default:"-"|truncatewords:3 }}</small></td>
                         <td class="text-center">
-                            <span class="badge bg-info">{{ ges.numero_trabalhadores|default:0 }}</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge bg-warning text-dark">{{ ges.riscos.count }}</span>
-                        </td>
-                        <td><small>{{ ges.jornada_trabalho|truncatewords:3 }}</small></td>
-                        <td class="text-center" onclick="event.stopPropagation();">
+                            {% if perms.pgr_gestao.change_gesgrupoexposicao %}
                             <button type="button"
                                     class="btn btn-sm btn-toggle-ges {% if ges.ativo %}btn-success{% else %}btn-outline-secondary{% endif %}"
                                     data-ges-id="{{ ges.pk }}"
@@ -160,23 +124,22 @@
                                 <i class="bi bi-toggle-{% if ges.ativo %}on{% else %}off{% endif %}"></i>
                                 {% if ges.ativo %}Ativo{% else %}Inativo{% endif %}
                             </button>
+                            {% else %}
+                            {% include 'pgr_gestao/components/badge_status.html' with tipo='ativo' valor=ges.ativo|yesno:"ativo,inativo" texto=ges.ativo|yesno:"Ativo,Inativo" %}
+                            {% endif %}
                         </td>
-                        <td class="text-center" onclick="event.stopPropagation();">
+                        <td class="text-center">
                             <div class="btn-group btn-group-sm">
-                                <a href="{% url 'pgr_gestao:ges_detail' ges.pk %}"
-                                   class="btn btn-outline-info" title="Visualizar">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                {% if perms.pgr_gestao.change_gesgrupoexposicaosimilar %}
-                                <a href="{% url 'pgr_gestao:ges_update' ges.pk %}"
-                                   class="btn btn-outline-warning" title="Editar">
-                                    <i class="bi bi-pencil-square"></i>
-                                </a>
+                                <a href="{% url 'pgr_gestao:ges_detail' ges.pk %}" class="btn btn-outline-info"
+                                   title="Visualizar" aria-label="Visualizar {{ ges.codigo }}"><i class="bi bi-eye"></i></a>
+                                {% if perms.pgr_gestao.change_gesgrupoexposicao %}
+                                <a href="{% url 'pgr_gestao:ges_update' ges.pk %}" class="btn btn-outline-warning"
+                                   title="Editar" aria-label="Editar {{ ges.codigo }}"><i class="bi bi-pencil-square"></i></a>
                                 {% endif %}
-                                <a href="{% url 'pgr_gestao:risco_create' %}?ges={{ ges.pk }}"
-                                   class="btn btn-outline-danger" title="Adicionar Risco">
-                                    <i class="bi bi-plus-lg"></i>
-                                </a>
+                                {% if perms.pgr_gestao.add_riscoidentificado %}
+                                <a href="{% url 'pgr_gestao:risco_create' %}?ges={{ ges.pk }}" class="btn btn-outline-danger"
+                                   title="Adicionar Risco" aria-label="Adicionar risco ao {{ ges.codigo }}"><i class="bi bi-plus-lg"></i></a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -184,11 +147,16 @@
                     <tr>
                         <td colspan="9" class="text-center table-empty-state">
                             <i class="bi bi-inbox d-block"></i>
+                            {% if filtrando %}
+                            <p>Nenhum GES encontrado com os filtros aplicados.</p>
+                            <a href="{% url 'pgr_gestao:ges_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Limpar filtros</a>
+                            {% else %}
                             <p>Nenhum GES cadastrado.</p>
-                            {% if perms.pgr_gestao.add_gesgrupoexposicaosimilar %}
+                            {% if perms.pgr_gestao.add_gesgrupoexposicao %}
                             <a href="{% url 'pgr_gestao:ges_create' %}" class="btn btn-primary">
-                                <i class="bi bi-plus-lg"></i> Criar Primeiro GES
-                            </a>
+                                <i class="bi bi-plus-lg"></i> Criar Primeiro GES</a>
+                            {% endif %}
                             {% endif %}
                         </td>
                     </tr>
@@ -197,41 +165,39 @@
             </table>
         </div>
 
-        <!-- Paginação -->
-        {% if grupos_exposicao.has_other_pages %}
-        <nav class="mt-4">
+        {% if is_paginated %}
+        <nav class="mt-4" aria-label="Paginação">
             <ul class="pagination justify-content-center mb-0">
-                {% if grupos_exposicao.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ grupos_exposicao.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                </li>
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" aria-label="Página anterior" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key|urlencode }}={{ value|urlencode }}{% endif %}{% endfor %}"><i class="bi bi-chevron-left"></i></a></li>
                 {% endif %}
-
-                {% for num in grupos_exposicao.paginator.page_range %}
-                {% if grupos_exposicao.number == num %}
-                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                {% elif num > grupos_exposicao.number|add:'-3' and num < grupos_exposicao.number|add:'3' %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        {{ num }}
-                    </a>
-                </li>
-                {% endif %}
+                {% for num in paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key|urlencode }}={{ value|urlencode }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                    {% endif %}
                 {% endfor %}
-
-                {% if grupos_exposicao.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ grupos_exposicao.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" aria-label="Próxima página" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key|urlencode }}={{ value|urlencode }}{% endif %}{% endfor %}"><i class="bi bi-chevron-right"></i></a></li>
                 {% endif %}
             </ul>
         </nav>
         {% endif %}
     </div>
 </div>
+
 {% endblock %}
+
+{% block extra_pgr_js %}
+<script>
+document.addEventListener('click', function (e) {
+    const row = e.target.closest('tr[data-href]');
+    if (!row || e.target.closest('a, button, input, select, label')) return;
+    window.location.href = row.dataset.href;
+});
+</script>
+{% endblock %}
+
+
 

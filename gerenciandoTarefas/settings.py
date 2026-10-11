@@ -113,7 +113,7 @@ else:
     SECURE_HSTS_PRELOAD = False
 
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_BROWSER_XSS_FILTER = True
+#SECURE_BROWSER_XSS_FILTER = True
 SECURE_REFERRER_POLICY = 'same-origin'
 X_FRAME_OPTIONS = 'DENY'
 SESSION_COOKIE_HTTPONLY = True
@@ -182,9 +182,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'django.contrib.staticfiles', 
     'cloudinary_storage',
     'cloudinary',
-    'django.contrib.staticfiles', 
+
     
     # Apps Locais
     'dashboard.apps.DashboardConfig',
@@ -472,6 +473,15 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(minute=0, hour=11),
     },
 
+    'pgr-verificar-vencimentos': {
+    'task': 'pgr_gestao.verificar_pgrs_proximos_vencimento',
+    'schedule': crontab(hour=7, minute=0),
+    },
+    'pgr-planos-atrasados': {
+        'task': 'pgr_gestao.verificar_planos_atrasados',
+        'schedule': crontab(hour=7, minute=30),
+    },
+
     # ─── App Tarefas — Recorrência e Lembretes ────────────────
     'tarefas-marcar-atrasadas': {
         'task': 'tarefas.marcar_tarefas_atrasadas',
@@ -530,12 +540,7 @@ CHAT_CONFIG = {
 # LOGGING - CONFIGURAÇÃO ADAPTATIVA E SEGURA
 # =============================================================================
 LOGS_DIR = BASE_DIR / 'logs'
-if IS_PRE_PRODUCTION:
-    try:
-        os.makedirs(LOGS_DIR, exist_ok=True)
-        logger.debug(f"Diretório de logs criado/verificado: {LOGS_DIR}")
-    except Exception as e:
-        logger.debug(f"Erro ao criar diretório de logs: {e}")
+os.makedirs(LOGS_DIR, exist_ok=True)
 
 LOGGING = {
     'version': 1,
@@ -551,16 +556,20 @@ LOGGING = {
         },
     },
     'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
+        'console': {'class': 'logging.StreamHandler', 'formatter': 'simple'},
+        'lgpd_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'lgpd_auditoria.log',
+            'maxBytes': 5 * 1024 * 1024,
+            'backupCount': 10,
+            'formatter': 'verbose',
         },
-        "lgpd_file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": BASE_DIR / "logs" / "lgpd_auditoria.log",
-            "maxBytes": 5 * 1024 * 1024,
-            "backupCount": 10,
-            "formatter": "verbose",
+        'audit_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'pgr_auditoria.log',
+            'maxBytes': 5 * 1024 * 1024,
+            'backupCount': 20,
+            'formatter': 'verbose',
         },
     },
     'root': {
@@ -568,42 +577,18 @@ LOGGING = {
         'level': 'WARNING',
     },
     'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'django.request': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'django.server': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'fontTools': {
-            'handlers': ['console'],
-            'level': 'WARNING',
-            'propagate': False,
-        },
+        'django': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        'django.request': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        'django.server': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        'fontTools': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
         'suprimentos': {
             'handlers': ['console'],
             'level': 'DEBUG' if IS_DEVELOPMENT else 'INFO',
             'propagate': False,
         },
-        "lgpd.auditoria": {
-            "handlers": ["lgpd_file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        'chat': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-
+        'lgpd.auditoria': {'handlers': ['lgpd_file'], 'level': 'INFO', 'propagate': False},
+        'pgr.audit': {'handlers': ['audit_file'], 'level': 'INFO', 'propagate': False},
+        'chat': {'handlers': ['console'], 'level': 'DEBUG', 'propagate': False},
     },
 }
 

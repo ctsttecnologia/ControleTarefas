@@ -1,7 +1,6 @@
 
 # cliente/views.py
 
-
 import openpyxl
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -13,7 +12,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models as db_models
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, request
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import (
@@ -29,7 +28,7 @@ from .forms import ClienteForm, ImportacaoMassaForm
 from .models import Cliente
 from .services.importacao_massa import gerar_planilha_modelo, processar_planilha
 import logging
-from core.utils import write_cell
+from core.utils import get_filial_ativa, write_cell
 
 
 logger = logging.getLogger(__name__)
@@ -53,11 +52,11 @@ class FilialAtivaMixin:
     """
 
     def get_filial_ativa(self):
-        filial_id = self.request.session.get('active_filial_id')
+        filial = self.request.session.get('active_filial')
 
-        if filial_id:
+        if filial:
             try:
-                return Filial.objects.get(pk=filial_id)
+                get_filial_ativa(request.user, request)
             except Filial.DoesNotExist:
                 pass
 

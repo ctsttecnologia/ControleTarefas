@@ -24,8 +24,16 @@
         <form method="post" id="formPlanoAcao">
             {% csrf_token %}
 
-            {% if form.non_field_errors %}
-            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <strong>Corrija os campos abaixo:</strong>
+                <ul class="mb-0">
+                    {% for erro in form.non_field_errors %}<li>{{ erro }}</li>{% endfor %}
+                    {% for campo in form %}{% for erro in campo.errors %}
+                    <li><strong>{{ campo.label }}:</strong> {{ erro }}</li>
+                    {% endfor %}{% endfor %}
+                </ul>
+            </div>
             {% endif %}
 
             <!-- SEÇÃO 1: Risco Relacionado -->
@@ -74,14 +82,18 @@
                             Hierarquia de Controle: Eliminação > Engenharia > Administrativa > EPI
                         </small>
                     </div>
-
                     <div class="mb-3">
-                        <label for="{{ form.descricao_acao.id_for_label }}" class="form-label required-field">
-                            Descrição da Ação
-                        </label>
+                        <label for="{{ form.descricao_acao.id_for_label }}" class="form-label required-field">Descrição da Ação</label>
                         {% render_field form.descricao_acao class="form-control" rows="4" placeholder="Descreva detalhadamente a ação que será implementada..." %}
                         {% if form.descricao_acao.errors %}
                         <div class="text-danger small mt-1">{{ form.descricao_acao.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.justificativa.id_for_label }}" class="form-label">Justificativa</label>
+                        {% render_field form.justificativa class="form-control" rows="3" %}
+                        {% if form.justificativa.errors %}
+                        <div class="text-danger small mt-1">{{ form.justificativa.errors }}</div>
                         {% endif %}
                     </div>
 
@@ -113,9 +125,11 @@
                             <div class="text-danger small mt-1">{{ form.prioridade.errors }}</div>
                             {% endif %}
                             <small class="form-text text-muted">
-                                <strong>Crítica:</strong> 15 dias | <strong>Alta:</strong> 30 |
-                                <strong>Média:</strong> 60 | <strong>Baixa:</strong> 90
+                                Prazo sugerido pela classificação do risco:
+                                <strong>Crítico</strong> 15 dias · <strong>Muito grave</strong> 30 ·
+                                <strong>Moderado</strong> 90 · demais 180
                             </small>
+
                         </div>
                         <div class="col-md-6">
                             <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
@@ -186,6 +200,30 @@
                 </div>
             </div>
 
+            {% if form.instance.pk %}
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <i class="bi bi-clipboard-check"></i> 5. Resultado e Eficácia
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.resultado_obtido.id_for_label }}" class="form-label">Resultado Obtido</label>
+                        {% render_field form.resultado_obtido class="form-control" rows="3" %}
+                        {% if form.resultado_obtido.errors %}
+                        <div class="text-danger small mt-1">{{ form.resultado_obtido.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.eficacia_acao.id_for_label }}" class="form-label">Eficácia da Ação</label>
+                        {% render_field form.eficacia_acao class="form-select" %}
+                        {% if form.eficacia_acao.errors %}
+                        <div class="text-danger small mt-1">{{ form.eficacia_acao.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Botões de Ação -->
             <div class="card">
                 <div class="card-body">
@@ -250,52 +288,45 @@
 
 {% block extra_pgr_js %}
 <script>
-$(document).ready(function() {
-    // Carregar informações do risco selecionado
-    $('#id_risco_identificado').on('change', function() {
-        const riscoId = $(this).val();
-        if (!riscoId) {
-            $('#info-risco').slideUp();
-            return;
-        }
-        $.ajax({
-            url: `/pgr/ajax/risco/${riscoId}/`,
-            success: function(data) {
-                $('#risco-agente').text(data.agente);
-                $('#risco-classificacao').html(`<span class="badge badge-risco-${data.classificacao}">${data.classificacao_display}</span>`);
-                $('#risco-fonte').text(data.fonte_geradora || 'N/A');
-                $('#info-risco').slideDown();
+document.addEventListener('DOMContentLoaded', function () {
+    const URL_RISCO = "{% url 'pgr_gestao:ajax_risco_info' 0 %}";
+    const selRisco  = document.getElementById('id_risco_identificado');
+    const box       = document.getElementById('info-risco');
+    const novo      = {{ form.instance.pk|yesno:"false,true" }};   // true = criação
 
-                // Sugere prioridade baseada na classificação
-                let prioridade = 'baixa';
-                if (data.classificacao === 'critico' || data.classificacao === 'muito_grave') prioridade = 'critica';
-                else if (data.classificacao === 'moderado') prioridade = 'alta';
-                else if (data.classificacao === 'marginal') prioridade = 'media';
-                $('#id_prioridade').val(prioridade).trigger('change');
+    async function carregarRisco(sugerir) {
+        if (!selRisco.value) { box.style.display = 'none'; return; }
+        try {
+            const r = await fetch(URL_RISCO.replace(/0\/$/, selRisco.value + '/'), {
+                headers: {'X-Requested-With': 'XMLHttpRequest'}, credentials: 'same-origin',
+            });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            const d = await r.json();
+
+            document.getElementById('risco-agente').textContent = d.agente;
+            document.getElementById('risco-classificacao').innerHTML =
+                '<span class="badge bg-secondary"></span>';
+            document.querySelector('#risco-classificacao .badge').textContent = d.classificacao_display;
+            document.getElementById('risco-fonte').textContent = d.fonte_geradora || 'N/A';
+            box.style.display = '';
+
+            if (sugerir) {
+                const prio = document.getElementById('id_prioridade');
+                const data = document.getElementById('id_data_prevista');
+                if (prio && d.prioridade_sugerida) prio.value = d.prioridade_sugerida;
+                if (data && !data.value) data.value = d.data_sugerida;
             }
-        });
-    });
-
-    // Calcular data prevista baseada na prioridade
-    $('#id_prioridade').on('change', function() {
-        const prioridade = $(this).val();
-        const hoje = new Date();
-        const prazos = { 'critica': 15, 'alta': 30, 'media': 60, 'baixa': 90 };
-        const dias = prazos[prioridade] || 90;
-
-        hoje.setDate(hoje.getDate() + dias);
-        const dataPrevista = hoje.toISOString().split('T')[0];
-
-        if (!$('#id_data_prevista').val()) {
-            $('#id_data_prevista').val(dataPrevista);
+        } catch (e) {
+            console.error('Falha ao carregar risco:', e);
         }
-    });
-
-    // Trigger ao carregar (modo edição)
-    if ($('#id_risco_identificado').val()) {
-        $('#id_risco_identificado').trigger('change');
     }
+
+    selRisco.addEventListener('change', () => carregarRisco(true));
+
+    // Ao abrir: mostra os dados do risco, mas só sugere valores na criação
+    if (selRisco.value) carregarRisco(novo);
 });
 </script>
 {% endblock %}
+
 

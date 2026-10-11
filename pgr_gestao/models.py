@@ -3,26 +3,29 @@
 Models do PGR - Programa de Gerenciamento de Riscos
 Versão Refatorada e Otimizada
 """
-
+from django.db import transaction
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model
-from datetime import date, timedelta
-
+from datetime import date
+from django.core.exceptions import ValidationError
 from logradouro.constant import ESTADOS_BRASIL
 from core.managers import FilialManager
-from usuario.models import Filial
 from departamento_pessoal.models import Cargo, Funcionario
 from seguranca_trabalho.models import Equipamento, Funcao
 from cliente.models import Cliente
-from treinamentos.models import TipoCurso
 from core.upload import delete_old_file, safe_delete_file
 from core.validators import SecureFileValidator
 from core.mixins import make_upload_path, sanitize_image
 from core.magic_utils import get_mime_type
 import os
+from django.utils import timezone
+from .mixins import FilialConsistencyMixin
+from django.db.models import Q, Max
+from .models_base import SoftDeleteModel
+
 
 User = get_user_model()
 
@@ -192,15 +195,12 @@ SECAO_CHOICES = [
     # Capa e cabeçalho
     ('caracterizacao_empresa', '1. Caracterização da Empresa'),
     ('controle_revisao', '1. Controle de Revisão'),
-
     # Seção 2
     ('documento_base', '2. Documento Base'),
     ('documento_base_metas', '2. Documento Base - Metas'),
     ('documento_base_objetivo', '2. Documento Base - Objetivo Geral'),
-
     # Seção 3
     ('definicoes', '3. Definições'),
-
     # Seção 4
     ('estrutura_pgr', '4. Estrutura do PGR'),
     ('estrutura_requisitos', '4. Estrutura - Requisitos Legais'),
@@ -209,7 +209,6 @@ SECAO_CHOICES = [
     ('estrutura_periodicidade', '4. Estrutura - Periodicidade'),
     ('estrutura_implantacao', '4. Estrutura - Implantação Cronograma'),
     ('estrutura_eficacia', '4. Estrutura - Análise da Eficácia'),
-
     # Seção 5
     ('responsabilidades', '5. Definição das Responsabilidades'),
     ('resp_organizacao', '5. Responsabilidades - Da Organização'),
@@ -220,14 +219,11 @@ SECAO_CHOICES = [
     ('resp_medicina', '5. Responsabilidades - Da Medicina do Trabalho'),
     ('resp_supervisao', '5. Responsabilidades - Da Supervisão'),
     ('resp_empregados', '5. Responsabilidades - Dos Empregados'),
-
     # Seção 6
     ('diretrizes', '6. Diretrizes'),
     ('diretrizes_estrategia', '6. Diretrizes - Estratégia'),
-
     # Seção 7
     ('desenvolvimento', '7. Desenvolvimento do PGR'),
-
     # Seção 8
     ('metodologia_avaliacao', '8. Metodologia de Avaliação'),
     ('metodo_ruido', '8. Metodologia - Agente Físico Ruído'),
@@ -252,7 +248,6 @@ SECAO_CHOICES = [
     # Seção 10
     ('plano_acao', '10. Plano de Ação'),
     ('plano_acao_documentacao', '10. Plano de Ação - Documentação'),
-
     # Seção 11
     ('medidas_protecao', '11. Medidas de Proteção'),
     ('medidas_epc', '11. Medidas - Proteção Coletiva'),
@@ -266,26 +261,23 @@ SECAO_CHOICES = [
     ('medidas_recomendacao_epi', '11. Medidas - Recomendação Especial EPI'),
     ('medidas_epi_empregador', '11. Medidas - Cabe ao Empregador (EPI)'),
     ('medidas_epi_colaborador', '11. Medidas - Cabe ao Colaborador (EPI)'),
-
     # Seção 12
     ('cronograma_acoes', '12. Cronograma de Ações'),
-
     # Seção 13
     ('divulgacao', '13. Divulgação do Programa'),
-
     # Seção 14
     ('recomendacoes', '14. Recomendações Gerais'),
-
     # Seção 15
     ('legislacao', '15. Legislação Complementar'),
-
     # Seção 16
     ('levantamento_riscos', '16. Levantamento dos Riscos'),
-
     # Customizado
     ('custom', 'Seção Personalizada'),
-
 ]
+CLASSIFICACOES_CRITICAS = ('critico', 'muito_grave')
+STATUS_RISCO_PENDENTE = ('identificado', 'em_controle')   # corrigido
+ORDEM_CLASSIFICACAO = {'negligenciavel': 1, 'marginal': 2, 'moderado': 3,
+                       'muito_grave': 4, 'critico': 5}
 
 
 # =============================================================================
@@ -300,11 +292,8 @@ class BaseModel(models.Model):
     """
 
     ativo = models.BooleanField('Ativo', default=True)
-    filial = models.ForeignKey(
-        'usuario.Filial',
-        on_delete=models.CASCADE,
-        verbose_name='Filial'
-    )
+    filial = models.ForeignKey("usuario.Filial", on_delete=models.PROTECT, verbose_name="Filial")
+
     criado_em = models.DateTimeField('Criado em', auto_now_add=True)
     atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
     criado_por = models.ForeignKey(
@@ -325,7 +314,7 @@ class BaseModel(models.Model):
 # EMPRESA E LOCAIS
 # =============================================================================
 
-class Empresa(BaseModel):
+class Empresa(SoftDeleteModel, BaseModel):
     """Empresa vinculada a um Cliente para gestão do PGR"""
 
     cliente = models.ForeignKey(
@@ -401,12 +390,10 @@ class Empresa(BaseModel):
 class LocalPrestacaoServico(BaseModel):
     """Local onde os serviços são executados"""
 
-    empresa = models.ForeignKey(
-        Cliente, on_delete=models.CASCADE,
-        related_name='locais_prestacao_pgr',
-        related_query_name='local_prestacao_pgr',
-        verbose_name='Empresa'
-    )
+    empresa = models.ForeignKey(Cliente, on_delete=models.PROTECT, 
+        related_name='locais_prestacao', related_query_name='local_prestacao',
+        verbose_name='Empresa Cliente'
+    ) 
     razao_social = models.CharField('Razão Social', max_length=255)
     cnpj = models.CharField('CNPJ', max_length=18, blank=True)
     descricao = models.TextField('Descrição', blank=True)
@@ -441,7 +428,7 @@ class LocalPrestacaoServico(BaseModel):
         return ', '.join(partes)
 
 
-class ProfissionalResponsavel(BaseModel):
+class ProfissionalResponsavel(SoftDeleteModel, BaseModel):
     """Profissionais responsáveis pela elaboração do PGR"""
 
     funcionario = models.ForeignKey(
@@ -478,18 +465,17 @@ class ProfissionalResponsavel(BaseModel):
 class AmbienteTrabalho(BaseModel):
     """Ambientes de trabalho específicos"""
 
-    empresa = models.ForeignKey(
-        Cliente, on_delete=models.CASCADE,
-        related_name='ambientes_trabalho_pgr',
-        related_query_name='ambiente_trabalho_pgr',
-        verbose_name='Cliente', default=None
+    empresa = models.ForeignKey(Cliente, on_delete=models.PROTECT, 
+        related_name='ambientes_trabalho', related_query_name='ambiente_trabalho',
+        verbose_name='Empresa Cliente'
     )
     local_prestacao = models.ForeignKey(
         LocalPrestacaoServico, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='ambientes',
         verbose_name='Local de Prestação'
     )
-    codigo = models.CharField('Código', max_length=50, unique=True)
+    codigo = models.CharField("Código", max_length=50)
+
     nome = models.CharField('Nome', max_length=200)
     descricao = models.TextField('Descrição', blank=True)
     caracteristicas = models.TextField(
@@ -502,6 +488,7 @@ class AmbienteTrabalho(BaseModel):
         verbose_name = 'Ambiente de Trabalho'
         verbose_name_plural = 'Ambientes de Trabalho'
         ordering = ['codigo']
+        unique_together = ["filial", "codigo"]
 
     def __str__(self):
         return f"{self.codigo} - {self.nome}"
@@ -511,14 +498,12 @@ class AmbienteTrabalho(BaseModel):
 # DOCUMENTO PGR
 # =============================================================================
 
-class PGRDocumento(BaseModel):
-    """Documento principal do PGR"""
+class PGRDocumento(FilialConsistencyMixin, SoftDeleteModel, BaseModel):
+    FILIAL_RELATED = ("local_prestacao",)
 
-    empresa = models.ForeignKey(
-        Cliente, on_delete=models.CASCADE,
-        related_name='documentos_pgr',
-        related_query_name='documento_pgr',
-        verbose_name='Empresa Cliente', default=None
+    empresa = models.ForeignKey(Cliente, on_delete=models.PROTECT, 
+        related_name='documentos_pgr', related_query_name='documento_pgr',
+        verbose_name='Empresa Cliente'
     )
     responsaveis = models.ManyToManyField(
         'ProfissionalResponsavel',
@@ -531,7 +516,7 @@ class PGRDocumento(BaseModel):
         verbose_name='Local de Prestação'
     )
 
-    codigo_documento = models.CharField('Código do Documento', max_length=50, unique=True)
+    codigo_documento = models.CharField("Código do Documento", max_length=50)
     data_elaboracao = models.DateField('Data de Elaboração')
     data_ultima_revisao = models.DateField('Data da Última Revisão', null=True, blank=True)
     data_vencimento = models.DateField('Data de Vencimento')
@@ -547,10 +532,12 @@ class PGRDocumento(BaseModel):
         verbose_name = 'Documento PGR'
         verbose_name_plural = 'Documentos PGR'
         ordering = ['-data_elaboracao']
+        unique_together = ["filial", "codigo_documento"]
         permissions = [
             ('revisar_pgr', 'Pode revisar PGR'),
             ('aprovar_pgr', 'Pode aprovar PGR'),
             ('visualizar_relatorios_pgr', 'Pode visualizar relatórios do PGR'),
+            ('view_all_pgrdocumento', 'Pode visualizar todos os PGRs da filial'),
         ]
 
     def __str__(self):
@@ -617,11 +604,12 @@ class PGRDocumentoResponsavel(models.Model):
         return f"{self.profissional.nome_completo} - {self.get_tipo_responsabilidade_display()}"
 
 
-class PGRRevisao(BaseModel):
-    """Controle de revisões do PGR"""
+class PGRRevisao(FilialConsistencyMixin, SoftDeleteModel,BaseModel):
+    FILIAL_PARENT = "pgr_documento"
+    FILIAL_RELATED = ()
 
     pgr_documento = models.ForeignKey(
-        PGRDocumento, on_delete=models.CASCADE,
+        PGRDocumento, on_delete=models.CASCADE, 
         related_name='revisoes', verbose_name='Documento PGR'
     )
     numero_revisao = models.PositiveIntegerField('Número da Revisão')
@@ -755,8 +743,9 @@ class PGRSecaoTextoPadrao(models.Model):
 # GES - GRUPOS DE EXPOSIÇÃO SIMILAR
 # =============================================================================
 
-class GESGrupoExposicao(BaseModel):
-    """Grupo de Exposição Similar (GES)"""
+class GESGrupoExposicao(FilialConsistencyMixin, SoftDeleteModel, BaseModel):
+    FILIAL_PARENT = "pgr_documento"
+    FILIAL_RELATED = ("ambiente_trabalho",)
 
     pgr_documento = models.ForeignKey(
         PGRDocumento, on_delete=models.CASCADE,
@@ -767,7 +756,7 @@ class GESGrupoExposicao(BaseModel):
     ambiente_trabalho = models.ForeignKey(
         AmbienteTrabalho, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='grupos_exposicao',
-        verbose_name='Ambiente de Trabalho', default=None
+        verbose_name='Ambiente de Trabalho', 
     )
     cargo = models.ForeignKey(
         Cargo, on_delete=models.SET_NULL, null=True, blank=True,
@@ -795,6 +784,10 @@ class GESGrupoExposicao(BaseModel):
         verbose_name_plural = 'GES - Grupos de Exposição Similar'
         ordering = ['pgr_documento', 'codigo']
         unique_together = ['pgr_documento', 'codigo']
+        permissions = [
+            ('view_all_gesgrupoexposicao', 'Pode visualizar todos os GES da filial'),
+            ('change_all_gesgrupoexposicao', 'Pode alterar GES de outros usuários da filial')
+        ]
 
     def __str__(self):
         status = '' if self.ativo else ' [INATIVO]'
@@ -838,8 +831,9 @@ class TipoRisco(BaseModel):
         return f"{self.get_categoria_display()} - {self.nome}"
 
 
-class RiscoIdentificado(BaseModel):
-    """Riscos identificados no ambiente de trabalho"""
+class RiscoIdentificado(FilialConsistencyMixin, SoftDeleteModel, BaseModel):
+    FILIAL_PARENT = "pgr_documento"
+    FILIAL_RELATED = ("ges", "tipo_risco")
 
     pgr_documento = models.ForeignKey(
         PGRDocumento, on_delete=models.CASCADE,
@@ -852,7 +846,7 @@ class RiscoIdentificado(BaseModel):
     ambiente_trabalho = models.ForeignKey(
         LocalPrestacaoServico, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='riscos',
-        verbose_name='Ambiente de Trabalho', default='ambiente_trabalho'
+        verbose_name='Ambiente de Trabalho',
     )
     cargo = models.ForeignKey(
         Cargo, on_delete=models.SET_NULL, null=True, blank=True,
@@ -884,16 +878,14 @@ class RiscoIdentificado(BaseModel):
         'Exposição (E)', choices=EXPOSICAO_CHOICES,
         validators=[MinValueValidator(1), MaxValueValidator(5)]
     )
-    severidade_s = models.CharField('Severidade (S)', max_length=1, choices=SEVERIDADE_CHOICES)
+    severidade_s = models.CharField("Severidade (S)", max_length=1, choices=SEVERIDADE_CHOICES, blank=True, editable=False)
     probabilidade_p = models.IntegerField(
         'Probabilidade (P)', choices=PROBABILIDADE_CHOICES,
         validators=[MinValueValidator(1), MaxValueValidator(5)]
     )
 
     # Resultado
-    classificacao_risco = models.CharField(
-        'Classificação do Risco', max_length=20, choices=CLASSIFICACAO_RISCO_CHOICES
-    )
+    classificacao_risco = models.CharField("Classificação do Risco", max_length=20, choices=CLASSIFICACAO_RISCO_CHOICES, blank=True, editable=False)
     prioridade_acao = models.CharField(
         'Prioridade de Ação', max_length=20, choices=PRIORIDADE_CHOICES, default='media'
     )
@@ -908,6 +900,8 @@ class RiscoIdentificado(BaseModel):
     medidas_controle_existentes = models.TextField('Medidas de Controle Existentes', blank=True)
     observacoes = models.TextField('Observações', blank=True)
     data_identificacao = models.DateField('Data de Identificação', default=date.today)
+    
+    
 
     class Meta:
         db_table = 'pgr_risco_identificado'
@@ -919,12 +913,28 @@ class RiscoIdentificado(BaseModel):
             models.Index(fields=['status_controle']),
             models.Index(fields=['prioridade_acao']),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['pgr_documento', 'codigo'],
+                condition=Q(excluido_em__isnull=True),   # só entre registros não excluídos
+                name='uniq_ges_codigo_por_pgr',
+            ),
+        ] 
 
     def __str__(self):
         return f"{self.tipo_risco.nome} - {self.agente}"
 
     def get_absolute_url(self):
         return reverse('pgr_gestao:risco_detail', kwargs={'pk': self.pk})
+
+    def clean(self):
+        super().clean()
+        if self.ges_id and self.ges.pgr_documento_id != self.pgr_documento_id:
+            raise ValidationError({"ges": "O GES pertence a outro documento."})
+
+    @property
+    def riscos_criticos(self):
+        return self.riscos.filter(classificacao_risco__in=CLASSIFICACOES_CRITICAS).count()
 
     @property
     def cor_classificacao(self):
@@ -992,7 +1002,7 @@ class AvaliacaoQuantitativa(models.Model):
         return f"{self.get_tipo_avaliacao_display()} - {self.data_avaliacao}"
 
 
-class MedidaControle(BaseModel):
+class MedidaControle(SoftDeleteModel, BaseModel):
     """Medidas de controle de riscos"""
 
     TIPO_CONTROLE_CHOICES = [
@@ -1053,8 +1063,9 @@ class RiscoMedidaControle(models.Model):
 # PLANOS DE AÇÃO
 # =============================================================================
 
-class PlanoAcaoPGR(BaseModel):
-    """Planos de ação para controle de riscos"""
+class PlanoAcaoPGR(FilialConsistencyMixin, SoftDeleteModel, BaseModel):
+    FILIAL_PARENT = "risco_identificado"
+    FILIAL_RELATED = ()
 
     risco_identificado = models.ForeignKey(
         RiscoIdentificado, on_delete=models.CASCADE,
@@ -1121,6 +1132,14 @@ class PlanoAcaoPGR(BaseModel):
             delta = (timezone.now().date() - self.data_prevista).days
             return max(delta, 0)
         return 0
+
+    @property
+    def percentual_conclusao(self):
+        """100 se concluído; senão, % do acompanhamento mais recente (0 se não houver)."""
+        if self.status == 'concluido':
+            return 100
+        ultimo = self.acompanhamentos.order_by('-data_acompanhamento', '-criado_em').first()
+        return ultimo.percentual_conclusao if ultimo and ultimo.percentual_conclusao is not None else 0
 
 
 # =============================================================================
@@ -1223,17 +1242,18 @@ class AcompanhamentoPlanoAcao(models.Model):
     def __str__(self):
         return f"Acompanhamento de {self.plano_acao.descricao_acao[:30]} - {self.data_acompanhamento.strftime('%d/%m/%Y')}"
 
+    @transaction.atomic
     def save(self, *args, **kwargs):
-        delete_old_file(self, 'arquivo_evidencia')
-        if not self.pk and self.plano_acao:
+        novo = self._state.adding
+        if novo:
             self.status_anterior = self.plano_acao.status
         super().save(*args, **kwargs)
-        if self.status_atual and self.plano_acao:
+        if novo and self.status_atual:
             plano = self.plano_acao
             plano.status = self.status_atual
-            if self.status_atual == 'concluido' and not plano.data_conclusao:
+            if self.status_atual == "concluido" and not plano.data_conclusao:
                 plano.data_conclusao = self.data_acompanhamento
-            plano.save(update_fields=['status', 'data_conclusao'])
+            plano.save(update_fields=["status", "data_conclusao", "atualizado_em"])
 
     def delete(self, *args, **kwargs):
         safe_delete_file(self, 'arquivo_evidencia')
@@ -1475,54 +1495,43 @@ class AnexoPGR(models.Model):
 
     # ── Lifecycle ─────────────────────────────────────────────────────────
 
+    @staticmethod
+    def _romano(n: int) -> str:
+        out = ""
+        for v, s in ((10, "X"), (9, "IX"), (5, "V"), (4, "IV"), (1, "I")):
+            while n >= v:
+                out, n = out + s, n - v
+        return out
+
     def save(self, *args, **kwargs):
-        delete_old_file(self, 'arquivo')
+        if self.arquivo and self._state.adding or self._arquivo_mudou():
+            self._processar_arquivo()          # 1) sanitiza  2) só então tamanho/MIME
+        with transaction.atomic():
+            if self._state.adding:
+                # trava o documento para serializar a numeração
+                PGRDocumento._base_manager.select_for_update().get(pk=self.pgr_documento_id)
+                maximo = (
+                    AnexoPGR._base_manager.filter(pgr_documento_id=self.pgr_documento_id)
+                    .aggregate(m=Max("ordem"))["m"] or 0
+                )
+                if not self.ordem:
+                    self.ordem = maximo + 1
+                if not self.numero_romano:
+                    self.numero_romano = self._romano(self.ordem)
+            if not self.titulo and self.tipo_anexo != "outro":
+                self.titulo = dict(self.TIPO_ANEXO_CHOICES).get(self.tipo_anexo, "")
+            super().save(*args, **kwargs)
 
-        if self.arquivo:
-            if not self.nome_arquivo_original:
-                self.nome_arquivo_original = os.path.basename(self.arquivo.name)
-            try:
-                self.tamanho_arquivo = self.arquivo.size
-            except Exception:
-                pass
-            if not self.mime_type:
-                try:
-                    self.mime_type = get_mime_type(self.arquivo)
-                except Exception:
-                    self.mime_type = 'application/octet-stream'
-            if self.mime_type.startswith('image/') and hasattr(self.arquivo.file, 'seek'):
-                try:
-                    self.arquivo = sanitize_image(self.arquivo)
-                except Exception:
-                    pass
+    def _processar_arquivo(self):
+        from core.mixins import sanitize_image, sanitize_pdf
+        ct = getattr(self.arquivo.file, "content_type", "") or ""
+        if ct.startswith("image/"):
+            self.arquivo = sanitize_image(self.arquivo)
+        elif ct == "application/pdf":
+            self.arquivo = sanitize_pdf(self.arquivo)
+        self.nome_arquivo_original = self.nome_arquivo_original or os.path.basename(self.arquivo.name)
+        self.tamanho_arquivo = self.arquivo.size
+        self.mime_type = get_mime_type(self.arquivo)
 
-        # Auto-numerar
-        if not self.numero_romano:
-            existentes = AnexoPGR.objects.filter(
-                pgr_documento=self.pgr_documento
-            ).exclude(pk=self.pk).count()
-            numeros = [
-                'I','II','III','IV','V','VI','VII','VIII',
-                'IX','X','XI','XII','XIII','XIV','XV',
-                'XVI','XVII','XVIII','XIX','XX',
-            ]
-            idx = existentes
-            self.numero_romano = numeros[idx] if idx < len(numeros) else str(idx + 1)
 
-        # Auto-ordem
-        if self.ordem == 0 and not self.pk:
-            from django.db.models import Max
-            max_ordem = AnexoPGR.objects.filter(
-                pgr_documento=self.pgr_documento
-            ).aggregate(Max('ordem'))['ordem__max'] or 0
-            self.ordem = max_ordem + 1
 
-        # Auto-título
-        if not self.titulo and self.tipo_anexo != 'outro':
-            self.titulo = dict(self.TIPO_ANEXO_CHOICES).get(self.tipo_anexo, '')
-
-        super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        safe_delete_file(self, 'arquivo')
-        super().delete(*args, **kwargs)

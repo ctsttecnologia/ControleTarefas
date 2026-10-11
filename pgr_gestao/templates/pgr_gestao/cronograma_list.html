@@ -28,7 +28,7 @@
     <div class="col-md-3 col-6">
         <div class="card stats-card text-center h-100">
             <div class="card-body">
-                <h3>{{ total_acoes|default:acoes|length }}</h3>
+                <h3>{{ total_acoes|default:0 }}</h3>
                 <small class="text-muted">Total de Ações</small>
             </div>
         </div>
@@ -57,6 +57,14 @@
             </div>
         </div>
     </div>
+    <div class="col-md col-6">
+        <div class="card stats-card danger text-center h-100">
+            <div class="card-body">
+                <h3 class="text-danger">{{ acoes_atrasadas|default:0 }}</h3>
+                <small class="text-muted">Atrasadas</small>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Filtros -->
@@ -81,10 +89,9 @@
                 <label class="form-label">Status</label>
                 <select name="status" class="form-select">
                     <option value="">Todos</option>
-                    <option value="pendente" {% if request.GET.status == 'pendente' %}selected{% endif %}>Pendente</option>
-                    <option value="em_andamento" {% if request.GET.status == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
-                    <option value="concluido" {% if request.GET.status == 'concluido' %}selected{% endif %}>Concluído</option>
-                    <option value="cancelado" {% if request.GET.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                    {% for valor, rotulo in status_choices %}
+                    <option value="{{ valor }}" {% if request.GET.status == valor %}selected{% endif %}>{{ rotulo }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="col-md-4">
@@ -130,13 +137,15 @@
                         <td>{{ acao.get_periodicidade_display }}</td>
                         <td>
                             {% if acao.status == 'concluido' %}
-                            <span class="badge bg-success">{{ acao.get_status_display }}</span>
+                            <span class="badge pgr-badge pgr-status_plano-{{ acao.status }}">{{ acao.get_status_display }}</span>
                             {% elif acao.status == 'em_andamento' %}
-                            <span class="badge bg-info">{{ acao.get_status_display }}</span>
+                            <span class="badge pgr-badge pgr-status_plano-{{ acao.status }}">{{ acao.get_status_display }}</span>
                             {% elif acao.status == 'cancelado' %}
-                            <span class="badge bg-secondary">{{ acao.get_status_display }}</span>
+                            <span class="badge pgr-badge pgr-status_plano-{{ acao.status }}">{{ acao.get_status_display }}</span>
+                            {% elif acao.status == 'pendente' %}
+                            <span class="badge pgr-badge pgr-status_plano-{{ acao.status }}">{{ acao.get_status_display }}</span>
                             {% else %}
-                            <span class="badge bg-warning text-dark">{{ acao.get_status_display }}</span>
+                            <span class="badge pgr-badge pgr-status_plano-{{ acao.status }}">{{ acao.get_status_display }}</span>
                             {% endif %}
                         </td>
                         <td><small>{{ acao.responsavel|default:"—"|truncatechars:25 }}</small></td>

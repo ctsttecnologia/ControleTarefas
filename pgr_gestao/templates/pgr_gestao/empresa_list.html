@@ -1,6 +1,5 @@
 {# Lista de Empresas Cadastradas para PGR #}
 {% extends "pgr_gestao/pgr_base.html" %}
-{% load static %}
 
 {% block title %}Empresas{% endblock %}
 
@@ -17,50 +16,29 @@
         </div>
         {% if perms.pgr_gestao.add_empresa %}
         <a href="{% url 'pgr_gestao:empresa_create' %}" class="btn btn-light btn-lg">
-            <i class="bi bi-plus-lg"></i> Nova Empresa
-        </a>
+            <i class="bi bi-plus-lg"></i> Nova Empresa</a>
         {% endif %}
     </div>
 </div>
 
 <!-- Estatísticas -->
 <div class="row mb-4 g-3">
-    <div class="col-md-4 col-6">
-        <div class="card stats-card text-center h-100">
-            <div class="card-body">
-                <h3>{{ total_empresas }}</h3>
-                <small class="text-muted">Total de Empresas</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 col-6">
-        <div class="card stats-card success text-center h-100">
-            <div class="card-body">
-                <h3 class="text-success">{{ empresas_ativas }}</h3>
-                <small class="text-muted">Empresas Ativas</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 col-12">
-        <div class="card stats-card info text-center h-100">
-            <div class="card-body">
-                <h3 class="text-info">{{ total_pgrs }}</h3>
-                <small class="text-muted">PGRs Vinculados</small>
-            </div>
-        </div>
-    </div>
+    <div class="col-md-4 col-6"><div class="card stats-card text-center h-100"><div class="card-body">
+        <h3>{{ total_empresas }}</h3><small class="text-muted">Total de Empresas</small></div></div></div>
+    <div class="col-md-4 col-6"><div class="card stats-card success text-center h-100"><div class="card-body">
+        <h3 class="text-success">{{ empresas_ativas }}</h3><small class="text-muted">Empresas Ativas</small></div></div></div>
+    <div class="col-md-4 col-12"><div class="card stats-card info text-center h-100"><div class="card-body">
+        <h3 class="text-info">{{ total_pgrs }}</h3><small class="text-muted">PGRs Vinculados</small></div></div></div>
 </div>
 
 <!-- Filtros -->
 <div class="card mb-4">
-    <div class="card-header">
-        <i class="bi bi-funnel"></i> Filtros de Pesquisa
-    </div>
+    <div class="card-header"><i class="bi bi-funnel"></i> Filtros de Pesquisa</div>
     <div class="card-body">
         <form method="get" class="row g-3">
             <div class="col-md-3">
-                <label class="form-label">Tipo de Empresa</label>
-                <select name="tipo" class="form-select">
+                <label class="form-label" for="f-tipo">Tipo de Empresa</label>
+                <select id="f-tipo" name="tipo" class="form-select">
                     <option value="">Todas</option>
                     <option value="contratante" {% if request.GET.tipo == 'contratante' %}selected{% endif %}>Contratante</option>
                     <option value="contratada" {% if request.GET.tipo == 'contratada' %}selected{% endif %}>Contratada</option>
@@ -68,8 +46,8 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Grau de Risco</label>
-                <select name="grau_risco" class="form-select">
+                <label class="form-label" for="f-grau">Grau de Risco</label>
+                <select id="f-grau" name="grau_risco" class="form-select">
                     <option value="">Todos</option>
                     <option value="1" {% if request.GET.grau_risco == '1' %}selected{% endif %}>1 - Baixo</option>
                     <option value="2" {% if request.GET.grau_risco == '2' %}selected{% endif %}>2 - Médio</option>
@@ -78,24 +56,26 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Status</label>
-                <select name="ativo" class="form-select">
+                <label class="form-label" for="f-ativo">Status</label>
+                <select id="f-ativo" name="ativo" class="form-select">
                     <option value="">Todos</option>
                     <option value="true" {% if request.GET.ativo == 'true' %}selected{% endif %}>Ativas</option>
                     <option value="false" {% if request.GET.ativo == 'false' %}selected{% endif %}>Inativas</option>
                 </select>
             </div>
             <div class="col-md-4">
-                <label class="form-label">Buscar</label>
-                <input type="text" name="search" class="form-control" placeholder="Razão social, CNPJ..."
-                       value="{{ request.GET.search }}">
+                <label class="form-label" for="f-search">Buscar</label>
+                <input id="f-search" type="text" name="search" class="form-control"
+                       placeholder="Razão social, CNPJ..." value="{{ request.GET.search }}">
             </div>
             <div class="col-md-1 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100" title="Filtrar">
-                    <i class="bi bi-search"></i>
-                </button>
+                <button type="submit" class="btn btn-primary w-100" title="Filtrar"><i class="bi bi-search"></i></button>
             </div>
         </form>
+        {% if request.GET.tipo or request.GET.grau_risco or request.GET.ativo or request.GET.search %}
+        <a href="{% url 'pgr_gestao:empresa_list' %}" class="small mt-2 d-inline-block">
+            <i class="bi bi-x-circle"></i> Limpar filtros</a>
+        {% endif %}
     </div>
 </div>
 
@@ -103,7 +83,9 @@
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span><i class="bi bi-list-ul"></i> Lista de Empresas</span>
-        <a href="{% url 'pgr_gestao:empresa_list' %}?export=excel" class="btn btn-sm btn-success">
+        {# Exporta com os filtros atuais #}
+        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' and key != 'export' %}{{ key }}={{ value|urlencode }}&amp;{% endif %}{% endfor %}export=excel"
+           class="btn btn-sm btn-success">
             <i class="bi bi-file-earmark-excel"></i> Exportar Excel
         </a>
     </div>
@@ -112,67 +94,42 @@
             <table class="table table-hover table-clickable align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Razão Social</th>
-                        <th>CNPJ</th>
-                        <th>Tipo</th>
-                        <th>CNAE</th>
-                        <th class="text-center">Grau Risco</th>
-                        <th class="text-center">Empregados</th>
-                        <th>Cidade/UF</th>
-                        <th class="text-center">Status</th>
-                        <th class="text-center">PGRs</th>
-                        <th class="text-center">Ações</th>
+                        <th>Razão Social</th><th>CNPJ</th><th>Tipo</th><th>CNAE</th>
+                        <th class="text-center">Grau Risco</th><th class="text-center">Empregados</th>
+                        <th>Cidade/UF</th><th class="text-center">Status</th>
+                        <th class="text-center">PGRs</th><th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for empresa in empresas %}
                     <tr onclick="window.location='{% url 'pgr_gestao:empresa_detail' empresa.pk %}'">
-                        <td><strong>{{ empresa.razao_social }}</strong></td>
+                        <td><strong>{{ empresa.cliente.razao_social }}</strong></td>
                         <td><small>{{ empresa.cnpj }}</small></td>
-                        <td><span class="badge bg-info">{{ empresa.get_tipo_empresa_display }}</span></td>
-                        <td><small>{{ empresa.cnae|default:"-" }}</small></td>
+                        <td><span class="badge text-bg-info">{{ empresa.get_tipo_empresa_display }}</span></td>
+                        <td><small>{{ empresa.cnae_especifico|default:"-" }}</small></td>
                         <td class="text-center">
                             {% if empresa.grau_risco %}
-                            <span class="badge
-                                {% if empresa.grau_risco == 1 %}bg-success
-                                {% elif empresa.grau_risco == 2 %}bg-info
-                                {% elif empresa.grau_risco == 3 %}bg-warning text-dark
-                                {% else %}bg-danger{% endif %}">
-                                Grau {{ empresa.grau_risco }}
-                            </span>
-                            {% else %}
-                            <span class="text-muted">—</span>
-                            {% endif %}
+                            <span class="badge pgr-badge pgr-grau_risco-{{ empresa.grau_risco }}">Grau {{ empresa.grau_risco }}</span>
+                            {% else %}<span class="text-muted">—</span>{% endif %}
                         </td>
                         <td class="text-center">{{ empresa.numero_empregados|default:"-" }}</td>
                         <td><small>{{ empresa.cidade|default:"-" }}/{{ empresa.estado|default:"-" }}</small></td>
                         <td class="text-center">
                             {% if empresa.ativo %}
-                            <span class="badge bg-success">Ativa</span>
+                            <span class="badge pgr-badge pgr-ativo-ativo">Ativa</span>
                             {% else %}
-                            <span class="badge bg-secondary">Inativa</span>
+                            <span class="badge pgr-badge pgr-ativo-inativo">Inativa</span>
                             {% endif %}
                         </td>
-                        <td class="text-center">
-                            <span class="badge bg-primary">{{ empresa.documentos_pgr.count }}</span>
-                        </td>
+                        <td class="text-center"><span class="badge text-bg-primary">{{ empresa.total_pgrs }}</span></td>
                         <td class="text-center" onclick="event.stopPropagation();">
                             <div class="btn-group btn-group-sm">
-                                <a href="{% url 'pgr_gestao:empresa_detail' empresa.pk %}"
-                                   class="btn btn-outline-info" title="Visualizar">
-                                    <i class="bi bi-eye"></i>
-                                </a>
+                                <a href="{% url 'pgr_gestao:empresa_detail' empresa.pk %}" class="btn btn-outline-info" title="Visualizar"><i class="bi bi-eye"></i></a>
                                 {% if perms.pgr_gestao.change_empresa %}
-                                <a href="{% url 'pgr_gestao:empresa_update' empresa.pk %}"
-                                   class="btn btn-outline-warning" title="Editar">
-                                    <i class="bi bi-pencil-square"></i>
-                                </a>
+                                <a href="{% url 'pgr_gestao:empresa_update' empresa.pk %}" class="btn btn-outline-warning" title="Editar"><i class="bi bi-pencil-square"></i></a>
                                 {% endif %}
                                 {% if perms.pgr_gestao.add_pgrdocumento %}
-                                <a href="{% url 'pgr_gestao:documento_create' %}?empresa={{ empresa.pk }}"
-                                   class="btn btn-outline-success" title="Criar PGR">
-                                    <i class="bi bi-file-earmark-medical"></i>
-                                </a>
+                                <a href="{% url 'pgr_gestao:documento_create' %}?empresa={{ empresa.cliente_id }}" class="btn btn-outline-success" title="Criar PGR"><i class="bi bi-file-earmark-medical"></i></a>
                                 {% endif %}
                             </div>
                         </td>
@@ -181,11 +138,10 @@
                     <tr>
                         <td colspan="10" class="text-center table-empty-state">
                             <i class="bi bi-building-x d-block"></i>
-                            <p>Nenhuma empresa cadastrada.</p>
+                            <p>Nenhuma empresa encontrada.</p>
                             {% if perms.pgr_gestao.add_empresa %}
                             <a href="{% url 'pgr_gestao:empresa_create' %}" class="btn btn-primary">
-                                <i class="bi bi-plus-lg"></i> Cadastrar Primeira Empresa
-                            </a>
+                                <i class="bi bi-plus-lg"></i> Cadastrar Primeira Empresa</a>
                             {% endif %}
                         </td>
                     </tr>
@@ -194,36 +150,21 @@
             </table>
         </div>
 
-        <!-- Paginação -->
-        {% if empresas.has_other_pages %}
-        <nav class="mt-4">
+        {% if is_paginated %}
+        <nav class="mt-4" aria-label="Paginação">
             <ul class="pagination justify-content-center mb-0">
-                {% if empresas.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ empresas.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                </li>
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}"><i class="bi bi-chevron-left"></i></a></li>
                 {% endif %}
-
-                {% for num in empresas.paginator.page_range %}
-                {% if empresas.number == num %}
-                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                {% elif num > empresas.number|add:'-3' and num < empresas.number|add:'3' %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        {{ num }}
-                    </a>
-                </li>
-                {% endif %}
+                {% for num in paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                    {% endif %}
                 {% endfor %}
-
-                {% if empresas.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ empresas.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}"><i class="bi bi-chevron-right"></i></a></li>
                 {% endif %}
             </ul>
         </nav>
@@ -231,4 +172,5 @@
     </div>
 </div>
 {% endblock %}
+
 

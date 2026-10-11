@@ -1,28 +1,27 @@
-
 # core/utils.py
+"""
+Utilitários globais compartilhados do core.
 
-"""Utilitários compartilhados do core."""
+get_filial_ativa() é a FONTE ÚNICA de verdade para resolver
+qual é a filial ativa de um usuário.
+"""
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
-from core.constants import SESSION_FILIAL_ATIVA
 
-if TYPE_CHECKING:
-    from django.http import HttpRequest
-    from models import Filial  
+from typing import Optional, TYPE_CHECKING
 
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.urls import reverse, NoReverseMatch
-from typing import Optional
+
+from core.constants import SESSION_FILIAL_ATIVA
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+    from usuario.models import Filial
 
 
 _FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 
-"""
-core/utils.py
-Utilitários globais. A função get_filial_ativa() é a FONTE ÚNICA
-de verdade para resolver qual é a filial ativa de um usuário.
-"""
 
 def redirect_sem_funcionario(request, modulo: str = ''):
     """
@@ -45,24 +44,21 @@ def redirect_sem_funcionario(request, modulo: str = ''):
         except NoReverseMatch:
             return redirect('/')
 
-# ou no topo de suprimentos/views.py
 
-def usuario_ve_todas_filiais(user):
+def usuario_ve_todas_filiais(user) -> bool:
     """
-    Define a regra UNIFICADA de bypass do escopo de filial.
-    
+    Regra UNIFICADA de bypass do escopo de filial.
+
     Retorna True se o usuário pode ver dados de TODAS as filiais
-    (ou seja, NÃO deve ser filtrado pela filial_ativa).
-    
+    (ou seja, NÃO deve ser filtrado pela filial ativa).
+
     Regra: superuser OU administrador.
     """
-    if not user.is_authenticated:
+    if user is None or not getattr(user, "is_authenticated", False):
         return False
     if user.is_superuser:
         return True
-    if getattr(user, 'is_administrador', False):
-        return True
-    return False
+    return bool(getattr(user, 'is_administrador', False))
 
 
 def get_filial_ativa(user, request: Optional["HttpRequest"] = None) -> Optional["Filial"]:
@@ -72,7 +68,8 @@ def get_filial_ativa(user, request: Optional["HttpRequest"] = None) -> Optional[
     Ordem de prioridade:
     1. `request.session[SESSION_FILIAL_ATIVA]` — se existir e o usuário
        tiver acesso (superuser/administrador acessam qualquer filial).
-    2. `user.filial_ativa` (fallback).
+    2. `user.filial_ativa` (fallback) — também validado contra
+       `usuarios_permitidos` para quem não vê todas as filiais.
 
     Returns:
         Instância de Filial ou None.
@@ -82,17 +79,26 @@ def get_filial_ativa(user, request: Optional["HttpRequest"] = None) -> Optional[
 
     from usuario.models import Filial
 
+    ve_todas = usuario_ve_todas_filiais(user)
+
+    # 1) Filial escolhida na sessão
     if request is not None:
         filial_id = request.session.get(SESSION_FILIAL_ATIVA)
         if filial_id:
             qs = Filial.objects.filter(pk=filial_id)
-            if not usuario_ve_todas_filiais(user):
+            if not ve_todas:
                 qs = qs.filter(usuarios_permitidos=user)
             filial = qs.first()
             if filial is not None:
                 return filial
 
-    return getattr(user, "filial_ativa", None)
+    # 2) Fallback: filial padrão do usuário (validada)
+    fallback = getattr(user, "filial_ativa", None)
+    if fallback is None:
+        return None
+    if not ve_todas and not fallback.usuarios_permitidos.filter(pk=user.pk).exists():
+        return None
+    return fallback
 
 
 def get_filial_ativa_id(user, request=None) -> Optional[int]:
@@ -104,22 +110,18 @@ def get_filial_ativa_id(user, request=None) -> Optional[int]:
 def queryset_da_filial(queryset, user, request=None, campo_filial='filial'):
     """
     Filtra um queryset pela filial ativa do usuário.
-    Superuser e ADMINISTRADOR veem todos.
+    Superuser e administrador veem todos.
 
     Args:
         queryset: QuerySet a filtrar
         user: instância de Usuario
         request: HttpRequest opcional (fallback de sessão)
         campo_filial: nome do campo FK para Filial (default: 'filial')
-
-    Returns:
-        QuerySet filtrado
     """
     if not user or not getattr(user, 'is_authenticated', False):
         return queryset.none()
 
-    # Superuser e admin veem tudo
-    if user.is_superuser or getattr(user, 'is_administrador', False):
+    if usuario_ve_todas_filiais(user):
         return queryset
 
     filial = get_filial_ativa(user, request)
@@ -128,12 +130,17 @@ def queryset_da_filial(queryset, user, request=None, campo_filial='filial'):
 
     return queryset.none()
 
-# departamento_pessoal
+
+# ── departamento_pessoal ─────────────────────────────────────────────────────
+
 def mascarar_cpf(cpf: str) -> str:
     digits = ''.join(filter(str.isdigit, cpf or ''))
     if len(digits) != 11:
         return cpf or ''
     return f"***.{digits[3:6]}.***-{digits[9:11]}"
+
+
+# ── Exportação segura (formula injection) ────────────────────────────────────
 
 def excel_safe(value):
     """Para pandas: prefixa com ' textos que o Excel interpretaria como fórmula."""

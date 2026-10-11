@@ -1,3 +1,4 @@
+
 {# GES - Formulário de Criação/Edição #}
 {% extends "pgr_gestao/pgr_base.html" %}
 {% load static %}
@@ -28,7 +29,7 @@
 
 <div class="row">
     <div class="col-lg-9">
-        <form method="post" enctype="multipart/form-data" id="formGES">
+        <form method="post" id="formGES" novalidate>
             {% csrf_token %}
 
             {% if form.non_field_errors %}
@@ -49,6 +50,9 @@
                             {% render_field form.pgr_documento class="form-select" %}
                             {% if form.pgr_documento.errors %}
                             <div class="text-danger small mt-1">{{ form.pgr_documento.errors }}</div>
+                            {% endif %}
+                            {% if form.instance.pk %}
+                            <small class="form-text text-muted">O documento não pode ser alterado após a criação.</small>
                             {% endif %}
                         </div>
                         <div class="col-md-6">
@@ -77,6 +81,12 @@
                             {% render_field form.ambiente_trabalho class="form-select" %}
                             {% if form.ambiente_trabalho.errors %}
                             <div class="text-danger small mt-1">{{ form.ambiente_trabalho.errors }}</div>
+                            {% endif %}
+                            {% if not form.ambiente_trabalho.field.queryset %}
+                            <small class="form-text text-warning-emphasis">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                Nenhum ambiente cadastrado para a filial ativa. O campo é opcional.
+                            </small>
                             {% endif %}
                         </div>
                         <div class="col-md-4">
@@ -153,33 +163,16 @@
                             <div class="text-danger small mt-1">{{ form.horario_trabalho.errors }}</div>
                             {% endif %}
                         </div>
-                        <div class="col-12">
-                            <label for="{{ form.turnos.id_for_label }}" class="form-label fw-semibold">Turnos</label>
-                            {% render_field form.turnos class="form-control" placeholder="Ex: Matutino, Vespertino" %}
-                            {% if form.turnos.errors %}
-                            <div class="text-danger small mt-1">{{ form.turnos.errors }}</div>
-                            {% endif %}
-                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 4. Informações Complementares -->
+            <!-- 4. Equipamentos e Produtos -->
             <div class="card mb-4">
                 <div class="card-header bg-warning text-dark">
-                    <i class="bi bi-info-circle-fill"></i> 4. Informações Complementares
+                    <i class="bi bi-tools"></i> 4. Equipamentos e Produtos
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <label for="{{ form.caracteristicas_ambiente.id_for_label }}" class="form-label fw-semibold">
-                            Características do Ambiente
-                        </label>
-                        {% render_field form.caracteristicas_ambiente class="form-control" rows="3" placeholder="Características físicas do ambiente..." %}
-                        {% if form.caracteristicas_ambiente.errors %}
-                        <div class="text-danger small mt-1">{{ form.caracteristicas_ambiente.errors }}</div>
-                        {% endif %}
-                    </div>
-
                     <div class="mb-3">
                         <label for="{{ form.equipamentos_utilizados.id_for_label }}" class="form-label fw-semibold">
                             Equipamentos Utilizados
@@ -191,10 +184,12 @@
                     </div>
 
                     <div class="mb-4">
-                        <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">Observações</label>
-                        {% render_field form.observacoes class="form-control" rows="3" placeholder="Informações adicionais..." %}
-                        {% if form.observacoes.errors %}
-                        <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
+                        <label for="{{ form.produtos_manipulados.id_for_label }}" class="form-label fw-semibold">
+                            Produtos Manipulados
+                        </label>
+                        {% render_field form.produtos_manipulados class="form-control" rows="3" placeholder="Produtos químicos, materiais e insumos manipulados..." %}
+                        {% if form.produtos_manipulados.errors %}
+                        <div class="text-danger small mt-1">{{ form.produtos_manipulados.errors }}</div>
                         {% endif %}
                     </div>
 
@@ -213,13 +208,13 @@
                             </div>
                             <div id="statusBadge">
                                 {% if form.instance.pk and not form.instance.ativo %}
-                                    <span class="badge bg-danger fs-6">
-                                        <i class="bi bi-slash-circle"></i> Inativo
-                                    </span>
+                                <span class="badge text-bg-danger fs-6">
+                                    <i class="bi bi-slash-circle-fill"></i> Inativo
+                                </span>
                                 {% else %}
-                                    <span class="badge bg-success fs-6">
-                                        <i class="bi bi-check-circle"></i> Ativo
-                                    </span>
+                                <span class="badge text-bg-success fs-6">
+                                    <i class="bi bi-check-circle-fill"></i> Ativo
+                                </span>
                                 {% endif %}
                             </div>
                         </div>
@@ -298,29 +293,37 @@
 
 {% block extra_pgr_js %}
 <script>
-$(document).ready(function() {
-    // Gerar nome do GES automaticamente
-    $('#id_cargo, #id_ambiente_trabalho').on('change', function() {
-        const cargo = $('#id_cargo option:selected').text().trim();
-        const ambiente = $('#id_ambiente_trabalho option:selected').text().trim();
+document.addEventListener('DOMContentLoaded', function () {
+    const criando = {{ form.instance.pk|yesno:"false,true" }};
+    const cargo = document.getElementById('id_cargo');
+    const ambiente = document.getElementById('id_ambiente_trabalho');
+    const nome = document.getElementById('id_nome');
+    const jornada = document.getElementById('id_jornada_trabalho');
+    const horario = document.getElementById('id_horario_trabalho');
 
-        if (cargo && cargo !== '---------' && ambiente && ambiente !== '---------') {
-            if (!$('#id_nome').val()) {
-                $('#id_nome').val(`${cargo} - ${ambiente}`);
-            }
-        }
-    });
+    // Texto da opção selecionada, ignorando a opção vazia ("---------")
+    const textoSelecionado = el => {
+        if (!el || !el.value) return '';
+        const opt = el.options[el.selectedIndex];
+        return opt ? opt.text.trim() : '';
+    };
 
-    // Sugestão padrão jornada
-    $('#id_jornada_trabalho').on('focus', function() {
-        if (!$(this).val()) $(this).val('44 horas semanais');
-    });
+    // Sugere o nome do GES apenas na criação e se o campo estiver vazio
+    function sugerirNome() {
+        if (!criando || !nome || nome.value.trim()) return;
+        const c = textoSelecionado(cargo);
+        const a = textoSelecionado(ambiente);
+        if (c && a) nome.value = c + ' - ' + a;
+    }
+    [cargo, ambiente].forEach(el => el && el.addEventListener('change', sugerirNome));
 
-    // Sugestão padrão horário
-    $('#id_horario_trabalho').on('focus', function() {
-        if (!$(this).val()) $(this).val('08:00 às 17:00');
-    });
+    // Sugestões padrão de jornada e horário (somente na criação)
+    function sugerir(el, valor) {
+        if (!criando || !el) return;
+        el.addEventListener('focus', () => { if (!el.value) el.value = valor; });
+    }
+    sugerir(jornada, '44 horas semanais');
+    sugerir(horario, '08:00 às 17:00');
 });
 </script>
 {% endblock %}
-

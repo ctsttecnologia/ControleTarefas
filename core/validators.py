@@ -1,81 +1,102 @@
-import re
-from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator, EmailValidator
-from django.utils.translation import gettext_lazy as _
+import logging
 import os
+import re
+
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import EmailValidator, RegexValidator
+from django.utils.translation import gettext_lazy as _
+
 from core.magic_utils import get_mime_type
 
+logger = logging.getLogger(__name__)
+
+
 # =============================================================================
-# == VALIDADORES DE DOCUMENTOS BRASILEIROS
+# == DOCUMENTOS BRASILEIROS
 # =============================================================================
 
+def _so_digitos(value) -> str:
+    return re.sub(r'\D', '', str(value or ''))
+
+
 def validate_cpf(value):
-    cpf = ''.join(re.findall(r'\d', str(value)))
-    if not cpf or len(cpf) != 11:
+    cpf = _so_digitos(value)
+    if len(cpf) != 11:
         raise ValidationError("CPF deve conter 11 dígitos.", code='invalid_cpf')
-    if cpf in [s * 11 for s in "0123456789"]:
+    if len(set(cpf)) == 1:
         raise ValidationError("CPF inválido (todos os dígitos são iguais).", code='invalid_cpf')
-    soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
-    resto = 11 - (soma % 11)
-    digito_verificador_1 = resto if resto < 10 else 0
-    if digito_verificador_1 != int(cpf[9]):
-        raise ValidationError("CPF inválido (dígito verificador 1 incorreto).", code='invalid_cpf')
-    soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
-    resto = 11 - (soma % 11)
-    digito_verificador_2 = resto if resto < 10 else 0
-    if digito_verificador_2 != int(cpf[10]):
-        raise ValidationError("CPF inválido (dígito verificador 2 incorreto).", code='invalid_cpf')
+
+    for n in (9, 10):
+        soma = sum(int(cpf[i]) * (n + 1 - i) for i in range(n))
+        resto = 11 - (soma % 11)
+        dv = resto if resto < 10 else 0
+        if dv != int(cpf[n]):
+            raise ValidationError(
+                f"CPF inválido (dígito verificador {n - 8} incorreto).", code='invalid_cpf'
+            )
 
 
 def validate_pis(value):
-    pis = ''.join(re.findall(r'\d', str(value)))
-    if not pis or len(pis) != 11:
+    pis = _so_digitos(value)
+    if len(pis) != 11:
         raise ValidationError("PIS/PASEP/NIT deve conter 11 dígitos.", code='invalid_pis')
     pesos = [3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
-    soma = sum(int(pis[i]) * pesos[i] for i in range(10))
-    resto = soma % 11
-    digito_verificador = 0 if resto < 2 else 11 - resto
-    if digito_verificador != int(pis[10]):
-        raise ValidationError("PIS/PASEP/NIT inválido (dígito verificador incorreto).", code='invalid_pis')
+    resto = sum(int(pis[i]) * pesos[i] for i in range(10)) % 11
+    dv = 0 if resto < 2 else 11 - resto
+    if dv != int(pis[10]):
+        raise ValidationError(
+            "PIS/PASEP/NIT inválido (dígito verificador incorreto).", code='invalid_pis'
+        )
+
+
+_PESOS_CNPJ = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+
+
+def _cnpj_dv(base: str) -> int:
+    """Módulo 11 com valor = ord(char) - 48 (compatível com CNPJ numérico e alfanumérico)."""
+    pesos = _PESOS_CNPJ[-len(base):]
+    resto = sum((ord(c) - 48) * p for c, p in zip(base, pesos)) % 11
+    return 0 if resto < 2 else 11 - resto
 
 
 def validate_cnpj(value):
-    cnpj = ''.join(re.findall(r'\d', str(value)))
-    if not cnpj or len(cnpj) != 14:
-        raise ValidationError("CNPJ deve conter 14 dígitos.", code='invalid_cnpj')
-    if cnpj in [s * 14 for s in "0123456789"]:
-        raise ValidationError("CNPJ inválido (todos os dígitos são iguais).", code='invalid_cnpj')
-    pesos_1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
-    soma = sum(int(cnpj[i]) * pesos_1[i] for i in range(12))
-    resto = soma % 11
-    digito_verificador_1 = 0 if resto < 2 else 11 - resto
-    if digito_verificador_1 != int(cnpj[12]):
-        raise ValidationError("CNPJ inválido (dígito verificador 1 incorreto).", code='invalid_cnpj')
-    pesos_2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
-    soma = sum(int(cnpj[i]) * pesos_2[i] for i in range(13))
-    resto = soma % 11
-    digito_verificador_2 = 0 if resto < 2 else 11 - resto
-    if digito_verificador_2 != int(cnpj[13]):
-        raise ValidationError("CNPJ inválido (dígito verificador 2 incorreto).", code='invalid_cnpj')
+    """Aceita CNPJ numérico e alfanumérico (12 posições alfanuméricas + 2 dígitos)."""
+    cnpj = re.sub(r'[^0-9A-Za-z]', '', str(value or '')).upper()
+    if not re.fullmatch(r'[0-9A-Z]{12}\d{2}', cnpj):
+        raise ValidationError(
+            "CNPJ deve conter 14 caracteres (12 alfanuméricos + 2 dígitos).",
+            code='invalid_cnpj',
+        )
+    if len(set(cnpj)) == 1:
+        raise ValidationError(
+            "CNPJ inválido (todos os caracteres são iguais).", code='invalid_cnpj'
+        )
+    if _cnpj_dv(cnpj[:12]) != int(cnpj[12]):
+        raise ValidationError(
+            "CNPJ inválido (dígito verificador 1 incorreto).", code='invalid_cnpj'
+        )
+    if _cnpj_dv(cnpj[:13]) != int(cnpj[13]):
+        raise ValidationError(
+            "CNPJ inválido (dígito verificador 2 incorreto).", code='invalid_cnpj'
+        )
 
 
 # =============================================================================
-# == VALIDADORES DE CONTATO
+# == CONTATO
 # =============================================================================
 
 validate_telefone = RegexValidator(
     regex=r'^\(\d{2}\) \d{4,5}-\d{4}$',
-    message=_("O número de telefone deve estar no formato (00) 0000-0000 ou (00) 00000-0000.")
+    message=_("O número de telefone deve estar no formato (00) 0000-0000 ou (00) 00000-0000."),
 )
 
-validate_email = EmailValidator(
-    message=_('Informe um endereço de e-mail válido.')
-)
+validate_email = EmailValidator(message=_('Informe um endereço de e-mail válido.'))
 
-# ============================================================
-#  VALIDADORES DE UPLOAD SEGURO
-# ============================================================
+
+# =============================================================================
+# == UPLOAD SEGURO
+# =============================================================================
 
 _EXT_TO_MIME = {
     '.pdf':  'application/pdf',
@@ -97,103 +118,117 @@ _EXT_TO_MIME = {
     '.mp3':  'audio/mpeg',
 }
 
+# MIMEs que o libmagic costuma devolver para formatos Office/CSV.
+# Só são aceitos quando a extensão declarada corresponde ao MIME esperado.
+_MIME_COMPAT = {
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
+        'application/zip', 'application/octet-stream',
+    },
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+        'application/zip', 'application/octet-stream',
+    },
+    'application/msword': {
+        'application/CDFV2', 'application/x-ole-storage', 'application/vnd.ms-office',
+        'application/octet-stream',
+    },
+    'application/vnd.ms-excel': {
+        'application/CDFV2', 'application/x-ole-storage', 'application/vnd.ms-office',
+        'application/octet-stream',
+    },
+    'text/csv': {'text/plain', 'application/csv'},
+    'image/jpeg': {'image/jpg', 'image/pjpeg'},
+}
+
+_DEFAULT_CONFIG = {
+    'max_size_mb': 10,
+    'allowed_types': {
+        'application/pdf': ['.pdf'],
+        'image/jpeg': ['.jpg', '.jpeg'],
+        'image/png': ['.png'],
+    },
+}
+
 
 def _extensions_to_allowed_types(extensions):
-    """Converte lista de extensões ['jpg', 'pdf'] → {'image/jpeg': ['.jpg'], ...}"""
+    """['jpg', 'pdf'] → {'image/jpeg': ['.jpg'], 'application/pdf': ['.pdf']}"""
     allowed = {}
     for ext in extensions:
-        dot_ext = f'.{ext}' if not ext.startswith('.') else ext
-        dot_ext = dot_ext.lower()
+        dot_ext = (ext if ext.startswith('.') else f'.{ext}').lower()
         mime = _EXT_TO_MIME.get(dot_ext)
-        if mime:
-            allowed.setdefault(mime, [])
-            if dot_ext not in allowed[mime]:
-                allowed[mime].append(dot_ext)
+        if not mime:
+            logger.warning("Extensão %s sem MIME em _EXT_TO_MIME; ignorada.", dot_ext)
+            continue
+        lst = allowed.setdefault(mime, [])
+        if dot_ext not in lst:
+            lst.append(dot_ext)
     return allowed
 
 
 def get_upload_config(app_name):
-    """
-    Retorna a config de upload para o app especificado.
-    Busca primeiro em UPLOAD_CONFIG, depois em UPLOAD_CATEGORIES (convertendo).
-    """
+    """Busca em UPLOAD_CONFIG, depois em UPLOAD_CATEGORIES, depois no default."""
     upload_config = getattr(settings, 'UPLOAD_CONFIG', {})
     if app_name in upload_config:
         return upload_config[app_name]
 
-    upload_categories = getattr(settings, 'UPLOAD_CATEGORIES', {})
-    if app_name in upload_categories:
-        cat = upload_categories[app_name]
+    categories = getattr(settings, 'UPLOAD_CATEGORIES', {})
+    if app_name in categories:
+        cat = categories[app_name]
         return {
             'max_size_mb': cat.get('max_size_mb', 10),
             'allowed_types': _extensions_to_allowed_types(cat.get('extensions', [])),
         }
 
-    if 'default' in upload_config:
-        return upload_config['default']
-
-    return {
-        'max_size_mb': 10,
-        'allowed_types': {
-            'application/pdf': ['.pdf'],
-            'image/jpeg': ['.jpg', '.jpeg'],
-            'image/png': ['.png'],
-        },
-    }
+    logger.warning("Config de upload '%s' não encontrada; usando default.", app_name)
+    return upload_config.get('default', _DEFAULT_CONFIG)
 
 
 class SecureFileValidator:
     """
-    Validator de upload configurável por app.
-    Compatível com UPLOAD_CONFIG (allowed_types) e UPLOAD_CATEGORIES (extensions).
+    Validator de upload configurável por app (UPLOAD_CONFIG / UPLOAD_CATEGORIES).
 
-    Uso:
-        file = models.FileField(validators=[SecureFileValidator('suprimentos_solicitacao')])
+        file = models.FileField(max_length=255, validators=[SecureFileValidator('pgr_anexos')])
+
+    Arquivos já salvos (FieldFile com _committed=True) não são revalidados.
     """
+
+    force_image_check = False
 
     def __init__(self, app_name='default'):
         self.app_name = app_name
 
-    def __call__(self, file):
-        # Se o arquivo não foi alterado no form (é o FieldFile já salvo),
-        # e ele não existe mais no disco, pula toda a validação.
-        if not getattr(file, '_committed', True) is False:
-            # arquivo já salvo anteriormente (não é upload novo)
-            try:
-                file.size  # força checagem de existência
-            except (FileNotFoundError, OSError):
-                return  # ignora validação de arquivo órfão
+    @property
+    def config(self):
+        return get_upload_config(self.app_name)
 
-        self.config = get_upload_config(self.app_name)
+    def __call__(self, file):
+        if getattr(file, '_committed', False):
+            return
+
         self._validate_filename(file)
         self._validate_extension(file)
-        self._validate_mime_type(file)
-        self._validate_size(file)
-        self._validate_mime_extension_match(file)
-        if self._is_image(file):
+        self._validate_size(file)               # barato: antes de ler o conteúdo
+
+        detected = self._read_mime(file)        # lido uma única vez
+        mime = self._normalize_mime(detected, file)
+        self._validate_mime_type(mime)
+        self._validate_mime_extension_match(mime, file)
+        self._validate_office_container(file)
+
+        if self.force_image_check or mime.startswith('image/'):
             self._validate_image_integrity(file)
 
-    # ── Helpers internos (conversão de formato) ──────────────
+    # ── Config ───────────────────────────────────────────────
 
     def _get_allowed_types(self):
-        """Retorna dict {mime: ['.ext', ...]} independente do formato."""
-        if 'allowed_types' in self.config:
-            return self.config['allowed_types'] 
-        if 'extensions' in self.config:
-            return _extensions_to_allowed_types(self.config['extensions'])
-        return {
-            'application/pdf': ['.pdf'],
-            'image/jpeg': ['.jpg', '.jpeg'],
-            'image/png': ['.png'],
-        }
+        cfg = self.config
+        if 'allowed_types' in cfg:
+            return cfg['allowed_types']
+        if 'extensions' in cfg:
+            return _extensions_to_allowed_types(cfg['extensions'])
+        return _DEFAULT_CONFIG['allowed_types']
 
     def _get_allowed_extensions(self):
-        """Retorna lista plana de extensões permitidas."""
-        allowed_types = self._get_allowed_types()
-        exts = []
-        for ext_list in allowed_types.values():
-            exts.extend(ext_list)
-        return list(set(exts))
+        return {e for exts in self._get_allowed_types().values() for e in exts}
 
     def _get_max_size_mb(self):
         return self.config.get('max_size_mb', 10)
@@ -201,12 +236,12 @@ class SecureFileValidator:
     # ── Validações ───────────────────────────────────────────
 
     def _validate_filename(self, file):
-        name = os.path.basename(file.name)
-        dangerous = ['..', '/', '\\', '\x00', '<', '>', '|', ':', '"']
-        if any(char in name for char in dangerous):
+        name = os.path.basename(file.name or '')
+        if not name:
+            raise ValidationError('Arquivo sem nome.', code='invalid_filename')
+        if any(c in name for c in ('..', '\\', '\x00', '<', '>', '|', ':', '"')):
             raise ValidationError(
-                'Nome de arquivo contém caracteres inválidos.',
-                code='invalid_filename',
+                'Nome de arquivo contém caracteres inválidos.', code='invalid_filename'
             )
         if len(name) > 255:
             raise ValidationError(
@@ -219,24 +254,12 @@ class SecureFileValidator:
         allowed = self._get_allowed_extensions()
         if ext not in allowed:
             raise ValidationError(
-                f'Extensão "{ext}" não permitida em {self.app_name}. '
-                f'Aceitas: {", ".join(sorted(allowed))}',
+                f'Extensão "{ext}" não permitida. Aceitas: {", ".join(sorted(allowed))}',
                 code='invalid_extension',
             )
 
-    def _validate_mime_type(self, file):
-        mime = self._read_mime(file)
-        allowed_mimes = list(self._get_allowed_types().keys())
-        if mime not in allowed_mimes:
-            raise ValidationError(
-                f'Tipo de arquivo "{mime}" não permitido em {self.app_name}. '
-                f'Aceitos: {", ".join(allowed_mimes)}',
-                code='invalid_mime',
-            )
-
     def _get_file_size(self, file):
-        """Retorna o tamanho em bytes, mesmo se file.size for None."""
-        size = file.size  # pode levantar FileNotFoundError/OSError (tratado fora)
+        size = file.size
         if size is None:
             f = getattr(file, 'file', file)
             pos = f.tell()
@@ -247,48 +270,99 @@ class SecureFileValidator:
 
     def _validate_size(self, file):
         try:
-            file_size = self._get_file_size(file)
+            size = self._get_file_size(file)
         except (FileNotFoundError, OSError, ValueError):
-            return  # arquivo órfão/sem arquivo associado
-
-        max_bytes = self._get_max_size_mb() * 1024 * 1024
-        if file_size > max_bytes:
+            return  # arquivo órfão / sem arquivo associado
+        max_mb = self._get_max_size_mb()
+        if size > max_mb * 1024 * 1024:
             raise ValidationError(
-                f'Arquivo muito grande. Máximo permitido: {self._get_max_size_mb()} MB.',
+                f'Arquivo muito grande. Máximo permitido: {max_mb} MB.',
                 code='file_too_large',
             )
 
-    def _validate_mime_extension_match(self, file):
-        mime = self._read_mime(file)
+    def _normalize_mime(self, detected, file):
+        """Converte MIMEs genéricos (zip, CDFV2, text/plain) no MIME esperado pela extensão."""
         ext = os.path.splitext(file.name)[1].lower()
-        expected_exts = self._get_allowed_types().get(mime, [])
-        if expected_exts and ext not in expected_exts:
+        expected = _EXT_TO_MIME.get(ext)
+        if (
+            expected
+            and detected != expected
+            and detected in _MIME_COMPAT.get(expected, ())
+            and expected in self._get_allowed_types()
+        ):
+            return expected
+        return detected
+
+    def _validate_mime_type(self, mime):
+        allowed = list(self._get_allowed_types())
+        if mime not in allowed:
+            raise ValidationError(
+                f'Tipo de arquivo "{mime}" não permitido. Aceitos: {", ".join(allowed)}',
+                code='invalid_mime',
+            )
+
+    def _validate_mime_extension_match(self, mime, file):
+        ext = os.path.splitext(file.name)[1].lower()
+        expected = self._get_allowed_types().get(mime, [])
+        if expected and ext not in expected:
             raise ValidationError(
                 f'A extensão "{ext}" não corresponde ao conteúdo real ({mime}). '
                 f'Possível tentativa de disfarçar o tipo do arquivo.',
                 code='mime_mismatch',
             )
 
+    _OFFICE_ZIP_MARKER = {'.docx': 'word/', '.xlsx': 'xl/'}
+
+    def _validate_office_container(self, file):
+        """DOCX/XLSX são ZIPs: confere a estrutura interna em vez de aceitar qualquer ZIP."""
+        import zipfile
+        ext = os.path.splitext(file.name)[1].lower()
+        marker = self._OFFICE_ZIP_MARKER.get(ext)
+        if not marker:
+            return
+        try:
+            file.seek(0)
+            with zipfile.ZipFile(file) as zf:
+                names = zf.namelist()
+        except Exception:
+            raise ValidationError('Arquivo Office corrompido ou inválido.', code='invalid_office')
+        finally:
+            self._rewind(file)
+        if '[Content_Types].xml' not in names or not any(n.startswith(marker) for n in names):
+            raise ValidationError(
+                'O conteúdo do arquivo não corresponde a um documento Office válido.',
+                code='invalid_office',
+            )
+
     def _validate_image_integrity(self, file):
         from PIL import Image
         try:
             file.seek(0)
-            img = Image.open(file)
-            img.verify()
+            Image.open(file).verify()
+        except Exception:
+            raise ValidationError('Imagem corrompida ou inválida.', code='corrupt_image')
+        finally:
+            self._rewind(file)
+
+    # ── Helpers ──────────────────────────────────────────────
+
+    @staticmethod
+    def _rewind(file):
+        try:
             file.seek(0)
         except Exception:
-            raise ValidationError(
-                'Imagem corrompida ou inválida.',
-                code='corrupt_image',
-            )
-
-    # ── Outros helpers ───────────────────────────────────────
+            pass
 
     def _read_mime(self, file):
-        return get_mime_type(file)
-
-    def _is_image(self, file):
-        return self._read_mime(file).startswith('image/')
+        try:
+            return get_mime_type(file)
+        except Exception:
+            logger.exception("Falha ao detectar MIME de '%s'", getattr(file, 'name', ''))
+            raise ValidationError(
+                'Não foi possível verificar o tipo do arquivo.', code='mime_detection_failed'
+            )
+        finally:
+            self._rewind(file)
 
     def deconstruct(self):
         return (
@@ -298,38 +372,14 @@ class SecureFileValidator:
         )
 
     def __eq__(self, other):
-        return isinstance(other, SecureFileValidator) and self.app_name == other.app_name
+        return type(self) is type(other) and self.app_name == other.app_name
+
+    def __hash__(self):
+        return hash((type(self).__name__, self.app_name))
 
 
 class SecureImageValidator(SecureFileValidator):
-    """
-    Validator específico para campos ImageField.
-    Herda toda a lógica do SecureFileValidator mas
-    sempre valida integridade de imagem.
-    """
-
-    def __call__(self, file):
-        # Arquivo já persistido (edição sem novo upload): não revalida
-        if getattr(file, '_committed', False):
-            return
-
-        self.config = get_upload_config(self.app_name)
-        self._validate_filename(file)
-        self._validate_extension(file)
-        self._validate_mime_type(file)
-        self._validate_size(file)
-        self._validate_mime_extension_match(file)
-        if self._is_image(file):
-            self._validate_image_integrity(file)
-
-        def deconstruct(self):
-            return (
-                f'{self.__class__.__module__}.{self.__class__.__qualname__}',
-                [],
-                {'app_name': self.app_name},
-            )
-
-    def __eq__(self, other):
-        return isinstance(other, SecureImageValidator) and self.app_name == other.app_name
+    """Para ImageField: sempre valida a integridade da imagem."""
+    force_image_check = True
 
     

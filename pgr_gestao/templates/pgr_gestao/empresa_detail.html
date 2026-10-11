@@ -1,41 +1,36 @@
-{# Empresa - Detalhes da Empresa e seus Documentos PGR #}
+{# Empresa - Detalhes e Documentos PGR #}
 {% extends "pgr_gestao/pgr_base.html" %}
-{% load static %}
 
-{% block title %}{{ empresa.razao_social }}{% endblock %}
+{% block title %}{{ empresa.cliente.razao_social }}{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{% url 'pgr_gestao:empresa_list' %}">Empresas</a></li>
-<li class="breadcrumb-item active">{{ empresa.razao_social|truncatewords:3 }}</li>
+<li class="breadcrumb-item active">{{ empresa.cliente.razao_social|truncatewords:3 }}</li>
 {% endblock %}
 
 {% block pgr_content %}
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div>
-            <h1><i class="bi bi-building-fill"></i> {{ empresa.razao_social }}</h1>
+            <h1><i class="bi bi-building-fill"></i> {{ empresa.cliente.razao_social }}</h1>
             <p class="mb-0">
-                <span class="badge bg-info">{{ empresa.get_tipo_empresa_display }}</span>
+                <span class="badge text-bg-info">{{ empresa.get_tipo_empresa_display }}</span>
                 {% if empresa.ativo %}
-                <span class="badge bg-success">Ativa</span>
+                <span class="badge pgr-badge pgr-ativo-ativo">Ativa</span>
                 {% else %}
-                <span class="badge bg-secondary">Inativa</span>
+                <span class="badge pgr-badge pgr-ativo-inativo">Inativa</span>
                 {% endif %}
-                {% if empresa.cnpj %}
-                <span class="ms-2"><strong>CNPJ:</strong> {{ empresa.cnpj }}</span>
-                {% endif %}
+                {% if empresa.cnpj %}<span class="ms-2"><strong>CNPJ:</strong> {{ empresa.cnpj }}</span>{% endif %}
             </p>
         </div>
         <div class="btn-group flex-wrap">
             {% if perms.pgr_gestao.change_empresa %}
             <a href="{% url 'pgr_gestao:empresa_update' empresa.pk %}" class="btn btn-warning">
-                <i class="bi bi-pencil-square"></i> Editar
-            </a>
+                <i class="bi bi-pencil-square"></i> Editar</a>
             {% endif %}
             {% if perms.pgr_gestao.add_pgrdocumento %}
-            <a href="{% url 'pgr_gestao:documento_create' %}?empresa={{ empresa.pk }}" class="btn btn-success">
-                <i class="bi bi-file-earmark-medical"></i> Novo PGR
-            </a>
+            <a href="{% url 'pgr_gestao:documento_create' %}?empresa={{ empresa.cliente_id }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-medical"></i> Novo PGR</a>
             {% endif %}
         </div>
     </div>
@@ -43,18 +38,15 @@
 
 <div class="row mb-4">
     <div class="col-lg-8">
-        <!-- Dados da Empresa -->
         <div class="card mb-4">
-            <div class="card-header">
-                <i class="bi bi-info-circle"></i> Dados da Empresa
-            </div>
+            <div class="card-header"><i class="bi bi-info-circle"></i> Dados da Empresa</div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <p><strong>Razão Social:</strong> {{ empresa.razao_social }}</p>
+                        <p><strong>Razão Social:</strong> {{ empresa.cliente.razao_social }}</p>
                         <p><strong>CNPJ:</strong> {{ empresa.cnpj }}</p>
                         <p><strong>Tipo:</strong> {{ empresa.get_tipo_empresa_display }}</p>
-                        <p><strong>CNAE:</strong> {{ empresa.cnae|default:"N/A" }}</p>
+                        <p><strong>CNAE:</strong> {{ empresa.cnae_especifico|default:"N/A" }}</p>
                         {% if empresa.descricao_cnae %}
                         <p><strong>Descrição CNAE:</strong> {{ empresa.descricao_cnae }}</p>
                         {% endif %}
@@ -62,23 +54,14 @@
                     <div class="col-md-6">
                         <p><strong>Grau de Risco:</strong>
                             {% if empresa.grau_risco %}
-                            <span class="badge
-                                {% if empresa.grau_risco == 1 %}bg-success
-                                {% elif empresa.grau_risco == 2 %}bg-info
-                                {% elif empresa.grau_risco == 3 %}bg-warning text-dark
-                                {% else %}bg-danger{% endif %}">
-                                Grau {{ empresa.grau_risco }}
-                            </span>
-                            {% else %}
-                            <span class="text-muted">N/A</span>
-                            {% endif %}
+                            <span class="badge pgr-badge pgr-grau_risco-{{ empresa.grau_risco }}">Grau {{ empresa.grau_risco }}</span>
+                            {% else %}<span class="text-muted">N/A</span>{% endif %}
                         </p>
                         <p><strong>Empregados:</strong> {{ empresa.numero_empregados|default:"N/A" }}</p>
                         <p><strong>Jornada:</strong> {{ empresa.jornada_trabalho|default:"N/A" }}</p>
                         <p><strong>Telefone:</strong> {{ empresa.telefone|default:"N/A" }}</p>
                     </div>
                 </div>
-
                 {% if empresa.atividade_principal %}
                 <hr>
                 <h6><i class="bi bi-card-text"></i> Atividade Principal</h6>
@@ -87,28 +70,20 @@
             </div>
         </div>
 
-        <!-- Endereço -->
         <div class="card mb-4">
-            <div class="card-header">
-                <i class="bi bi-geo-alt-fill"></i> Endereço
-            </div>
+            <div class="card-header"><i class="bi bi-geo-alt-fill"></i> Endereço</div>
             <div class="card-body">
                 {% if empresa.endereco_completo %}
                 <p class="mb-0">{{ empresa.endereco_completo }}</p>
                 {% else %}
-                <p class="text-muted mb-0">
-                    <i class="bi bi-info-circle"></i> Endereço não cadastrado
-                </p>
+                <p class="text-muted mb-0"><i class="bi bi-info-circle"></i> Endereço não cadastrado</p>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Locais de Prestação -->
         {% if locais_prestacao %}
         <div class="card mb-4">
-            <div class="card-header">
-                <i class="bi bi-pin-map-fill"></i> Locais de Prestação de Serviço
-            </div>
+            <div class="card-header"><i class="bi bi-pin-map-fill"></i> Locais de Prestação de Serviço</div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
                     {% for local in locais_prestacao %}
@@ -116,17 +91,12 @@
                         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                             <div>
                                 <h6 class="mb-1">{{ local.razao_social }}</h6>
-                                {% if local.cnpj %}
-                                <p class="mb-1"><small>CNPJ: {{ local.cnpj }}</small></p>
-                                {% endif %}
-                                <p class="mb-0 text-muted">
-                                    <small>
-                                        <i class="bi bi-geo-alt"></i>
-                                        {{ local.endereco }}, {{ local.numero }} - {{ local.cidade }}/{{ local.estado }}
-                                    </small>
-                                </p>
+                                {% if local.cnpj %}<p class="mb-1"><small>CNPJ: {{ local.cnpj }}</small></p>{% endif %}
+                                <p class="mb-0 text-muted"><small><i class="bi bi-geo-alt"></i>
+                                    {{ local.endereco }}{% if local.numero %}, {{ local.numero }}{% endif %}
+                                    - {{ local.cidade }}/{{ local.estado }}</small></p>
                             </div>
-                            <span class="badge bg-primary">{{ local.documentos_pgr.count }} PGR(s)</span>
+                            <span class="badge text-bg-primary">{{ local.total_pgrs }} PGR(s)</span>
                         </div>
                     </div>
                     {% endfor %}
@@ -136,63 +106,29 @@
         {% endif %}
     </div>
 
-    <!-- Sidebar -->
     <div class="col-lg-4">
-        <!-- Estatísticas -->
         <div class="card mb-3">
-            <div class="card-header bg-primary text-white">
-                <i class="bi bi-pie-chart-fill"></i> Estatísticas
-            </div>
+            <div class="card-header bg-primary text-white"><i class="bi bi-pie-chart-fill"></i> Estatísticas</div>
             <div class="card-body">
-                <div class="d-flex justify-content-between mb-2">
-                    <span>Total de PGRs:</span>
-                    <strong>{{ documentos_pgr.count }}</strong>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span>PGRs Vigentes:</span>
-                    <strong class="text-success">{{ pgrs_vigentes }}</strong>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span>PGRs Vencidos:</span>
-                    <strong class="text-danger">{{ pgrs_vencidos }}</strong>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span>Locais de Prestação:</span>
-                    <strong>{{ locais_prestacao.count }}</strong>
-                </div>
+                <div class="d-flex justify-content-between mb-2"><span>Total de PGRs:</span><strong>{{ documentos_pgr|length }}</strong></div>
+                <div class="d-flex justify-content-between mb-2"><span>PGRs Vigentes:</span><strong class="text-success">{{ pgrs_vigentes }}</strong></div>
+                <div class="d-flex justify-content-between mb-2"><span>PGRs Vencidos:</span><strong class="text-danger">{{ pgrs_vencidos }}</strong></div>
+                <div class="d-flex justify-content-between mb-2"><span>Locais de Prestação:</span><strong>{{ locais_prestacao|length }}</strong></div>
                 <hr>
-                <div class="d-flex justify-content-between mb-2">
-                    <span>Total de Riscos:</span>
-                    <strong>{{ total_riscos }}</strong>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <span>Riscos Críticos:</span>
-                    <strong class="text-danger">{{ riscos_criticos }}</strong>
-                </div>
+                <div class="d-flex justify-content-between mb-2"><span>Total de Riscos:</span><strong>{{ total_riscos }}</strong></div>
+                <div class="d-flex justify-content-between"><span>Riscos Críticos:</span><strong class="text-danger">{{ riscos_criticos }}</strong></div>
             </div>
         </div>
 
-        <!-- Informações Adicionais -->
         <div class="card">
-            <div class="card-header">
-                <i class="bi bi-clipboard-data"></i> Informações Adicionais
-            </div>
+            <div class="card-header"><i class="bi bi-clipboard-data"></i> Informações Adicionais</div>
             <div class="card-body">
-                <p class="mb-2">
-                    <i class="bi bi-calendar-plus text-info"></i>
-                    <strong>Cadastrado em:</strong><br>
-                    <small class="text-muted">{{ empresa.criado_em|date:"d/m/Y H:i" }}</small>
-                </p>
-                <p class="mb-2">
-                    <i class="bi bi-pencil-square text-warning"></i>
-                    <strong>Última atualização:</strong><br>
-                    <small class="text-muted">{{ empresa.atualizado_em|date:"d/m/Y H:i" }}</small>
-                </p>
-                <p class="mb-0">
-                    <i class="bi bi-building text-primary"></i>
-                    <strong>Filial:</strong><br>
-                    <small class="text-muted">{{ empresa.filial.nome }}</small>
-                </p>
+                <p class="mb-2"><i class="bi bi-calendar-plus text-info"></i> <strong>Cadastrado em:</strong><br>
+                    <small class="text-muted">{{ empresa.criado_em|date:"d/m/Y H:i" }}</small></p>
+                <p class="mb-2"><i class="bi bi-pencil-square text-warning"></i> <strong>Última atualização:</strong><br>
+                    <small class="text-muted">{{ empresa.atualizado_em|date:"d/m/Y H:i" }}</small></p>
+                <p class="mb-0"><i class="bi bi-building text-primary"></i> <strong>Filial:</strong><br>
+                    <small class="text-muted">{{ empresa.filial.nome }}</small></p>
             </div>
         </div>
     </div>
@@ -203,9 +139,8 @@
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span><i class="bi bi-file-earmark-text"></i> Documentos PGR</span>
         {% if perms.pgr_gestao.add_pgrdocumento %}
-        <a href="{% url 'pgr_gestao:documento_create' %}?empresa={{ empresa.pk }}" class="btn btn-sm btn-success">
-            <i class="bi bi-plus-lg"></i> Novo PGR
-        </a>
+        <a href="{% url 'pgr_gestao:documento_create' %}?empresa={{ empresa.cliente_id }}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus-lg"></i> Novo PGR</a>
         {% endif %}
     </div>
     <div class="card-body">
@@ -214,14 +149,8 @@
             <table class="table table-hover table-clickable align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Código</th>
-                        <th>Local</th>
-                        <th>Status</th>
-                        <th>Elaboração</th>
-                        <th>Vencimento</th>
-                        <th>Versão</th>
-                        <th>Conclusão</th>
-                        <th class="text-center">Ações</th>
+                        <th>Código</th><th>Local</th><th>Status</th><th>Elaboração</th>
+                        <th>Vencimento</th><th>Versão</th><th>Conclusão</th><th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -229,48 +158,32 @@
                     <tr onclick="window.location='{% url 'pgr_gestao:documento_detail' doc.pk %}'">
                         <td><strong>{{ doc.codigo_documento }}</strong></td>
                         <td><small>{{ doc.local_prestacao.razao_social|default:"N/A"|truncatewords:5 }}</small></td>
-                        <td>
-                            {% if doc.status == 'vigente' %}
-                            <span class="badge badge-status-vigente">Vigente</span>
-                            {% elif doc.status == 'vencido' %}
-                            <span class="badge badge-status-vencido">Vencido</span>
-                            {% elif doc.status == 'em_revisao' %}
-                            <span class="badge badge-status-em-revisao">Em Revisão</span>
-                            {% endif %}
-                        </td>
+                        <td><span class="badge pgr-badge pgr-status_pgr-{{ doc.status }}">{{ doc.get_status_display }}</span></td>
                         <td>{{ doc.data_elaboracao|date:"d/m/Y" }}</td>
                         <td>
                             {{ doc.data_vencimento|date:"d/m/Y" }}
-                            {% if doc.dias_para_vencimento < 0 %}
-                            <br><small class="text-danger">Vencido</small>
-                            {% elif doc.dias_para_vencimento <= 30 %}
-                            <br><small class="text-warning">{{ doc.dias_para_vencimento }} dias</small>
+                            {% with dias=doc.dias_para_vencimento %}
+                            {% if dias is not None %}
+                                {% if dias < 0 %}<br><small class="text-danger">Vencido</small>
+                                {% elif dias <= 30 %}<br><small class="text-warning">{{ dias }} dias</small>{% endif %}
                             {% endif %}
+                            {% endwith %}
                         </td>
                         <td>{{ doc.versao_atual }}</td>
                         <td>
+                            {% with pct=doc.percentual_conclusao %}
                             <div class="progress" style="height: 20px; min-width: 80px;">
-                                <div class="progress-bar
-                                    {% if doc.percentual_conclusao >= 90 %}bg-success
-                                    {% elif doc.percentual_conclusao >= 70 %}bg-info
-                                    {% elif doc.percentual_conclusao >= 50 %}bg-warning
-                                    {% else %}bg-danger{% endif %}"
-                                    role="progressbar"
-                                    style="width: {{ doc.percentual_conclusao }}%">
-                                    {{ doc.percentual_conclusao|floatformat:0 }}%
+                                <div class="progress-bar {% if pct >= 90 %}bg-success{% elif pct >= 70 %}bg-info{% elif pct >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %}"
+                                     role="progressbar" style="width: {{ pct|stringformat:'.0f' }}%">
+                                    {{ pct|stringformat:'.0f' }}%
                                 </div>
                             </div>
+                            {% endwith %}
                         </td>
                         <td class="text-center" onclick="event.stopPropagation();">
                             <div class="btn-group btn-group-sm">
-                                <a href="{% url 'pgr_gestao:documento_detail' doc.pk %}"
-                                   class="btn btn-outline-info" title="Visualizar">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="{% url 'pgr_gestao:relatorio_completo_pdf' doc.pk %}"
-                                   class="btn btn-outline-danger" title="PDF" target="_blank">
-                                    <i class="bi bi-file-earmark-pdf"></i>
-                                </a>
+                                <a href="{% url 'pgr_gestao:documento_detail' doc.pk %}" class="btn btn-outline-info" title="Visualizar"><i class="bi bi-eye"></i></a>
+                                <a href="{% url 'pgr_gestao:relatorio_completo_pdf' doc.pk %}" class="btn btn-outline-danger" title="PDF" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i></a>
                             </div>
                         </td>
                     </tr>
@@ -283,13 +196,13 @@
             <i class="bi bi-file-earmark-x d-block"></i>
             <p>Nenhum documento PGR cadastrado para esta empresa.</p>
             {% if perms.pgr_gestao.add_pgrdocumento %}
-            <a href="{% url 'pgr_gestao:documento_create' %}?empresa={{ empresa.pk }}" class="btn btn-success">
-                <i class="bi bi-plus-lg"></i> Criar Primeiro PGR
-            </a>
+            <a href="{% url 'pgr_gestao:documento_create' %}?empresa={{ empresa.cliente_id }}" class="btn btn-success">
+                <i class="bi bi-plus-lg"></i> Criar Primeiro PGR</a>
             {% endif %}
         </div>
         {% endif %}
     </div>
 </div>
 {% endblock %}
+
 

@@ -15,20 +15,21 @@
         <div>
             <h1>
                 <i class="bi bi-people-fill"></i> {{ ges.nome }}
-                {% if not ges.ativo %}
-                <span class="badge bg-danger ms-2">Inativo</span>
+                {% if ges.ativo %}
+                <span class="badge pgr-badge pgr-ativo-ativo ms-2">Ativo</span>
                 {% else %}
-                <span class="badge bg-success ms-2">Ativo</span>
+                <span class="badge pgr-badge pgr-ativo-inativo ms-2">Inativo</span>
                 {% endif %}
             </h1>
             <p class="mb-0">
                 <strong>Código:</strong> {{ ges.codigo }} |
-                <strong>PGR:</strong> {{ ges.pgr_documento }}
+                <strong>PGR:</strong> {{ ges.pgr_documento.codigo_documento }}
             </p>
         </div>
         <div class="btn-group flex-wrap">
+            {% if perms.pgr_gestao.change_gesgrupoexposicao %}
             <button type="button"
-                    class="btn {% if ges.ativo %}btn-outline-danger{% else %}btn-success{% endif %} btn-toggle-ges"
+                    class="btn {% if ges.ativo %}btn-outline-light{% else %}btn-success{% endif %} btn-toggle-ges"
                     data-ges-id="{{ ges.pk }}"
                     data-ges-nome="{{ ges.nome }}"
                     data-ativo="{{ ges.ativo|yesno:'true,false' }}"
@@ -40,14 +41,15 @@
                     <i class="bi bi-check-circle"></i> Reativar GES
                 {% endif %}
             </button>
-            {% if perms.pgr_gestao.change_gesgrupoexposicaosimilar %}
             <a href="{% url 'pgr_gestao:ges_update' ges.pk %}" class="btn btn-warning">
                 <i class="bi bi-pencil-square"></i> Editar
             </a>
             {% endif %}
+            {% if perms.pgr_gestao.add_riscoidentificado %}
             <a href="{% url 'pgr_gestao:risco_create' %}?ges={{ ges.pk }}" class="btn btn-danger">
                 <i class="bi bi-plus-lg"></i> Adicionar Risco
             </a>
+            {% endif %}
             <a href="{% url 'pgr_gestao:documento_detail' ges.pgr_documento.pk %}" class="btn btn-info">
                 <i class="bi bi-file-earmark-text"></i> Ver PGR
             </a>
@@ -55,25 +57,23 @@
     </div>
 </div>
 
-<!-- Banner de inativo -->
 {% if not ges.ativo %}
 <div class="alert alert-danger d-flex align-items-center mb-4">
     <i class="bi bi-exclamation-triangle-fill fs-3 me-3"></i>
     <div>
         <strong>Este GES está inativo.</strong><br>
         Ele não será incluído no inventário de riscos do relatório PDF do PGR.
+        {% if perms.pgr_gestao.change_gesgrupoexposicao %}
         Para incluí-lo novamente, clique em <strong>"Reativar GES"</strong>.
+        {% endif %}
     </div>
 </div>
 {% endif %}
 
-<!-- Informações Principais -->
 <div class="row mb-4">
     <div class="col-lg-8">
         <div class="card mb-4">
-            <div class="card-header">
-                <i class="bi bi-info-circle"></i> Informações do GES
-            </div>
+            <div class="card-header"><i class="bi bi-info-circle"></i> Informações do GES</div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
@@ -88,58 +88,57 @@
                     </div>
                     <div class="col-md-6">
                         <p><strong>Trabalhadores:</strong> {{ ges.numero_trabalhadores|default:0 }}</p>
-                        <p><strong>Jornada:</strong> {{ ges.jornada_trabalho }}</p>
-                        <p><strong>Horário:</strong> {{ ges.horario_trabalho }}</p>
-                        <p><strong>Status:</strong>
-                            {% if ges.ativo %}
-                            <span class="badge bg-success">Ativo</span>
-                            {% else %}
-                            <span class="badge bg-secondary">Inativo</span>
-                            {% endif %}
+                        <p><strong>Jornada:</strong> {{ ges.jornada_trabalho|default:"Não informada" }}</p>
+                        <p><strong>Horário:</strong> {{ ges.horario_trabalho|default:"Não informado" }}</p>
+                        <p class="mb-0 text-muted small">
+                            Criado em {{ ges.criado_em|date:"d/m/Y H:i" }}
+                            · Atualizado em {{ ges.atualizado_em|date:"d/m/Y H:i" }}
                         </p>
                     </div>
                 </div>
 
                 <hr>
                 <h6><i class="bi bi-card-text"></i> Descrição das Atividades</h6>
-                <p>{{ ges.descricao_atividades|linebreaks }}</p>
+                <div>{{ ges.descricao_atividades|linebreaks }}</div>
 
-                {% if ges.observacoes %}
+                {% if ges.equipamentos_utilizados %}
                 <hr>
-                <h6><i class="bi bi-chat-left-text"></i> Observações</h6>
-                <p>{{ ges.observacoes|linebreaks }}</p>
+                <h6><i class="bi bi-tools"></i> Equipamentos Utilizados</h6>
+                <div>{{ ges.equipamentos_utilizados|linebreaks }}</div>
+                {% endif %}
+
+                {% if ges.produtos_manipulados %}
+                <hr>
+                <h6><i class="bi bi-droplet"></i> Produtos Manipulados</h6>
+                <div>{{ ges.produtos_manipulados|linebreaks }}</div>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Sidebar -->
     <div class="col-lg-4">
-        <!-- Estatísticas -->
         <div class="card mb-3">
             <div class="card-header bg-primary text-white">
                 <i class="bi bi-pie-chart-fill"></i> Estatísticas
             </div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
-                    <span>Total de Riscos:</span>
-                    <strong>{{ riscos.count }}</strong>
+                    <span>Total de Riscos:</span><strong>{{ total_riscos }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
-                    <span>Riscos Críticos:</span>
-                    <strong class="text-danger">{{ riscos_criticos }}</strong>
+                    <span>Riscos Críticos:</span><strong class="text-danger">{{ riscos_criticos }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
-                    <span>Riscos Controlados:</span>
-                    <strong class="text-success">{{ riscos_controlados }}</strong>
+                    <span>Riscos Controlados:</span><strong class="text-success">{{ riscos_controlados }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Riscos Pendentes:</span><strong class="text-warning-emphasis">{{ riscos_pendentes }}</strong>
                 </div>
                 {% if riscos_stats %}
                 <hr>
                 {% for stat in riscos_stats %}
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="badge badge-risco-{{ stat.classificacao_risco }}">
-                        {{ stat.get_classificacao_risco_display }}
-                    </span>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge pgr-badge pgr-risco-{{ stat.classificacao_risco }}">{{ stat.label }}</span>
                     <strong>{{ stat.total }}</strong>
                 </div>
                 {% endfor %}
@@ -147,8 +146,7 @@
             </div>
         </div>
 
-        <!-- EPIs -->
-        <div class="card">
+        <div class="card mb-3">
             <div class="card-header bg-info text-white">
                 <i class="bi bi-shield-fill-check"></i> EPIs Recomendados
             </div>
@@ -159,30 +157,46 @@
                     <li class="mb-2 {% if not forloop.last %}pb-2 border-bottom{% endif %}">
                         <i class="bi bi-check-circle-fill text-success"></i>
                         {{ epi.equipamento.nome }}
-                        {% if epi.ca_numero %}
-                        <br><small class="text-muted ms-4">CA: {{ epi.ca_numero }}</small>
-                        {% endif %}
+                        {% if epi.ca_numero %}<br><small class="text-muted ms-4">CA: {{ epi.ca_numero }}</small>{% endif %}
                     </li>
                     {% endfor %}
                 </ul>
                 {% else %}
                 <p class="text-muted text-center mb-0">
-                    <i class="bi bi-shield-slash d-block mb-2" style="font-size: 2rem; opacity: 0.4;"></i>
+                    <i class="bi bi-shield-slash d-block mb-2 fs-2 opacity-50"></i>
                     Nenhum EPI recomendado
                 </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-mortarboard"></i> Treinamentos Necessários</div>
+            <div class="card-body">
+                {% if treinamentos_necessarios %}
+                <ul class="list-unstyled mb-0">
+                    {% for t in treinamentos_necessarios %}
+                    <li class="mb-2 {% if not forloop.last %}pb-2 border-bottom{% endif %}">
+                        <i class="bi bi-book-fill text-info"></i> {{ t.tipo_curso.nome }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted text-center mb-0">Nenhum treinamento vinculado</p>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Tabela de Riscos -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span><i class="bi bi-exclamation-triangle"></i> Riscos Identificados neste GES</span>
+        {% if perms.pgr_gestao.add_riscoidentificado %}
         <a href="{% url 'pgr_gestao:risco_create' %}?ges={{ ges.pk }}" class="btn btn-sm btn-danger">
             <i class="bi bi-plus-lg"></i> Adicionar Risco
         </a>
+        {% endif %}
     </div>
     <div class="card-body">
         {% if riscos %}
@@ -190,44 +204,31 @@
             <table class="table table-hover table-sm table-clickable align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Código</th>
-                        <th>Tipo</th>
-                        <th>Agente</th>
-                        <th>Fonte Geradora</th>
-                        <th>Classificação</th>
-                        <th>Status</th>
-                        <th class="text-center">G</th>
-                        <th class="text-center">E</th>
-                        <th class="text-center">S</th>
-                        <th class="text-center">P</th>
+                        <th>Código</th><th>Tipo</th><th>Agente</th><th>Fonte Geradora</th>
+                        <th>Classificação</th><th>Status</th>
+                        <th class="text-center" title="Gravidade">G</th>
+                        <th class="text-center" title="Exposição">E</th>
+                        <th class="text-center" title="Severidade">S</th>
+                        <th class="text-center" title="Probabilidade">P</th>
                         <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for risco in riscos %}
-                    <tr onclick="window.location='{% url 'pgr_gestao:risco_detail' risco.pk %}'">
+                    <tr data-href="{% url 'pgr_gestao:risco_detail' risco.pk %}">
                         <td><strong>{{ risco.codigo_risco|default:"N/A" }}</strong></td>
-                        <td><span class="badge bg-secondary">{{ risco.tipo_risco.get_categoria_display }}</span></td>
+                        <td><span class="badge pgr-badge pgr-tipo_risco-{{ risco.tipo_risco.categoria }}">{{ risco.tipo_risco.get_categoria_display }}</span></td>
                         <td>{{ risco.agente|truncatewords:5 }}</td>
                         <td>{{ risco.fonte_geradora|default:"-"|truncatewords:5 }}</td>
-                        <td>
-                            <span class="badge badge-risco-{{ risco.classificacao_risco }}">
-                                {{ risco.get_classificacao_risco_display }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if risco.status_controle == 'controlado' %}
-                            <span class="badge bg-success">{{ risco.get_status_controle_display }}</span>
-                            {% else %}
-                            <span class="badge bg-warning text-dark">{{ risco.get_status_controle_display }}</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">{{ risco.gravidade_g }}</td>
-                        <td class="text-center">{{ risco.exposicao_e }}</td>
-                        <td class="text-center">{{ risco.severidade_s }}</td>
-                        <td class="text-center">{{ risco.probabilidade_p }}</td>
-                        <td class="text-center" onclick="event.stopPropagation();">
-                            <a href="{% url 'pgr_gestao:risco_detail' risco.pk %}" class="btn btn-sm btn-outline-info">
+                        <td><span class="badge pgr-badge pgr-risco-{{ risco.classificacao_risco }}">{{ risco.get_classificacao_risco_display }}</span></td>
+                        <td><span class="badge pgr-badge pgr-status_controle-{{ risco.status_controle }}">{{ risco.get_status_controle_display }}</span></td>
+                        <td class="text-center">{{ risco.gravidade_g|default:"-" }}</td>
+                        <td class="text-center">{{ risco.exposicao_e|default:"-" }}</td>
+                        <td class="text-center">{{ risco.severidade_s|default:"-" }}</td>
+                        <td class="text-center">{{ risco.probabilidade_p|default:"-" }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'pgr_gestao:risco_detail' risco.pk %}" class="btn btn-sm btn-outline-info"
+                               title="Visualizar" aria-label="Visualizar risco {{ risco.codigo_risco|default:risco.pk }}">
                                 <i class="bi bi-eye"></i>
                             </a>
                         </td>
@@ -240,12 +241,25 @@
         <div class="table-empty-state">
             <i class="bi bi-shield-slash d-block"></i>
             <p>Nenhum risco identificado para este GES.</p>
+            {% if perms.pgr_gestao.add_riscoidentificado %}
             <a href="{% url 'pgr_gestao:risco_create' %}?ges={{ ges.pk }}" class="btn btn-danger">
                 <i class="bi bi-plus-lg"></i> Adicionar Primeiro Risco
             </a>
+            {% endif %}
         </div>
         {% endif %}
     </div>
 </div>
 {% endblock %}
+
+{% block extra_pgr_js %}
+<script>
+document.addEventListener('click', function (e) {
+    const row = e.target.closest('tr[data-href]');
+    if (!row || e.target.closest('a, button, input, select, label')) return;
+    window.location.href = row.dataset.href;
+});
+</script>
+{% endblock %}
+
 

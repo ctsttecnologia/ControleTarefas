@@ -1,5 +1,7 @@
-{# Relatório: Riscos por Classificação #}
-{% extends "pgr_gestao/pgr_base.html" %}
+
+{# Relatório de Riscos por Classificação #}
+{% extends 'pgr_gestao/pgr_base.html' %}
+{% load static %}
 
 {% block title %}Relatório - Riscos por Classificação{% endblock %}
 
@@ -10,21 +12,8 @@
 
 {% block extra_pgr_css %}
 <style>
-    .border-orange { border-color: #fd7e14 !important; }
-    .bg-orange { background-color: #fd7e14 !important; color: #fff; }
-
-    .chart-wrapper {
-        position: relative;
-        height: 320px;
-        width: 100%;
-    }
-    .chart-wrapper-donut {
-        position: relative;
-        height: 320px;
-        width: 100%;
-        max-width: 320px;
-        margin: 0 auto;
-    }
+    .chart-box { position: relative; height: 320px; }
+    @media (max-width: 575.98px) { .chart-box { height: 260px; } }
 </style>
 {% endblock %}
 
@@ -32,350 +21,151 @@
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h1><i class="bi bi-bar-chart-line"></i> Riscos por Classificação</h1>
-            <p class="mb-0">Distribuição dos riscos identificados por classificação e status de controle</p>
+            <h1><i class="bi bi-pie-chart-fill"></i> Riscos por Classificação</h1>
+            <p class="mb-0">Distribuição dos riscos por classificação e status de controle</p>
         </div>
         <div class="d-flex gap-2 no-print">
-            <button onclick="window.print()" class="btn btn-light">
-                <i class="bi bi-printer me-1"></i> Imprimir
+            <a href="{% url 'pgr_gestao:relatorios' %}" class="btn btn-light">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+            <button type="button" id="btnImprimir" class="btn btn-light">
+                <i class="bi bi-printer"></i> Imprimir
             </button>
         </div>
     </div>
 </div>
 
-<!-- Cards Totais -->
+<!-- Gráfico -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-bar-chart"></i> Classificação × Status de controle</div>
+    <div class="card-body">
+        <div class="chart-box"><canvas id="chartClassificacao"></canvas></div>
+    </div>
+</div>
+
 <div class="row g-3 mb-4">
-    {% for classificacao, statuses in dados_grafico.items %}
-    <div class="col-xl-2 col-md-4 col-sm-6">
-        <div class="card stats-card
-            {% if classificacao == 'critico' %}danger
-            {% elif classificacao == 'muito_grave' %}warning
-            {% elif classificacao == 'moderado' %}info
-            {% elif classificacao == 'leve' %}{% else %}success{% endif %} h-100">
-            <div class="card-body text-center">
-                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2
-                    {% if classificacao == 'critico' %}bg-danger
-                    {% elif classificacao == 'muito_grave' %}bg-warning
-                    {% elif classificacao == 'grave' %}bg-orange
-                    {% elif classificacao == 'moderado' %}bg-info
-                    {% elif classificacao == 'leve' %}bg-primary
-                    {% else %}bg-success{% endif %} text-white"
-                    style="width: 45px; height: 45px;">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                </div>
-                <h6 class="text-uppercase small fw-bold text-muted mb-1">
-                    {% if classificacao == 'critico' %}Crítico
-                    {% elif classificacao == 'muito_grave' %}Muito Grave
-                    {% elif classificacao == 'grave' %}Grave
-                    {% elif classificacao == 'moderado' %}Moderado
-                    {% elif classificacao == 'leve' %}Leve
-                    {% elif classificacao == 'negligenciavel' %}Negligenciável
-                    {% else %}{{ classificacao }}{% endif %}
-                </h6>
-                <h3 class="fw-bold mb-0" id="total-{{ classificacao }}">—</h3>
-            </div>
-        </div>
-    </div>
-    {% empty %}
-    <div class="col-12">
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle me-2"></i> Nenhum risco cadastrado.
-        </div>
-    </div>
-    {% endfor %}
-</div>
-
-<div class="row g-4">
-    <!-- Barras Empilhadas -->
-    <div class="col-lg-7">
+    <!-- Detalhamento -->
+    <div class="col-12 col-xl-7">
         <div class="card h-100">
-            <div class="card-header">
-                <i class="bi bi-bar-chart-steps text-primary me-2"></i>
-                Classificação × Status de Controle
-            </div>
-            <div class="card-body">
-                <div class="chart-wrapper">
-                    <canvas id="chartClassificacaoStatus"></canvas>
+            <div class="card-header"><i class="bi bi-table"></i> Detalhamento</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Classificação</th>
+                                <th>Status de controle</th>
+                                <th class="text-end">Riscos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in riscos_stats %}
+                            <tr>
+                                <td><span class="badge pgr-badge pgr-risco-{{ s.classificacao_risco }}">{{ s.classificacao_risco|cut:"_"|capfirst }}</span></td>
+                                <td><span class="badge pgr-badge pgr-status_controle-{{ s.status_controle }}">{{ s.status_controle|cut:"_"|capfirst }}</span></td>
+                                <td class="text-end"><strong>{{ s.total }}</strong></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox d-block fs-2"></i> Nenhum risco encontrado.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Donut -->
-    <div class="col-lg-5">
+    <!-- Top tipos -->
+    <div class="col-12 col-xl-5">
         <div class="card h-100">
-            <div class="card-header">
-                <i class="bi bi-pie-chart-fill text-warning me-2"></i>
-                Distribuição Geral
-            </div>
-            <div class="card-body d-flex align-items-center justify-content-center">
-                <div class="chart-wrapper-donut">
-                    <canvas id="chartDonut"></canvas>
+            <div class="card-header"><i class="bi bi-trophy"></i> Top 10 tipos de risco</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr><th>#</th><th>Tipo</th><th>Categoria</th><th class="text-end">Qtd.</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for t in riscos_por_tipo %}
+                            <tr>
+                                <td><span class="badge text-bg-secondary">{{ forloop.counter }}</span></td>
+                                <td>{{ t.tipo_risco__nome|default:"—" }}</td>
+                                <td><small class="text-muted">{{ t.tipo_risco__categoria|default:"—"|capfirst }}</small></td>
+                                <td class="text-end"><strong>{{ t.total }}</strong></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted py-4">Sem dados.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Top 10 Tipos -->
-<div class="card mt-4">
-    <div class="card-header">
-        <i class="bi bi-list-ol text-success me-2"></i>
-        Top 10 — Tipos de Risco Mais Frequentes
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 50px;">#</th>
-                        <th>Tipo de Risco</th>
-                        <th>Categoria</th>
-                        <th class="text-center" style="width: 120px;">Quantidade</th>
-                        <th style="width: 30%;">Proporção</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in riscos_por_tipo %}
-                    <tr>
-                        <td>
-                            <span class="badge bg-{% if forloop.counter <= 3 %}danger{% elif forloop.counter <= 6 %}warning text-dark{% else %}secondary{% endif %} rounded-pill">
-                                {{ forloop.counter }}
-                            </span>
-                        </td>
-                        <td class="fw-semibold">{{ item.tipo_risco__nome|default:"Não informado" }}</td>
-                        <td>
-                            <span class="badge bg-light text-dark border">
-                                {{ item.tipo_risco__categoria|default:"—" }}
-                            </span>
-                        </td>
-                        <td class="text-center">
-                            <span class="fw-bold fs-5">{{ item.total }}</span>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="progress flex-grow-1" style="height: 10px;">
-                                    <div class="progress-bar bg-primary" id="bar-tipo-{{ forloop.counter }}"
-                                         style="width: 0%;" role="progressbar"></div>
-                                </div>
-                                <small class="text-muted" id="pct-tipo-{{ forloop.counter }}">—</small>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center table-empty-state">
-                            <i class="bi bi-search d-block"></i>
-                            <p class="mb-0">Nenhum tipo de risco encontrado.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- Detalhamento -->
-<div class="card mt-4">
-    <div class="card-header">
-        <i class="bi bi-table text-primary me-2"></i>
-        Detalhamento: Classificação × Status
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Classificação</th>
-                        <th class="text-center">Status de Controle</th>
-                        <th class="text-center">Quantidade</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for stat in riscos_stats %}
-                    <tr>
-                        <td>
-                            <span class="badge badge-risco-{{ stat.classificacao_risco }}">
-                                {% if stat.classificacao_risco == 'critico' %}Crítico
-                                {% elif stat.classificacao_risco == 'muito_grave' %}Muito Grave
-                                {% elif stat.classificacao_risco == 'grave' %}Grave
-                                {% elif stat.classificacao_risco == 'moderado' %}Moderado
-                                {% elif stat.classificacao_risco == 'leve' %}Leve
-                                {% elif stat.classificacao_risco == 'negligenciavel' %}Negligenciável
-                                {% else %}{{ stat.classificacao_risco }}{% endif %}
-                            </span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge
-                                {% if stat.status_controle == 'identificado' %}bg-secondary
-                                {% elif stat.status_controle == 'em_controle' or stat.status_controle == 'em_analise' %}bg-warning text-dark
-                                {% elif stat.status_controle == 'controlado' %}bg-success
-                                {% elif stat.status_controle == 'pendente' %}bg-danger
-                                {% else %}bg-info{% endif %}">
-                                {% if stat.status_controle == 'identificado' %}Identificado
-                                {% elif stat.status_controle == 'em_controle' %}Em Controle
-                                {% elif stat.status_controle == 'em_analise' %}Em Análise
-                                {% elif stat.status_controle == 'controlado' %}Controlado
-                                {% elif stat.status_controle == 'pendente' %}Pendente
-                                {% else %}{{ stat.status_controle }}{% endif %}
-                            </span>
-                        </td>
-                        <td class="text-center fw-bold fs-5">{{ stat.total }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3" class="text-center table-empty-state">
-                            <i class="bi bi-info-circle d-block"></i>
-                            <p class="mb-0">Nenhum dado disponível.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_pgr_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+{{ dados_grafico|json_script:"dados-classificacao" }}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const rootStyles = getComputedStyle(document.documentElement);
-    const textColor = rootStyles.getPropertyValue('--bs-body-color').trim();
-    const borderColor = rootStyles.getPropertyValue('--bs-border-color').trim();
-    const mutedColor = rootStyles.getPropertyValue('--bs-text-muted').trim();
-    const surfaceColor = rootStyles.getPropertyValue('--surface-elevated').trim();
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('btnImprimir')?.addEventListener('click', () => window.print());
 
-    const dadosGrafico = {};
-    {% for classificacao, statuses in dados_grafico.items %}
-    dadosGrafico["{{ classificacao }}"] = {
-        {% for status_key, status_val in statuses.items %}
-        "{{ status_key }}": {{ status_val }},
-        {% endfor %}
-    };
-    {% endfor %}
+    const canvas = document.getElementById('chartClassificacao');
+    if (!canvas || typeof Chart === 'undefined') return;
 
-    const LABEL_MAP = {
-        'critico': 'Crítico', 'muito_grave': 'Muito Grave', 'grave': 'Grave',
-        'moderado': 'Moderado', 'leve': 'Leve', 'negligenciavel': 'Negligenciável'
-    };
-    const COR_CLASSIFICACAO = {
-        'critico': '#dc3545', 'muito_grave': '#ffc107', 'grave': '#fd7e14',
-        'moderado': '#0dcaf0', 'leve': '#0d6efd', 'negligenciavel': '#198754'
-    };
-    const STATUS_LABEL = {
-        'identificado': 'Identificado', 'em_analise': 'Em Análise',
-        'em_controle': 'Em Controle', 'controlado': 'Controlado', 'pendente': 'Pendente'
-    };
-    const STATUS_COR = {
-        'identificado': '#6c757d', 'em_analise': '#fd7e14',
-        'em_controle': '#ffc107', 'controlado': '#198754', 'pendente': '#dc3545'
-    };
+    const dados = JSON.parse(document.getElementById('dados-classificacao').textContent);
 
-    const classificacoes = Object.keys(dadosGrafico);
-    const allStatuses = [...new Set(classificacoes.flatMap(c => Object.keys(dadosGrafico[c])))];
+    const ORDEM = ['critico', 'muito_grave', 'moderado', 'marginal', 'negligenciavel'];
+    const ROTULO_CLASSE = {critico: 'Crítico', muito_grave: 'Muito grave', moderado: 'Moderado',
+                           marginal: 'Marginal', negligenciavel: 'Negligenciável'};
+    const ROTULO_STATUS = {nao_controlado: 'Não controlado', parcialmente_controlado: 'Parcialmente controlado',
+                           controlado: 'Controlado', identificado: 'Identificado', em_controle: 'Em controle',
+                           eliminado: 'Eliminado'};
+    const COR_STATUS = {nao_controlado: '#dc3545', parcialmente_controlado: '#fd7e14', controlado: '#198754',
+                        identificado: '#ffc107', em_controle: '#0dcaf0', eliminado: '#495057'};
 
-    classificacoes.forEach(c => {
-        const el = document.getElementById('total-' + c);
-        if (el) el.textContent = Object.values(dadosGrafico[c]).reduce((a, b) => a + b, 0);
-    });
+    const classes = ORDEM.filter(c => dados[c]);
+    Object.keys(dados).forEach(c => { if (!classes.includes(c)) classes.push(c); });
 
-    const scaleOpts = {
-        x: { stacked: true, ticks: { color: mutedColor }, grid: { color: borderColor } },
-        y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1, precision: 0, color: mutedColor }, grid: { color: borderColor } }
-    };
+    const status = [...new Set(classes.flatMap(c => Object.keys(dados[c])))];
 
-    // BARRAS EMPILHADAS
-    const ctxBar = document.getElementById('chartClassificacaoStatus');
-    if (ctxBar && classificacoes.length > 0) {
-        const datasets = allStatuses.map(status => ({
-            label: STATUS_LABEL[status] || status,
-            data: classificacoes.map(c => dadosGrafico[c][status] || 0),
-            backgroundColor: STATUS_COR[status] || '#adb5bd',
-            borderRadius: 4,
-        }));
-
-        new Chart(ctxBar, {
-            type: 'bar',
-            data: { labels: classificacoes.map(c => LABEL_MAP[c] || c), datasets },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: scaleOpts,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: textColor, usePointStyle: true, pointStyle: 'circle', padding: 15 }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            afterTitle: function(items) {
-                                const idx = items[0].dataIndex;
-                                const total = datasets.reduce((s, ds) => s + (ds.data[idx] || 0), 0);
-                                return 'Total: ' + total;
-                            }
-                        }
-                    }
-                }
-            }
-        });
+    if (!classes.length) {
+        canvas.parentElement.innerHTML =
+            '<div class="d-flex align-items-center justify-content-center h-100 text-muted">' +
+            '<span><i class="bi bi-info-circle me-1"></i>Sem dados para exibir</span></div>';
+        return;
     }
 
-    // DONUT
-    const ctxDonut = document.getElementById('chartDonut');
-    if (ctxDonut && classificacoes.length > 0) {
-        const totais = classificacoes.map(c => Object.values(dadosGrafico[c]).reduce((a, b) => a + b, 0));
+    const css = getComputedStyle(document.documentElement);
+    const grade = css.getPropertyValue('--bs-border-color').trim();
 
-        new Chart(ctxDonut, {
-            type: 'doughnut',
-            data: {
-                labels: classificacoes.map(c => LABEL_MAP[c] || c),
-                datasets: [{
-                    data: totais,
-                    backgroundColor: classificacoes.map(c => COR_CLASSIFICACAO[c] || '#6c757d'),
-                    borderWidth: 3,
-                    borderColor: surfaceColor,
-                    hoverOffset: 8,
-                }]
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: classes.map(c => ROTULO_CLASSE[c] || c),
+            datasets: status.map(s => ({
+                label: ROTULO_STATUS[s] || s,
+                data: classes.map(c => dados[c][s] || 0),
+                backgroundColor: COR_STATUS[s] || '#adb5bd',
+                borderRadius: 4,
+            })),
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
+            scales: {
+                x: { stacked: true, grid: { display: false } },
+                y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: grade } },
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '55%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: textColor, padding: 15, usePointStyle: true, pointStyle: 'circle' }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(ctx) {
-                                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                                const pct = ((ctx.parsed / total) * 100).toFixed(1);
-                                return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    // BARRAS TOP TIPOS
-    const tiposTotais = [{% for item in riscos_por_tipo %}{{ item.total }},{% endfor %}];
-    const maxTipo = Math.max(...tiposTotais, 1);
-    tiposTotais.forEach((val, i) => {
-        const bar = document.getElementById('bar-tipo-' + (i + 1));
-        const pct = document.getElementById('pct-tipo-' + (i + 1));
-        if (bar) bar.style.width = ((val / maxTipo) * 100).toFixed(1) + '%';
-        if (pct) {
-            const totalGeral = tiposTotais.reduce((a, b) => a + b, 0);
-            pct.textContent = totalGeral > 0 ? ((val / totalGeral) * 100).toFixed(1) + '%' : '0%';
-        }
+        },
     });
 });
 </script>
 {% endblock %}
-

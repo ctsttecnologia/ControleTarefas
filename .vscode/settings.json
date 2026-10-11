@@ -4,5 +4,5 @@
         "./suprimentos/models",
         "./usuario/tests/test_forms_"
     ],
-    "python-envs.defaultEnvManager": "ms-python.python:system"
+    "python-envs.defaultEnvManager": "ms-python.python:venv"
 }

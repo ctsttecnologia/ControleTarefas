@@ -117,3 +117,29 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 {% endif %}
 
+
+{% if grafico_sparkline %}
+{{ grafico_dados|json_script:id }}
+
+<script>
+(function () {
+    if (typeof Chart === 'undefined') return;
+    const d = JSON.parse(document.getElementById('{{ id|escapejs }}').textContent);
+    const ctx = document.getElementById('sparkline-{{ id|escapejs }}');
+    if (!ctx) return;
+    new Chart(ctx, {
+        type: 'line',
+        data: { labels: d.labels, datasets: [{
+            data: d.data,
+            borderColor: '{{ grafico_cor|default:"#0d6efd"|escapejs }}',
+            borderWidth: 2, fill: false, pointRadius: 0, tension: .4
+        }]},
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            scales: { x: { display: false }, y: { display: false } }
+        }
+    });
+})();
+</script>
+{% endif %}

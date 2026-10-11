@@ -1,12 +1,15 @@
 # gestao_riscos/mixins.py
 
+from django.core.checks import messages
+
 from core.mixins import (
     AppPermissionMixin,
     FuncionarioRequiredMixin,
     TecnicoScopeMixin,
     ViewFilialScopedMixin,
 )
-
+from django.db import IntegrityError, transaction
+from core.utils import get_filial_ativa
 
 # =============================================================================
 # == MIXIN BASE DO APP (camada de seguranca consolidada)
@@ -59,3 +62,24 @@ class GestaoRiscosTecnicoMixin(
     """
     pass
 
+
+class FilialCreateMixin:
+    def form_valid(self, form):
+        filial = get_filial_ativa(self.request.user, self.request)
+        if filial is None:
+            messages.error(self.request, "Nenhuma filial selecionada. Escolha uma no menu superior.")
+            raise PermissionDenied("Nenhuma filial selecionada.")
+        if hasattr(form.instance, "filial_id"):
+            form.instance.filial = filial
+        try:
+            with transaction.atomic():
+                response = super().form_valid(form)
+        except IntegrityError:
+            form.add_error(None, "Já existe um registro com estes dados nesta filial.")
+            return self.form_invalid(form)
+        if not getattr(self, "success_message", None):
+            messages.success(
+                self.request,
+                f"{self.model._meta.verbose_name.capitalize()} criado(a) com sucesso.",
+            )
+        return response

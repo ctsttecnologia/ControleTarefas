@@ -1,0 +1,535 @@
+
+/* PGR GESTAO - estilos modernos (claro/escuro). Arquivo unico: layout + componentes + badges. */
+
+/* 0. VARIAVEIS COM FALLBACK */
+:root {
+    --pgr-muted: var(--bs-text-muted, var(--bs-secondary-color));
+    --pgr-hover-bg: var(--surface-hover, var(--bs-secondary-bg));
+    --pgr-primary-hover: var(--bs-primary-hover, var(--bs-primary));
+}
+
+/* 1. LAYOUT */
+.pgr-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    min-height: calc(100vh - 60px);
+    position: relative;
+}
+
+#main-content:has(.pgr-layout) {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.pgr-main-content {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    padding: 1.5rem 1.75rem 2rem;
+}
+
+/* 2. SIDEBAR */
+.pgr-sidebar {
+    flex: 0 0 250px;
+    width: 250px;
+    max-width: 250px;
+    min-height: calc(100vh - 60px);
+    max-height: calc(100vh - 60px);
+    background-color: var(--bs-tertiary-bg);
+    border-right: 1px solid var(--bs-border-color);
+    padding: 1.25rem 0;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+    position: sticky;
+    top: 60px;
+    align-self: stretch;
+    overflow-y: auto;
+}
+
+[data-bs-theme="dark"] .pgr-sidebar {
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.25);
+}
+
+.pgr-sidebar .nav {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.pgr-sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.15rem 0.65rem;
+    padding: 0.6rem 1rem;
+    border-radius: 0.5rem;
+    color: var(--bs-body-color);
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.25s ease, color 0.25s ease, transform 0.25s ease;
+}
+
+.pgr-sidebar .nav-link:hover {
+    background-color: var(--pgr-hover-bg);
+    color: var(--bs-primary);
+    transform: translateX(3px);
+}
+
+.pgr-sidebar .nav-link.active {
+    background-color: var(--bs-primary);
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.pgr-sidebar .nav-link.active:hover {
+    background-color: var(--pgr-primary-hover);
+    color: #fff;
+}
+
+.pgr-sidebar .nav-link:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+.pgr-sidebar .nav-link i {
+    flex-shrink: 0;
+    width: 20px;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+.pgr-sidebar-section {
+    margin: 0;
+    padding: 1rem 1.5rem 0.4rem;
+    list-style: none;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--pgr-muted);
+}
+
+/* 3. BREADCRUMB */
+.pgr-main-content .breadcrumb {
+    background-color: transparent;
+    padding: 0;
+    margin-bottom: 1.25rem;
+    font-size: 0.88rem;
+}
+
+.pgr-main-content .breadcrumb-item + .breadcrumb-item::before {
+    content: "\203A";
+    color: var(--pgr-muted);
+}
+
+.pgr-main-content .breadcrumb-item a {
+    color: var(--bs-primary);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.pgr-main-content .breadcrumb-item a:hover {
+    text-decoration: underline;
+}
+
+.pgr-main-content .breadcrumb-item.active {
+    color: var(--pgr-muted);
+}
+
+/* 4. MOBILE */
+.pgr-sidebar-toggle {
+    display: none;
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 1030;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border: none;
+    border-radius: 50%;
+    background-color: var(--bs-primary);
+    color: #fff;
+    font-size: 1.3rem;
+    box-shadow: 0 4px 14px rgba(var(--bs-primary-rgb), 0.4);
+}
+
+.pgr-sidebar-overlay {
+    display: none;
+}
+
+@media (max-width: 991.98px) {
+    .pgr-layout {
+        display: block;
+    }
+
+    .pgr-sidebar {
+        position: fixed;
+        top: 60px;
+        left: -280px;
+        z-index: 1025;
+        flex: none;
+        width: 270px;
+        max-width: 270px;
+        height: calc(100vh - 60px);
+        max-height: calc(100vh - 60px);
+        overflow-y: auto;
+        transition: left 0.3s ease;
+    }
+
+    .pgr-sidebar.show {
+        left: 0;
+    }
+
+    .pgr-main-content {
+        width: 100%;
+        padding: 1rem 1rem 2rem;
+    }
+
+    .pgr-sidebar-toggle {
+        display: flex;
+    }
+
+    .pgr-sidebar-overlay {
+        position: fixed;
+        inset: 60px 0 0 0;
+        z-index: 1024;
+        background: rgba(0, 0, 0, 0.4);
+    }
+
+    .pgr-sidebar-overlay.show {
+        display: block;
+    }
+}
+
+/* 5. PAGE HEADER */
+.page-header {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, var(--pgr-primary-hover) 100%);
+    color: #fff;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 16px rgba(var(--bs-primary-rgb), 0.2);
+}
+
+.page-header h1 {
+    color: #fff;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.page-header p {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.page-header .btn {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 6. STATS CARDS */
+.stats-card {
+    background-color: var(--surface-elevated);
+    border: 1px solid var(--bs-border-color);
+    border-top: 4px solid var(--bs-primary);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+[data-bs-theme="dark"] .stats-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.stats-card.danger  { border-top-color: #dc3545; }
+.stats-card.success { border-top-color: #28a745; }
+.stats-card.warning { border-top-color: #ffc107; }
+.stats-card.info    { border-top-color: #17a2b8; }
+
+.stats-card h3 {
+    margin-bottom: 0.25rem;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-strong);
+}
+
+/* 7. BADGES PGR - cada regra define so --_bg e --_fg */
+.badge.pgr-badge,
+.badge[class*="badge-risco-"],
+.badge[class*="badge-status-"],
+.badge.bg-critica, .badge.bg-alta, .badge.bg-media, .badge.bg-baixa,
+.badge.bg-pendente, .badge.bg-em_andamento, .badge.bg-concluido,
+.badge.bg-atrasado, .badge.bg-cancelado {
+    background-color: var(--_bg, #6c757d);
+    color: var(--_fg, #fff);
+    font-weight: 600;
+    border: 1px solid rgba(128, 128, 128, 0.35);
+}
+
+.badge[class*="pgr-risco-"],
+.badge[class*="badge-risco-"] {
+    padding: 0.4em 0.85em;
+    border-radius: 50rem;
+}
+
+/* Classificacao de risco */
+.pgr-risco-critico, .badge-risco-critico                                   { --_bg: #6f0000; }
+.pgr-risco-muito_grave, .badge-risco-muito_grave, .badge-risco-muito-grave { --_bg: #dc3545; }
+.pgr-risco-moderado, .badge-risco-moderado                                 { --_bg: #fd7e14; --_fg: #000; }
+.pgr-risco-marginal, .badge-risco-marginal                                 { --_bg: #ffc107; --_fg: #000; }
+.pgr-risco-negligenciavel, .badge-risco-negligenciavel                     { --_bg: #198754; }
+
+/* Status do documento PGR */
+.pgr-status_pgr-vigente, .badge-status-vigente                             { --_bg: #198754; }
+.pgr-status_pgr-vencido, .badge-status-vencido                             { --_bg: #dc3545; }
+.pgr-status_pgr-em_revisao, .badge-status-em-revisao,
+.badge-status-em_revisao                                                   { --_bg: #ffc107; --_fg: #000; }
+.pgr-status_pgr-elaboracao                                                 { --_bg: #0dcaf0; --_fg: #000; }
+.pgr-status_pgr-cancelado                                                  { --_bg: #6c757d; }
+
+/* Status de plano de acao / cronograma */
+.pgr-status_plano-pendente, .badge.bg-pendente                             { --_bg: #ffc107; --_fg: #000; }
+.pgr-status_plano-em_andamento, .badge.bg-em_andamento                     { --_bg: #0dcaf0; --_fg: #000; }
+.pgr-status_plano-concluido, .badge.bg-concluido                           { --_bg: #198754; }
+.pgr-status_plano-atrasado, .badge.bg-atrasado                             { --_bg: #dc3545; }
+.pgr-status_plano-cancelado, .badge.bg-cancelado                           { --_bg: #6c757d; }
+
+/* Status de controle do risco */
+.pgr-status_controle-nao_controlado                                        { --_bg: #dc3545; }
+.pgr-status_controle-parcialmente_controlado                               { --_bg: #fd7e14; --_fg: #000; }
+.pgr-status_controle-identificado                                          { --_bg: #ffc107; --_fg: #000; }
+.pgr-status_controle-em_controle                                           { --_bg: #0dcaf0; --_fg: #000; }
+.pgr-status_controle-controlado                                            { --_bg: #198754; }
+.pgr-status_controle-eliminado                                             { --_bg: #495057; }
+
+/* Prioridade */
+.pgr-prioridade-critica, .badge.bg-critica                                 { --_bg: #dc3545; }
+.pgr-prioridade-alta, .badge.bg-alta                                       { --_bg: #fd7e14; --_fg: #000; }
+.pgr-prioridade-media, .badge.bg-media                                     { --_bg: #0dcaf0; --_fg: #000; }
+.pgr-prioridade-baixa, .badge.bg-baixa                                     { --_bg: #6c757d; }
+
+/* Categoria do risco */
+.pgr-tipo_risco-fisico                                                     { --_bg: #0d6efd; }
+.pgr-tipo_risco-quimico                                                    { --_bg: #dc3545; }
+.pgr-tipo_risco-biologico                                                  { --_bg: #198754; }
+.pgr-tipo_risco-ergonomico                                                 { --_bg: #ffc107; --_fg: #000; }
+.pgr-tipo_risco-acidente                                                   { --_bg: #495057; }
+.pgr-tipo_risco-mecanico                                                   { --_bg: #6c757d; }
+
+/* Conformidade / ativo / perfil de exposicao */
+.pgr-conformidade-conforme, .pgr-ativo-ativo                               { --_bg: #198754; }
+.pgr-conformidade-nao_conforme                                             { --_bg: #dc3545; }
+.pgr-ativo-inativo                                                         { --_bg: #6c757d; }
+.pgr-perfil_exposicao-continua                                             { --_bg: #dc3545; }
+.pgr-perfil_exposicao-intermitente                                         { --_bg: #ffc107; --_fg: #000; }
+.pgr-perfil_exposicao-eventual                                             { --_bg: #0dcaf0; --_fg: #000; }
+.pgr-perfil_exposicao-ocasional                                            { --_bg: #6c757d; }
+
+/* 8. CARD HEADERS */
+.card-header.bg-primary { background-color: var(--bs-primary) !important; color: #fff; }
+.card-header.bg-danger  { background-color: #dc3545 !important;           color: #fff; }
+.card-header.bg-warning { background-color: #ffc107 !important;           color: #1a202c; }
+.card-header.bg-success { background-color: #28a745 !important;           color: #fff; }
+.card-header.bg-info    { background-color: var(--bs-primary) !important; color: #fff; }
+
+/* 8.1 Grau de risco da empresa (NR-04) */
+.pgr-grau_risco-1 { --_bg: #198754; }
+.pgr-grau_risco-2 { --_bg: #0dcaf0; --_fg: #000; }
+.pgr-grau_risco-3 { --_bg: #ffc107; --_fg: #000; }
+.pgr-grau_risco-4 { --_bg: #dc3545; }
+
+/* 9. FORMULARIOS */
+.form-section {
+    margin-bottom: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-left: 4px solid var(--bs-primary);
+    border-radius: 0.5rem;
+    background-color: var(--surface-subtle);
+    color: var(--bs-body-color);
+}
+
+.required-field::after {
+    content: " *";
+    color: #dc3545;
+    font-weight: 700;
+}
+
+.matriz-avaliacao {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: var(--surface-subtle);
+    color: var(--bs-body-color);
+}
+
+.matriz-fator-box {
+    padding: 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    background-color: var(--surface-elevated);
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.matriz-fator-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.matriz-fator-box h6 {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--pgr-muted);
+}
+
+.matriz-fator-box h2 {
+    margin-bottom: 0.25rem;
+    font-weight: 700;
+    color: var(--bs-primary);
+}
+
+.ges-status-box {
+    background-color: var(--bs-tertiary-bg);
+    transition: border-color 0.3s ease;
+}
+
+.ges-status-box.border-success { border-color: var(--bs-success) !important; }
+.ges-status-box.border-danger  { border-color: var(--bs-danger) !important; }
+
+/* 10. TABELAS */
+.table-clickable tbody tr {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.table-clickable tbody tr:hover {
+    background-color: var(--pgr-hover-bg);
+}
+
+.table-empty-state {
+    padding: 3rem 1rem;
+    color: var(--pgr-muted);
+}
+
+.table-empty-state i {
+    margin-bottom: 1rem;
+    font-size: 3rem;
+    opacity: 0.5;
+}
+
+.pgr-tabela-riscos .risco-row[hidden] {
+    display: none;
+}
+
+.pgr-tabela-riscos .table-hover > tbody > tr:hover > * {
+    box-shadow: inset 0 0 0 9999px var(--bs-table-hover-bg);
+}
+
+@media (max-width: 768px) {
+    .pgr-tabela-riscos table { font-size: 0.85rem; }
+    .pgr-tabela-riscos .btn-group-sm .btn { padding: 0.2rem 0.4rem; font-size: 0.75rem; }
+}
+
+/* 11. TABS E SIDEBAR DE AJUDA */
+.nav-tabs .nav-link i {
+    margin-right: 0.35rem;
+}
+
+.help-sidebar {
+    z-index: 100;
+}
+
+.help-sidebar h6 {
+    margin-top: 0.75rem;
+    font-weight: 600;
+    color: var(--text-strong);
+}
+
+.help-sidebar ul.small li {
+    padding: 0.15rem 0;
+    color: var(--text-soft);
+}
+
+.help-sidebar ul.small li strong {
+    color: var(--bs-primary);
+}
+
+@media (max-width: 991.98px) {
+    .help-sidebar {
+        position: relative !important;
+        top: 0 !important;
+    }
+}
+
+/* 12. ALERTAS NO TEMA ESCURO */
+[data-bs-theme="dark"] .alert-info {
+    background-color: rgba(var(--bs-primary-rgb), 0.12);
+    border-color: rgba(var(--bs-primary-rgb), 0.3);
+    color: #6edff6;
+}
+
+[data-bs-theme="dark"] .alert-secondary {
+    background-color: var(--surface-subtle);
+    border-color: var(--bs-border-color);
+    color: var(--text-soft);
+}
+
+[data-bs-theme="dark"] .alert-danger {
+    background-color: rgba(220, 53, 69, 0.12);
+    border-color: rgba(220, 53, 69, 0.3);
+    color: #ea868f;
+}
+
+/* 13. ACESSIBILIDADE */
+@media (prefers-reduced-motion: reduce) {
+    .pgr-sidebar,
+    .pgr-sidebar .nav-link,
+    .stats-card,
+    .matriz-fator-box {
+        transition: none;
+    }
+
+    .pgr-sidebar .nav-link:hover,
+    .stats-card:hover,
+    .matriz-fator-box:hover {
+        transform: none;
+    }
+}
+
+/* 14. IMPRESSAO */
+@media print {
+    .pgr-sidebar,
+    .pgr-sidebar-toggle,
+    .pgr-sidebar-overlay,
+    .pgr-main-content .breadcrumb,
+    .pgr-tabela-riscos .btn-group,
+    .pgr-tabela-riscos .card:has([data-filtro]),
+    .no-print,
+    .btn-group,
+    .pagination {
+        display: none !important;
+    }
+
+    .pgr-layout {
+        display: block;
+    }
+
+    .pgr-main-content {
+        padding: 0 !important;
+    }
+
+    .page-header {
+        background: #003366 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+}

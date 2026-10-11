@@ -1,4 +1,4 @@
-
+# pgr_gestao/utils/pdf_generator.py
 """
 Gerador de PDF para relatório PGR conforme modelo oficial
 """
@@ -26,6 +26,9 @@ from pypdf import PdfReader, PdfWriter
 from pgr_gestao.models import AnexoPGR
 import os
 
+from pgr_gestao.services.secoes import SecaoCache
+from xml.sax.saxutils import escape
+from reportlab.platypus import Paragraph, Spacer
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +37,12 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # FUNÇÕES DE CALLBACK (fora da classe — exigido pelo ReportLab onPage)
 # =============================================================================
+
+MESES_PT = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+]
+
 
 def _find_logo_path():
     """Busca o logo nos caminhos possíveis do projeto"""
@@ -210,6 +219,12 @@ def draw_header_footer(canvas_obj, doc):
 
     canvas_obj.restoreState()
 
+def _data_extenso(d):
+    """Ex.: date(2026, 10, 11) -> '11 de Outubro de 2026'."""
+    if not d:
+        return ""
+    return f"{d.day} de {MESES_PT[d.month - 1]} de {d.year}"
+
 
 # =============================================================================
 # CLASSE PRINCIPAL
@@ -229,6 +244,7 @@ class PGRPDFGenerator:
         self._setup_custom_styles()
         self.empresa_pgr = self._get_empresa_pgr()
         self.empresa_contratada = self._get_empresa_contratada()
+        self.secoes = SecaoCache(self.pgr, self._get_nome_empresa())
 
     # =================================================================
     # INICIALIZAÇÃO
@@ -351,9 +367,10 @@ class PGRPDFGenerator:
 
     def _get_nome_empresa(self):
         """Retorna o nome da empresa contratada (para uso nos textos)"""
-        if self.empresa_contratada:
-            return self.empresa_contratada.razao_social
+        if self.empresa_contratada and self.empresa_contratada.cliente:
+            return self.empresa_contratada.cliente.razao_social
         return self.cliente.razao_social
+
 
     # =================================================================
     # CAPA
@@ -616,14 +633,14 @@ class PGRPDFGenerator:
                 "LOCAL DA PRESTAÇÃO DE SERVIÇOS", self.styles['TituloSecao']
             ))
             dados_local = [
-                ['RAZÃO SOCIAL:', self.local_prestacao.razao_social or 'N/A'],
-                ['CNPJ:', getattr(self.local_prestacao, 'cnpj', '') or 'N/A'],
+                ['RAZÃO SOCIAL:', self.local_prestacao.razao_social or ''],
+                ['CNPJ:', getattr(self.local_prestacao, 'cnpj', '')],
                 [
                     'ENDEREÇO:',
                     f"{getattr(self.local_prestacao, 'endereco', '') or ''}, "
                     f"{getattr(self.local_prestacao, 'numero', '') or ''}".strip(', ')
                 ],
-                ['BAIRRO:', getattr(self.local_prestacao, 'bairro', '') or 'N/A'],
+                ['BAIRRO:', getattr(self.local_prestacao, 'bairro', '') or ''],
                 [
                     'CIDADE/UF:',
                     f"{getattr(self.local_prestacao, 'cidade', '')} - "
@@ -2706,17 +2723,18 @@ class PGRPDFGenerator:
     def _criar_pagina_assinaturas(self):
         """Cria a página de assinaturas"""
         story = []
+        story.append(Paragraph("ENCERRAMENTO", self.styles['Justificado']))
+        story.append(Spacer(1, 12))
+
+        nome = escape(self._get_nome_empresa())
+        data = _data_extenso(self.pgr.data_elaboracao)
+
         story.append(Paragraph(
-                "ENCERRAMENTO\n\n",
-                self.styles['Justificado']
-            ))
-        story.append(Paragraph(
-                "Este Programa de Gerenciamento de Riscos foi elaborado por "
-                "{empres} através de seus representantes em 14 de Outubro de 2025.\n",
-                self.styles['Justificado']
-            ))
-        story.append(Paragraph("ASSINATURAS", self.styles['TituloSecao']))
-        story.append(Spacer(1, 1 * cm))
+            "Este Programa de Gerenciamento de Riscos foi elaborado por "
+            f"<b>{nome}</b> através de seus representantes em {data}.",
+            self.styles['Justificado']
+        ))
+        story.append(Spacer(1, 12))
 
         responsavel_info_qs = self.pgr.responsavel_info.select_related(
             'profissional'

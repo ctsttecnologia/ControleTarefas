@@ -1,0 +1,10 @@
+
+{# Partial: label + campo + erros + ajuda. Parâmetros: campo, icone (opc.), ajuda (opc.) #}
+<label for="{{ campo.id_for_label }}" class="form-label fw-semibold">
+    {% if icone %}<i class="bi {{ icone }}"></i> {% endif %}{{ campo.label }}
+    {% if campo.field.required %}<span class="text-danger">*</span>{% endif %}
+</label>
+{{ campo }}
+{% for erro in campo.errors %}<div class="field-error text-danger small mt-1">{{ erro }}</div>{% endfor %}
+{% if ajuda %}<div class="form-text">{{ ajuda }}</div>{% endif %}
+

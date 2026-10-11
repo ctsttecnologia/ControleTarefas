@@ -1,0 +1,194 @@
+{# Verificação de Conformidade do PGR #}
+{% extends 'pgr_gestao/pgr_base.html' %}
+{% load static %}
+
+{% block title %}Conformidade - {{ documento.codigo_documento }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:documento_list' %}">Documentos PGR</a></li>
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:documento_detail' documento.pk %}">{{ documento.codigo_documento }}</a></li>
+<li class="breadcrumb-item active">Conformidade</li>
+{% endblock %}
+
+{% block extra_pgr_css %}
+<style>
+    .chart-box { position: relative; height: 260px; }
+    .conf-secao-header { background: var(--bs-tertiary-bg); }
+    .conf-item { border-left: 4px solid var(--bs-border-color); border-top: 1px solid var(--bs-border-color); }
+    .conf-item:first-child { border-top: 0; }
+    .conf-item.conforme { border-left-color: var(--bs-success); }
+    .conf-item.parcial { border-left-color: var(--bs-warning); }
+    .conf-item.nao-conforme { border-left-color: var(--bs-danger); }
+    .conf-resumo h2 { font-weight: 700; margin-bottom: 0; }
+    @media print { .conf-item { break-inside: avoid; } }
+</style>
+{% endblock %}
+
+{% block pgr_content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1><i class="bi bi-clipboard-check"></i> Verificação de Conformidade</h1>
+            <p class="mb-0">{{ documento.codigo_documento }} · {{ documento.empresa.razao_social }}</p>
+        </div>
+        <div class="d-flex gap-2 no-print">
+            <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="btn btn-light">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+            <button type="button" id="btnImprimir" class="btn btn-light">
+                <i class="bi bi-printer"></i> Imprimir
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Resumo -->
+<div class="row g-3 mb-4 conf-resumo">
+    <div class="col-xl-3 col-sm-6">
+        <div class="card stats-card {% if percentual_conformidade >= 80 %}success{% elif percentual_conformidade >= 50 %}warning{% else %}danger{% endif %} h-100 text-center">
+            <div class="card-body">
+                <h2>{{ percentual_conformidade }}%</h2>
+                <small class="text-muted">Conformidade geral ({{ total_itens }} itens)</small>
+                <div class="progress mt-2" style="height: 8px;" role="progressbar"
+                     aria-valuenow="{{ percentual_conformidade }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar {% if percentual_conformidade >= 80 %}bg-success{% elif percentual_conformidade >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                         style="width: {{ percentual_conformidade }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="card stats-card success h-100 text-center"><div class="card-body">
+            <h2 class="text-success">{{ itens_conformes }}</h2><small class="text-muted">Conformes</small>
+        </div></div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="card stats-card warning h-100 text-center"><div class="card-body">
+            <h2 class="text-warning">{{ itens_parciais }}</h2><small class="text-muted">Parcialmente conformes</small>
+        </div></div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="card stats-card danger h-100 text-center"><div class="card-body">
+            <h2 class="text-danger">{{ itens_nao_conformes }}</h2><small class="text-muted">Não conformes</small>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <!-- Checklist -->
+        {% for secao in secoes %}
+        <div class="card mb-4">
+            <div class="card-header conf-secao-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span>
+                    <i class="bi {{ secao.icone }}"></i> <strong>{{ secao.titulo }}</strong>
+                    <small class="text-muted ms-2">{{ secao.nr }}</small>
+                </span>
+                <span class="badge text-bg-secondary">{{ secao.percentual }}%</span>
+            </div>
+            <div class="card-body p-0">
+                {% for item in secao.itens %}
+                    {% include 'pgr_gestao/_conformidade_item.html' with item=item %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Gráfico -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-bar-chart"></i> Conformidade por seção</div>
+            <div class="card-body">
+                <div class="chart-box"><canvas id="chartConformidade"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Pendências -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-list-check"></i> Pendências</span>
+                <span class="badge text-bg-{% if pendencias %}danger{% else %}success{% endif %}">{{ pendencias|length }}</span>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for p in pendencias %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between gap-2">
+                        <div>
+                            <span class="badge text-bg-secondary">{{ p.codigo }}</span>
+                            <strong class="small">{{ p.titulo }}</strong>
+                        </div>
+                        <span class="badge text-bg-{{ p.cor }} align-self-start text-nowrap">
+                            {% if p.estado == "parcial" %}Parcial{% else %}Não conforme{% endif %}
+                        </span>
+                    </div>
+                    {% if p.links %}
+                    <div class="mt-2 d-flex gap-1 flex-wrap no-print">
+                        {% for l in p.links %}
+                        <a href="{{ l.url }}" class="btn btn-sm btn-outline-primary">{{ l.rotulo }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="list-group-item text-center text-success py-4">
+                    <i class="bi bi-check-circle-fill fs-2 d-block"></i> Nenhuma pendência.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="alert alert-secondary small">
+            <i class="bi bi-info-circle"></i>
+            Esta verificação é um apoio automatizado, baseado nos dados cadastrados no sistema.
+            Ela não substitui a análise do responsável técnico nem a leitura da NR-01 vigente.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_pgr_js %}
+{{ grafico|json_script:"dados-grafico" }}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('btnImprimir')?.addEventListener('click', () => window.print());
+
+    const canvas = document.getElementById('chartConformidade');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const g = JSON.parse(document.getElementById('dados-grafico').textContent);
+    const css = getComputedStyle(document.documentElement);
+    const grade = css.getPropertyValue('--bs-border-color').trim();
+    const texto = css.getPropertyValue('--bs-body-color').trim();
+    const cor = v => v >= 80 ? '#198754' : v >= 50 ? '#ffc107' : '#dc3545';
+
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: g.labels,
+            datasets: [{
+                label: 'Conformidade (%)',
+                data: g.dados,
+                backgroundColor: g.dados.map(cor),
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: c => ` ${c.parsed.x}%` } },
+            },
+            scales: {
+                x: { min: 0, max: 100, ticks: { color: texto, callback: v => v + '%' }, grid: { color: grade } },
+                y: { ticks: { color: texto }, grid: { display: false } },
+            },
+        },
+    });
+});
+</script>
+{% endblock %}
+

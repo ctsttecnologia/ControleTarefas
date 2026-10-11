@@ -1,8 +1,7 @@
 ﻿{# Plano de Ação — Detalhes #}
 {% extends "pgr_gestao/pgr_base.html" %}
-{% load static %}
+{% load l10n %}
 {% load secure_url %}
-{% load widget_tweaks %}
 
 {% block title %}Plano de Ação {{ plano.pk }} - Detalhes{% endblock %}
 
@@ -17,10 +16,10 @@
         <div>
             <h1><i class="bi bi-list-task"></i> Detalhes do Plano de Ação</h1>
             <p class="mb-0">
-                <span class="badge bg-{{ plano.status }}">{{ plano.get_status_display }}</span>
-                <span class="badge bg-{{ plano.prioridade }} ms-2">{{ plano.get_prioridade_display }}</span>
+                <span class="badge pgr-badge pgr-status_plano-{{ plano.status }}">{{ plano.get_status_display }}</span>
+                <span class="badge pgr-badge pgr-prioridade-{{ plano.prioridade }} ms-2">{{ plano.get_prioridade_display }}</span>
                 {% if plano.esta_atrasado %}
-                <span class="badge bg-danger ms-2">
+                <span class="badge pgr-badge pgr-status_plano-atrasado ms-2">
                     <i class="bi bi-clock-history"></i> ATRASADO
                 </span>
                 {% endif %}
@@ -36,12 +35,16 @@
             </a>
             {% endif %}
             {% if perms.pgr_gestao.change_planoacaopgr and plano.status == 'pendente' %}
-            <a href="{% url 'pgr_gestao:iniciar_plano' plano.pk %}" class="btn btn-info">
-                <i class="bi bi-play-fill"></i> Iniciar
-            </a>
+            {# Altera estado: POST com CSRF (um link GET permitiria disparo por terceiros) #}
+            <form method="post" action="{% url 'pgr_gestao:iniciar_plano' plano.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-info rounded-0">
+                    <i class="bi bi-play-fill"></i> Iniciar
+                </button>
+            </form>
             {% endif %}
             {% if perms.pgr_gestao.change_planoacaopgr and plano.status == 'em_andamento' %}
-            <a href="{% url 'pgr_gestao:concluir_plano' plano.pk %}" class="btn btn-success">
+            <a href="{% url 'pgr_gestao:concluir_plano_acao' plano.pk %}" class="btn btn-success">
                 <i class="bi bi-check-lg"></i> Concluir
             </a>
             {% endif %}
@@ -53,9 +56,7 @@
     <div class="col-lg-8">
         <!-- Informações Principais -->
         <div class="card mb-4">
-            <div class="card-header">
-                <i class="bi bi-info-circle"></i> Informações do Plano de Ação
-            </div>
+            <div class="card-header"><i class="bi bi-info-circle"></i> Informações do Plano de Ação</div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
@@ -64,10 +65,10 @@
                             <span class="badge bg-secondary">{{ plano.get_tipo_acao_display }}</span>
                         </p>
                         <p><strong>Prioridade:</strong>
-                            <span class="badge bg-{{ plano.prioridade }}">{{ plano.get_prioridade_display }}</span>
+                            <span class="badge pgr-badge pgr-prioridade-{{ plano.prioridade }}">{{ plano.get_prioridade_display }}</span>
                         </p>
                         <p><strong>Status:</strong>
-                            <span class="badge bg-{{ plano.status }}">{{ plano.get_status_display }}</span>
+                            <span class="badge pgr-badge pgr-status_plano-{{ plano.status }}">{{ plano.get_status_display }}</span>
                         </p>
                     </div>
                     <div class="col-md-6">
@@ -90,10 +91,22 @@
                 <h5><i class="bi bi-card-text"></i> Descrição da Ação</h5>
                 <p>{{ plano.descricao_acao|linebreaks }}</p>
 
+                {% if plano.justificativa %}
+                <hr>
+                <h5><i class="bi bi-question-circle"></i> Justificativa</h5>
+                <p>{{ plano.justificativa|linebreaks }}</p>
+                {% endif %}
+
                 {% if plano.recursos_necessarios %}
                 <hr>
                 <h5><i class="bi bi-tools"></i> Recursos Necessários</h5>
                 <p>{{ plano.recursos_necessarios|linebreaks }}</p>
+                {% endif %}
+
+                {% if plano.resultado_obtido %}
+                <hr>
+                <h5><i class="bi bi-clipboard-check"></i> Resultado Obtido</h5>
+                <p>{{ plano.resultado_obtido|linebreaks }}</p>
                 {% endif %}
 
                 {% if plano.observacoes %}
@@ -101,41 +114,21 @@
                 <h5><i class="bi bi-chat-left-text"></i> Observações</h5>
                 <p>{{ plano.observacoes|linebreaks }}</p>
                 {% endif %}
-            </div>
-        </div>
 
-        <!-- LAUDO TÉCNICO -->
-        <h6 class="text-muted text-uppercase fw-bold small mb-3">
-            <i class="bi bi-file-earmark-pdf"></i> Documentação
-        </h6>
-        <div class="mb-4">
-            <label for="{{ form.laudo_tecnico.id_for_label }}" class="form-label fw-semibold">
-                <i class="bi bi-paperclip"></i> Laudo Técnico (PDF)
-            </label>
-            {% render_field form.laudo_tecnico class="form-control" accept=".pdf,.doc,.docx" %}
-            {% if form.laudo_tecnico.errors %}
-            <div class="text-danger small mt-1">{{ form.laudo_tecnico.errors }}</div>
-            {% endif %}
-
-            {# Mostra arquivo atual em modo edição #}
-            {% if form.instance.pk and form.instance.laudo_tecnico %}
-            <div class="mt-2 p-2 bg-light rounded border">
-                <small class="text-muted d-block mb-1">
-                    <i class="bi bi-file-earmark-check-fill text-success"></i> Arquivo atual:
-                </small>
-                <a href="{{ form.instance.laudo_tecnico.url }}" target="_blank" class="text-decoration-none">
-                    <i class="bi bi-download"></i> {{ form.instance.laudo_tecnico.name|cut:"laudos/" }}
+                {% if plano.laudo_tecnico %}
+                <hr>
+                <h5><i class="bi bi-file-earmark-pdf"></i> Laudo Técnico</h5>
+                {% secure_url plano "laudo_tecnico" as laudo_url %}
+                <a href="{{ laudo_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-download"></i> Abrir laudo
                 </a>
+                {% endif %}
             </div>
-            {% endif %}
-            <small class="form-text text-muted">Anexe o laudo técnico assinado (opcional)</small>
         </div>
 
         <!-- Risco Relacionado -->
         <div class="card mb-4">
-            <div class="card-header">
-                <i class="bi bi-exclamation-triangle"></i> Risco Relacionado
-            </div>
+            <div class="card-header"><i class="bi bi-exclamation-triangle"></i> Risco Relacionado</div>
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                     <div>
@@ -144,13 +137,11 @@
                         <p class="mb-1"><strong>Fonte Geradora:</strong> {{ plano.risco_identificado.fonte_geradora|default:"N/A" }}</p>
                         <p class="mb-1"><strong>GES:</strong>
                             {% if plano.risco_identificado.ges %}
-                            <a href="{% url 'pgr_gestao:ges_detail' plano.risco_identificado.ges.pk %}">
-                                {{ plano.risco_identificado.ges.nome }}
-                            </a>
+                            <a href="{% url 'pgr_gestao:ges_detail' plano.risco_identificado.ges.pk %}">{{ plano.risco_identificado.ges.nome }}</a>
                             {% else %}N/A{% endif %}
                         </p>
                     </div>
-                    <span class="badge badge-risco-{{ plano.risco_identificado.classificacao_risco }} fs-6">
+                    <span class="badge pgr-badge pgr-risco-{{ plano.risco_identificado.classificacao_risco }} fs-6">
                         {{ plano.risco_identificado.get_classificacao_risco_display }}
                     </span>
                 </div>
@@ -164,15 +155,10 @@
         <!-- Histórico de Acompanhamento -->
         {% if acompanhamentos %}
         <div class="card mb-4">
-            <div class="card-header">
-                <i class="bi bi-clock-history"></i> Histórico de Acompanhamento
-            </div>
+            <div class="card-header"><i class="bi bi-clock-history"></i> Histórico de Acompanhamento</div>
             <div class="card-body">
                 {% for acomp in acompanhamentos %}
-                    <div class="d-flex mb-3 
-                    {% if not forloop.last %}
-                        border-bottom pb-3
-                    {% endif %}">
+                <div class="d-flex {% if not forloop.last %}mb-3 border-bottom pb-3{% endif %}">
                     <div class="me-3">
                         <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
                              style="width: 40px; height: 40px;">
@@ -181,15 +167,22 @@
                     </div>
                     <div class="flex-grow-1">
                         <div class="d-flex justify-content-between align-items-start flex-wrap gap-1">
-                            <h6 class="mb-1">{{ acomp.realizado_por }}</h6>
-                            <small class="text-muted">{{ acomp.data_acompanhamento|date:"d/m/Y H:i" }}</small>
+                            <h6 class="mb-1">{{ acomp.responsavel_acompanhamento|default:"Não informado" }}</h6>
+                            <small class="text-muted">{{ acomp.data_acompanhamento|date:"d/m/Y" }}</small>
                         </div>
                         <p class="mb-1">{{ acomp.descricao }}</p>
+                        {% if acomp.dificuldades %}
+                        <p class="mb-1 small"><strong>Dificuldades:</strong> {{ acomp.dificuldades }}</p>
+                        {% endif %}
+                        {% if acomp.proximos_passos %}
+                        <p class="mb-1 small"><strong>Próximos passos:</strong> {{ acomp.proximos_passos }}</p>
+                        {% endif %}
                         {% if acomp.percentual_conclusao %}
-                        <div class="progress mt-2" style="height: 20px;">
-                            <div class="progress-bar bg-success" role="progressbar"
-                                 style="width: {{ acomp.percentual_conclusao }}%">
-                                {{ acomp.percentual_conclusao }}%
+                        <div class="progress mt-2" style="height: 20px;" role="progressbar"
+                             aria-valuenow="{{ acomp.percentual_conclusao|stringformat:'.0f' }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar bg-success"
+                                 style="width: {{ acomp.percentual_conclusao|stringformat:'.0f' }}%">
+                                {{ acomp.percentual_conclusao|stringformat:'.0f' }}%
                             </div>
                         </div>
                         {% endif %}
@@ -201,7 +194,7 @@
         {% endif %}
 
         <!-- Adicionar Acompanhamento -->
-        {% if perms.pgr_gestao.add_acompanhamentoplano and plano.status != 'concluido' %}
+        {% if perms.pgr_gestao.add_acompanhamentoplanoacao and plano.status != 'concluido' %}
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
                 <i class="bi bi-plus-circle"></i> Adicionar Acompanhamento
@@ -209,16 +202,26 @@
             <div class="card-body">
                 <form method="post" action="{% url 'pgr_gestao:adicionar_acompanhamento' plano.pk %}">
                     {% csrf_token %}
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Descrição do Acompanhamento</label>
-                        <textarea name="descricao" class="form-control" rows="3" required
-                                  placeholder="Descreva o que foi realizado, dificuldades encontradas, próximos passos..."></textarea>
-                    </div>
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Percentual de Conclusão (%)</label>
-                            <input type="number" name="percentual_conclusao" class="form-control"
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold" for="acomp-data">Data</label>
+                            <input id="acomp-data" type="date" name="data_acompanhamento" class="form-control"
+                                   value="{% now 'Y-m-d' %}" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold" for="acomp-resp">Responsável</label>
+                            <input id="acomp-resp" type="text" name="responsavel_acompanhamento"
+                                   class="form-control" value="{{ request.user.get_full_name }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold" for="acomp-pct">Conclusão (%)</label>
+                            <input id="acomp-pct" type="number" name="percentual_conclusao" class="form-control"
                                    min="0" max="100" value="0">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold" for="acomp-desc">Descrição do Acompanhamento</label>
+                            <textarea id="acomp-desc" name="descricao" class="form-control" rows="3" required
+                                      placeholder="O que foi realizado, dificuldades, próximos passos..."></textarea>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary mt-3">
@@ -234,14 +237,14 @@
     <div class="col-lg-4">
         <!-- Progresso -->
         <div class="card mb-3">
-            <div class="card-header bg-primary text-white">
-                <i class="bi bi-pie-chart-fill"></i> Progresso
-            </div>
+            <div class="card-header bg-primary text-white"><i class="bi bi-pie-chart-fill"></i> Progresso</div>
             <div class="card-body text-center">
+                {% with pct=plano.percentual_conclusao|default:0 %}
                 <div class="mb-3" style="position: relative; height: 200px; width: 200px; margin: 0 auto;">
-                    <canvas id="chartProgresso"></canvas>
+                    <canvas id="chartProgresso" data-pct="{{ pct|unlocalize }}"></canvas>
                 </div>
-                <h2 class="fw-bold mb-0">{{ plano.percentual_conclusao|default:0 }}%</h2>
+                <h2 class="fw-bold mb-0">{{ pct|stringformat:'.0f' }}%</h2>
+                {% endwith %}
                 <small class="text-muted">Conclusão do Plano</small>
 
                 {% if plano.esta_atrasado %}
@@ -250,39 +253,38 @@
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <strong>Plano Atrasado!</strong><br>
                     Prazo: {{ plano.data_prevista|date:"d/m/Y" }}
+                    {% if dias_atraso %}<br><small>{{ dias_atraso }} dia{{ dias_atraso|pluralize }} de atraso</small>{% endif %}
                 </div>
+                {% elif dias_restantes is not None and plano.status != 'concluido' %}
+                <hr>
+                <small class="text-muted"><i class="bi bi-hourglass-split"></i>
+                    {{ dias_restantes }} dia{{ dias_restantes|pluralize }} para o prazo</small>
                 {% endif %}
             </div>
         </div>
 
         <!-- Timeline -->
         <div class="card mb-3">
-            <div class="card-header">
-                <i class="bi bi-calendar-event"></i> Timeline
-            </div>
+            <div class="card-header"><i class="bi bi-calendar-event"></i> Timeline</div>
             <div class="card-body">
                 <ul class="list-unstyled mb-0">
                     <li class="mb-2">
-                        <i class="bi bi-calendar-plus text-info"></i>
-                        <strong>Criado:</strong><br>
+                        <i class="bi bi-calendar-plus text-info"></i> <strong>Criado:</strong><br>
                         <small class="text-muted">{{ plano.criado_em|date:"d/m/Y H:i" }}</small>
                     </li>
-                    {% if plano.status == 'em_andamento' or plano.data_inicio %}
+                    {% if plano.data_inicio %}
                     <li class="mb-2">
-                        <i class="bi bi-play-circle text-primary"></i>
-                        <strong>Iniciado:</strong><br>
-                        <small class="text-muted">{{ plano.data_inicio|date:"d/m/Y H:i"|default:"N/A" }}</small>
+                        <i class="bi bi-play-circle text-primary"></i> <strong>Iniciado:</strong><br>
+                        <small class="text-muted">{{ plano.data_inicio|date:"d/m/Y" }}</small>
                     </li>
                     {% endif %}
                     <li class="mb-2">
-                        <i class="bi bi-flag text-warning"></i>
-                        <strong>Prazo:</strong><br>
+                        <i class="bi bi-flag text-warning"></i> <strong>Prazo:</strong><br>
                         <small class="text-muted">{{ plano.data_prevista|date:"d/m/Y" }}</small>
                     </li>
                     {% if plano.data_conclusao %}
                     <li>
-                        <i class="bi bi-check-circle-fill text-success"></i>
-                        <strong>Concluído:</strong><br>
+                        <i class="bi bi-check-circle-fill text-success"></i> <strong>Concluído:</strong><br>
                         <small class="text-muted">{{ plano.data_conclusao|date:"d/m/Y" }}</small>
                     </li>
                     {% endif %}
@@ -293,19 +295,16 @@
         <!-- Documento PGR Vinculado -->
         {% if plano.risco_identificado.pgr_documento %}
         <div class="card mb-3">
-            <div class="card-header bg-info text-white">
-                <i class="bi bi-file-earmark-text"></i> Documento PGR Vinculado
-            </div>
+            <div class="card-header bg-info text-white"><i class="bi bi-file-earmark-text"></i> Documento PGR Vinculado</div>
             <div class="card-body">
                 <div class="d-flex align-items-start mb-3">
                     <i class="bi bi-file-earmark-medical text-primary me-2 fs-4 mt-1"></i>
                     <div>
                         <a href="{% url 'pgr_gestao:documento_detail' plano.risco_identificado.pgr_documento.pk %}"
                            class="text-decoration-none fw-semibold">
-                            {{ plano.risco_identificado.pgr_documento }}
+                            {{ plano.risco_identificado.pgr_documento.codigo_documento }}
                         </a>
-                        <br>
-                        <small class="text-muted">Clique para ver detalhes e enviar arquivos</small>
+                        <br><small class="text-muted">Ver detalhes e anexos do PGR</small>
                     </div>
                 </div>
                 <a href="{% url 'pgr_gestao:documento_detail' plano.risco_identificado.pgr_documento.pk %}"
@@ -319,11 +318,10 @@
         <!-- Anexos -->
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span>
-                    <i class="bi bi-paperclip"></i> Anexos do Plano ({{ anexos.count|default:0 }})
-                </span>
-                {% if perms.pgr_gestao.add_anexoplano %}
-                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAnexo">
+                <span><i class="bi bi-paperclip"></i> Anexos do Plano ({{ anexos|length }})</span>
+                {% if perms.pgr_gestao.add_anexoplanoacao %}
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAnexo"
+                        title="Adicionar anexo">
                     <i class="bi bi-plus-lg"></i>
                 </button>
                 {% endif %}
@@ -332,31 +330,28 @@
                 {% if anexos %}
                 <ul class="list-unstyled mb-0">
                     {% for anexo in anexos %}
+                    {% with nome=anexo.arquivo.name|lower %}
                     <li class="{% if not forloop.last %}mb-2 pb-2 border-bottom{% endif %} d-flex align-items-start">
-                        {% if '.pdf' in anexo.nome_arquivo %}
+                        {% if nome|slice:"-4:" == ".pdf" %}
                             <i class="bi bi-file-earmark-pdf-fill text-danger me-2 mt-1 fs-5"></i>
-                        {% elif '.doc' in anexo.nome_arquivo or '.docx' in anexo.nome_arquivo %}
+                        {% elif ".doc" in nome %}
                             <i class="bi bi-file-earmark-word-fill text-primary me-2 mt-1 fs-5"></i>
-                        {% elif '.xls' in anexo.nome_arquivo or '.xlsx' in anexo.nome_arquivo %}
+                        {% elif ".xls" in nome %}
                             <i class="bi bi-file-earmark-excel-fill text-success me-2 mt-1 fs-5"></i>
-                        {% elif '.jpg' in anexo.nome_arquivo or '.jpeg' in anexo.nome_arquivo or '.png' in anexo.nome_arquivo %}
+                        {% elif ".jpg" in nome or ".jpeg" in nome or ".png" in nome %}
                             <i class="bi bi-file-earmark-image-fill text-warning me-2 mt-1 fs-5"></i>
                         {% else %}
                             <i class="bi bi-file-earmark text-secondary me-2 mt-1 fs-5"></i>
                         {% endif %}
                         <div class="flex-grow-1">
                             {% secure_url anexo "arquivo" as arquivo_url %}
-                            <a href="{{ arquivo_url }}" target="_blank" class="text-decoration-none fw-semibold">
+                            <a href="{{ arquivo_url }}" target="_blank" rel="noopener" class="text-decoration-none fw-semibold">
                                 {{ anexo.nome_arquivo }}
                             </a>
-                            {% if anexo.descricao %}
-                            <br><small class="text-muted">{{ anexo.descricao }}</small>
-                            {% endif %}
-                            <br><small class="text-muted">
-                                <i class="bi bi-calendar3"></i> {{ anexo.criado_em|date:"d/m/Y" }}
-                            </small>
+                            <br><small class="text-muted"><i class="bi bi-calendar3"></i> {{ anexo.criado_em|date:"d/m/Y" }}</small>
                         </div>
                     </li>
+                    {% endwith %}
                     {% endfor %}
                 </ul>
                 {% else %}
@@ -364,77 +359,62 @@
                     <i class="bi bi-inbox d-block mb-2" style="font-size: 2rem; opacity: 0.4;"></i>
                     Nenhum anexo adicionado
                 </p>
-                {% if perms.pgr_gestao.add_anexoplano %}
+                {% if perms.pgr_gestao.add_anexoplanoacao %}
                 <hr>
                 <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalAnexo">
                     <i class="bi bi-cloud-upload"></i> Adicionar Primeiro Anexo
                 </button>
                 {% endif %}
-            {% endif %}
+                {% endif %}
             </div>
         </div>
 
         <!-- Ações Rápidas -->
         <div class="card">
-            <div class="card-header">
-                <i class="bi bi-lightning-charge-fill"></i> Ações Rápidas
-            </div>
+            <div class="card-header"><i class="bi bi-lightning-charge-fill"></i> Ações Rápidas</div>
             <div class="card-body d-grid gap-2">
                 <a href="{% url 'pgr_gestao:relatorio_planos_acao' %}" class="btn btn-outline-primary">
-                    <i class="bi bi-bar-chart"></i> Relatório de Planos
-                </a>
+                    <i class="bi bi-bar-chart"></i> Relatório de Planos</a>
                 <a href="{% url 'pgr_gestao:relatorio_riscos_classificacao' %}" class="btn btn-outline-warning">
-                    <i class="bi bi-pie-chart"></i> Relatório de Riscos
-                </a>
+                    <i class="bi bi-pie-chart"></i> Relatório de Riscos</a>
                 <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-list-ul"></i> Lista de Planos
-                </a>
+                    <i class="bi bi-list-ul"></i> Lista de Planos</a>
                 <a href="{% url 'pgr_gestao:cronograma_list' %}" class="btn btn-outline-info">
-                    <i class="bi bi-calendar-week"></i> Cronograma
-                </a>
-                <a href="{% url 'pgr_gestao:dashboard' %}" class="btn btn-outline-dark">
-                    <i class="bi bi-speedometer2"></i> Dashboard
-                </a>
+                    <i class="bi bi-calendar-week"></i> Cronograma</a>
+                <a href="{% url 'pgr_gestao:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-speedometer2"></i> Dashboard</a>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Modal: Adicionar Anexo -->
-<div class="modal fade" id="modalAnexo" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="modalAnexo" tabindex="-1" aria-hidden="true" aria-labelledby="modalAnexoTitulo">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title"><i class="bi bi-cloud-upload"></i> Adicionar Anexo</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="modalAnexoTitulo"><i class="bi bi-cloud-upload"></i> Adicionar Anexo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <form method="post" action="{% url 'pgr_gestao:adicionar_anexo_plano' plano.pk %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold required-field">Nome do Arquivo</label>
-                        <input type="text" name="nome_arquivo" class="form-control" required
+                        <label class="form-label fw-semibold required-field" for="anexo-nome">Nome do Arquivo</label>
+                        <input id="anexo-nome" type="text" name="nome_arquivo" class="form-control" required
                                placeholder="Ex: Relatório de Medição">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold required-field">Arquivo</label>
-                        <input type="file" name="arquivo" class="form-control" required
-                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt">
-                        <small class="text-muted">PDF, DOC, XLS, JPG, PNG (máx. 10MB)</small>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Descrição</label>
-                        <textarea name="descricao" class="form-control" rows="2"
-                                  placeholder="Descrição opcional do anexo"></textarea>
+                        <label class="form-label fw-semibold required-field" for="anexo-arquivo">Arquivo</label>
+                        <input id="anexo-arquivo" type="file" name="arquivo" class="form-control" required
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+                        <small class="text-muted">PDF, DOC, XLS, JPG ou PNG. Tipo e tamanho são validados no envio.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-lg"></i> Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save"></i> Salvar Anexo
-                    </button>
+                        <i class="bi bi-x-lg"></i> Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Salvar Anexo</button>
                 </div>
             </form>
         </div>
@@ -445,13 +425,13 @@
 {% block extra_pgr_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const ctx = document.getElementById('chartProgresso');
-    if (!ctx) return;
+    if (!ctx || typeof Chart === 'undefined') return;
 
     const rootStyles = getComputedStyle(document.documentElement);
-    const surfaceColor = rootStyles.getPropertyValue('--bs-tertiary-bg').trim();
-    const percentual = {{ plano.percentual_conclusao|default:0 }};
+    const surfaceColor = rootStyles.getPropertyValue('--bs-tertiary-bg').trim() || '#e9ecef';
+    const percentual = Math.min(100, Math.max(0, parseFloat(ctx.dataset.pct) || 0));
 
     const cor = percentual >= 90 ? '#198754'
               : percentual >= 70 ? '#0dcaf0'
@@ -474,15 +454,12 @@ document.addEventListener('DOMContentLoaded', function() {
             cutout: '70%',
             plugins: {
                 legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => ` ${ctx.label}: ${ctx.parsed}%`
-                    }
-                }
+                tooltip: { callbacks: { label: c => ` ${c.label}: ${c.parsed}%` } }
             }
         }
     });
 });
 </script>
 {% endblock %}
+
 

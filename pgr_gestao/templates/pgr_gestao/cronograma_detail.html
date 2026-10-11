@@ -1,5 +1,5 @@
 {# Cronograma de Ações - Detalhes da Ação e Status #}
-{% extends 'pgr_gestao/pgr_base.html' %}  {# 🔧 CORRIGIDO: era 'base.html' #}
+{% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
 {% block title %}Ação {{ acao.numero_item|stringformat:"02d" }} - Cronograma{% endblock %}
@@ -16,15 +16,7 @@
             <h1>
                 <i class="bi bi-calendar-check-fill"></i>
                 Ação #{{ acao.numero_item|stringformat:"02d" }}
-                {% if acao.status == 'concluido' %}
-                <span class="badge bg-success ms-2">Concluído</span>
-                {% elif acao.status == 'em_andamento' %}
-                <span class="badge bg-info ms-2">Em Andamento</span>
-                {% elif acao.status == 'cancelado' %}
-                <span class="badge bg-secondary ms-2">Cancelado</span>
-                {% else %}
-                <span class="badge bg-warning text-dark ms-2">Pendente</span>
-                {% endif %}
+                <span class="badge pgr-badge pgr-status_plano-{{ acao.status }} ms-2">{{ acao.get_status_display }}</span>
             </h1>
             <p class="mb-0">
                 <i class="bi bi-file-earmark-text"></i>
@@ -114,29 +106,13 @@
                 <i class="bi bi-flag-fill"></i> Status
             </div>
             <div class="card-body text-center">
-                {% if acao.status == 'pendente' %}
-                <span class="badge bg-warning text-dark fs-6 px-4 py-2">
-                    <i class="bi bi-hourglass-split"></i> Pendente
+                <span class="badge pgr-badge pgr-status_plano-{{ acao.status }} fs-6 px-4 py-2">
+                    <i class="bi bi-flag-fill"></i> {{ acao.get_status_display }}
                 </span>
-                {% elif acao.status == 'em_andamento' %}
-                <span class="badge bg-info fs-6 px-4 py-2">
-                    <i class="bi bi-play-fill"></i> Em Andamento
-                </span>
-                {% elif acao.status == 'concluido' %}
-                <span class="badge bg-success fs-6 px-4 py-2">
-                    <i class="bi bi-check-circle-fill"></i> Concluído
-                </span>
-                {% elif acao.status == 'cancelado' %}
-                <span class="badge bg-secondary fs-6 px-4 py-2">
-                    <i class="bi bi-x-circle"></i> Cancelado
-                </span>
-                {% else %}
-                <span class="badge bg-dark fs-6 px-4 py-2">{{ acao.get_status_display }}</span>
-                {% endif %}
 
                 {% if perms.pgr_gestao.change_cronogramaacaopgr and acao.status != 'concluido' %}
                 <hr>
-                <form method="post" action="{% url 'pgr_gestao:atualizar_status_acao' acao.pk %}">
+                <form method="post" action="{% url 'pgr_gestao:atualizar_status_acao' acao.pk %}" class="text-start">
                     {% csrf_token %}
                     <label class="form-label fw-semibold small">Alterar Status</label>
                     <div class="input-group">
@@ -167,13 +143,10 @@
                     <p class="fw-bold fs-5 mb-0">
                         {{ acao.data_proxima_avaliacao|date:"d/m/Y"|default:"Não definida" }}
                     </p>
-                    {% if acao.status != 'concluido' and acao.data_proxima_avaliacao %}
-                        {% now "Y-m-d" as hoje %}
-                        {% if acao.data_proxima_avaliacao|date:"Y-m-d" < hoje %}
-                        <small class="text-danger">
-                            <i class="bi bi-exclamation-triangle-fill"></i> ATRASADO
-                        </small>
-                        {% endif %}
+                    {% if acao.esta_atrasado %}
+                    <small class="text-danger">
+                        <i class="bi bi-exclamation-triangle-fill"></i> ATRASADO
+                    </small>
                     {% endif %}
                 </div>
 
@@ -207,5 +180,4 @@
     </div>
 </div>
 {% endblock %}
-
 

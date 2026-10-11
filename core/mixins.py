@@ -1,5 +1,4 @@
 # core/mixins.py
-
 import io
 import os
 from typing import Optional
@@ -13,18 +12,18 @@ from django.db import models
 from django.db.models import Q, QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
-from django.utils import timezone
+from requests import request
+from core.utils import get_filial_ativa
 from PIL import Image
 from core.magic_utils import get_mime_type
-from core.utils import get_filial_ativa
+
 from core.validators import SecureFileValidator
 from usuario.models import Filial
 from .forms import ChangeFilialForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ObjectDoesNotExist
-from django.urls import reverse, NoReverseMatch
 from django.contrib.auth.mixins import UserPassesTestMixin
-from tarefas import permissions as perms
+
 
 
 # =============================================================================
@@ -116,15 +115,8 @@ class TecnicoScopeMixin:
         return getattr(user, self._TECNICO_CACHE_ATTR)
 
     def _pode_ver_todos(self) -> bool:
-        """Staff/superuser sempre veem tudo. Demais perfis podem ganhar
-        acesso irrestrito via permissao explicita definida em
-        `permission_view_all` (configuravel por view)."""
-        user = self.request.user
-        if user.is_superuser or user.is_staff:
-            return True
-        if self.permission_view_all:
-            return user.has_perm(self.permission_view_all)
-        return False
+        from core.scope import escopo_total
+        return escopo_total(self.request.user, self.permission_view_all)
 
     def get_queryset(self) -> QuerySet:
         queryset = super().get_queryset()
@@ -242,31 +234,36 @@ class AppPermissionMixin(PermissionRequiredMixin):
 # =============================================================================
 
 class FilialCreateMixin:
-    """
-    Mixin para views de criação. Atribui automaticamente a filial da sessão
-    ao novo objeto antes de salvá-lo.
-    """
+    """Atribui a filial ativa (fonte única: get_filial_ativa) ao novo objeto."""
 
     def form_valid(self, form):
-        filial_id = self.request.session.get('active_filial_id')
-        if not filial_id:
+        from django.db import IntegrityError, transaction
+        from core.utils import get_filial_ativa
+
+        filial = get_filial_ativa(self.request.user, self.request)
+        if filial is None:
             messages.error(
                 self.request,
-                "Nenhuma filial selecionada. "
-                "Por favor, escolha uma filial no menu superior."
+                "Nenhuma filial selecionada. Por favor, escolha uma filial no menu superior."
             )
             raise PermissionDenied("Nenhuma filial selecionada para criação de objeto.")
 
-        form.instance.filial_id = filial_id
-        response = super().form_valid(form)  # save primeiro
+        if hasattr(form.instance, "filial_id"):
+            form.instance.filial = filial
+        try:
+            with transaction.atomic():
+                response = super().form_valid(form)
+        except IntegrityError:
+            form.add_error(None, "Já existe um registro com estes dados nesta filial.")
+            return self.form_invalid(form)
 
-        # Só envia mensagem se a view NÃO estiver usando SuccessMessageMixin
-        if not hasattr(self, 'success_message') or not self.success_message:
+        if not getattr(self, "success_message", None):
             messages.success(
                 self.request,
                 f"{self.model._meta.verbose_name.capitalize()} criado(a) com sucesso."
             )
         return response
+
 
 
 class ChangeFilialAdminMixin:
@@ -568,31 +565,25 @@ def _sanitize_pdf(uploaded_file):
                 del page[NameObject("/AA")]
             # Remove anotações de JavaScript
             if NameObject("/Annots") in page:
-                annots = page[NameObject("/Annots")]
-                try:
-                    # Filtra anotações que contêm JS
-                    safe_annots = []
-                    for annot_ref in annots:
-                        try:
-                            annot = annot_ref.get_object()
-                            subtype = annot.get("/Subtype")
-                            # Remove anotações de ação/JS
-                            if subtype in ("/Link",):
-                                action = annot.get("/A", {})
-                                if action and action.get("/S") == "/JavaScript":
-                                    continue
-                            safe_annots.append(annot_ref)
-                        except Exception:
-                            continue
-                    page[NameObject("/Annots")] = safe_annots
-                except Exception:
-                    # Se der erro processando annotations, remove todas
-                    del page[NameObject("/Annots")]
+                seguras = []
+                for ref in page[NameObject("/Annots")]:
+                    try:
+                        annot = ref.get_object()
+                        tem_js = False
+                        for chave in ("/A", "/AA"):
+                            acao = annot.get(chave)
+                            if acao is not None:
+                                acao = acao.get_object()
+                                if "/JavaScript" in str(acao):
+                                    tem_js = True
+                                    break
+                        if not tem_js:
+                            seguras.append(ref)
+                    except Exception:
+                        continue
+                page[NameObject("/Annots")] = seguras
 
             writer.add_page(page)
-
-        # Remove TODOS os metadados (autor, software, título, etc)
-        writer.add_metadata({})
 
         # Garante que o writer não herde catálogo malicioso
         # (OpenAction, Names/JavaScript, Names/EmbeddedFiles, AcroForm/XFA)
@@ -695,13 +686,9 @@ class SecureUploadMixin(models.Model):
                 field.validators = [SecureFileValidator(app)]
 
     def _is_new_upload(self):
-        """Detecta se é um upload novo (não um registro já salvo sendo editado)."""
-        return (
-            self.file
-            and hasattr(self.file, 'file')
-            and isinstance(self.file.file, InMemoryUploadedFile)
-        )
-
+        """Upload novo, em memória ou em arquivo temporário (> 20 MB)."""
+        return bool(self.file) and not getattr(self.file, '_committed', True)
+    
     def save(self, *args, **kwargs):
         if self.file and self._is_new_upload():
             uploaded = self.file.file
@@ -844,7 +831,6 @@ class SolicitacaoFilialGuardMixin:
             ...
     """
 
-    # URL de fallback caso a solicitação esteja fora da filial ativa
     redirect_url_name = 'suprimentos:solicitacao_list'
 
     def dispatch(self, request, *args, **kwargs):

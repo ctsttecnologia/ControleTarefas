@@ -1,0 +1,7 @@
+
+{# Uso: {% include 'pgr_gestao/_badge_status.html' with status=doc.status label=doc.get_status_display %} #}
+{% if status == 'vigente' %}<span class="badge text-bg-success">{{ label|default:"Vigente" }}</span>
+{% elif status == 'vencido' %}<span class="badge text-bg-danger">{{ label|default:"Vencido" }}</span>
+{% elif status == 'em_revisao' %}<span class="badge text-bg-warning">{{ label|default:"Em Revisão" }}</span>
+{% else %}<span class="badge text-bg-secondary">{{ label|default:status|default:"N/A" }}</span>{% endif %}
+

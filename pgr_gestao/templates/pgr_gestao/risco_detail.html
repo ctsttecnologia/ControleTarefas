@@ -1,4 +1,4 @@
-
+{# Detalhes do Risco Identificado #}
 {% extends 'pgr_gestao/pgr_base.html' %}
 {% load static %}
 
@@ -9,7 +9,7 @@
 <li class="breadcrumb-item active">{{ risco.codigo_risco|default:"Risco" }}</li>
 {% endblock %}
 
-{% block content %}
+{% block pgr_content %}
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div>
@@ -66,13 +66,7 @@
                         <p><strong>Cargo:</strong> {{ risco.cargo.nome|default:"N/A" }}</p>
                         <p><strong>Perfil de Exposição:</strong> {{ risco.get_perfil_exposicao_display }}</p>
                         <p><strong>Status de Controle:</strong>
-                            {% if risco.status_controle == 'controlado' %}
-                            <span class="badge bg-success">{{ risco.get_status_controle_display }}</span>
-                            {% elif risco.status_controle == 'em_controle' %}
-                            <span class="badge bg-info">{{ risco.get_status_controle_display }}</span>
-                            {% else %}
-                            <span class="badge bg-warning text-dark">{{ risco.get_status_controle_display }}</span>
-                            {% endif %}
+                            <span class="badge pgr-badge pgr-status_controle-{{ risco.status_controle }}">{{ risco.get_status_controle_display }}</span>
                         </p>
                         <p><strong>Data de Identificação:</strong> {{ risco.data_identificacao|date:"d/m/Y" }}</p>
                     </div>
@@ -142,7 +136,7 @@
                     </h2>
                     <p class="text-muted mb-0">
                         <strong>Prioridade de Ação:</strong>
-                        <span class="badge bg-{{ risco.prioridade_acao }}">
+                        <span class="badge pgr-badge pgr-prioridade-{{ risco.prioridade_acao }}">
                             {{ risco.get_prioridade_acao_display }}
                         </span>
                     </p>
@@ -353,8 +347,8 @@
                             <tr>
                                 <td>{{ plano.descricao_acao|truncatewords:10 }}</td>
                                 <td><span class="badge bg-secondary">{{ plano.get_tipo_acao_display }}</span></td>
-                                <td><span class="badge bg-{{ plano.prioridade }}">{{ plano.get_prioridade_display }}</span></td>
-                                <td><span class="badge bg-{{ plano.status }}">{{ plano.get_status_display }}</span></td>
+                                <td><span class="badge pgr-badge pgr-prioridade-{{ plano.prioridade }}">{{ plano.get_prioridade_display }}</span></td>
+                                <td><span class="badge pgr-badge pgr-status_plano-{{ plano.status }}">{{ plano.get_status_display }}</span></td>
                                 <td>
                                     {{ plano.data_prevista|date:"d/m/Y" }}
                                     {% if plano.esta_atrasado %}

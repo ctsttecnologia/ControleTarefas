@@ -110,6 +110,7 @@ urlpatterns = [
     path('cronograma/<int:pk>/status/', views.atualizar_status_acao, name='atualizar_status_acao'),
 
     # CRUD vinculado a um documento PGR específico
+    path('documentos/<int:pk>/verificar-conformidade/', views.PGRConformidadeView.as_view(), name='verificar_conformidade'),
     path('documentos/<int:pgr_pk>/cronograma/novo/', views.CronogramaAcaoCreateView.as_view(), name='cronograma_create'),
     path('documentos/<int:pgr_pk>/cronograma/<int:pk>/editar/', views.CronogramaAcaoUpdateView.as_view(), name='cronograma_update_pgr'),
     path('documentos/<int:pgr_pk>/cronograma/<int:pk>/excluir/', views.CronogramaAcaoDeleteView.as_view(), name='cronograma_delete_pgr'),
@@ -129,7 +130,6 @@ urlpatterns = [
     path('documentos/<int:pk>/excel/', views.exportar_inventario_riscos_excel, name='exportar_inventario_excel'),
     path('documentos/<int:pk>/cronograma-excel/', views.exportar_cronograma_acoes, name='exportar_cronograma_acoes'),
     #path('documentos/<int:pk>/cronograma-excel-v2/', views.exportar_cronograma_excel, name='exportar_cronograma_excel'),
-    path('documentos/<int:pk>/verificar-conformidade/', views.verificar_conformidade_pgr, name='verificar_conformidade'),
     path('exportar/planos-de-acao/', views.exportar_planos_acao_excel, name='exportar_planos_acao_excel'),
 
     # ========================================
@@ -139,6 +139,8 @@ urlpatterns = [
     path('ajax/locais/<int:empresa_id>/', views.get_locais_prestacao_ajax, name='ajax_load_locais'),
     path('ajax/ges/<int:pgr_id>/', views.get_ges_ajax, name='ajax_ges'),
     path('ajax/dashboard-stats/', views.dashboard_stats_ajax, name='ajax_dashboard_stats'),
+    path('ajax/risco/<int:pk>/', views.risco_info_ajax, name='ajax_risco_info'),
+
 
     # ── Anexos do PGR ──
     path('documentos/<int:pgr_id>/anexos/', views.AnexoPGRListView.as_view(), name='anexo_list'),

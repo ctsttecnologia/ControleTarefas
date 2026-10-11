@@ -1,238 +1,224 @@
-    {# Avaliação Quantitativa - Formulário de Criação/Edição (Final) #}
-    {% extends 'pgr_gestao/pgr_base.html' %}
-    {% load static %}
-    {% load widget_tweaks %}
+{# Avaliação Quantitativa — Criar/Editar #}
+{% extends 'pgr_gestao/pgr_base.html' %}
 
-    {% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação Quantitativa{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar Avaliação{% else %}Nova Avaliação Quantitativa{% endif %}{% endblock %}
 
-    {% block breadcrumb_items %}
-    <li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">Avaliações</a></li>
-    {% if risco %}
-    <li class="breadcrumb-item">
-        <a href="{{ risco.get_absolute_url }}">{{ risco.codigo_risco|default:risco.agente }}</a>
-    </li>
-    {% endif %}
-    <li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %}</li>
-    {% endblock %}
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">Avaliações</a></li>
+{% if risco %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:risco_detail' risco.pk %}">{{ risco.codigo_risco|default:risco.agente }}</a></li>
+{% endif %}
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %}</li>
+{% endblock %}
 
-    {% block pgr_content %}
-    <div class="page-header">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-            <div>
-                <h1>
-                    <i class="bi bi-graph-up-arrow"></i>
-                    {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação Quantitativa
-                </h1>
-                <p class="mb-0">
-                    {% if risco %}
-                    Para o risco: <strong>{{ risco.tipo_risco.nome }} - {{ risco.agente }}</strong>
-                    {% if risco.codigo_risco %}<small class="text-muted">({{ risco.codigo_risco }})</small>{% endif %}
-                    {% elif form.instance.pk and form.instance.risco_identificado %}
-                    Para o risco: <strong>{{ form.instance.risco_identificado }}</strong>
-                    {% else %}
-                    Registro de medição e avaliação de risco
-                    {% endif %}
-                </p>
-            </div>
-            <a href="{% url 'pgr_gestao:avaliacao_list' %}" class="btn btn-light">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
-        </div>
+{% block extra_pgr_css %}
+<style>
+    .form-hero { background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%); color: #fff; padding: 2rem 1.5rem; border-radius: .75rem .75rem 0 0; }
+    .form-hero h1 { font-weight: 700; margin-bottom: .25rem; }
+    .form-hero p { opacity: .95; margin-bottom: 0; }
+    .form-card { border: none; border-radius: 0 0 .75rem .75rem; box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+    .form-section { margin-bottom: 2rem; }
+    .form-section-title {
+        display: flex; align-items: center; gap: .5rem; font-size: .875rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .5px; color: var(--bs-primary);
+        margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 2px solid var(--bs-primary-bg-subtle);
+    }
+    .input-group > select#id_unidade_medida { max-width: 45%; }
+    .conformidade .form-check-input { transform: scale(1.4); cursor: pointer; margin: 0; }
+    .form-actions { background: var(--bs-tertiary-bg); padding: 1rem 1.5rem; border-radius: 0 0 .75rem .75rem;
+                    display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+</style>
+{% endblock %}
+
+{% block pgr_content %}
+<div class="form-hero d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div>
+        <h1><i class="bi bi-graph-up-arrow"></i>
+            {% if form.instance.pk %}Editar Avaliação{% else %}Nova Avaliação Quantitativa{% endif %}</h1>
+        <p>
+            {% if risco %}Risco: <strong>{{ risco.tipo_risco.nome }} - {{ risco.agente }}</strong>
+            {% else %}Registro de medição e avaliação de risco{% endif %}
+        </p>
     </div>
+    <a href="{% if risco %}{% url 'pgr_gestao:risco_detail' risco.pk %}{% else %}{% url 'pgr_gestao:avaliacao_list' %}{% endif %}"
+       class="btn btn-light"><i class="bi bi-arrow-left"></i> Voltar</a>
+</div>
 
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <i class="bi bi-pencil-square"></i> Formulário de Avaliação
-        </div>
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
+<div class="card form-card">
+    <form method="post" enctype="multipart/form-data" novalidate id="avaliacaoForm">
+        {% csrf_token %}
+        <div class="card-body p-4">
 
-                {% if form.non_field_errors %}
-                <div class="alert alert-danger">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    {{ form.non_field_errors }}
-                </div>
-                {% endif %}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill"></i> {{ form.non_field_errors }}
+            </div>
+            {% endif %}
 
-                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-                <!-- IDENTIFICAÇÃO                              -->
-                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-                <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                    <i class="bi bi-card-heading"></i> Identificação
-                </h6>
-                <div class="row g-3 mb-4">
-                    <!-- Risco Identificado -->
+            <div class="form-section">
+                <div class="form-section-title"><i class="bi bi-card-list"></i> Identificação</div>
+                <div class="row g-3">
                     <div class="col-md-6">
-                        <label for="{{ form.risco_identificado.id_for_label }}" class="form-label fw-semibold required-field">
-                            Risco Identificado
-                        </label>
-                        {% if risco %}
-                        <input type="text" class="form-control"
-                            value="{{ risco.tipo_risco.nome }} - {{ risco.agente }}" disabled>
-                        <input type="hidden" name="{{ form.risco_identificado.html_name }}" value="{{ risco.pk }}">
-                        <small class="text-muted">
-                            <i class="bi bi-lock-fill"></i> Risco pré-selecionado
-                        </small>
-                        {% else %}
-                        {% render_field form.risco_identificado class="form-select" %}
-                        {% endif %}
-                        {% if form.risco_identificado.errors %}
-                        <div class="text-danger small mt-1">{{ form.risco_identificado.errors }}</div>
-                        {% endif %}
+                        {% include 'pgr_gestao/avaliacao/_campo.html' with campo=form.risco_identificado icone='bi-shield-exclamation' %}
+                        {% if form.instance.pk %}<div class="form-text">O risco não pode ser alterado após o registro.</div>{% endif %}
                     </div>
-
-                    <!-- Tipo de Avaliação -->
                     <div class="col-md-3">
-                        <label for="{{ form.tipo_avaliacao.id_for_label }}" class="form-label fw-semibold required-field">
-                            Tipo de Avaliação
-                        </label>
-                        {% render_field form.tipo_avaliacao class="form-select" %}
-                        {% if form.tipo_avaliacao.errors %}
-                        <div class="text-danger small mt-1">{{ form.tipo_avaliacao.errors }}</div>
-                        {% endif %}
+                        {% include 'pgr_gestao/avaliacao/_campo.html' with campo=form.tipo_avaliacao icone='bi-tag' %}
                     </div>
-
-                    <!-- Data da Avaliação -->
                     <div class="col-md-3">
-                        <label for="{{ form.data_avaliacao.id_for_label }}" class="form-label fw-semibold required-field">
-                            Data da Avaliação
-                        </label>
-                        {% render_field form.data_avaliacao class="form-control" %}
-                        {% if form.data_avaliacao.errors %}
-                        <div class="text-danger small mt-1">{{ form.data_avaliacao.errors }}</div>
-                        {% endif %}
+                        {% include 'pgr_gestao/avaliacao/_campo.html' with campo=form.data_avaliacao icone='bi-calendar3' %}
                     </div>
                 </div>
+            </div>
 
-                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-                <!-- MEDIÇÃO                                     -->
-                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-                <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                    <i class="bi bi-rulers"></i> Medição
-                </h6>
-                <div class="row g-3 mb-4">
-                    <!-- Resultado + Unidade -->
+            <div class="form-section">
+                <div class="form-section-title"><i class="bi bi-rulers"></i> Medição</div>
+                <div class="row g-3">
                     <div class="col-md-5">
-                        <label for="{{ form.resultado_medido.id_for_label }}" class="form-label fw-semibold required-field">
-                            Resultado Medido
+                        <label for="{{ form.resultado_medido.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-speedometer2"></i> Resultado e Unidade <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
-                            {% render_field form.resultado_medido class="form-control" %}
-                            {% render_field form.unidade_medida class="form-select" style="max-width: 140px;" %}
+                            {{ form.resultado_medido }}
+                            {{ form.unidade_medida }}
                         </div>
-                        {% if form.resultado_medido.errors %}
-                        <div class="text-danger small mt-1">{{ form.resultado_medido.errors }}</div>
-                        {% endif %}
-                        {% if form.unidade_medida.errors %}
-                        <div class="text-danger small mt-1">{{ form.unidade_medida.errors }}</div>
-                        {% endif %}
+                        {% for erro in form.resultado_medido.errors %}<div class="field-error text-danger small mt-1">{{ erro }}</div>{% endfor %}
+                        {% for erro in form.unidade_medida.errors %}<div class="field-error text-danger small mt-1">{{ erro }}</div>{% endfor %}
+                        <div class="form-text">As unidades listadas dependem do tipo de avaliação.</div>
                     </div>
-
-                    <!-- Limite de Tolerância -->
                     <div class="col-md-4">
-                        <label for="{{ form.limite_tolerancia_nr.id_for_label }}" class="form-label fw-semibold">
-                            Limite de Tolerância (NR)
-                        </label>
-                        {% render_field form.limite_tolerancia_nr class="form-control" %}
-                        {% if form.limite_tolerancia_nr.errors %}
-                        <div class="text-danger small mt-1">{{ form.limite_tolerancia_nr.errors }}</div>
-                        {% endif %}
+                        {% include 'pgr_gestao/avaliacao/_campo.html' with campo=form.limite_tolerancia_nr icone='bi-bookmark-check' ajuda='Ex: 85 dB(A) - NR-15' %}
                     </div>
-
-                    <!-- Conformidade -->
                     <div class="col-md-3">
-                        <label class="form-label fw-semibold d-block">Conformidade</label>
-                        <div class="form-check form-switch mt-2">
-                            {% render_field form.conforme class="form-check-input" role="switch" %}
-                            <label class="form-check-label" for="{{ form.conforme.id_for_label }}">
-                                Está conforme?
-                            </label>
+                        <label class="form-label fw-semibold"><i class="bi bi-check2-circle"></i> Conformidade</label>
+                        <div class="conformidade form-check form-switch d-flex align-items-center gap-3 mt-2 ps-5">
+                            {{ form.conforme }}
+                            <label for="{{ form.conforme.id_for_label }}" class="form-check-label" id="conformeLabel"></label>
                         </div>
-                        {% if form.conforme.errors %}
-                        <div class="text-danger small mt-1">{{ form.conforme.errors }}</div>
-                        {% endif %}
+                        {% for erro in form.conforme.errors %}<div class="field-error text-danger small mt-1">{{ erro }}</div>{% endfor %}
+                        <div class="form-text" id="conformeHint"></div>
                     </div>
                 </div>
+            </div>
 
-                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-                <!-- METODOLOGIA E EQUIPAMENTO                   -->
-                <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-                <h6 class="text-muted text-uppercase fw-bold small mb-3">
-                    <i class="bi bi-tools"></i> Metodologia e Equipamento
-                </h6>
-
-                <!-- Metodologia Utilizada -->
-                <div class="mb-3">
-                    <label for="{{ form.metodologia_utilizada.id_for_label }}" class="form-label fw-semibold">
-                        Metodologia Utilizada
-                    </label>
-                    {% render_field form.metodologia_utilizada class="form-control" placeholder="Descreva a metodologia aplicada (NHO, FUNDACENTRO, NIOSH, etc.)" %}
-                    {% if form.metodologia_utilizada.errors %}
-                    <div class="text-danger small mt-1">{{ form.metodologia_utilizada.errors }}</div>
-                    {% endif %}
-                </div>
-
-                <div class="row g-3 mb-4">
-                    <!-- Equipamento Utilizado -->
-                    <div class="col-md-7">
-                        <label for="{{ form.equipamento_utilizado.id_for_label }}" class="form-label fw-semibold">
-                            Equipamento Utilizado
-                        </label>
-                        {% render_field form.equipamento_utilizado class="form-control" %}
-                        {% if form.equipamento_utilizado.errors %}
-                        <div class="text-danger small mt-1">{{ form.equipamento_utilizado.errors }}</div>
-                        {% endif %}
+            <div class="form-section">
+                <div class="form-section-title"><i class="bi bi-tools"></i> Metodologia e Equipamento</div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        {% include 'pgr_gestao/avaliacao/_campo.html' with campo=form.metodologia_utilizada icone='bi-diagram-3' %}
                     </div>
-
-                    <!-- Responsável pela Avaliação -->
-                    <div class="col-md-5">
-                        <label for="{{ form.responsavel_avaliacao.id_for_label }}" class="form-label fw-semibold">
-                            <i class="bi bi-person-badge"></i> Responsável pela Avaliação
-                        </label>
-                        {% render_field form.responsavel_avaliacao class="form-control" placeholder="Nome do profissional habilitado" %}
-                        {% if form.responsavel_avaliacao.errors %}
-                        <div class="text-danger small mt-1">{{ form.responsavel_avaliacao.errors }}</div>
-                        {% endif %}
+                    <div class="col-md-6">
+                        {% include 'pgr_gestao/avaliacao/_campo.html' with campo=form.equipamento_utilizado icone='bi-cpu' %}
+                    </div>
+                    <div class="col-md-6">
+                        {% include 'pgr_gestao/avaliacao/_campo.html' with campo=form.responsavel_avaliacao icone='bi-person-badge' %}
+                    </div>
+                    <div class="col-12">
+                        {% include 'pgr_gestao/avaliacao/_campo.html' with campo=form.laudo_tecnico icone='bi-file-earmark-pdf' ajuda='PDF ou imagem, até 20 MB (opcional).' %}
                     </div>
                 </div>
+            </div>
 
-                <!-- OBSERVAÇÕES -->
-                <div class="mb-4">
-                    <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">
-                        <i class="bi bi-chat-left-text"></i> Observações
-                    </label>
-                    {% render_field form.observacoes class="form-control" rows="3" placeholder="Detalhes sobre a medição, condições do ambiente, etc." %}
-                    {% if form.observacoes.errors %}
-                    <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
-                    {% endif %}
-                </div>
-
-                <hr>
-
-                <!-- Botões -->
-                <div class="d-flex justify-content-between flex-wrap gap-2">
-                    {% if risco %}
-                    <a href="{{ risco.get_absolute_url }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-lg"></i> Cancelar
-                    </a>
-                    {% elif form.instance.pk and form.instance.risco_identificado %}
-                    <a href="{% url 'pgr_gestao:risco_detail' pk=form.instance.risco_identificado.pk %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-lg"></i> Cancelar
-                    </a>
-                    {% else %}
-                    <a href="{% url 'pgr_gestao:avaliacao_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-lg"></i> Cancelar
-                    </a>
-                    {% endif %}
-
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="bi bi-save"></i>
-                        {% if form.instance.pk %}Salvar Alterações{% else %}Salvar Avaliação{% endif %}
-                    </button>
-                </div>
-            </form>
+            <div class="form-section">
+                <div class="form-section-title"><i class="bi bi-chat-left-text"></i> Observações</div>
+                <label for="{{ form.observacoes.id_for_label }}" class="visually-hidden">Observações</label>
+                {{ form.observacoes }}
+                {% for erro in form.observacoes.errors %}<div class="field-error text-danger small mt-1">{{ erro }}</div>{% endfor %}
+            </div>
         </div>
-    </div>
-    {% endblock %}
+
+        <div class="form-actions">
+            <a href="{% if risco %}{% url 'pgr_gestao:risco_detail' risco.pk %}{% else %}{% url 'pgr_gestao:avaliacao_list' %}{% endif %}"
+               class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i> Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> {% if form.instance.pk %}Salvar Alterações{% else %}Salvar Avaliação{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_pgr_js %}
+{{ form.mapa_unidades|json_script:"mapa-unidades" }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form     = document.getElementById('avaliacaoForm');
+    const selTipo  = form.querySelector('[name="tipo_avaliacao"]');
+    const selUnid  = form.querySelector('[name="unidade_medida"]');
+    const resultado = form.querySelector('[name="resultado_medido"]');
+    const limite   = form.querySelector('[name="limite_tolerancia_nr"]');
+    const conforme = form.querySelector('[name="conforme"]');
+    const label    = document.getElementById('conformeLabel');
+    const hint     = document.getElementById('conformeHint');
+    const MAPA     = JSON.parse(document.getElementById('mapa-unidades').textContent);
+    let editadoManual = {{ form.instance.pk|yesno:"true,false" }};
+
+    // ---- Unidades: só esconde/desabilita, nunca recria as opções ----
+    function filtrarUnidades(inicial) {
+        const permitidas = MAPA[selTipo.value];            // undefined => todas
+        const atual = selUnid.value;
+        Array.from(selUnid.options).forEach(o => {
+            if (!o.value) return;
+            const ok = !permitidas || permitidas.includes(o.value);
+            const manter = inicial && o.value === atual;   // não apaga valor já salvo ao abrir
+            o.hidden = !ok && !manter;
+            o.disabled = !ok && !manter;
+        });
+        if (!inicial && atual && permitidas && !permitidas.includes(atual)) selUnid.value = '';
+        if (!selUnid.value && permitidas) {
+            const principais = permitidas.filter(v => v !== 'outro');
+            if (principais.length === 1) selUnid.value = principais[0];
+        }
+    }
+    selTipo.addEventListener('change', () => { filtrarUnidades(false); sugerirConformidade(); });
+    filtrarUnidades(true);
+
+    // ---- Conformidade ----
+    function pintarLabel() {
+        label.innerHTML = conforme.checked
+            ? '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> CONFORME</span>'
+            : '<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> NÃO CONFORME</span>';
+    }
+    const numeroInicial = txt => {
+        const m = (txt || '').trim().match(/^[<≤≥]?\s*(\d+(?:[.,]\d+)?)/);
+        return m ? parseFloat(m[1].replace(',', '.')) : NaN;
+    };
+    function sugerirConformidade() {
+        if (editadoManual) return;
+        const r = parseFloat((resultado.value || '').replace(',', '.'));
+        const l = numeroInicial(limite.value);
+        if (isNaN(r) || isNaN(l)) { hint.textContent = ''; return; }
+        const minimo = selTipo.value === 'iluminacao';     // iluminância: limite é mínimo
+        conforme.checked = minimo ? r >= l : r <= l;
+        hint.textContent = 'Sugestão automática (' + (minimo ? 'resultado ≥ limite' : 'resultado ≤ limite') + '). Revise.';
+        pintarLabel();
+    }
+    conforme.addEventListener('change', () => { editadoManual = true; hint.textContent = ''; pintarLabel(); });
+    resultado.addEventListener('blur', sugerirConformidade);
+    limite.addEventListener('blur', sugerirConformidade);
+    pintarLabel();
+
+    // ---- Erros do servidor + validação visual ----
+    form.querySelectorAll('.field-error').forEach(err => {
+        const bloco = err.closest('[class*="col-"]') || err.parentElement;
+        bloco.querySelectorAll('input:not([type=checkbox]), select, textarea').forEach(el => el.classList.add('is-invalid'));
+    });
+    form.addEventListener('submit', e => {
+        let valido = true;
+        form.querySelectorAll('[required]').forEach(c => {
+            const vazio = !c.value || !c.value.trim();
+            c.classList.toggle('is-invalid', vazio);
+            if (vazio) valido = false;
+        });
+        if (!valido) {
+            e.preventDefault();
+            const p = form.querySelector('.is-invalid');
+            if (p) { p.scrollIntoView({ behavior: 'smooth', block: 'center' }); p.focus(); }
+        }
+    });
+});
+</script>
+{% endblock %}
+
+
 
