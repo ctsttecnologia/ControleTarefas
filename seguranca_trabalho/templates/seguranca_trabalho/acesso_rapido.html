@@ -207,12 +207,16 @@
             <small class="sst-page-subtitle">{% trans "Acesso rápido aos módulos de SST" %}</small>
         </div>
         <div class="d-flex gap-2 align-items-center">
+            {% if perms.seguranca_trabalho.view_dashboard or perms.is_superuser %}
             <button type="button" id="sstReorderToggle" class="btn btn-light" title="Acione para reordenar os cards de acesso rápido">
                 <i class="bi bi-arrows-move"></i> {% trans "Reordenar" %}
             </button>
+            {% endif %}
+            {% if perms.seguranca_trabalho.view_dashboard or perms.is_superuser %}
             <a href="{% url 'seguranca_trabalho:dashboard' %}" class="btn btn-light" title="Voltar para o Dashboard principal">
                 <i class="bi bi-speedometer2 me-1"></i> {% trans "Dashboard" %}
             </a>
+            {% endif %}
         </div>
     </div>
 </div>

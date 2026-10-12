@@ -186,7 +186,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'cloudinary',
 
-    
     # Apps Locais
     'dashboard.apps.DashboardConfig',
     'usuario.apps.UsuarioConfig',
