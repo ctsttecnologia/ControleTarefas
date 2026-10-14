@@ -641,4 +641,7 @@ CACHES = {
     }
 }
 
+# W036: MySQL não suporta UniqueConstraint com condition.
+# A unicidade é garantida por coluna gerada (migração pgr_gestao.0015).
+SILENCED_SYSTEM_CHECKS = ['models.W036']
 

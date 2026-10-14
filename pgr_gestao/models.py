@@ -915,7 +915,7 @@ class RiscoIdentificado(FilialConsistencyMixin, SoftDeleteModel, BaseModel):
         ]
         constraints = [
             models.UniqueConstraint(
-                fields=['pgr_documento', 'codigo'],
+                fields=['pgr_documento', 'codigo_risco'],
                 condition=Q(excluido_em__isnull=True),   # só entre registros não excluídos
                 name='uniq_ges_codigo_por_pgr',
             ),
@@ -931,6 +931,20 @@ class RiscoIdentificado(FilialConsistencyMixin, SoftDeleteModel, BaseModel):
         super().clean()
         if self.ges_id and self.ges.pgr_documento_id != self.pgr_documento_id:
             raise ValidationError({"ges": "O GES pertence a outro documento."})
+
+        if self.codigo_risco and self.pgr_documento_id:
+            duplicado = (
+                RiscoIdentificado._base_manager
+                .filter(
+                    pgr_documento_id=self.pgr_documento_id,
+                    codigo_risco=self.codigo_risco,
+                    excluido_em__isnull=True,
+                )
+                .exclude(pk=self.pk)
+                .exists()
+            )
+            if duplicado:
+                raise ValidationError({"codigo_risco": "Já existe um risco com este código neste PGR."})
 
     @property
     def riscos_criticos(self):
