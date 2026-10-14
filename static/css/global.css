@@ -1073,13 +1073,6 @@ body.has-submenu {
 }
 
 /* Botão "olho" — mostrar/ocultar senha (adaptativo) */
-.btn-toggle-password {
-    background-color: var(--bs-tertiary-bg);
-    border: 1px solid var(--bs-border-color);
-    border-left: 0;
-    color: var(--bs-text-muted);
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-}
 
 .btn-toggle-password:hover,
 .btn-toggle-password:focus {
@@ -1097,10 +1090,6 @@ body.has-submenu {
     box-shadow: none; /* anel de foco fica só no input */
 }
 
-/* Wrapper do input precisa ser relativo */
-.position-relative {
-  position: relative;
-}
 
 /* Botão de toggle - ÍCONE DOS OLHOS */
 .btn-toggle-password {

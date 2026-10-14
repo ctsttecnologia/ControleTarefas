@@ -43,7 +43,7 @@ urlpatterns = [
     path('', include('core.urls')),
 
     # Rotas das apps com seus prefixos
-    path('favicon.ico', RedirectView.as_view(url='/static/img/favicon.ico', permanent=True)),
+    path('favicon.ico', RedirectView.as_view(url='/static/images/favicon.ico', permanent=True)),
     path('contas/', include('usuario.urls', namespace='usuario')), # Onde está o seu CustomLoginView
     path('logradouro/', include('logradouro.urls')),
     path('cliente/', include('cliente.urls')),

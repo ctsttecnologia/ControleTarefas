@@ -1,17 +1,12 @@
-<!-- templates/tarefas/relatorio_display.html -->
-{% extends 'base.html' %}
-{% load static relatorio_tags %}
+{# templates/tarefas/relatorio_display.html #}
+{% extends "tarefas/base_tarefas.html" %}
+{% load relatorio_tags %}
 
 {% block title %}Resultado do Relatório{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/tarefas/relatorios.css' %}">
-{% endblock %}
-
-{% block content %}
+{% block tarefas_content %}
 <div class="rel-wrapper">
 
-    <!-- Header -->
     <div class="rel-header">
         <div>
             <h1 class="rel-title"><i class="bi bi-file-earmark-text me-2"></i>Resultado do Relatório</h1>
@@ -20,7 +15,7 @@
             </p>
         </div>
         <div class="rel-actions">
-            <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
+            <button type="button" onclick="window.print()" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-printer me-1"></i><span class="d-none d-sm-inline">Imprimir</span>
             </button>
             <a href="{% url 'tarefas:gerar_relatorio' %}" class="btn btn-sm btn-outline-secondary">
@@ -34,33 +29,31 @@
 
     {% include 'tarefas/partials/_filter_tags.html' %}
 
-    <!-- Card -->
     <div class="rel-card">
         <div class="rel-card-header">
             <h6 class="rel-card-title"><i class="bi bi-table me-2"></i>Resultados</h6>
             <span class="rel-count">{{ total_tarefas|default:0 }}</span>
         </div>
 
-        <!-- Barra de filtro por responsável -->
-        <form method="get" class="rel-quick-export" style="border-top:none; border-bottom:1px solid var(--rel-divider); background:var(--rel-table-header-bg);">
+        <form method="get" class="rel-filter-bar">
             {% if current_filters.status %}<input type="hidden" name="status" value="{{ current_filters.status }}">{% endif %}
             {% if current_filters.prioridade %}<input type="hidden" name="prioridade" value="{{ current_filters.prioridade }}">{% endif %}
 
             <label for="responsavel" class="rel-quick-export-label"><i class="bi bi-person me-1"></i>Responsável:</label>
-            <select name="responsavel" id="responsavel" class="form-select form-select-sm" style="max-width:220px;" onchange="this.form.submit()">
+            <select name="responsavel" id="responsavel" class="form-select form-select-sm rel-filter-select" onchange="this.form.submit()">
                 <option value="">Todos os responsáveis</option>
-                {% for user in responsaveis %}
-                <option value="{{ user.pk }}" {% if current_filters.responsavel == user.pk|stringformat:"d" %}selected{% endif %}>
-                    {{ user.get_full_name|default:user.username }}
-                </option>
+                {% for u in responsaveis %}
+                    <option value="{{ u.pk }}" {% if current_filters.responsavel == u.pk|stringformat:"d" %}selected{% endif %}>
+                        {{ u.get_full_name|default:u.username }}
+                    </option>
                 {% endfor %}
             </select>
 
             {% if current_filters.responsavel %}
-            <a href="?{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.prioridade %}prioridade={{ current_filters.prioridade }}{% endif %}"
-               class="btn btn-sm btn-outline-danger" title="Limpar filtro de responsável">
-                <i class="bi bi-x-lg"></i>
-            </a>
+                <a href="?{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.prioridade %}prioridade={{ current_filters.prioridade }}{% endif %}"
+                   class="btn btn-sm btn-outline-danger" title="Limpar filtro de responsável">
+                    <i class="bi bi-x-lg"></i>
+                </a>
             {% endif %}
         </form>
 
@@ -80,7 +73,9 @@
                     {% for tarefa in tarefas %}
                     <tr>
                         <td data-label="Título"><span class="rel-table-title">{{ tarefa.titulo }}</span></td>
-                        <td data-label="Responsável">{% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}</td>
+                        <td data-label="Responsável">
+                            {% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}
+                        </td>
                         <td data-label="Status">
                             <span class="rel-badge" style="--badge-bg: {% status_color tarefa.status 'bg' %}; --badge-fg: {% status_color tarefa.status 'fg' %};">
                                 {{ tarefa.get_status_display }}
@@ -98,7 +93,7 @@
                     <tr>
                         <td colspan="6">
                             <div class="rel-empty">
-                                <i class="bi bi-inbox d-block mb-2" style="font-size:2rem;opacity:0.4;"></i>
+                                <i class="bi bi-inbox d-block mb-2"></i>
                                 Nenhuma tarefa encontrada para os filtros selecionados.
                             </div>
                         </td>
@@ -113,4 +108,5 @@
     </div>
 </div>
 {% endblock %}
+
 

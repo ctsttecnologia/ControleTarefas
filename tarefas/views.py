@@ -74,15 +74,15 @@ def aplicar_filtro_visibilidade(queryset, user):
 
 
 def _queryset_escopo(request):
-    """Tarefas visíveis ao usuário na filial ativa (falha fechado)."""
+    """Tarefas da filial ativa que o usuário tem permissão para ver."""
     qs = perms.filtrar_por_filial(Tarefas.objects.all(), request)
-    return perms.filtrar_visibilidade(qs, request.user)
+    return perms.filtrar_visibilidade(qs, request.user, request=request)
 
 
 def _aplicar_mudanca_status(tarefa, novo_status, user):
     """
-    Altera o status sem disparar save() (evita histórico duplicado),
-    registrando nos históricos v2 e legado.
+    Altera o status via save() para que os signals (histórico legado,
+    notificações e recorrência) sejam executados.
     """
     status_anterior = tarefa.status
 
@@ -93,27 +93,16 @@ def _aplicar_mudanca_status(tarefa, novo_status, user):
         alterado_por=user,
     )
 
-    campos = {'status': novo_status}
     if novo_status == 'concluida':
-        campos['concluida_em'] = timezone.now()
+        tarefa.concluida_em = timezone.now()
     elif status_anterior == 'concluida':
-        campos['concluida_em'] = None
+        tarefa.concluida_em = None
 
-    Tarefas.objects.filter(pk=tarefa.pk).update(**campos)
-
-    try:
-        HistoricoStatus.objects.create(
-            tarefa=tarefa,
-            status_anterior=status_anterior,
-            novo_status=novo_status,
-            alterado_por=user,
-            filial=tarefa.filial,
-        )
-    except Exception:
-        logger.warning('Falha ao gravar HistoricoStatus legado (tarefa=%s)', tarefa.pk, exc_info=True)
+    tarefa._alterado_por = user
+    tarefa.status = novo_status
+    tarefa.save()
 
     return status_anterior
-
 
 class TarefasBaseMixin(
     FuncionarioRequiredMixin,
@@ -137,12 +126,14 @@ class TarefaListView(TarefasBaseMixin, ListView):
     paginate_by = 20
 
     def _get_base_queryset(self):
-        qs = super().get_queryset()
-        return perms.filtrar_visibilidade(qs, self.request.user)
+        return _queryset_escopo(self.request)
+
 
     def get_queryset(self):
         qs = self._get_base_queryset()
         g = self.request.GET
+        qs = qs.select_related('responsavel', 'usuario')
+        qs = qs.prefetch_related('participantes', 'grupos_com_acesso')
 
         if status := g.get('status'):
             qs = qs.filter(status=status)
@@ -172,8 +163,7 @@ class TarefaListView(TarefasBaseMixin, ListView):
             ).distinct()
 
         return (
-            qs.select_related('usuario', 'responsavel', 'filial')
-            .prefetch_related('participantes')
+            qs.select_related('filial')
             .annotate(ordem_prioridade=ORDEM_PRIORIDADE)
             .order_by('-prazo', 'ordem_prioridade')
         )
@@ -184,6 +174,7 @@ class TarefaListView(TarefasBaseMixin, ListView):
         agora = timezone.now()
         encerradas = ['concluida', 'cancelada']
 
+        context['tarefas_programadas'] = base_qs.filter(status='programada').count()
         context['total_tarefas'] = base_qs.count()
         context['tarefas_concluidas'] = base_qs.filter(status='concluida').count()
         context['tarefas_pendentes'] = base_qs.exclude(status__in=encerradas).count()
@@ -249,7 +240,10 @@ class TarefaDetailView(TarefasBaseMixin, DetailView):
     context_object_name = 'object'
 
     def get_queryset(self):
-        return perms.filtrar_visibilidade(super().get_queryset(), self.request.user)
+        return _queryset_escopo(self.request).prefetch_related(
+            'grupos_com_acesso',
+            'participantes',
+        )
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -326,7 +320,7 @@ class TarefaUpdateView(TarefasBaseMixin, UpdateView):
     template_name = 'tarefas/tarefa_form.html'
 
     def get_queryset(self):
-        return perms.filtrar_visibilidade(super().get_queryset(), self.request.user)
+        return _queryset_escopo(self.request)
 
     def get_object(self, queryset=None):
         obj = super().get_object(queryset)
@@ -351,7 +345,7 @@ class TarefaDeleteView(TarefasBaseMixin, DeleteView):
     success_url = reverse_lazy('tarefas:listar_tarefas')
 
     def get_queryset(self):
-        return perms.filtrar_visibilidade(super().get_queryset(), self.request.user)
+        return _queryset_escopo(self.request)
 
     def get_object(self, queryset=None):
         obj = super().get_object(queryset)
@@ -383,7 +377,14 @@ def pode_excluir_comentario(user, comentario):
 @login_required
 @require_POST
 def comentario_excluir(request, pk):
-    comentario = get_object_or_404(Comentario, pk=pk)
+    comentario = get_object_or_404(
+        Comentario.objects.filter(tarefa__in=_queryset_escopo(request)),
+        pk=pk,
+    )
+
+    if not perms.can_view(request.user, comentario.tarefa):
+        raise PermissionDenied
+
     if not pode_excluir_comentario(request.user, comentario):
         raise PermissionDenied
 
@@ -398,7 +399,14 @@ def comentario_excluir(request, pk):
 @login_required
 @require_POST
 def comentario_anexo_excluir(request, pk):
-    comentario = get_object_or_404(Comentario, pk=pk)
+    comentario = get_object_or_404(
+        Comentario.objects.filter(tarefa__in=_queryset_escopo(request)),
+        pk=pk,
+    )
+
+    if not perms.can_view(request.user, comentario.tarefa):
+        raise PermissionDenied
+
     if not pode_excluir_comentario(request.user, comentario):
         raise PermissionDenied
 
@@ -508,21 +516,28 @@ class CalendarioTarefasView(TarefasBaseMixin, ListView):
     template_name = 'tarefas/calendario.html'
 
     def get_queryset(self):
-        qs = perms.filtrar_visibilidade(super().get_queryset(), self.request.user)
         return (
-            qs.filter(prazo__isnull=False)
+            _queryset_escopo(self.request)
+            .filter(prazo__isnull=False)
             .exclude(status='cancelada')
             .select_related('responsavel')
         )
 
-    def _classe_css_evento(self, tarefa):
-        hoje = timezone.now().date()
-        prazo = tarefa.prazo.date() if hasattr(tarefa.prazo, 'date') else tarefa.prazo
-        data_criacao = tarefa.data_criacao.date()
+    def _classe_css_evento(self, tarefa, hoje, agora):
+        # Ordem importa: concluída > atrasada > programada > demais
+        if tarefa.status == 'concluida':
+            return 'fc-event-status-concluida'
 
-        if prazo < hoje:
+        if perms.esta_atrasada(tarefa, agora):
             return 'fc-event-status-atrasada'
-        if data_criacao >= hoje - timedelta(days=3):
+
+        if tarefa.status == 'programada':
+            return 'fc-event-status-programada'
+
+        prazo = timezone.localtime(tarefa.prazo).date()
+        criacao = timezone.localtime(tarefa.data_criacao).date()
+
+        if criacao >= hoje - timedelta(days=3):
             return 'fc-event-status-recente'
         if prazo <= hoje + timedelta(days=7):
             return 'fc-event-status-proximo-prazo'
@@ -530,21 +545,36 @@ class CalendarioTarefasView(TarefasBaseMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        agora = timezone.now()
+        hoje = timezone.localdate()
         eventos = []
 
         for t in context['object_list']:
             try:
-                prazo_fmt = t.prazo.strftime('%d/%m/%Y')
+                prazo_local = timezone.localtime(t.prazo)
+                criacao_local = timezone.localtime(t.data_criacao)
+                prazo_fmt = prazo_local.strftime('%d/%m/%Y')
+
+                inicio = criacao_local.date()
+                # end é exclusivo no FullCalendar: +1 dia para incluir o dia do prazo.
+                fim = max(prazo_local.date(), inicio) + timedelta(days=1)
+
                 eventos.append({
-                    'start': t.data_criacao.strftime('%Y-%m-%d'),
+                    'start': inicio.strftime('%Y-%m-%d'),
+                    'end': fim.strftime('%Y-%m-%d'),
                     'title': f'{t.titulo} (Prazo: {prazo_fmt})',
                     'url': reverse('tarefas:tarefa_detail', kwargs={'pk': t.pk}),
-                    'className': f'fc-event-prioridade-{t.prioridade} {self._classe_css_evento(t)}',
+                    'className': (
+                        f'fc-event-prioridade-{t.prioridade} '
+                        f'{self._classe_css_evento(t, hoje, agora)}'
+                    ),
                     'allDay': True,
                     'extendedProps': {
-                        'status': t.status,
-                        'data_criacao': t.data_criacao.strftime('%Y-%m-%d %H:%M'),
+                        'status': t.get_status_display(),
+                        'prioridade': t.get_prioridade_display(),
+                        'data_criacao': criacao_local.strftime('%d/%m/%Y %H:%M'),
                         'prazo': prazo_fmt,
+                        'atrasada': perms.esta_atrasada(t, agora),
                     },
                 })
             except Exception:
@@ -612,6 +642,41 @@ def _build_queryset_relatorio(request):
 
     return qs.select_related('responsavel', 'filial').order_by('-data_criacao')
 
+def _item(i, key):
+    return i[key] if isinstance(i, dict) else getattr(i, key)
+
+def _chart_data(analise):
+    """Normaliza `analise_*` para o gráfico: [{'label', 'slug', 'value'}, ...]."""
+    nomes = {**dict(Tarefas.STATUS_CHOICES), **dict(Tarefas.PRIORIDADE_CHOICES)}
+    chaves_valor = ('quantidade', 'total', 'count', 'qtd', 'valor', 'value')
+    resultado = []
+
+    for item in analise or []:
+        if isinstance(item, dict):
+            slug = (item.get('slug') or item.get('status')
+                    or item.get('prioridade') or item.get('key'))
+            label = (item.get('label') or item.get('name')
+                     or item.get('nome') or item.get('titulo') or slug)
+            value = next(
+                (item[k] for k in chaves_valor if item.get(k) is not None), 0
+            )
+        elif isinstance(item, (list, tuple)) and len(item) >= 2:
+            slug = label = item[0]
+            value = item[1]
+        else:
+            continue
+
+        if label is None:
+            continue
+
+        resultado.append({
+            'label': str(nomes.get(label, label)),
+            'slug': str(slug) if slug is not None else '',
+            'value': value or 0,
+        })
+
+    return resultado
+
 
 def _exportar_relatorio(request, formato):
     """Roteador de exportação (exige permissão + auditoria LGPD)."""
@@ -656,12 +721,8 @@ class RelatorioTarefasView(TarefasBaseMixin, ListView):
         qs = self.get_queryset()
         context.update(preparar_contexto_relatorio(qs))
 
-        context['status_data_json'] = json.dumps(
-            context.get('status_data', []), cls=DjangoJSONEncoder
-        )
-        context['priority_data_json'] = json.dumps(
-            context.get('prioridade_data', []), cls=DjangoJSONEncoder
-        )
+        context['chart_status'] = _chart_data(context.get('analise_status', []))
+        context['chart_prioridade'] = _chart_data(context.get('analise_prioridade', []))
         context['status_choices'] = Tarefas.STATUS_CHOICES
         context['prioridade_choices'] = Tarefas.PRIORIDADE_CHOICES
         context['pode_exportar'] = (
@@ -797,6 +858,7 @@ class DashboardAnaliticoView(TarefasBaseMixin, TemplateView):
 
         # ─── KPIs ───────────────────────────────────────────────
         total = base_qs.count()
+        programadas = base_qs.filter(status='programada').count()
         concluidas = base_qs.filter(status='concluida').count()
         pendentes = base_qs.filter(status='pendente').count()
         em_andamento = base_qs.filter(status='andamento').count()
@@ -819,6 +881,7 @@ class DashboardAnaliticoView(TarefasBaseMixin, TemplateView):
 
         context.update({
             'total_tarefas': total,
+            'tarefas_programadas': programadas,
             'tarefas_concluidas': concluidas,
             'tarefas_pendentes': pendentes,
             'tarefas_andamento': em_andamento,
@@ -922,7 +985,7 @@ class DashboardAnaliticoView(TarefasBaseMixin, TemplateView):
             usuarios_qs = usuarios_qs.select_related('funcionario').distinct()
 
             ativas_por_user = dict(
-                base_qs.filter(status__in=['pendente', 'andamento', 'atrasada'])
+                base_qs.filter(status__in=['programada', 'pendente', 'andamento', 'pausada', 'atrasada'])
                 .values('responsavel_id')
                 .annotate(total=Count('id', distinct=True))
                 .values_list('responsavel_id', 'total')

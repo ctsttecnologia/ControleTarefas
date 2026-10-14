@@ -1,737 +1,298 @@
-
-<!-- templates/tarefas/kanban_board.html -->
-{% extends 'base.html' %}
-{% load static %}
+{# Kanban #}
+{# tarefas/kanban_board.html #}
+{% extends "tarefas/base_tarefas.html" %}
 
 {% block title %}Quadro Kanban{% endblock %}
 
-{% block extra_css %}
-<style>
-/* =============================================================================
-   KANBAN BOARD — Responsivo + Dark/Light Theme
-   ============================================================================= */
-
-/* ── 🎨 Variáveis de Tema (Light - default) ── */
-:root,
-[data-bs-theme="light"] {
-    --kanban-title-color: #1a1a2e;
-    --kanban-column-bg: #dedede2b;
-    --kanban-column-border: #7980ff7d;
-    --kanban-column-border-hover: #c5cde0;
-    --kanban-column-shadow: rgba(0, 0, 0, 0.04);
-    --kanban-column-header-border: #e2e6ee;
-    --kanban-column-title-color: #1a1a2e;
-
-    --kanban-count-bg: #2b00ff4b;
-    --kanban-count-color: #00082c;
-
-    --kanban-card-bg: #ffffff;
-    --kanban-card-border: #7980ff7d;
-    --kanban-card-border-hover: #c0c8d8;
-    --kanban-card-shadow: rgba(0, 0, 0, 0.04);
-    --kanban-card-shadow-hover: rgba(0, 0, 0, 0.08);
-    --kanban-card-title-color: #1a1a2e;
-    --kanban-card-desc-color: #4b5563;
-    --kanban-card-footer-border: #f0f2f5;
-    --kanban-card-date-color: #6b7280;
-
-    --kanban-empty-color: #9ca3af;
-
-    --kanban-scrollbar-thumb: #d1d5e0d7;
-    --kanban-scrollbar-thumb-hover: #b0b7c8;
-
-    --kanban-filter-bg: #ffffff;
-    --kanban-filter-color: #374151;
-    --kanban-filter-border: #d1d5db;
-
-    --kanban-badge-alta-bg: #fef2f2;
-    --kanban-badge-alta-color: #dc2626;
-    --kanban-badge-alta-border: #fecaca;
-
-    --kanban-badge-media-bg: #fffbeb;
-    --kanban-badge-media-color: #d97706;
-    --kanban-badge-media-border: #fde68a;
-
-    --kanban-badge-baixa-bg: #f0fdf4;
-    --kanban-badge-baixa-color: #16a34a;
-    --kanban-badge-baixa-border: #bbf7d0;
-
-    --kanban-badge-normal-bg: #f0f4ff;
-    --kanban-badge-normal-color: #4f6dca;
-    --kanban-badge-normal-border: #c7d8f5;
-}
-
-/* ── 🌙 Tema Escuro ── */
-[data-bs-theme="dark"] {
-    --kanban-title-color: #f1f5f9;
-    --kanban-column-bg: rgba(255, 255, 255, 0.04);
-    --kanban-column-border: rgba(121, 128, 255, 0.35);
-    --kanban-column-border-hover: rgba(121, 128, 255, 0.6);
-    --kanban-column-shadow: rgba(0, 0, 0, 0.3);
-    --kanban-column-header-border: rgba(255, 255, 255, 0.08);
-    --kanban-column-title-color: #e2e8f0;
-
-    --kanban-count-bg: rgba(99, 102, 241, 0.25);
-    --kanban-count-color: #c7d2fe;
-
-    --kanban-card-bg: rgba(30, 41, 59, 0.7);
-    --kanban-card-border: rgba(121, 128, 255, 0.3);
-    --kanban-card-border-hover: rgba(121, 128, 255, 0.55);
-    --kanban-card-shadow: rgba(0, 0, 0, 0.3);
-    --kanban-card-shadow-hover: rgba(0, 0, 0, 0.5);
-    --kanban-card-title-color: #f1f5f9;
-    --kanban-card-desc-color: #cbd5e1;
-    --kanban-card-footer-border: rgba(255, 255, 255, 0.06);
-    --kanban-card-date-color: #94a3b8;
-
-    --kanban-empty-color: #64748b;
-
-    --kanban-scrollbar-thumb: rgba(255, 255, 255, 0.15);
-    --kanban-scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
-
-    --kanban-filter-bg: #1e293b;
-    --kanban-filter-color: #e2e8f0;
-    --kanban-filter-border: #475569;
-
-    --kanban-badge-alta-bg: rgba(220, 38, 38, 0.15);
-    --kanban-badge-alta-color: #fca5a5;
-    --kanban-badge-alta-border: rgba(220, 38, 38, 0.35);
-
-    --kanban-badge-media-bg: rgba(217, 119, 6, 0.15);
-    --kanban-badge-media-color: #fcd34d;
-    --kanban-badge-media-border: rgba(217, 119, 6, 0.35);
-
-    --kanban-badge-baixa-bg: rgba(22, 163, 74, 0.15);
-    --kanban-badge-baixa-color: #86efac;
-    --kanban-badge-baixa-border: rgba(22, 163, 74, 0.35);
-
-    --kanban-badge-normal-bg: rgba(99, 102, 241, 0.15);
-    --kanban-badge-normal-color: #a5b4fc;
-    --kanban-badge-normal-border: rgba(99, 102, 241, 0.35);
-}
-
-/* ── Wrapper ── */
-.kanban-wrapper {
-    padding: 1rem;
-    max-width: 100%;
-    overflow: hidden;
-}
-
-@media (min-width: 768px) {
-    .kanban-wrapper {
-        padding: 1.5rem 2rem;
-    }
-}
-
-/* ── Header ── */
-.kanban-header {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-}
-
-.kanban-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 0.15rem;
-    color: var(--kanban-title-color);
-}
-
-.kanban-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-/* ── Board Layout (centralizado com flexbox) ── */
-.kanban-board {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: stretch;
-    gap: 1rem;
-    min-height: calc(100vh - 220px);
-    margin: 0 auto;
-    max-width: 1800px;
-}
-
-/* ── Column ── */
-.kanban-column {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    background: var(--kanban-column-bg);
-    border-radius: 12px;
-    border: 1px solid var(--kanban-column-border);
-    min-height: 200px;
-    max-height: none;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-
-@media (min-width: 768px) {
-    .kanban-column {
-        width: calc(50% - 0.5rem);
-    }
-}
-
-@media (min-width: 992px) {
-    .kanban-column {
-        width: calc(33.333% - 0.667rem);
-    }
-}
-
-@media (min-width: 1200px) {
-    .kanban-column {
-        width: calc(20% - 0.8rem);
-        max-height: calc(100vh - 200px);
-    }
-}
-
-.kanban-column:hover {
-    border-color: var(--kanban-column-border-hover);
-    box-shadow: 0 2px 8px var(--kanban-column-shadow);
-}
-
-/* Oculta a coluna quando vazia (ex.: "Cancelada" sem tarefas) */
-.kanban-column-hidden {
-    display: none !important;
-}
-
-/* ── Column Header ── */
-.kanban-column-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.85rem 1rem;
-    border-bottom: 2px solid var(--kanban-column-header-border);
-    flex-shrink: 0;
-}
-
-.kanban-column-title {
-    font-size: 0.7rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin: 0;
-    color: var(--kanban-column-title-color);
-}
-
-/* ── Status Dots ── */
-.kanban-status-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-.kanban-dot-pendente     { background: #f59e0b; }
-.kanban-dot-atrasada     { background: #ef4444; }
-.kanban-dot-andamento,
-.kanban-dot-em_andamento { background: #3b82f6; }
-.kanban-dot-concluida    { background: #22c55e; }
-.kanban-dot-pausada      { background: #8b5cf6; }
-.kanban-dot-cancelada    { background: #6b7280; }
-
-/* Header color accents (sobrescrevem a borda inferior do header) */
-.kanban-header-pendente     { border-bottom-color: #f59e0b !important; }
-.kanban-header-atrasada     { border-bottom-color: #ef4444 !important; }
-.kanban-header-andamento,
-.kanban-header-em_andamento { border-bottom-color: #3b82f6 !important; }
-.kanban-header-concluida    { border-bottom-color: #22c55e !important; }
-.kanban-header-pausada      { border-bottom-color: #8b5cf6 !important; }
-.kanban-header-cancelada    { border-bottom-color: #6b7280 !important; }
-
-/* ── Count Badge ── */
-.kanban-count {
-    background: var(--kanban-count-bg);
-    color: var(--kanban-count-color);
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 0.2em 0.6em;
-    border-radius: 999px;
-    min-width: 1.5rem;
-    text-align: center;
-    line-height: 1.3;
-}
-
-/* ── Cards Container ── */
-.kanban-cards {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0.65rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    min-height: 80px;
-}
-
-/* Scrollbar — Webkit */
-.kanban-cards::-webkit-scrollbar {
-    width: 5px;
-}
-.kanban-cards::-webkit-scrollbar-track {
-    background: transparent;
-}
-.kanban-cards::-webkit-scrollbar-thumb {
-    background: var(--kanban-scrollbar-thumb);
-    border-radius: 10px;
-}
-.kanban-cards::-webkit-scrollbar-thumb:hover {
-    background: var(--kanban-scrollbar-thumb-hover);
-}
-
-/* Scrollbar — Firefox */
-.kanban-cards {
-    scrollbar-width: thin;
-    scrollbar-color: var(--kanban-scrollbar-thumb) transparent;
-}
-
-/* ── Card ── */
-.kanban-card {
-    background: var(--kanban-card-bg);
-    border: 1px solid var(--kanban-card-border);
-    border-radius: 10px;
-    padding: 0.85rem;
-    cursor: grab;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 3px var(--kanban-card-shadow);
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-.kanban-card:hover {
-    border-color: var(--kanban-card-border-hover);
-    box-shadow: 0 4px 12px var(--kanban-card-shadow-hover);
-    transform: translateY(-1px);
-}
-
-.kanban-card:active {
-    cursor: grabbing;
-}
-
-/* Card Title */
-.kanban-card-title {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--kanban-card-title-color);
-    margin-bottom: 0.4rem;
-    line-height: 1.35;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-/* Card Description */
-.kanban-card-desc {
-    font-size: 0.73rem;
-    color: var(--kanban-card-desc-color);
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    margin-bottom: 0.5rem;
-}
-
-/* Card Footer */
-.kanban-card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--kanban-card-footer-border);
-}
-
-.kanban-card-date {
-    font-size: 0.7rem;
-    color: var(--kanban-card-date-color);
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-
-.kanban-card-date.overdue {
-    color: #ef4444;
-    font-weight: 600;
-}
-
-/* Priority Badges */
-.kanban-badge {
-    font-size: 0.62rem;
-    font-weight: 700;
-    padding: 0.15em 0.55em;
-    border-radius: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
-.kanban-badge-alta,
-.kanban-badge-urgente {
-    background: var(--kanban-badge-alta-bg);
-    color: var(--kanban-badge-alta-color);
-    border: 1px solid var(--kanban-badge-alta-border);
-}
-
-.kanban-badge-media {
-    background: var(--kanban-badge-media-bg);
-    color: var(--kanban-badge-media-color);
-    border: 1px solid var(--kanban-badge-media-border);
-}
-
-.kanban-badge-baixa {
-    background: var(--kanban-badge-baixa-bg);
-    color: var(--kanban-badge-baixa-color);
-    border: 1px solid var(--kanban-badge-baixa-border);
-}
-
-.kanban-badge-normal {
-    background: var(--kanban-badge-normal-bg);
-    color: var(--kanban-badge-normal-color);
-    border: 1px solid var(--kanban-badge-normal-border);
-}
-
-/* Avatar */
-.kanban-avatar {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.kanban-avatar-img {
-    object-fit: cover;
-}
-
-.kanban-avatar-fallback {
-    background: #6366f1;
-    color: #fff;
-    font-size: 0.6rem;
-    font-weight: 700;
-    text-transform: uppercase;
-}
-
-
-/* ── Empty State ── */
-.kanban-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem 1rem;
-    color: var(--kanban-empty-color);
-    font-size: 0.78rem;
-    font-style: italic;
-    text-align: center;
-    flex: 1;
-}
-
-/* ── Drag & Drop States ── */
-.kanban-ghost {
-    opacity: 0.4;
-    border: 2px dashed #6366f1 !important;
-    background: rgba(99, 102, 241, 0.1) !important;
-    border-radius: 10px;
-}
-
-.kanban-chosen {
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25) !important;
-    transform: rotate(1.5deg) scale(1.03);
-    z-index: 999;
-}
-
-.kanban-drag {
-    opacity: 0.9;
-}
-
-/* Destaque colunas durante arrasto */
-body.kanban-dragging .kanban-cards {
-    background: rgba(99, 102, 241, 0.02);
-    border: 2px dashed transparent;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-
-body.kanban-dragging .kanban-column:hover .kanban-cards {
-    background: rgba(99, 102, 241, 0.06);
-    border-color: rgba(99, 102, 241, 0.2);
-}
-
-/* ── Filter Select ── */
-.kanban-filter-select {
-    min-width: 180px;
-    font-size: 0.8rem;
-    border-radius: 8px;
-    border: 1px solid var(--kanban-filter-border);
-    padding: 0.3rem 0.6rem;
-    background: var(--kanban-filter-bg);
-    color: var(--kanban-filter-color);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.kanban-filter-select:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
-    outline: none;
-}
-
-/* ── Filter Tag ── */
-.kanban-filter-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    background: rgba(99, 102, 241, 0.15);
-    color: #818cf8;
-    padding: 0.25em 0.65em;
-    border-radius: 6px;
-}
-
-.kanban-filter-tag a {
-    color: inherit;
-    text-decoration: none;
-    font-weight: 800;
-    margin-left: 0.2rem;
-}
-
-.kanban-filter-tag a:hover {
-    color: #ef4444;
-}
-
-/* ── Mobile ── */
-@media (max-width: 767.98px) {
-    .kanban-wrapper {
-        padding: 0.75rem;
-    }
-    .kanban-title {
-        font-size: 1.15rem;
-    }
-    .kanban-column {
-        min-height: 120px;
-    }
-    .kanban-card {
-        padding: 0.75rem;
-    }
-    .kanban-actions .btn {
-        padding: 0.3rem 0.5rem;
-    }
-    .kanban-filter-select {
-        min-width: 140px;
-    }
-}
-
-/* ── Print ── */
-@media print {
-    .kanban-actions {
-        display: none !important;
-    }
-}
-</style>
-{% endblock %}
-
-{% block content %}
+{% block tarefas_content %}
 <div class="kanban-wrapper">
 
-    <!-- Header -->
-    <div class="kanban-header">
+    {# ── Header ── #}
+    <div class="list-header">
         <div>
-            <h1 class="kanban-title">
+            <h1 class="list-title">
                 <i class="bi bi-kanban me-2"></i>Quadro Kanban
             </h1>
-            <p class="kanban-subtitle">Arraste as tarefas entre colunas para atualizar o status</p>
+            <p class="list-subtitle">Arraste as tarefas entre colunas para atualizar o status</p>
         </div>
-        <div class="kanban-actions">
-            <!-- ═══ FILTRO POR RESPONSÁVEL ═══ -->
+
+        <div class="list-actions align-items-center">
             <form method="get" class="d-inline-flex align-items-center gap-2" id="kanbanFilterForm">
-                <select name="responsavel" class="kanban-filter-select" onchange="this.form.submit()">
-                    <option value="">👤 Todos os responsáveis</option>
-                    {% for user in responsaveis %}
-                    <option value="{{ user.pk }}" {% if responsavel_atual == user.pk|stringformat:"d" %}selected{% endif %}>
-                        {{ user.get_full_name|default:user.username }}
-                    </option>
+                <select name="responsavel" class="form-select form-select-sm kanban-filter-select"
+                        aria-label="Filtrar por responsável" onchange="this.form.submit()">
+                    <option value="">Todos os responsáveis</option>
+                    {% for u in responsaveis %}
+                        <option value="{{ u.pk }}" {% if responsavel_atual == u.pk|stringformat:"d" %}selected{% endif %}>
+                            {{ u.get_full_name|default:u.username }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if responsavel_atual %}
-                <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-sm btn-outline-danger" title="Limpar filtro">
-                    <i class="bi bi-x-lg"></i>
-                </a>
+                    <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-sm btn-outline-danger" title="Limpar filtro">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
                 {% endif %}
             </form>
-            <!-- ═══ FIM DO FILTRO ═══ -->
+
+            {# Menu de colunas #}
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                        data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                    <i class="bi bi-layout-three-columns me-1"></i>Colunas
+                    <span id="kanbanOcultasBadge" class="badge bg-warning text-dark ms-1 d-none"
+                          title="Cards em colunas ocultas">0</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 240px;">
+                    {% for coluna in colunas %}
+                        <li>
+                            <div class="form-check py-1 px-2">
+                                <input class="form-check-input kanban-col-toggle" type="checkbox"
+                                       id="toggle-{{ coluna.key }}" data-status="{{ coluna.key }}">
+                                <label class="form-check-label" for="toggle-{{ coluna.key }}">
+                                    {{ coluna.label }}
+                                    <span class="text-muted kanban-col-qtd">({{ coluna.tarefas|length }})</span>
+                                </label>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            {% if perms.tarefas.view_relatorio or user.is_superuser %}
+                <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
+                    <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
+                </a>
+            {% endif %}
+            {% if perms.tarefas.view_tarefas or user.is_superuser %}
+                <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Lista">
+                    <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline">Lista</span>
+                </a>
+            {% endif %}
             {% if perms.tarefas.view_calendario or user.is_superuser %}
-            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
-                <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
-            </a>
+                <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Calendário">
+                    <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
+                </a>
             {% endif %}
             {% if perms.tarefas.add_tarefas or user.is_superuser %}
-            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Lista">
-                <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline">Lista</span>
-            </a>
-            {% endif %}
-            {% if perms.tarefas.view_calendario or user.is_superuser %}
-            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Calendário">
-                <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
-            </a>
-            {% endif %}
-            {% if perms.tarefas.add_tarefas or user.is_superuser %}
-            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary" title="Nova Tarefa">
-                <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova</span>
-            </a>
+                <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary" title="Nova Tarefa">
+                    <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova</span>
+                </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Active Filter Tag -->
+    {# ── Filtro ativo ── #}
     {% if responsavel_atual %}
-    <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem;">
-        <span class="kanban-filter-tag">
-            <i class="bi bi-person-fill"></i>
-            Responsável:
-            {% for user in responsaveis %}
-                {% if user.pk|stringformat:"d" == responsavel_atual %}
-                    {{ user.get_full_name|default:user.username }}
-                {% endif %}
-            {% endfor %}
-            <a href="{% url 'tarefas:kanban_board' %}" title="Remover filtro">&times;</a>
-        </span>
-    </div>
+        <div class="kanban-filter-tags">
+            <span class="kanban-filter-tag">
+                <i class="bi bi-person-fill"></i>
+                Responsável:
+                {% for u in responsaveis %}
+                    {% if u.pk|stringformat:"d" == responsavel_atual %}
+                        {{ u.get_full_name|default:u.username }}
+                    {% endif %}
+                {% endfor %}
+                <a href="{% url 'tarefas:kanban_board' %}" title="Remover filtro">&times;</a>
+            </span>
+        </div>
     {% endif %}
 
-    <!-- Board -->
+    {# ── Board ── #}
     <div class="kanban-board" id="kanbanBoard">
-        {% if colunas|length == 0 %}
-        <div class="kanban-empty">
-            <i class="bi bi-inbox text-muted d-block mb-2" style="font-size: 1.5rem;"></i>
-            <p class="text-muted">Nenhuma tarefa encontrada.</p>
-        </div>
+        {% if not colunas %}
+            <div class="kanban-empty">
+                <i class="bi bi-inbox d-block mb-2"></i>
+                <p class="mb-0">Nenhuma tarefa encontrada.</p>
+            </div>
         {% endif %}
-        {% for coluna in colunas %}
-        <div class="kanban-column {% if coluna.key == 'cancelada' and coluna.tarefas|length == 0 %}kanban-column-hidden{% endif %}" data-status="{{ coluna.key }}">
-            <!-- Column Header -->
-            <div class="kanban-column-header kanban-header-{{ coluna.key }}">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="kanban-status-dot kanban-dot-{{ coluna.key }}"></span>
-                    <h2 class="kanban-column-title">{{ coluna.label }}</h2>
-                </div>
-                <span class="kanban-count">
-                    {{ coluna.tarefas|length }}
-                </span>
-            </div>
 
-            <!-- Cards Container -->
-            <div class="kanban-cards" id="col-{{ coluna.key }}">
-                {% for tarefa in coluna.tarefas %}
-                    {% include 'tarefas/_task_card.html' %}
-                {% empty %}
-                <div class="kanban-empty">
-                    <i class="bi bi-inbox text-muted d-block mb-2" style="font-size: 1.5rem;"></i>
-                    <span>Nenhuma tarefa aqui.</span>
+        {% for coluna in colunas %}
+            <div class="kanban-column" data-status="{{ coluna.key }}">
+                <div class="kanban-column-header kanban-header-{{ coluna.key }}">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="kanban-status-dot kanban-dot-{{ coluna.key }}"></span>
+                        <h2 class="kanban-column-title">{{ coluna.label }}</h2>
+                    </div>
+                    <span class="kanban-count">{{ coluna.tarefas|length }}</span>
                 </div>
-                {% endfor %}
+
+                <div class="kanban-cards" id="col-{{ coluna.key }}">
+                    {% for tarefa in coluna.tarefas %}
+                        {% include 'tarefas/_task_card.html' %}
+                    {% empty %}
+                        <div class="kanban-empty">
+                            <i class="bi bi-inbox d-block mb-2"></i>
+                            <span>Nenhuma tarefa aqui.</span>
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
-        </div>
         {% endfor %}
     </div>
 </div>
 {% endblock %}
 
-
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Tooltips
-    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-        new bootstrap.Tooltip(el);
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+
+    // ── Configuração ──
+    const CSRF_TOKEN = '{{ csrf_token }}';
+    const UPDATE_URL = "{% url 'tarefas:update_task_status' %}";
+    const STORAGE_KEY = 'kanban_colunas_ocultas';
+    const OCULTAS_PADRAO = ['pausada', 'cancelada'];
+    const EMPTY_HTML = '<i class="bi bi-inbox d-block mb-2"></i><span>Nenhuma tarefa aqui.</span>';
+
+    const badge = document.getElementById('kanbanOcultasBadge');
+
+    // ── Preferência de visibilidade (localStorage) ──
+    let ocultas;
+    try {
+        const salvas = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        ocultas = new Set(Array.isArray(salvas) ? salvas : OCULTAS_PADRAO);
+    } catch (_) {
+        ocultas = new Set(OCULTAS_PADRAO);
+    }
+
+    function salvarOcultas() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify([...ocultas]));
+        } catch (_) { /* armazenamento indisponível: preferência só nesta sessão */ }
+    }
+
+    // ── Helpers ──
+    const colunas = () => document.querySelectorAll('.kanban-column');
+    const colunaDe = key => document.querySelector(`.kanban-column[data-status="${key}"]`);
+    const contarCards = col => col.querySelectorAll('.kanban-card').length;
+
+    function garantirPlaceholder(container) {
+        const vazio = container.querySelectorAll('.kanban-card').length === 0;
+        const placeholder = container.querySelector('.kanban-empty');
+
+        if (vazio && !placeholder) {
+            const div = document.createElement('div');
+            div.className = 'kanban-empty';
+            div.innerHTML = EMPTY_HTML;
+            container.appendChild(div);
+        } else if (!vazio && placeholder) {
+            placeholder.remove();
+        }
+    }
+
+    // ── Atualização central: contadores, visibilidade, menu e badge ──
+    function atualizarColunas() {
+        let cardsOcultos = 0;
+
+        colunas().forEach(col => {
+            const key = col.dataset.status;
+            const qtd = contarCards(col);
+
+            garantirPlaceholder(col.querySelector('.kanban-cards'));
+            col.querySelector('.kanban-count').textContent = qtd;
+
+            const oculta = ocultas.has(key);
+            col.classList.toggle('kanban-column-hidden', oculta);
+            if (oculta) cardsOcultos += qtd;
+        });
+
+        document.querySelectorAll('.kanban-col-toggle').forEach(cb => {
+            const key = cb.dataset.status;
+            cb.checked = !ocultas.has(key);
+
+            const span = cb.closest('.form-check').querySelector('.kanban-col-qtd');
+            if (span) span.textContent = `(${contarCards(colunaDe(key))})`;
+        });
+
+        if (badge) {
+            badge.textContent = cardsOcultos;
+            badge.classList.toggle('d-none', cardsOcultos === 0);
+        }
+    }
+
+    document.querySelectorAll('.kanban-col-toggle').forEach(cb => {
+        cb.addEventListener('change', () => {
+            if (cb.checked) {
+                ocultas.delete(cb.dataset.status);
+            } else {
+                ocultas.add(cb.dataset.status);
+            }
+            salvarOcultas();
+            atualizarColunas();
+        });
     });
 
-    // CSRF Token
-    const csrfToken = '{{ csrf_token }}';
-
-    // Oculta/exibe a coluna "Cancelada" conforme a quantidade de cards
-    function updateCanceladaVisibility() {
-        document.querySelectorAll('.kanban-column[data-status="cancelada"]').forEach(col => {
-            const hasCards = col.querySelectorAll('.kanban-card').length > 0;
-            col.classList.toggle('kanban-column-hidden', !hasCards);
-        });
-    }
-
-    // Atualizar contadores e estados vazios
-    function updateColumnCounts() {
-        document.querySelectorAll('.kanban-column').forEach(col => {
-            const container = col.querySelector('.kanban-cards');
-            const cards = container.querySelectorAll('.kanban-card');
-            const count = col.querySelector('.kanban-count');
-            const empty = container.querySelector('.kanban-empty');
-
-            if (count) count.textContent = cards.length;
-
-            if (cards.length > 0 && empty) {
-                empty.remove();
-            } else if (cards.length === 0 && !empty) {
-                const emptyDiv = document.createElement('div');
-                emptyDiv.className = 'kanban-empty';
-                emptyDiv.innerHTML = `
-                    <i class="bi bi-inbox text-muted d-block mb-2" style="font-size: 1.5rem;"></i>
-                    <span>Nenhuma tarefa aqui.</span>`;
-                container.appendChild(emptyDiv);
-            }
-        });
-        updateCanceladaVisibility();
-    }
-
-    // Toast de feedback
-    function showToast(msg, tipo) {
+    // ── Feedback ──
+    function showToast(msg, tipo = 'info') {
         let container = document.getElementById('kanban-toast-container');
         if (!container) {
             container = document.createElement('div');
             container.id = 'kanban-toast-container';
-            container.style.cssText = 'position:fixed;top:80px;right:20px;z-index:9999;max-width:350px;';
             document.body.appendChild(container);
         }
 
         const toast = document.createElement('div');
-        toast.className = `alert alert-${tipo || 'info'} alert-dismissible fade show shadow-sm py-2 px-3 mb-2`;
-        toast.style.cssText = 'font-size:0.83rem;animation:fadeIn 0.2s ease;';
+        toast.className = `alert alert-${tipo} alert-dismissible fade show shadow-sm py-2 px-3 mb-2 kanban-toast`;
         toast.innerHTML = msg +
-            '<button type="button" class="btn-close btn-close-sm ms-2" data-bs-dismiss="alert"></button>';
+            '<button type="button" class="btn-close btn-close-sm ms-2" data-bs-dismiss="alert" aria-label="Fechar"></button>';
         container.appendChild(toast);
 
         setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
     }
 
-    // Reverter card para coluna original
-    function revertCard(card, oldStatus) {
-        const oldColumn = document.querySelector(`.kanban-column[data-status="${oldStatus}"]`);
-        if (oldColumn) {
-            const oldContainer = oldColumn.querySelector('.kanban-cards');
-            oldContainer.querySelectorAll('.kanban-empty').forEach(el => el.remove());
-            oldContainer.appendChild(card);
-        }
-        updateColumnCounts();
+    // ── Reversão de card ──
+    function reverterCard(card, statusAnterior) {
+        const container = colunaDe(statusAnterior)?.querySelector('.kanban-cards');
+        if (container) container.appendChild(card);
+
+        card.style.opacity = '';
+        card.style.pointerEvents = '';
         card.classList.add('kanban-save-error');
         setTimeout(() => card.classList.remove('kanban-save-error'), 2000);
+
+        atualizarColunas();
     }
 
-    // Estado inicial: garante que "Cancelada" comece oculta se vazia
-    updateCanceladaVisibility();
+    // ── Persistência do novo status ──
+    async function salvarStatus(card, novoStatus, statusAnterior) {
+        card.style.opacity = '0.6';
+        card.style.pointerEvents = 'none';
 
-    // ═══════════════════════════════════════════════════════
-    // SORTABLE — Drag & Drop
-    // ═══════════════════════════════════════════════════════
+        try {
+            const resp = await fetch(UPDATE_URL, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: new URLSearchParams({
+                    task_id: card.dataset.taskId,
+                    new_status: novoStatus,
+                }),
+            });
 
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok || !data.success) {
+                throw new Error(data.message || `Erro ${resp.status}`);
+            }
+
+            card.style.opacity = '';
+            card.style.pointerEvents = '';
+        } catch (err) {
+            console.error('Erro ao mover tarefa:', err);
+            reverterCard(card, statusAnterior);
+
+            const msg = err instanceof TypeError
+                ? '<i class="bi bi-wifi-off me-1"></i>Erro de conexão. A tarefa foi revertida.'
+                : `<i class="bi bi-exclamation-circle me-1"></i>${err.message}. A tarefa foi revertida.`;
+            showToast(msg, 'danger');
+        }
+    }
+
+    // ── Drag & Drop ──
     document.querySelectorAll('.kanban-cards').forEach(container => {
         new Sortable(container, {
             group: 'kanban',
@@ -746,98 +307,27 @@ document.addEventListener('DOMContentLoaded', () => {
             fallbackOnBody: true,
             swapThreshold: 0.65,
 
-            onStart: function(evt) {
+            onStart(evt) {
                 document.body.classList.add('kanban-dragging');
                 evt.from.querySelectorAll('.kanban-empty').forEach(el => el.remove());
             },
 
-            onEnd: function(evt) {
+            onEnd(evt) {
                 document.body.classList.remove('kanban-dragging');
 
                 const card = evt.item;
-                const taskId = card.dataset.taskId;
-
-                const newStatus = evt.to.closest('.kanban-column').dataset.status;
                 const oldStatus = evt.from.closest('.kanban-column').dataset.status;
+                const newStatus = evt.to.closest('.kanban-column').dataset.status;
 
-                evt.to.querySelectorAll('.kanban-empty').forEach(el => el.remove());
-                updateColumnCounts();
+                atualizarColunas();
 
                 if (oldStatus === newStatus) return;
-
-                card.style.opacity = '0.6';
-                card.style.pointerEvents = 'none';
-
-                fetch("{% url 'tarefas:update_task_status' %}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-CSRFToken': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: `task_id=${taskId}&new_status=${newStatus}`
-                })
-                .then(r => {
-                    if (!r.ok) throw new Error('HTTP ' + r.status);
-                    return r.json();
-                })
-                .then(data => {
-                    card.style.opacity = '1';
-                    card.style.pointerEvents = 'auto';
-
-                    if (data.success) {
-                        card.classList.add('kanban-save-success');
-                        setTimeout(() => card.classList.remove('kanban-save-success'), 1500);
-                        showToast(
-                            '<i class="bi bi-check-circle me-1"></i>Status atualizado!',
-                            'success'
-                        );
-                    } else {
-                        revertCard(card, oldStatus);
-                        showToast(
-                            '<i class="bi bi-exclamation-triangle me-1"></i>' + (data.message || 'Erro ao mover tarefa.'),
-                            'danger'
-                        );
-                    }
-                })
-                .catch(err => {
-                    console.error('Erro AJAX:', err);
-                    card.style.opacity = '1';
-                    card.style.pointerEvents = 'auto';
-                    revertCard(card, oldStatus);
-                    showToast(
-                        '<i class="bi bi-wifi-off me-1"></i>Erro de conexão. A tarefa foi revertida.',
-                        'danger'
-                    );
-                });
+                salvarStatus(card, newStatus, oldStatus);
             }
         });
     });
+
+    atualizarColunas();
 });
 </script>
-
-<style>
-.kanban-save-success {
-    animation: kanbanFlashSuccess 1.5s ease !important;
-}
-.kanban-save-error {
-    animation: kanbanFlashError 2s ease !important;
-}
-@keyframes kanbanFlashSuccess {
-    0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
-    30%  { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.3); }
-    100% { box-shadow: none; }
-}
-@keyframes kanbanFlashError {
-    0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
-    30%  { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3); }
-    100% { box-shadow: none; }
-}
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-</style>
 {% endblock %}
-
-

@@ -1,256 +1,88 @@
-
-{% load static %}
-<!DOCTYPE html>
-<html lang="pt-BR">
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <title>{% block titulo %}Relatório{% endblock %}</title>
 
+    {% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/tarefas/relatorioexportacao.css' %}">
+    {% endblock %}
+
+    {# Tokens do tema (no PDF não há global.css/Bootstrap) + layout do cabeçalho #}
     <style>
-        /* ==========================================================
-           BASE REPORT — Identidade visual unificada (PDF/WeasyPrint)
-           Paleta sincronizada com a tela web
-           ========================================================== */
+        @page { size: A4 landscape; margin: 14mm 12mm; }
 
+        :root {
+            --bs-body-color: #1f2937;
+            --bs-border-color: #e2e6ee;
+            --bs-text-muted: #6b7280;
+            --bs-primary: #2563eb;
+            --bs-primary-rgb: 37, 99, 235;
+            --surface-elevated: #ffffff;
+            --surface-muted: #f3f5f9;
+            --surface-subtle: #f8f9fc;
+            --surface-hover: #eef1f7;
+        }
+
+        html, body { margin: 0; padding: 0; background: #fff; }
+        body {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 10pt;
+            color: var(--bs-body-color);
+        }
+
+        /* Cabeçalho */
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid var(--bs-primary);
+        }
+        .report-title { margin: 0; font-size: 18pt; font-weight: 700; }
+        .report-subtitle { margin: 2px 0 0; font-size: 9pt; color: var(--bs-text-muted); }
+        .report-header-right { text-align: right; font-size: 8.5pt; color: var(--bs-text-muted); }
+
+        .report-meta { font-size: 8.5pt; color: var(--bs-text-muted); margin-bottom: 10px; }
+        .report-meta:empty { display: none; }
+
+        /* Tabelas do PDF (funciona com ou sem a classe .table) */
+        .report-page table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
+        .report-page thead th {
+            background: var(--surface-muted);
+            color: var(--bs-text-muted);
+            border-bottom: 2px solid var(--bs-border-color);
+            font-size: 7.5pt;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 6px 8px;
+        }
+        .report-page tbody td {
+            border-bottom: 1px solid var(--bs-border-color);
+            padding: 5px 8px;
+            vertical-align: middle;
+        }
+        .report-page tbody tr:nth-child(even) { background: var(--surface-subtle); }
+        .report-page thead { display: table-header-group; }
+        .report-page tr { page-break-inside: avoid; }
+        .report-page .card { page-break-inside: avoid; margin-bottom: 12px; }
+
+        /* Rodapé com paginação */
         @page {
-            size: A4 landscape;
-            margin: 1.2cm 1.5cm 1.5cm 1.5cm;
-
-            @bottom-center {
+            @bottom-right {
                 content: "Página " counter(page) " de " counter(pages);
-                font-family: 'Helvetica', sans-serif;
                 font-size: 8pt;
                 color: #6b7280;
             }
         }
-
-        * { box-sizing: border-box; }
-
-        body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 9pt;
-            color: #1a1a2e;
-            line-height: 1.4;
-            margin: 0;
-            padding: 0;
-        }
-
-        /* ===== CABEÇALHO ===== */
-        .report-header {
-            border-bottom: 3px solid #0D6EFD;
-            padding-bottom: 10px;
-            margin-bottom: 18px;
-            display: table;
-            width: 100%;
-        }
-        .report-header-left  { display: table-cell; vertical-align: middle; width: 70%; }
-        .report-header-right {
-            display: table-cell; vertical-align: middle; text-align: right;
-            font-size: 8pt; color: #6b7280; width: 30%;
-        }
-        .report-title {
-            font-size: 18pt; font-weight: bold; color: #0D6EFD;
-            margin: 0 0 3px 0;
-        }
-        .report-subtitle {
-            font-size: 9.5pt; color: #6b7280; margin: 0;
-        }
-        .report-meta {
-            font-size: 8pt; color: #6b7280; margin-top: 8px;
-        }
-
-        /* ===== KPI CARDS ===== */
-        .kpi-grid {
-            display: table;
-            width: 100%;
-            border-spacing: 8px 0;
-            margin: 0 -8px 18px -8px;
-        }
-        .kpi-card {
-            display: table-cell;
-            width: 25%;
-            background: #f8f9fc;
-            border-left: 4px solid #6b7280;
-            border-radius: 4px;
-            padding: 10px 12px;
-            vertical-align: middle;
-        }
-        .kpi-card.info    { border-left-color: #0D6EFD; }
-        .kpi-card.success { border-left-color: #22c55e; }
-        .kpi-card.warning { border-left-color: #f59e0b; }
-        .kpi-card.danger  { border-left-color: #ef4444; }
-
-        .kpi-label {
-            font-size: 7.5pt;
-            font-weight: bold;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            margin: 0 0 4px 0;
-        }
-        .kpi-value {
-            font-size: 20pt;
-            font-weight: bold;
-            color: #1a1a2e;
-            margin: 0;
-            line-height: 1;
-        }
-
-        /* ===== SEÇÕES ===== */
-        .section {
-            margin-bottom: 18px;
-            page-break-inside: avoid;
-        }
-        .section-title {
-            font-size: 12pt;
-            font-weight: bold;
-            color: #0D6EFD;
-            margin: 0 0 8px 0;
-            padding-bottom: 4px;
-            border-bottom: 1px solid #dee2e6;
-        }
-
-        /* ===== TABELA PADRÃO ===== */
-        .report-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 8.5pt;
-        }
-
-        .report-table thead th {
-            background: #0D6EFD;
-            color: #fff;
-            font-weight: bold;
-            font-size: 8pt;
-            text-align: left;
-            padding: 6px 7px;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-
-        .report-table tbody td {
-            padding: 5px 7px;
-            border-bottom: 1px solid #dee2e6;
-            vertical-align: middle;
-        }
-        .report-table tbody tr:nth-child(even) td {
-            background: #f8f9fc;
-        }
-
-        /* Alinhamentos auxiliares */
-        .text-center { text-align: center !important; }
-        .text-right  { text-align: right  !important; }
-        .text-muted  { color: #6b7280; }
-        .fw-bold     { font-weight: bold; }
-
-        /* Coluna numérica */
-        .num-col {
-            width: 4%;
-            text-align: center;
-            color: #6b7280;
-            font-weight: bold;
-        }
-
-        /* ===== BARRA DE PROGRESSO (genérica via CSS var) ===== */
-        .rel-progress-track {
-            width: 100%;
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .rel-progress-fill {
-            height: 8px;
-            border-radius: 4px;
-            display: block;
-            background: var(--badge-solid, #0D6EFD);
-        }
-
-        /* Compatibilidade retroativa (caso algum template ainda use .progress-bar/.progress-fill) */
-        .progress-bar { width: 100%; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; }
-        .progress-fill { height: 8px; background: #0D6EFD; border-radius: 4px; display: block; }
-        .progress-pendente   { background: #f59e0b; }
-        .progress-andamento  { background: #3b82f6; }
-        .progress-concluida  { background: #22c55e; }
-        .progress-atrasada   { background: #ef4444; }
-        .progress-cancelada  { background: #64748b; }
-        .progress-pausada    { background: #8b5cf6; }
-        .progress-alta       { background: #ef4444; }
-        .progress-media      { background: #f59e0b; }
-        .progress-baixa      { background: #22c55e; }
-
-        /* ===== BADGES ===== */
-        .rel-badge {
-            display: inline-block;
-            padding: 2px 9px;
-            border-radius: 10px;
-            font-size: 7.5pt;
-            font-weight: bold;
-            line-height: 1.4;
-            text-align: center;
-            white-space: nowrap;
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-            background: var(--badge-bg, rgba(100,116,139,0.12));
-            color: var(--badge-fg, #475569);
-        }
-
-        /* Compatibilidade retroativa (badges sólidos antigos) */
-        .badge {
-            display: inline-block;
-            padding: 2px 9px;
-            border-radius: 10px;
-            font-size: 7.5pt;
-            font-weight: bold;
-            line-height: 1.4;
-            text-align: center;
-            white-space: nowrap;
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-            color: #fff;
-        }
-        .badge-pendente   { background: #f59e0b; }
-        .badge-andamento  { background: #3b82f6; }
-        .badge-concluida,
-        .badge-concluido  { background: #22c55e; }
-        .badge-atrasada   { background: #ef4444; }
-        .badge-cancelada  { background: #64748b; }
-        .badge-pausada    { background: #8b5cf6; }
-        .badge-alta       { background: #ef4444; }
-        .badge-media      { background: #f59e0b; }
-        .badge-baixa      { background: #22c55e; }
-        .badge-urgente    { background: #dc2626; }
-
-        /* ===== ESTADO VAZIO ===== */
-        .empty-state,
-        .rel-empty {
-            text-align: center;
-            padding: 20px;
-            color: #6b7280;
-            font-style: italic;
-        }
-
-        /* ===== UTILITÁRIOS ===== */
-        .page-break { page-break-after: always; }
-
-        .rel-table-scroll {
-            max-height: 480px;
-            overflow-y: auto;
-            background:
-                linear-gradient(var(--rel-card-bg, #fff) 30%, transparent),
-                linear-gradient(transparent, var(--rel-card-bg, #fff) 70%) 0 100%,
-                radial-gradient(farthest-side at 50% 0, rgba(0,0,0,0.1), transparent),
-                radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,0.1), transparent) 0 100%;
-            background-repeat: no-repeat;
-            background-size: 100% 20px, 100% 20px, 100% 8px, 100% 8px;
-            background-attachment: local, local, scroll, scroll;
-        }
     </style>
-
-    {% block extra_css %}{% endblock %}
 </head>
 
 <body>
+<div class="report-page">
 
     {# ================ CABEÇALHO ================ #}
     <div class="report-header">
@@ -272,6 +104,7 @@
     {# ================ CONTEÚDO ================ #}
     {% block content %}{% endblock %}
 
+</div>
 </body>
 </html>
 

@@ -1,125 +1,161 @@
 
-/* static/css/tarefas/relatorioexportacao.css */
-/* Estilos para a página de relatórios, com suporte a tema claro e escuro. */
+/* static/css/tarefas/relatorioexportacao.css
+   Página de exportação de relatórios.
+   Depende de global.css (carregar DEPOIS dele). Sem cores fixas: o tema
+   claro/escuro segue o [data-bs-theme] pelos tokens globais. */
 
-/* --- Variáveis de Cor --- */
+/* ── Layout ── */
 .report-page {
-    /* TEMA CLARO (Padrão) */
-    --rp-bg-color: #f8f9fa;
-    --rp-card-bg: #ffffff;
-    --rp-text-color: #212529;
-    --rp-header-color: #00529B; /* Azul para títulos */
-    --rp-border-color: #dee2e6;
-    --rp-table-header-bg: #f8f9fa;
-    --rp-table-hover-bg: #f1f3f5;
-    --rp-card-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    --rp-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+    color: var(--bs-body-color);
 }
 
 [data-bs-theme="dark"] .report-page {
-    /* TEMA ESCURO */
-    --rp-bg-color: #212529;
-    --rp-card-bg: #2c3034;
-    --rp-text-color: #dee2e6;
-    --rp-header-color: #0d6efd; /* Azul mais vibrante */
-    --rp-border-color: #495057;
-    --rp-table-header-bg: #343a40;
-    --rp-table-hover-bg: #3e444a;
-    --rp-card-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    --rp-shadow: 0 4px 20px rgba(0, 0, 0, .3);
 }
 
-/* --- Estilos Gerais da Página --- */
-.report-page {
-    background-color: var(--rp-bg-color);
-    color: var(--rp-text-color);
-}
-
-.report-page h1, .report-page h2 {
-    color: var(--rp-header-color);
+.report-page h1,
+.report-page h2 {
+    color: var(--bs-body-color);
     font-weight: 700;
 }
 
-/* --- Cards e Layout --- */
+/* ── Cards ── */
 .report-page .card {
-    background-color: var(--rp-card-bg);
-    border: 1px solid var(--rp-border-color);
-    box-shadow: var(--rp-card-shadow);
+    background: var(--surface-elevated);
+    border: 1px solid var(--bs-border-color);
     border-radius: 12px;
+    box-shadow: var(--rp-shadow);
+    overflow: hidden;
 }
 
 .report-page .card-header {
-    background-color: var(--rp-table-header-bg);
-    color: var(--rp-text-color);
-    border-bottom: 1px solid var(--rp-border-color);
-    font-size: 1.1rem;
+    background: var(--surface-muted);
+    color: var(--bs-body-color);
+    border-bottom: 1px solid var(--bs-border-color);
+    font-size: .95rem;
+    font-weight: 700;
 }
 
-/* --- Tabela de Resultados --- */
+/* ── Tabela (usa as variáveis do Bootstrap em vez de sobrescrever cores) ── */
 .report-page .table {
-    color: var(--rp-text-color);
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--bs-body-color);
+    --bs-table-border-color: var(--bs-border-color);
+    --bs-table-hover-bg: var(--surface-hover);
+    --bs-table-hover-color: var(--bs-body-color);
+    margin-bottom: 0;
 }
 
 .report-page .table thead th {
-    background-color: var(--rp-table-header-bg);
-    color: var(--rp-text-color);
-    border-bottom: 2px solid var(--rp-border-color);
-    font-weight: 600;
+    background: var(--surface-muted);
+    color: var(--bs-text-muted);
+    border-bottom: 2px solid var(--bs-border-color);
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
-.report-page .table tbody tr:hover {
-    background-color: var(--rp-table-hover-bg);
-}
-
-.report-page .table td, .report-page .table th {
+.report-page .table td,
+.report-page .table th {
     vertical-align: middle;
 }
 
-/* --- Badges de Status na Tabela --- */
-.status-badge {
-    padding: 0.3em 0.6em;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 0.8rem;
-    color: #fff;
+/* ── Badges de status ── */
+.report-page .status-badge {
+    display: inline-block;
+    padding: .25em .65em;
+    border-radius: 6px;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
-.status-badge.badge-pendente { background-color: #6c757d; }
-.status-badge.badge-andamento { background-color: #0d6efd; }
-.status-badge.badge-concluida { background-color: #198754; }
-.status-badge.badge-atrasada { background-color: #dc3545; }
-.status-badge.badge-cancelada { background-color: #495057; }
-.status-badge.badge-pausada { background-color: #6f42c1; }
+.report-page .status-badge.badge-programada  { background: rgba(245, 241, 11, 0.074);  color: #ffdd00; }
+.report-page .status-badge.badge-pendente  { background: rgba(245, 158, 11, .12);  color: #d97706; }
+.report-page .status-badge.badge-andamento,
+.report-page .status-badge.badge-em-andamento { background: rgba(59, 130, 246, .12);  color: #2563eb; }
+.report-page .status-badge.badge-concluida { background: rgba(34, 197, 94, .12);   color: #16a34a; }
+.report-page .status-badge.badge-atrasada  { background: rgba(239, 68, 68, .12);   color: #dc2626; }
+.report-page .status-badge.badge-cancelada { background: rgba(100, 116, 139, .12); color: #475569; }
+.report-page .status-badge.badge-pausada   { background: rgba(139, 92, 246, .12);  color: #7c3aed; }
 
-/* --- Gráficos --- */
-.chart-container {
+[data-bs-theme="dark"] .report-page .status-badge.badge-programada  { color: #ffdd00; }
+[data-bs-theme="dark"] .report-page .status-badge.badge-pendente  { color: #fbbf24; }
+[data-bs-theme="dark"] .report-page .status-badge.badge-andamento,
+[data-bs-theme="dark"] .report-page .status-badge.badge-em-andamento  { color: #60a5fa; }
+[data-bs-theme="dark"] .report-page .status-badge.badge-concluida { color: #4ade80; }
+[data-bs-theme="dark"] .report-page .status-badge.badge-atrasada  { color: #f87171; }
+[data-bs-theme="dark"] .report-page .status-badge.badge-cancelada { color: #94a3b8; }
+[data-bs-theme="dark"] .report-page .status-badge.badge-pausada   { color: #a78bfa; }
+
+/* ── Gráficos (escopado: não colide com .chart-container do dashboard) ── */
+.report-page .chart-container {
     position: relative;
-    height: 400px; /* Altura fixa para os gráficos */
+    height: 400px;
     width: 100%;
 }
 
-/* --- Offcanvas de Filtros --- */
-.offcanvas {
-    background-color: var(--rp-card-bg);
-    color: var(--rp-text-color);
+@media (max-width: 767.98px) {
+    .report-page .chart-container { height: 280px; }
 }
 
-.offcanvas .offcanvas-header {
-    border-bottom: 1px solid var(--rp-border-color);
+/* ── Offcanvas de filtros (escopado: não afeta outros offcanvas do sistema) ── */
+.report-page .offcanvas,
+.offcanvas.report-offcanvas {
+    background: var(--surface-elevated);
+    color: var(--bs-body-color);
+    border-color: var(--bs-border-color);
 }
 
-.offcanvas .btn-close {
-    filter: var(--rp-bg-color) = #ffffff  invert(0)  invert(1);
+.report-page .offcanvas .offcanvas-header,
+.offcanvas.report-offcanvas .offcanvas-header {
+    border-bottom: 1px solid var(--bs-border-color);
 }
 
-.offcanvas-body h5 {
-    color: var(--rp-header-color);
+.report-page .offcanvas h5,
+.offcanvas.report-offcanvas h5 {
+    color: var(--bs-body-color);
+    font-weight: 700;
 }
 
-.offcanvas-body .form-label {
-    color: var(--rp-text-color);
+.report-page .offcanvas .form-label,
+.offcanvas.report-offcanvas .form-label {
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--bs-body-color);
 }
 
-.offcanvas-body .form-select {
-    background-color: var(--rp-bg-color);
-    color: var(--rp-text-color);
-    border-color: var(--rp-border-color);
+.report-page .offcanvas .form-select,
+.report-page .offcanvas .form-control,
+.offcanvas.report-offcanvas .form-select,
+.offcanvas.report-offcanvas .form-control {
+    background-color: var(--surface-subtle);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+    font-size: .85rem;
+    border-radius: 8px;
+}
+
+.report-page .offcanvas .form-select:focus,
+.report-page .offcanvas .form-control:focus,
+.offcanvas.report-offcanvas .form-select:focus,
+.offcanvas.report-offcanvas .form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), .18);
+}
+
+[data-bs-theme="dark"] .report-page .offcanvas .btn-close,
+[data-bs-theme="dark"] .offcanvas.report-offcanvas .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* ── Impressão ── */
+@media print {
+    .report-page .card { box-shadow: none; }
+    .report-page .offcanvas { display: none !important; }
 }

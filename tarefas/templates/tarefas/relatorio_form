@@ -1,17 +1,11 @@
-
-<!-- templates/tarefas/gerar_relatorio.html -->
-{% extends 'base.html' %}
-{% load static %}
+{# templates/tarefas/gerar_relatorio.html #}
+{% extends "tarefas/base_tarefas.html" %}
 
 {% block title %}Gerar Relatório{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/tarefas/relatorios.css' %}">   
-{% endblock %}
-
-{% block content %}
+{% block tarefas_content %}
 <div class="rel-wrapper d-flex justify-content-center">
-    <div class="rel-card" style="max-width:560px; width:100%;">
+    <div class="rel-card rel-card--narrow">
         <div class="rel-card-body">
 
             <h1 class="rel-title">
@@ -26,11 +20,11 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="status" class="form-label">Status</label>
-                    <select name="status" id="status" class="form-select form-select-sm">
+                    <label for="status" class="form-label rel-label">Status</label>
+                    <select name="status" id="status" class="form-select form-select-sm rel-filter-select">
                         <option value="">Todos os status</option>
                         {% for key, value in status_choices %}
-                        <option value="{{ key }}" {% if request.GET.status == key %}selected{% endif %}>{{ value }}</option>
+                            <option value="{{ key }}" {% if request.GET.status == key %}selected{% endif %}>{{ value }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -40,7 +34,7 @@
                 </button>
             </form>
 
-            <hr>
+            <hr class="rel-divider">
 
             <div class="rel-section">
                 <span class="rel-section-icon"><i class="bi bi-download"></i></span>
@@ -65,6 +59,5 @@
     </div>
 </div>
 {% endblock %}
-
 
 

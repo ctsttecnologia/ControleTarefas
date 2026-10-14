@@ -1,5 +1,6 @@
 
 STATUS_COLORS = {
+    'programada':  {'bg': 'rgba(34,197,94,0.12)',   'fg': "#004e1d", 'solid': "#00a93e"},
     'pendente':  {'bg': 'rgba(245,158,11,0.12)', 'fg': '#d97706', 'solid': '#f59e0b'},
     'andamento': {'bg': 'rgba(59,130,246,0.12)',  'fg': '#2563eb', 'solid': '#3b82f6'},
     'concluida': {'bg': 'rgba(34,197,94,0.12)',   'fg': '#16a34a', 'solid': '#22c55e'},

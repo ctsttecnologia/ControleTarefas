@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="{% static 'css/tarefas/tarefas.css' %}">
+    
+    {% block tarefas_extra_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+    {% block tarefas_content %}{% endblock %}
+{% endblock %}

@@ -1,146 +1,24 @@
-<!-- templates/tarefas/listar_tarefas.html -->
-<!--
-| Ação      | Superuser | view_all | change | Criador | Responsável | Participante |
-|-----------|-----------|----------|--------|---------|-------------|--------------|
-| Listar    | ✅       | ✅       | ✅    | ✅      | ✅         | ✅           |
-| Ver       | ✅       | ✅       | ✅    | ✅      | ✅         | ✅           |
-| Editar    | ✅       | ❌       | ✅    | ✅      | ✅         | ❌           |
-| Concluir  | ✅       | ❌       | ❌    | ✅      | ✅         | ❌           |
-| Excluir   | ✅       | ❌       | ❌    | ✅      | ❌         | ❌           |
-| Comentar  | ✅       | ✅       | ✅    | ✅      | ✅         | ✅           |
--->
-
-{% extends 'base.html' %}
+{% extends "tarefas/base_tarefas.html" %}
 {% load static %}
 {% load tarefas_extras %}
 
+{# 
+| Ação      | Superuser | view_all | change | Criador | Responsável | Participante / Grupo |
+|-----------|-----------|----------|--------|---------|-------------|----------------------|
+| Listar    | ✅        | ✅       | ✅     | ✅      | ✅          | ✅                   |
+| Ver       | ✅        | ✅       | ✅     | ✅      | ✅          | ✅                   |
+| Editar    | ✅        | ❌       | ✅     | ✅      | ✅          | ❌                   |
+| Concluir  | ✅        | ❌       | ❌     | ✅      | ✅          | ❌                   |
+| Excluir   | ✅        | ❌       | ❌     | ✅      | ❌          | ❌                   |
+#}
+
 {% block title %}Lista de Tarefas{% endblock %}
 
-{% block extra_css %}
-<style>
-:root,
-[data-bs-theme="light"] {
-    --list-bg: #f4f6fb;
-    --list-card-bg: #ffffff;
-    --list-card-border: #e2e6ee;
-    --list-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    --list-text: #1a1a2e;
-    --list-text-muted: #6b7280;
-    --list-hover-bg: #f8f9fc;
-    --list-divider: #edf0f5;
-    --list-table-header-bg: #f8f9fc;
-}
-
-[data-bs-theme="dark"] {
-    --list-bg: #13131f;
-    --list-card-bg: #1e1e2e;
-    --list-card-border: #2e2e44;
-    --list-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    --list-text: #e2e4f0;
-    --list-text-muted: #8b8ea8;
-    --list-hover-bg: #252536;
-    --list-divider: #2e2e44;
-    --list-table-header-bg: #252536;
-}
-
-.list-wrapper { padding: 1rem; min-height: calc(100vh - 60px); }
-@media (min-width: 768px) { .list-wrapper { padding: 1.5rem 2rem; } }
-
-.list-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
-.list-title { font-size: 1.4rem; font-weight: 700; color: var(--list-text); margin-bottom: 0.15rem; }
-.list-subtitle { font-size: 0.85rem; color: var(--list-text-muted); margin: 0; }
-.list-actions { display: flex; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; }
-
-.list-card { background: var(--list-card-bg); border: 1px solid var(--list-card-border); border-radius: 12px; box-shadow: var(--list-card-shadow); overflow: hidden; margin-bottom: 1rem; }
-.list-card-header { padding: 0.75rem 1.15rem; border-bottom: 1px solid var(--list-divider); display: flex; justify-content: space-between; align-items: center; background: var(--list-card-bg); }
-.list-card-header-title { font-size: 0.85rem; font-weight: 700; color: var(--list-text); margin: 0; }
-.list-card-body { padding: 1rem 1.15rem; }
-
-.filter-label { font-size: 0.75rem; font-weight: 600; color: var(--list-text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; display: block; }
-
-.list-table { width: 100%; border-collapse: collapse; }
-.list-table thead th { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--list-text-muted); padding: 0.7rem 0.85rem; border-bottom: 2px solid var(--list-divider); background: var(--list-table-header-bg); white-space: nowrap; }
-.list-table tbody td { font-size: 0.82rem; color: var(--list-text); padding: 0.7rem 0.85rem; border-bottom: 1px solid var(--list-divider); vertical-align: middle; }
-.list-table tbody tr:hover { background: var(--list-hover-bg); }
-.list-table tbody tr:last-child td { border-bottom: none; }
-
-.task-link { font-weight: 600; color: var(--list-text); text-decoration: none; transition: color 0.15s ease; }
-.task-link:hover { color: #6366f1; }
-.task-desc { font-size: 0.73rem; color: var(--list-text-muted); margin-top: 0.15rem; }
-
-.task-badge { font-size: 0.65rem; font-weight: 700; padding: 0.2em 0.6em; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; display: inline-block; }
-
-.task-date { font-size: 0.78rem; color: var(--list-text-muted); white-space: nowrap; }
-.task-date.overdue { color: #ef4444; font-weight: 700; }
-
-.task-progress-bar { height: 6px; border-radius: 3px; background: var(--list-divider); overflow: hidden; min-width: 70px; }
-.task-progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
-.task-progress-text { font-size: 0.7rem; font-weight: 600; color: var(--list-text-muted); min-width: 32px; text-align: right; }
-
-.action-btn { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--list-card-border); background: var(--list-card-bg); color: var(--list-text-muted); display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; transition: all 0.15s ease; text-decoration: none; }
-.action-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-.action-btn--view:hover     { color: #6366f1; border-color: #6366f1; }
-.action-btn--edit:hover     { color: #f59e0b; border-color: #f59e0b; }
-.action-btn--delete:hover   { color: #ef4444; border-color: #ef4444; }
-.action-btn--conclude:hover { color: #22c55e; border-color: #22c55e; }
-.action-btn--conclude { background: none; cursor: pointer; }
-
-.list-empty { padding: 3rem 1rem; text-align: center; }
-.list-empty-icon { font-size: 2.5rem; color: var(--list-text-muted); opacity: 0.4; margin-bottom: 1rem; }
-.list-empty-title { font-size: 1rem; font-weight: 600; color: var(--list-text); margin-bottom: 0.5rem; }
-.list-empty-text { font-size: 0.82rem; color: var(--list-text-muted); }
-
-@media (max-width: 767.98px) {
-    .list-wrapper { padding: 0.75rem; }
-    .list-title { font-size: 1.15rem; }
-    .list-table thead { display: none; }
-    .list-table, .list-table tbody, .list-table tr, .list-table td { display: block; width: 100%; }
-    .list-table tbody tr { padding: 0.75rem; border-bottom: 1px solid var(--list-divider); position: relative; }
-    .list-table tbody td { padding: 0.25rem 0; border: none; text-align: left; }
-    .list-table tbody td::before { content: attr(data-label); font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--list-text-muted); display: block; margin-bottom: 0.15rem; }
-    .list-table tbody td:last-child { padding-top: 0.5rem; }
-    .list-actions .btn span { display: none; }
-}
-
-.list-card-body .form-select-sm,
-.list-card-body .form-control-sm {
-    background-color: var(--list-card-bg);
-    border-color: var(--list-card-border);
-    color: var(--list-text);
-    font-size: 0.82rem;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.list-card-body .form-select-sm:focus,
-.list-card-body .form-control-sm:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.18);
-    outline: none;
-}
-
-.list-card-body .form-select-sm:hover,
-.list-card-body .form-control-sm:hover {
-    border-color: var(--list-text-muted);
-}
-
-[data-bs-theme="dark"] .list-card-body .form-select-sm {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%238b8ea8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-}
-
-[data-bs-theme="dark"] .list-card-body .form-select-sm option {
-    background-color: var(--list-card-bg);
-    color: var(--list-text);
-}
-
-.list-card-header .task-badge { font-size: 0.7rem; padding: 0.3em 0.7em; }
-
-.stat-card { text-align: center; }
-.stat-value { font-size: 1.5rem; font-weight: 700; color: var(--list-text); }
-.stat-label { font-size: 0.75rem; color: var(--list-text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
-</style>
+{% block tarefas_extra_css %}
+    {{ block.super }}
 {% endblock %}
 
-{% block content %}
+{% block tarefas_content %}
 <div class="list-wrapper">
 
     <!-- Header -->
@@ -202,30 +80,27 @@
             <form method="get" id="filtrosTarefasForm">
                 <div class="row g-3 align-items-end">
 
-                    <!-- BUSCA -->
                     <div class="col-12 col-md-3">
                         <label class="filter-label" for="filtroQuery">Buscar</label>
                         <input type="text" name="q" id="filtroQuery" class="form-control form-control-sm"
-                            placeholder="Título, descrição, projeto..." value="{{ query_atual|default:'' }}">
+                               placeholder="Título, descrição, projeto..." value="{{ query_atual|default:'' }}">
                     </div>
 
-                    <!-- PERÍODO DE DATA -->
                     <div class="col-12 col-md-3">
                         <label class="filter-label" for="filtroDataInicio">
                             <i class="bi bi-calendar3 me-1"></i>Período
                         </label>
                         <div class="input-group input-group-sm">
                             <input type="date" name="data_inicio" id="filtroDataInicio"
-                                class="form-control form-control-sm"
-                                value="{{ data_inicio_atual|default:'' }}">
+                                   class="form-control form-control-sm"
+                                   value="{{ data_inicio_atual|default:'' }}">
                             <span class="input-group-text">até</span>
                             <input type="date" name="data_fim" id="filtroDataFim"
-                                class="form-control form-control-sm"
-                                value="{{ data_fim_atual|default:'' }}">
+                                   class="form-control form-control-sm"
+                                   value="{{ data_fim_atual|default:'' }}">
                         </div>
                     </div>
 
-                    <!-- STATUS -->
                     <div class="col-6 col-md-2">
                         <label class="filter-label" for="filtroStatus">Status</label>
                         <select name="status" id="filtroStatus" class="form-select form-select-sm">
@@ -236,7 +111,6 @@
                         </select>
                     </div>
 
-                    <!-- PRIORIDADE -->
                     <div class="col-6 col-md-2">
                         <label class="filter-label" for="filtroPrioridade">Prioridade</label>
                         <select name="prioridade" id="filtroPrioridade" class="form-select form-select-sm">
@@ -247,7 +121,6 @@
                         </select>
                     </div>
 
-                    <!-- PROJETO -->
                     <div class="col-6 col-md-2">
                         <label class="filter-label" for="filtroProjeto">Projeto</label>
                         <select name="projeto" id="filtroProjeto" class="form-select form-select-sm">
@@ -258,7 +131,6 @@
                         </select>
                     </div>
 
-                    <!-- RESPONSÁVEL -->
                     <div class="col-12 col-md-3">
                         <label class="filter-label" for="filtroResponsavel">
                             <i class="bi bi-person me-1"></i>Responsável
@@ -273,14 +145,12 @@
                         </select>
                     </div>
 
-                    <!-- BOTÕES -->
                     <div class="col-12 col-md-2 d-flex gap-2">
                         <button type="submit" class="btn btn-sm btn-primary flex-fill">
                             <i class="bi bi-funnel me-1"></i> Filtrar
                         </button>
                         <a href="{% url 'tarefas:listar_tarefas' %}"
-                        class="btn btn-sm btn-outline-secondary"
-                        title="Limpar filtros">
+                           class="btn btn-sm btn-outline-secondary" title="Limpar filtros">
                             <i class="bi bi-x-lg"></i>
                         </a>
                     </div>
@@ -294,7 +164,7 @@
     <div class="list-card">
         <div class="list-card-header">
             <h6 class="list-card-header-title">
-                <i class="bi bi-table me-2"></i>Minhas Tarefas
+                <i class="bi bi-table me-2"></i>Tarefas
             </h6>
             <span class="task-badge" style="background: rgba(59,130,246,0.12); color: #2563eb;">{{ total_tarefas }} total</span>
         </div>
@@ -306,7 +176,7 @@
                     <tr>
                         <th>Tarefa</th>
                         <th>Projeto</th>
-                        <th>Responsável</th>
+                        <th>Responsável / Acesso</th>
                         <th>Prioridade</th>
                         <th>Status</th>
                         <th>Prazo</th>
@@ -317,15 +187,11 @@
                 <tbody>
                     {% for tarefa in object_list %}
                     <tr>
-                        <!-- TAREFA -->
+                        <!-- TAREFA (a lista já vem filtrada por visibilidade) -->
                         <td data-label="Tarefa">
-                            {% if perms.tarefas.change_tarefas or user.is_superuser or tarefa.responsavel == user %}
-                                <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="task-link">
-                                    {{ tarefa.titulo }}
-                                </a>
-                            {% else %}
-                                <span class="task-link">{{ tarefa.titulo }}</span>
-                            {% endif %}
+                            <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="task-link">
+                                {{ tarefa.titulo }}
+                            </a>
                             {% if tarefa.descricao %}
                                 <div class="task-desc">{{ tarefa.descricao|truncatewords:10 }}</div>
                             {% endif %}
@@ -340,7 +206,7 @@
                             {% endif %}
                         </td>
 
-                        <!-- RESPONSÁVEL + PARTICIPANTES -->
+                        <!-- RESPONSÁVEL + PARTICIPANTES + GRUPOS -->
                         <td data-label="Responsável">
                             {% if tarefa.responsavel %}
                                 <span class="task-badge" style="background: rgba(100,116,139,0.12); color: #475569;">
@@ -349,15 +215,20 @@
                             {% else %}
                                 <span class="text-muted">—</span>
                             {% endif %}
-                            {% if tarefa.participantes.exists %}
-                                <div class="task-desc mt-1">
-                                    {% for p in tarefa.participantes.all %}
-                                        <small class="d-block text-muted">
-                                            <i class="bi bi-person me-1"></i>{{ p.get_full_name|default:p.username }}
-                                        </small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+
+                            {% for p in tarefa.participantes.all %}
+                                {% if forloop.first %}<div class="task-desc mt-1">{% endif %}
+                                <small class="d-block text-muted">
+                                    <i class="bi bi-person me-1"></i>{{ p.get_full_name|default:p.username }}
+                                </small>
+                                {% if forloop.last %}</div>{% endif %}
+                            {% endfor %}
+
+                            {% for g in tarefa.grupos_com_acesso.all %}
+                                {% if forloop.first %}<div class="d-flex flex-wrap gap-1 mt-1" title="Grupos com acesso">{% endif %}
+                                <span class="group-tag"><i class="bi bi-people me-1"></i>{{ g.name }}</span>
+                                {% if forloop.last %}</div>{% endif %}
+                            {% endfor %}
                         </td>
 
                         <!-- PRIORIDADE -->
@@ -408,37 +279,38 @@
                             <div class="d-flex gap-1 justify-content-center">
 
                                 {# VER #}
-                                {% if perms.tarefas.view_tarefas or tarefa.responsavel == user or user in tarefa.participantes.all or user.is_superuser %}
-                                    <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}"
-                                       class="action-btn action-btn--view" title="Ver">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
+                                <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}"
+                                   class="action-btn action-btn--view" title="Ver">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+
+                                {% if tarefa.status != 'concluida' and tarefa.status != 'cancelada' %}
+
+                                    {# EDITAR #}
+                                    {% if user.is_superuser or perms.tarefas.change_tarefas or tarefa.usuario_id == user.id or tarefa.responsavel_id == user.id %}
+                                        <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}"
+                                           class="action-btn action-btn--edit" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    {% endif %}
+
+                                    {# CONCLUIR #}
+                                    {% if user.is_superuser or tarefa.usuario_id == user.id or tarefa.responsavel_id == user.id %}
+                                        <form method="post" action="{% url 'tarefas:concluir_tarefa_rapido' tarefa.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="action-btn action-btn--conclude" title="Concluir"
+                                                    onclick="return confirm('Marcar como concluída?')">
+                                                <i class="bi bi-check2"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+
                                 {% endif %}
 
-                                {# EDITAR #}
-                                {% if perms.tarefas.change_tarefas or tarefa.responsavel == user or user.is_superuser %}
-                                    <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}"
-                                       class="action-btn action-btn--edit" title="Editar">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                {% endif %}
-
-                                {# CONCLUIR #}
-                                {% if tarefa.status != 'concluida' and user.is_superuser or tarefa.criador == user or tarefa.responsavel == user %}
-                                    <form method="post" action="{% url 'tarefas:concluir_tarefa_rapido' tarefa.pk %}" style="display:inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="action-btn action-btn--conclude" title="Concluir"
-                                                onclick="return confirm('Marcar como concluída?')">
-                                            <i class="bi bi-check2"></i>
-                                        </button>
-                                    </form>
-                                {% endif %}
-
-                                {# EXCLUIR #}
-                                {% if perms.tarefas.delete_tarefas or user.is_superuser or tarefa.criador == user %}
+                                {# EXCLUIR (abre a página de confirmação) #}
+                                {% if user.is_superuser or tarefa.usuario_id == user.id %}
                                     <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}"
-                                       class="action-btn action-btn--delete" title="Excluir"
-                                       onclick="return confirm('Excluir esta tarefa?')">
+                                       class="action-btn action-btn--delete" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </a>
                                 {% endif %}
@@ -466,7 +338,7 @@
 
     <!-- Paginação -->
     {% if is_paginated %}
-    <div class="content-card-body border-top"><br>
+    <div class="list-card-body border-top">
         <nav aria-label="Paginação de tarefas">
             <ul class="pagination justify-content-center mb-0">
                 {% if page_obj.has_previous %}
@@ -481,19 +353,13 @@
                     </a>
                 </li>
                 {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link"><i class="bi bi-chevron-double-left"></i></span>
-                </li>
-                <li class="page-item disabled">
-                    <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-                </li>
+                <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-left"></i></span></li>
+                <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
                 {% endif %}
 
                 {% for num in page_obj.paginator.page_range %}
                     {% if page_obj.number == num %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ num }}</span>
-                    </li>
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                     {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
                     <li class="page-item">
                         <a class="page-link" href="?{% querystring_replace page=num %}">{{ num }}</a>
@@ -513,12 +379,8 @@
                     </a>
                 </li>
                 {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link"><i class="bi bi-chevron-right"></i></span>
-                </li>
-                <li class="page-item disabled">
-                    <span class="page-link"><i class="bi bi-chevron-double-right"></i></span>
-                </li>
+                <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+                <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-right"></i></span></li>
                 {% endif %}
             </ul>
             <p class="text-center text-muted mt-2 mb-0" style="font-size: 0.8rem;">
@@ -531,3 +393,4 @@
 
 </div>
 {% endblock %}
+

@@ -1,332 +1,21 @@
-<!-- templates/tarefas/tarefa_detail.html -->
-{% extends 'base.html' %}
+{% extends "tarefas/base_tarefas.html" %}
 {% load static %}
 {% load secure_url %}
 
 {% block title %}{{ object.titulo }}{% endblock %}
 
-{% block extra_css %}
-<style>
-/* =============================================================================
-   DETALHE DE TAREFA — Tema Claro / Escuro
-   ============================================================================= */
-
-:root,
-[data-bs-theme="light"] {
-    --detail-bg: #f4f6fb;
-    --detail-card-bg: #ffffff;
-    --detail-card-border: #e2e6ee;
-    --detail-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    --detail-text: #1a1a2e;
-    --detail-text-muted: #6b7280;
-    --detail-divider: #edf0f5;
-    --detail-hover-bg: #f8f9fc;
-    --detail-sidebar-label: #9ca3af;
-    --detail-comment-bg: #f8f9fc;
-    --detail-avatar-bg: #e8ecf2;
-    --detail-avatar-color: #6b7280;
-    --detail-history-bg: #f8f9fc;
-    --detail-input-bg: #ffffff;
-    --detail-input-border: #d1d5e0;
-}
-
-[data-bs-theme="dark"] {
-    --detail-bg: #13131f;
-    --detail-card-bg: #1e1e2e;
-    --detail-card-border: #2e2e44;
-    --detail-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    --detail-text: #e2e4f0;
-    --detail-text-muted: #8b8ea8;
-    --detail-divider: #2e2e44;
-    --detail-hover-bg: #252536;
-    --detail-sidebar-label: #6b6e85;
-    --detail-comment-bg: #252536;
-    --detail-avatar-bg: #2e2e44;
-    --detail-avatar-color: #8b8ea8;
-    --detail-history-bg: #252536;
-    --detail-input-bg: #252536;
-    --detail-input-border: #3a3a52;
-}
-
-/* ── Layout ── */
-.detail-wrapper { padding: 1rem; min-height: calc(100vh - 60px); }
-@media (min-width: 768px) { .detail-wrapper { padding: 1.5rem 2rem; } }
-
-/* ── Header ── */
-.detail-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem; }
-.detail-title { font-size: 1.4rem; font-weight: 700; color: var(--detail-text); margin-bottom: 0.3rem; line-height: 1.3; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
-.detail-meta { font-size: 0.82rem; color: var(--detail-text-muted); margin: 0; }
-.detail-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
-
-/* ── Cards ── */
-.detail-card { background: var(--detail-card-bg); border: 1px solid var(--detail-card-border); border-radius: 12px; box-shadow: var(--detail-card-shadow); overflow: hidden; margin-bottom: 1rem; }
-.detail-card-header { padding: 0.75rem 1.15rem; border-bottom: 1px solid var(--detail-divider); display: flex; justify-content: space-between; align-items: center; }
-.detail-card-title { font-size: 0.85rem; font-weight: 700; color: var(--detail-text); margin: 0; }
-.detail-card-body { padding: 1.15rem; }
-
-/* ── Description ── */
-.detail-description { font-size: 0.88rem; color: var(--detail-text); line-height: 1.65; }
-.detail-description-empty { color: var(--detail-text-muted); font-style: italic; font-size: 0.85rem; }
-
-/* ── Sidebar ── */
-.sidebar-field { margin-bottom: 1rem; }
-.sidebar-field:last-child { margin-bottom: 0; }
-.sidebar-label { font-size: 0.68rem; font-weight: 700; color: var(--detail-sidebar-label); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
-.sidebar-value { font-size: 0.85rem; font-weight: 600; color: var(--detail-text); margin: 0; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
-.sidebar-divider { border: none; border-top: 1px solid var(--detail-divider); margin: 0.85rem 0; }
-
-/* ── Badges ── */
-.detail-badge { font-size: 0.65rem; font-weight: 700; padding: 0.2em 0.6em; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
-.badge-status-pendente   { background: rgba(245,158,11,0.12); color: #d97706; }
-.badge-status-atrasada   { background: rgba(239,68,68,0.12);  color: #dc2626; }
-.badge-status-andamento  { background: rgba(59,130,246,0.12);  color: #2563eb; }
-.badge-status-concluida  { background: rgba(34,197,94,0.12);   color: #16a34a; }
-.badge-status-pausada    { background: rgba(139,92,246,0.12);  color: #7c3aed; }
-.badge-status-cancelada  { background: rgba(100,116,139,0.12); color: #475569; }
-.badge-prio-alta    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-.badge-prio-media   { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
-.badge-prio-baixa   { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-[data-bs-theme="dark"] .badge-prio-alta  { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); }
-[data-bs-theme="dark"] .badge-prio-media { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); }
-[data-bs-theme="dark"] .badge-prio-baixa { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); }
-.badge-overdue { background: rgba(239, 68, 68, 0.12); color: #ef4444; font-size: 0.6rem; font-weight: 700; padding: 0.15em 0.5em; border-radius: 4px; }
-
-/* ── Progress Bar ── */
-.detail-progress-bar { height: 8px; border-radius: 4px; background: var(--detail-divider); overflow: hidden; }
-.detail-progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
-
-/* ── Participant Tags ── */
-.participant-tag { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; font-weight: 600; background: var(--detail-comment-bg); color: var(--detail-text); padding: 0.25em 0.6em; border-radius: 6px; border: 1px solid var(--detail-card-border); }
-
-/* ── Comments ── */
-.comment-form textarea { background: var(--detail-input-bg); border-color: var(--detail-input-border); color: var(--detail-text); border-radius: 8px; font-size: 0.85rem; resize: vertical; min-height: 80px; }
-.comment-form textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
-.comment-item { display: flex; gap: 0.75rem; padding: 0.85rem 0; border-bottom: 1px solid var(--detail-divider); }
-.comment-item:last-child { border-bottom: none; }
-.comment-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--detail-avatar-bg); color: var(--detail-avatar-color); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem; }
-.comment-body { flex: 1; min-width: 0; }
-.comment-author { font-size: 0.78rem; font-weight: 700; color: var(--detail-text); }
-.comment-date { font-size: 0.7rem; color: var(--detail-text-muted); }
-.comment-text { font-size: 0.83rem; color: var(--detail-text); line-height: 1.5; margin-top: 0.25rem; }
-.comment-attachment { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; color: #6366f1; text-decoration: none; background: var(--detail-comment-bg); padding: 0.2em 0.55em; border-radius: 5px; margin-top: 0.35rem; border: 1px solid var(--detail-card-border); }
-.comment-attachment:hover { background: var(--detail-hover-bg); }
-.comment-empty { text-align: center; color: var(--detail-text-muted); font-style: italic; font-size: 0.82rem; padding: 1.5rem 0; }
-.comment-count { background: #6366f1; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 0.15em 0.5em; border-radius: 999px; min-width: 1.3rem; text-align: center; }
-
-/* ── History ── */
-.history-item { padding: 0.55rem 1rem; border-bottom: 1px solid var(--detail-divider); font-size: 0.78rem; }
-.history-item:last-child { border-bottom: none; }
-.history-item:hover { background: var(--detail-hover-bg); }
-.history-author { font-weight: 700; color: var(--detail-text); }
-.history-date { color: var(--detail-text-muted); font-size: 0.7rem; }
-.history-change { color: var(--detail-text-muted); }
-.history-arrow { color: var(--detail-text-muted); margin: 0 0.25rem; }
-
-/* 🛡️ BLINDAGEM 1: Estilo "Sistema" para registros órfãos ou automáticos */
-.history-author-system {
-    font-weight: 600;
-    color: var(--detail-text-muted);
-    font-style: italic;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-.history-author-system i {
-    font-size: 0.7rem;
-    opacity: 0.7;
-}
-
-/* ── Layout Grid ── */
-.detail-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
-@media (min-width: 992px) { .detail-grid { grid-template-columns: 1fr 340px; } }
-
-/* =============================================================================
-   ★ STATUS CHANGER — Dropdown inline para alterar status
-   ============================================================================= */
-.status-changer { position: relative; }
-
-.status-current-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    cursor: pointer;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    transition: all 0.15s;
-    border: 1px solid var(--detail-card-border);
-    background: var(--detail-card-bg);
-    width: 100%;
-    text-align: left;
-    color: var(--detail-text);
-}
-
-.status-current-btn:hover {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
-}
-
-.status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.status-dot-pendente   { background: #d97706; }
-.status-dot-atrasada   { background: #dc2626; }
-.status-dot-andamento  { background: #2563eb; }
-.status-dot-concluida  { background: #16a34a; }
-.status-dot-pausada    { background: #7c3aed; }
-.status-dot-cancelada  { background: #475569; }
-
-.status-dropdown {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0; right: 0;
-    z-index: 50;
-    background: var(--detail-card-bg);
-    border: 1px solid var(--detail-card-border);
-    border-radius: 10px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-    padding: 0.35rem;
-    display: none;
-}
-[data-bs-theme="dark"] .status-dropdown { box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); }
-.status-dropdown.show { display: block; }
-
-.status-option {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.45rem 0.65rem;
-    cursor: pointer;
-    border-radius: 6px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    transition: background 0.15s;
-    border: none;
-    background: transparent;
-    width: 100%;
-    text-align: left;
-    color: var(--detail-text);
-}
-.status-option:hover { background: var(--detail-hover-bg); }
-.status-option.active { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
-
-.status-feedback {
-    display: none;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.73rem;
-    padding: 0.35rem 0.65rem;
-    border-radius: 6px;
-    margin-top: 0.5rem;
-    animation: statusFadeIn 0.2s ease;
-}
-.status-feedback.success { display: flex; background: rgba(34, 197, 94, 0.1); color: #16a34a; }
-.status-feedback.error   { display: flex; background: rgba(239, 68, 68, 0.1); color: #dc2626; }
-
-@keyframes statusFadeIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-/* =============================================================================
-   ★ RECORRÊNCIA — Card de informações
-   ============================================================================= */
-.recurrence-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    color: #fff;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 0.25em 0.65em;
-    border-radius: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
-    vertical-align: middle;
-}
-
-.recurrence-badge i {
-    font-size: 0.75rem;
-    animation: spin-slow 4s linear infinite;
-}
-
-@keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-}
-
-.recurrence-card {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%);
-    border: 1px solid rgba(99, 102, 241, 0.2);
-}
-
-[data-bs-theme="dark"] .recurrence-card {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%);
-    border-color: rgba(99, 102, 241, 0.3);
-}
-
-.recurrence-icon-wrap {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: rgba(99, 102, 241, 0.15);
-    color: #6366f1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-    flex-shrink: 0;
-}
-
-[data-bs-theme="dark"] .recurrence-icon-wrap {
-    background: rgba(99, 102, 241, 0.2);
-    color: #818cf8;
-}
-
-.recurrence-status-active {
-    color: #16a34a;
-    font-weight: 700;
-    font-size: 0.72rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-
-.recurrence-status-finished {
-    color: #6b7280;
-    font-weight: 700;
-    font-size: 0.72rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-
-[data-bs-theme="dark"] .recurrence-status-finished {
-    color: #8b8ea8;
-}
-
-/* ── Mobile ── */
-@media (max-width: 767.98px) {
-    .detail-wrapper { padding: 0.75rem; }
-    .detail-title { font-size: 1.15rem; }
-    .detail-card-body { padding: 0.85rem; }
-}
-</style>
-{% endblock %}
-
-{% block content %}
+{% block tarefas_content %}
 <div class="detail-wrapper">
 
-    <!-- Header -->
+    {# ── Header ── #}
     <div class="detail-header">
         <div>
             <h1 class="detail-title">
                 {{ object.titulo }}
                 {% if object.recorrente %}
-                <span class="recurrence-badge" title="Esta é uma tarefa recorrente">
-                    <i class="bi bi-arrow-repeat"></i> Recorrente
-                </span>
+                    <span class="recurrence-badge" title="Esta é uma tarefa recorrente">
+                        <i class="bi bi-arrow-repeat"></i> Recorrente
+                    </span>
                 {% endif %}
             </h1>
             <p class="detail-meta">
@@ -342,33 +31,32 @@
                 <i class="bi bi-file-earmark-bar-graph"></i>
             </a>
             {% if can_edit and object.status != 'concluida' and object.status != 'cancelada' %}
-            <a href="{% url 'tarefas:editar_tarefa' object.pk %}" class="btn btn-sm btn-primary">
-                <i class="bi bi-pencil me-1"></i> Editar
-            </a>
+                <a href="{% url 'tarefas:editar_tarefa' object.pk %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-pencil me-1"></i> Editar
+                </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Grid -->
     <div class="detail-grid">
 
-        <!-- ═══ Coluna Principal ═══ -->
+        {# ═══ Coluna principal ═══ #}
         <div>
-            <!-- Descrição -->
+            {# Descrição #}
             <div class="detail-card">
                 <div class="detail-card-header">
                     <h6 class="detail-card-title"><i class="bi bi-text-left me-2"></i>Descrição</h6>
                 </div>
                 <div class="detail-card-body">
                     {% if object.descricao %}
-                    <div class="detail-description">{{ object.descricao|linebreaksbr }}</div>
+                        <div class="detail-description">{{ object.descricao|linebreaksbr }}</div>
                     {% else %}
-                    <p class="detail-description-empty mb-0">Nenhuma descrição informada.</p>
+                        <p class="detail-description-empty mb-0">Nenhuma descrição informada.</p>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- Comentários -->
+            {# Comentários #}
             <div class="detail-card">
                 <div class="detail-card-header">
                     <h6 class="detail-card-title"><i class="bi bi-chat-dots me-2"></i>Comentários</h6>
@@ -386,79 +74,76 @@
                         </div>
                     </form>
                     <div class="small text-muted mt-1">
-                        📎 Máximo: {{ form.instance.TAMANHO_MAXIMO_ANEXO|filesizeformat|default:"5,0 MB" }}
+                        <i class="bi bi-paperclip"></i>
+                        Máximo: {{ form.instance.TAMANHO_MAXIMO_ANEXO|filesizeformat|default:"5,0 MB" }}
                     </div>
 
-                    <hr style="border-color: var(--detail-divider);">
+                    <hr class="sidebar-divider">
 
                     {% for comentario in comentarios %}
-
-                    <div class="comment-item">
-                        <div class="comment-avatar"><i class="bi bi-person"></i></div>
-                        <div class="comment-body">
-                            <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
-                                <span class="comment-author">{{ comentario.autor.get_full_name|default:comentario.autor.username }}</span>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="comment-date">{{ comentario.criado_em|date:"d/m/Y H:i" }}</span>
-                                    {% if perms.tarefas.delete_comentario or user.is_superuser or comentario.autor_id == user.id %}
-                                    <form method="post"
-                                        action="{% url 'tarefas:comentario_excluir' comentario.pk %}"
-                                        class="d-inline"
-                                        onsubmit="return confirm('Excluir este comentário?');">
-                                        {% csrf_token %}
-                                        <button type="submit"
-                                                class="btn btn-sm btn-outline-danger py-0 px-1"
-                                                title="Excluir comentário"
-                                                aria-label="Excluir comentário">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                    {% endif %}
+                        <div class="comment-item">
+                            <div class="comment-avatar"><i class="bi bi-person"></i></div>
+                            <div class="comment-body">
+                                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
+                                    <span class="comment-author">{{ comentario.autor.get_full_name|default:comentario.autor.username }}</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="comment-date">{{ comentario.criado_em|date:"d/m/Y H:i" }}</span>
+                                        {% if perms.tarefas.delete_comentario or user.is_superuser or comentario.autor_id == user.id %}
+                                            <form method="post"
+                                                  action="{% url 'tarefas:comentario_excluir' comentario.pk %}"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Excluir este comentário?');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1"
+                                                        title="Excluir comentário" aria-label="Excluir comentário">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="comment-text">{{ comentario.texto|linebreaksbr }}</div>
+                                <div class="comment-text">{{ comentario.texto|linebreaksbr }}</div>
 
-                            {% if comentario.anexo %}
-                            {% secure_url comentario "anexo" as anexo_url %}
-                            <div class="d-flex align-items-center gap-2 flex-wrap mt-1">
-                                <a href="{{ anexo_url }}" class="comment-attachment" target="_blank" rel="noopener">
-                                    <i class="bi bi-paperclip"></i>{{ comentario.nome_anexo }}
-                                </a>
-                                {% if perms.tarefas.delete_comentario or user.is_superuser or comentario.autor_id == user.id %}
-                                <form method="post"
-                                    action="{% url 'tarefas:comentario_anexo_excluir' comentario.pk %}"
-                                    class="d-inline"
-                                    onsubmit="return confirm('Excluir este arquivo?');">
-                                    {% csrf_token %}
-                                    <button type="submit"
-                                            class="btn btn-sm btn-outline-danger py-0 px-1"
-                                            title="Excluir arquivo"
-                                            aria-label="Excluir arquivo">
-                                        <i class="bi bi-x-lg"></i>
-                                    </button>
-                                </form>
+                                {% if comentario.anexo %}
+                                    {% secure_url comentario "anexo" as anexo_url %}
+                                    <div class="d-flex align-items-center gap-2 flex-wrap mt-1">
+                                        <a href="{{ anexo_url }}" class="comment-attachment" target="_blank" rel="noopener">
+                                            <i class="bi bi-paperclip"></i>{{ comentario.nome_anexo }}
+                                        </a>
+                                        {% if perms.tarefas.delete_comentario or user.is_superuser or comentario.autor_id == user.id %}
+                                            <form method="post"
+                                                  action="{% url 'tarefas:comentario_anexo_excluir' comentario.pk %}"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Excluir este arquivo?');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1"
+                                                        title="Excluir arquivo" aria-label="Excluir arquivo">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
                                 {% endif %}
                             </div>
-                            {% endif %}
                         </div>
-                    </div>
                     {% empty %}
-                    <p class="comment-empty mb-0">Nenhum comentário ainda.</p>
+                        <p class="comment-empty mb-0">Nenhum comentário ainda.</p>
                     {% endfor %}
                 </div>
             </div>
-        </div>           
-        <!-- ═══ Sidebar ═══ -->
+        </div>
+
+        {# ═══ Sidebar ═══ #}
         <div>
-            <!-- Card Detalhes -->
+            {# Detalhes #}
             <div class="detail-card">
                 <div class="detail-card-header">
                     <h6 class="detail-card-title"><i class="bi bi-info-circle me-2"></i>Detalhes</h6>
                 </div>
                 <div class="detail-card-body">
 
-                    <!-- ★ STATUS COM ALTERAÇÃO INLINE ★ -->
+                    {# Status com alteração inline #}
                     <div class="sidebar-field">
                         <div class="sidebar-label">Status</div>
                         <div class="status-changer" id="statusChanger">
@@ -466,21 +151,21 @@
                                     title="Clique para alterar o status">
                                 <span class="status-dot status-dot-{{ object.status }}" id="statusDot"></span>
                                 <span id="statusDisplay">{{ object.get_status_display }}</span>
-                                <i class="bi bi-chevron-expand ms-auto" style="font-size:0.7rem; opacity:0.4;"></i>
+                                <i class="bi bi-chevron-expand ms-auto" style="font-size:.7rem;opacity:.4;"></i>
                             </button>
 
                             <div class="status-dropdown" id="statusDropdown">
                                 {% for key, label in status_choices %}
-                                <button type="button"
-                                        class="status-option {% if key == object.status %}active{% endif %}"
-                                        data-status="{{ key }}"
-                                        data-label="{{ label }}">
-                                    <span class="status-dot status-dot-{{ key }}"></span>
-                                    {{ label }}
-                                    {% if key == object.status %}
-                                    <i class="bi bi-check2 ms-auto" style="color:#6366f1;"></i>
-                                    {% endif %}
-                                </button>
+                                    <button type="button"
+                                            class="status-option {% if key == object.status %}active{% endif %}"
+                                            data-status="{{ key }}"
+                                            data-label="{{ label }}">
+                                        <span class="status-dot status-dot-{{ key }}"></span>
+                                        {{ label }}
+                                        {% if key == object.status %}
+                                            <i class="bi bi-check2 ms-auto" style="color:#6366f1;"></i>
+                                        {% endif %}
+                                    </button>
                                 {% endfor %}
                             </div>
 
@@ -503,8 +188,7 @@
                         <div class="sidebar-label">Responsável</div>
                         <p class="sidebar-value">
                             <i class="bi bi-person-check"></i>
-                            {% if object.responsavel %}{{ object.responsavel.get_full_name|default:object.responsavel.username }}
-                            {% else %}Não atribuído{% endif %}
+                            {% if object.responsavel %}{{ object.responsavel.get_full_name|default:object.responsavel.username }}{% else %}Não atribuído{% endif %}
                         </p>
                     </div>
 
@@ -512,9 +196,23 @@
                         <div class="sidebar-label">Participantes</div>
                         <div class="d-flex flex-wrap gap-1">
                             {% for p in object.participantes.all %}
-                            <span class="participant-tag">{{ p.get_full_name|default:p.username }}</span>
+                                <span class="participant-tag">{{ p.get_full_name|default:p.username }}</span>
                             {% empty %}
-                            <span style="font-size:0.78rem;color:var(--detail-text-muted);">Nenhum participante</span>
+                                <span class="sidebar-empty">Nenhum participante</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# ★ Grupos com acesso ★ #}
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">Grupos com acesso</div>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for grupo in object.grupos_com_acesso.all %}
+                                <span class="participant-tag group-tag" title="Membros do grupo {{ grupo.name }} podem ver esta tarefa">
+                                    <i class="bi bi-people-fill"></i>{{ grupo.name }}
+                                </span>
+                            {% empty %}
+                                <span class="sidebar-empty">Nenhum grupo vinculado</span>
                             {% endfor %}
                         </div>
                     </div>
@@ -534,9 +232,7 @@
                         <p class="sidebar-value">
                             <i class="bi bi-calendar-event"></i>
                             {{ object.prazo|date:"d/m/Y H:i"|default:"Não definido" }}
-                            {% if object.atrasada %}
-                            <span class="badge-overdue">Atrasada</span>
-                            {% endif %}
+                            {% if object.atrasada %}<span class="badge-overdue">Atrasada</span>{% endif %}
                         </p>
                     </div>
 
@@ -555,201 +251,178 @@
                             Progresso: <span id="progressoPercent">{{ object.progresso }}</span>%
                         </div>
                         <div class="detail-progress-bar mt-1">
-                            <div class="detail-progress-fill
-                                {% if object.progresso == 100 %}bg-success
-                                {% elif object.progresso >= 50 %}bg-primary
-                                {% else %}bg-warning{% endif %}"
-                                id="progressoBar"
-                                style="width: {{ object.progresso }}%"></div>
+                            <div class="detail-progress-fill {% if object.progresso == 100 %}bg-success{% elif object.progresso >= 50 %}bg-primary{% else %}bg-warning{% endif %}"
+                                 id="progressoBar"
+                                 style="width: {{ object.progresso }}%"></div>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- Fim Card Detalhes -->
 
-            <!-- ═══ Card de Recorrência (apenas se for recorrente) ═══ -->
+            {# Recorrência #}
             {% if object.recorrente %}
-            <div class="detail-card recurrence-card">
-                <div class="detail-card-header">
-                    <h6 class="detail-card-title">
-                        <i class="bi bi-arrow-repeat me-2" style="color:#6366f1;"></i>
-                        Recorrência
-                    </h6>
-                    {% if object.data_fim_recorrencia and object.data_fim_recorrencia >= today %}
-                        <span class="recurrence-status-active">
-                            <i class="bi bi-circle-fill" style="font-size:0.5rem;"></i> Ativa
-                        </span>
-                    {% else %}
-                        <span class="recurrence-status-finished">
-                            <i class="bi bi-circle-fill" style="font-size:0.5rem;"></i> Encerrada
-                        </span>
-                    {% endif %}
-                </div>
-                <div class="detail-card-body">
-
-                    <div class="sidebar-field">
-                        <div class="sidebar-label">Frequência</div>
-                        <p class="sidebar-value">
-                            <span class="recurrence-icon-wrap">
-                                <i class="bi bi-calendar3"></i>
+                <div class="detail-card recurrence-card">
+                    <div class="detail-card-header">
+                        <h6 class="detail-card-title">
+                            <i class="bi bi-arrow-repeat me-2" style="color:#6366f1;"></i>Recorrência
+                        </h6>
+                        {% if object.data_fim_recorrencia and object.data_fim_recorrencia >= today %}
+                            <span class="recurrence-status-active">
+                                <i class="bi bi-circle-fill" style="font-size:.5rem;"></i> Ativa
                             </span>
-                            {{ object.get_frequencia_recorrencia_display|default:"Não definida" }}
-                        </p>
+                        {% else %}
+                            <span class="recurrence-status-finished">
+                                <i class="bi bi-circle-fill" style="font-size:.5rem;"></i> Encerrada
+                            </span>
+                        {% endif %}
                     </div>
+                    <div class="detail-card-body">
 
-                    <div class="sidebar-field">
-                        <div class="sidebar-label">Repetir até</div>
-                        <p class="sidebar-value">
-                            <span class="recurrence-icon-wrap">
-                                <i class="bi bi-calendar-check"></i>
-                            </span>
-                            {% if object.data_fim_recorrencia %}
-                                {{ object.data_fim_recorrencia|date:"d/m/Y" }}
-                                {% if object.data_fim_recorrencia >= today %}
-                                    <small class="text-muted ms-1">
-                                        ({{ object.data_fim_recorrencia|timeuntil }} restantes)
-                                    </small>
+                        <div class="sidebar-field">
+                            <div class="sidebar-label">Frequência</div>
+                            <p class="sidebar-value">
+                                <span class="recurrence-icon-wrap"><i class="bi bi-calendar3"></i></span>
+                                {{ object.get_frequencia_recorrencia_display|default:"Não definida" }}
+                            </p>
+                        </div>
+
+                        <div class="sidebar-field">
+                            <div class="sidebar-label">Repetir até</div>
+                            <p class="sidebar-value">
+                                <span class="recurrence-icon-wrap"><i class="bi bi-calendar-check"></i></span>
+                                {% if object.data_fim_recorrencia %}
+                                    {{ object.data_fim_recorrencia|date:"d/m/Y" }}
+                                    {% if object.data_fim_recorrencia >= today %}
+                                        <small class="text-muted ms-1">({{ object.data_fim_recorrencia|timeuntil }} restantes)</small>
+                                    {% else %}
+                                        <small class="text-muted ms-1">(encerrada há {{ object.data_fim_recorrencia|timesince }})</small>
+                                    {% endif %}
                                 {% else %}
-                                    <small class="text-muted ms-1">
-                                        (encerrada há {{ object.data_fim_recorrencia|timesince }})
-                                    </small>
+                                    Sem data limite
                                 {% endif %}
-                            {% else %}
-                                Sem data limite
-                            {% endif %}
-                        </p>
-                    </div>
-
-                    {% if object.tarefa_pai %}
-                    <hr class="sidebar-divider">
-                    <div class="sidebar-field">
-                        <div class="sidebar-label">Tarefa Original</div>
-                        <p class="sidebar-value">
-                            <i class="bi bi-link-45deg"></i>
-                            <a href="{% url 'tarefas:tarefa_detail' object.tarefa_pai.pk %}"
-                               style="color:#6366f1; text-decoration:none;">
-                                {{ object.tarefa_pai.titulo|truncatechars:35 }}
-                            </a>
-                        </p>
-                    </div>
-                    {% endif %}
-
-                    {% if object.tarefas_filhas.exists %}
-                    <hr class="sidebar-divider">
-                    <div class="sidebar-field">
-                        <div class="sidebar-label">
-                            Ocorrências geradas
-                            <span class="comment-count ms-1">{{ object.tarefas_filhas.count }}</span>
+                            </p>
                         </div>
-                        <div class="d-flex flex-wrap gap-1 mt-1">
-                            {% for filha in object.tarefas_filhas.all|slice:":5" %}
-                            <a href="{% url 'tarefas:tarefa_detail' filha.pk %}"
-                               class="participant-tag" style="text-decoration:none;"
-                               title="{{ filha.titulo }} - {{ filha.data_inicio|date:'d/m/Y' }}">
-                                <i class="bi bi-calendar-event"></i>
-                                {{ filha.data_inicio|date:"d/m" }}
-                            </a>
-                            {% endfor %}
-                            {% if object.tarefas_filhas.count > 5 %}
-                            <span class="participant-tag" style="opacity:0.7;">
-                                +{{ object.tarefas_filhas.count|add:"-5" }}
-                            </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endif %}
 
+                        {% if object.tarefa_pai %}
+                            <hr class="sidebar-divider">
+                            <div class="sidebar-field">
+                                <div class="sidebar-label">Tarefa Original</div>
+                                <p class="sidebar-value">
+                                    <i class="bi bi-link-45deg"></i>
+                                    <a href="{% url 'tarefas:tarefa_detail' object.tarefa_pai.pk %}"
+                                       style="color:#6366f1;text-decoration:none;">
+                                        {{ object.tarefa_pai.titulo|truncatechars:35 }}
+                                    </a>
+                                </p>
+                            </div>
+                        {% endif %}
+
+                        {% if object.tarefas_filhas.exists %}
+                            <hr class="sidebar-divider">
+                            <div class="sidebar-field">
+                                <div class="sidebar-label">
+                                    Ocorrências geradas
+                                    <span class="comment-count ms-1">{{ object.tarefas_filhas.count }}</span>
+                                </div>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    {% for filha in object.tarefas_filhas.all|slice:":5" %}
+                                        <a href="{% url 'tarefas:tarefa_detail' filha.pk %}"
+                                           class="participant-tag" style="text-decoration:none;"
+                                           title="{{ filha.titulo }} - {{ filha.data_inicio|date:'d/m/Y' }}">
+                                            <i class="bi bi-calendar-event"></i>
+                                            {{ filha.data_inicio|date:"d/m" }}
+                                        </a>
+                                    {% endfor %}
+                                    {% if object.tarefas_filhas.count > 5 %}
+                                        <span class="participant-tag" style="opacity:.7;">
+                                            +{{ object.tarefas_filhas.count|add:"-5" }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
             {% endif %}
-            <!-- Fim Card Recorrência -->
 
-            <!-- Histórico -->
+            {# Histórico #}
             {% if historicos %}
-            <div class="detail-card" id="historicoCard">
-                <div class="detail-card-header">
-                    <h6 class="detail-card-title"><i class="bi bi-clock-history me-2"></i>Histórico</h6>
-                    <span class="comment-count">{{ historicos|length }}</span>
-                </div>
-                <div style="max-height: 400px; overflow-y: auto;" id="historicoList">
-                {% for h in historicos %}
-                <div class="history-item">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        {# 🛡️ BLINDAGEM 2: Autor com diferenciação visual para "Sistema" #}
-                        {% if h.alterado_por %}
-                            <span class="history-author" title="Usuário responsável pela alteração">
-                                {{ h.alterado_por.get_full_name|default:h.alterado_por.username }}
-                            </span>
-                        {% else %}
-                            <span class="history-author-system"
-                                  title="Registro automático ou anterior ao rastreamento de autoria">
-                                <i class="bi bi-robot"></i> Sistema
-                            </span>
-                        {% endif %}
-                        <span class="history-date">{{ h.data_alteracao|date:"d/m/Y H:i" }}</span>
+                <div class="detail-card" id="historicoCard">
+                    <div class="detail-card-header">
+                        <h6 class="detail-card-title"><i class="bi bi-clock-history me-2"></i>Histórico</h6>
+                        <span class="comment-count">{{ historicos|length }}</span>
                     </div>
-                    <div class="history-change">
-                        {# 🛡️ BLINDAGEM 4: Fallback de ícone/cor para registros antigos sem metadata #}
-                        <i class="bi {{ h.icone|default:'bi-clock-history' }} me-1"
-                           style="color:{{ h.cor|default:'#6b7280' }}; font-size:0.75rem;"></i>
-                        {% if h.tipo_alteracao == 'status' %}
-                            {{ h.valor_anterior }}
-                            <span class="history-arrow">→</span>
-                            <strong>{{ h.valor_novo }}</strong>
-                        {% elif h.tipo_alteracao == 'criacao' %}
-                            <strong>{{ h.descricao }}</strong>
-                        {% else %}
-                            {{ h.descricao }}
-                        {% endif %}
+                    <div style="max-height:400px;overflow-y:auto;" id="historicoList">
+                        {% for h in historicos %}
+                            <div class="history-item">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    {% if h.alterado_por %}
+                                        <span class="history-author" title="Usuário responsável pela alteração">
+                                            {{ h.alterado_por.get_full_name|default:h.alterado_por.username }}
+                                        </span>
+                                    {% else %}
+                                        <span class="history-author-system"
+                                              title="Registro automático ou anterior ao rastreamento de autoria">
+                                            <i class="bi bi-robot"></i> Sistema
+                                        </span>
+                                    {% endif %}
+                                    <span class="history-date">{{ h.data_alteracao|date:"d/m/Y H:i" }}</span>
+                                </div>
+                                <div class="history-change">
+                                    <i class="bi {{ h.icone|default:'bi-clock-history' }} me-1"
+                                       style="color:{{ h.cor|default:'#6b7280' }};font-size:.75rem;"></i>
+                                    {% if h.tipo_alteracao == 'status' %}
+                                        {{ h.valor_anterior }}
+                                        <span class="history-arrow">→</span>
+                                        <strong>{{ h.valor_novo }}</strong>
+                                    {% elif h.tipo_alteracao == 'criacao' %}
+                                        <strong>{{ h.descricao }}</strong>
+                                    {% else %}
+                                        {{ h.descricao }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
                     </div>
                 </div>
-                {% endfor %}
-            </div>
             {% endif %}
-        </div> 
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // ═══════════════════════════════════════════════════════════════
-    // STATUS CHANGER — Alterar status via AJAX
-    // ═══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function () {
+    var toggleBtn = document.getElementById('statusToggleBtn');
+    if (!toggleBtn) return;
 
-    var toggleBtn  = document.getElementById('statusToggleBtn');
-    var dropdown   = document.getElementById('statusDropdown');
-    var display    = document.getElementById('statusDisplay');
-    var dot        = document.getElementById('statusDot');
-    var feedback   = document.getElementById('statusFeedback');
+    var dropdown        = document.getElementById('statusDropdown');
+    var display         = document.getElementById('statusDisplay');
+    var dot             = document.getElementById('statusDot');
+    var feedback        = document.getElementById('statusFeedback');
     var progressBar     = document.getElementById('progressoBar');
     var progressPercent = document.getElementById('progressoPercent');
     var dataAtualiz     = document.getElementById('dataAtualizacao');
     var changer         = document.getElementById('statusChanger');
 
-    if (!toggleBtn) return;
+    var csrfToken     = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    var ajaxUrl       = "{% url 'tarefas:alterar_status_tarefa' object.pk %}";
+    var currentStatus = '{{ object.status|escapejs }}';
+    var isLoading     = false;
+    var userName      = '{{ request.user.get_full_name|default:request.user.username|escapejs }}' || 'Sistema';
 
-    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    var ajaxUrl   = "{% url 'tarefas:alterar_status_tarefa' object.pk %}";
-    var currentStatus = '{{ object.status }}';
-    var isLoading = false;
-
-    // 🛡️ BLINDAGEM 3: Fallback defensivo no nome do usuário
-    var userName = '{{ request.user.get_full_name|default:request.user.username|escapejs }}' || 'Sistema';
-
-    toggleBtn.addEventListener('click', function(e) {
+    toggleBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         if (!isLoading) dropdown.classList.toggle('show');
     });
 
-    document.addEventListener('click', function(e) {
-        if (!changer.contains(e.target)) {
-            dropdown.classList.remove('show');
-        }
+    document.addEventListener('click', function (e) {
+        if (!changer.contains(e.target)) dropdown.classList.remove('show');
     });
 
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') dropdown.classList.remove('show');
     });
 
@@ -758,22 +431,34 @@ document.addEventListener('DOMContentLoaded', function() {
         feedback.style.display = 'none';
     }
 
-    dropdown.querySelectorAll('.status-option').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+    function setLoading(on) {
+        isLoading = on;
+        toggleBtn.style.opacity = on ? '0.5' : '1';
+        toggleBtn.style.pointerEvents = on ? 'none' : 'auto';
+    }
+
+    function itemHistorico(anterior, novo, dataStr) {
+        return '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                   '<span class="history-author">' + userName + '</span>' +
+                   '<span class="history-date">' + dataStr + '</span>' +
+               '</div>' +
+               '<div class="history-change">' + anterior +
+                   '<span class="history-arrow">→</span><strong>' + novo + '</strong>' +
+               '</div>';
+    }
+
+    dropdown.querySelectorAll('.status-option').forEach(function (btn) {
+        btn.addEventListener('click', function () {
             var novoStatus = this.dataset.status;
-            var novoLabel  = this.dataset.label;
 
             if (novoStatus === currentStatus || isLoading) {
                 dropdown.classList.remove('show');
                 return;
             }
 
-            var statusAnteriorDisplay = display.textContent;
-
-            isLoading = true;
+            var statusAnterior = display.textContent;
+            setLoading(true);
             dropdown.classList.remove('show');
-            toggleBtn.style.opacity = '0.5';
-            toggleBtn.style.pointerEvents = 'none';
             limparFeedback();
 
             fetch(ajaxUrl, {
@@ -785,108 +470,81 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: 'status=' + encodeURIComponent(novoStatus)
             })
-            .then(function(resp) { return resp.json(); })
-            .then(function(data) {
-                isLoading = false;
-                toggleBtn.style.opacity = '1';
-                toggleBtn.style.pointerEvents = 'auto';
+            .then(function (resp) { return resp.json(); })
+            .then(function (data) {
+                setLoading(false);
 
-                if (data.ok) {
-                    currentStatus = data.novo_status;
-
-                    display.textContent = data.novo_status_display;
-                    dot.className = 'status-dot status-dot-' + data.novo_status;
-
-                    dropdown.querySelectorAll('.status-option').forEach(function(opt) {
-                        opt.classList.remove('active');
-                        var chk = opt.querySelector('.bi-check2');
-                        if (chk) chk.remove();
-
-                        if (opt.dataset.status === data.novo_status) {
-                            opt.classList.add('active');
-                            var icon = document.createElement('i');
-                            icon.className = 'bi bi-check2 ms-auto';
-                            icon.style.color = '#6366f1';
-                            opt.appendChild(icon);
-                        }
-                    });
-
-                    if (data.progresso !== undefined) {
-                        progressPercent.textContent = data.progresso;
-                        progressBar.style.width = data.progresso + '%';
-                        progressBar.className = 'detail-progress-fill';
-                        if (data.progresso == 100) progressBar.classList.add('bg-success');
-                        else if (data.progresso >= 50) progressBar.classList.add('bg-primary');
-                        else progressBar.classList.add('bg-warning');
-                    }
-
-                    if (data.data_atualizacao) {
-                        dataAtualiz.innerHTML = '<i class="bi bi-clock-history"></i> ' + data.data_atualizacao;
-                    }
-
-                    var histList = document.getElementById('historicoList');
-                    var agora = new Date();
-                    var dataStr = agora.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'})
-                                + ' '
-                                + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-
-                    if (histList) {
-                        var novoItem = document.createElement('div');
-                        novoItem.className = 'history-item';
-                        novoItem.style.animation = 'statusFadeIn 0.3s ease';
-                        novoItem.innerHTML =
-                            '<div class="d-flex justify-content-between align-items-center mb-1">' +
-                                '<span class="history-author">' + userName + '</span>' +
-                                '<span class="history-date">' + dataStr + '</span>' +
-                            '</div>' +
-                            '<div class="history-change">' +
-                                statusAnteriorDisplay +
-                                '<span class="history-arrow">→</span>' +
-                                '<strong>' + data.novo_status_display + '</strong>' +
-                            '</div>';
-
-                        histList.insertBefore(novoItem, histList.firstChild);
-                    } else {
-                        var sidebar = document.querySelector('.detail-grid > div:last-child');
-                        if (sidebar) {
-                            var card = document.createElement('div');
-                            card.className = 'detail-card';
-                            card.id = 'historicoCard';
-                            card.innerHTML =
-                                '<div class="detail-card-header">' +
-                                    '<h6 class="detail-card-title"><i class="bi bi-clock-history me-2"></i>Histórico</h6>' +
-                                '</div>' +
-                                '<div style="max-height:300px;overflow-y:auto;" id="historicoList">' +
-                                    '<div class="history-item" style="animation:statusFadeIn 0.3s ease;">' +
-                                        '<div class="d-flex justify-content-between align-items-center mb-1">' +
-                                            '<span class="history-author">' + userName + '</span>' +
-                                            '<span class="history-date">' + dataStr + '</span>' +
-                                        '</div>' +
-                                        '<div class="history-change">' +
-                                            statusAnteriorDisplay +
-                                            '<span class="history-arrow">→</span>' +
-                                            '<strong>' + data.novo_status_display + '</strong>' +
-                                        '</div>' +
-                                    '</div>' +
-                                '</div>';
-                            sidebar.appendChild(card);
-                        }
-                    }
-
-                    feedback.innerHTML = '<i class="bi bi-check-circle-fill"></i> Status atualizado!';
-                    feedback.className = 'status-feedback success';
-                    setTimeout(limparFeedback, 3500);
-
-                } else {
+                if (!data.ok) {
                     feedback.innerHTML = '<i class="bi bi-exclamation-circle-fill"></i> ' + (data.error || 'Erro ao atualizar.');
                     feedback.className = 'status-feedback error';
                     setTimeout(limparFeedback, 4000);
+                    return;
                 }
+
+                currentStatus = data.novo_status;
+                display.textContent = data.novo_status_display;
+                dot.className = 'status-dot status-dot-' + data.novo_status;
+
+                dropdown.querySelectorAll('.status-option').forEach(function (opt) {
+                    opt.classList.remove('active');
+                    var chk = opt.querySelector('.bi-check2');
+                    if (chk) chk.remove();
+
+                    if (opt.dataset.status === data.novo_status) {
+                        opt.classList.add('active');
+                        var icon = document.createElement('i');
+                        icon.className = 'bi bi-check2 ms-auto';
+                        icon.style.color = '#6366f1';
+                        opt.appendChild(icon);
+                    }
+                });
+
+                if (data.progresso !== undefined) {
+                    progressPercent.textContent = data.progresso;
+                    progressBar.style.width = data.progresso + '%';
+                    progressBar.className = 'detail-progress-fill ' +
+                        (data.progresso == 100 ? 'bg-success' : data.progresso >= 50 ? 'bg-primary' : 'bg-warning');
+                }
+
+                if (data.data_atualizacao) {
+                    dataAtualiz.innerHTML = '<i class="bi bi-clock-history"></i> ' + data.data_atualizacao;
+                }
+
+                var agora = new Date();
+                var dataStr = agora.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) +
+                              ' ' + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+                var conteudo = itemHistorico(statusAnterior, data.novo_status_display, dataStr);
+                var histList = document.getElementById('historicoList');
+
+                if (histList) {
+                    var novoItem = document.createElement('div');
+                    novoItem.className = 'history-item';
+                    novoItem.style.animation = 'statusFadeIn .3s ease';
+                    novoItem.innerHTML = conteudo;
+                    histList.insertBefore(novoItem, histList.firstChild);
+                } else {
+                    var sidebar = document.querySelector('.detail-grid > div:last-child');
+                    if (sidebar) {
+                        var card = document.createElement('div');
+                        card.className = 'detail-card';
+                        card.id = 'historicoCard';
+                        card.innerHTML =
+                            '<div class="detail-card-header">' +
+                                '<h6 class="detail-card-title"><i class="bi bi-clock-history me-2"></i>Histórico</h6>' +
+                            '</div>' +
+                            '<div style="max-height:400px;overflow-y:auto;" id="historicoList">' +
+                                '<div class="history-item" style="animation:statusFadeIn .3s ease;">' + conteudo + '</div>' +
+                            '</div>';
+                        sidebar.appendChild(card);
+                    }
+                }
+
+                feedback.innerHTML = '<i class="bi bi-check-circle-fill"></i> Status atualizado!';
+                feedback.className = 'status-feedback success';
+                setTimeout(limparFeedback, 3500);
             })
-            .catch(function() {
-                isLoading = false;
-                toggleBtn.style.opacity = '1';
-                toggleBtn.style.pointerEvents = 'auto';
+            .catch(function () {
+                setLoading(false);
                 feedback.innerHTML = '<i class="bi bi-wifi-off"></i> Erro de conexão. Tente novamente.';
                 feedback.className = 'status-feedback error';
                 setTimeout(limparFeedback, 4000);
@@ -896,3 +554,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+

@@ -1,54 +1,105 @@
 
-<!-- templates/tarefas/relatorio_tarefas.html -->
-{% extends "base.html" %}
-{% load static relatorio_tags %}
+{% extends "tarefas/base_tarefas.html" %}
+{% load relatorio_tags %}
 
 {% block title %}Relatório de Tarefas{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/tarefas/relatorios.css' %}">
-{% endblock %}
-
-{% block content %}
+{% block tarefas_content %}
 <div class="rel-wrapper">
 
-    <!-- Header -->
     <div class="rel-header">
         <div>
-            <h1 class="rel-title">
-                <i class="bi bi-file-earmark-bar-graph me-2"></i>Relatório de Tarefas
-            </h1>
-            <p class="rel-subtitle">Análise e exportação de dados</p>
+            <h1 class="rel-title"><i class="bi bi-bar-chart-line me-2"></i>Relatório de Tarefas</h1>
+            <p class="rel-subtitle">Acompanhamento e análise de tarefas do sistema</p>
         </div>
         <div class="rel-actions">
-            <button class="btn btn-sm btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFilters" title="Filtros e Exportação">
-                <i class="bi bi-funnel-fill me-1"></i><span class="d-none d-sm-inline">Filtros</span>
-            </button>
-            <a href="{% url 'tarefas:gerar_relatorio' %}" class="btn btn-sm btn-outline-primary" title="Gerador Avançado">
-                <i class="bi bi-file-earmark-plus me-1"></i><span class="d-none d-md-inline">Gerar Novo</span>
-            </a>
-            <a href="{% url 'tarefas:dashboard' %}" class="btn btn-sm btn-outline-secondary" title="Dashboard">
-                <i class="bi bi-speedometer2 me-1"></i><span class="d-none d-md-inline">Dashboard</span>
-            </a>
-            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Lista de Tarefas">
-                <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline">Lista</span>
+            <a href="{% url 'tarefas:dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
             </a>
         </div>
     </div>
 
-    {% include 'tarefas/partials/_filter_tags.html' %}
+    {# ===== KPIs ===== #}
+    <div class="rel-kpi-grid">
+        <div class="rel-kpi">
+            <div class="rel-kpi-label">Total</div>
+            <div class="rel-kpi-value">{{ total_tarefas|default:0 }}</div>
+        </div>
+        <div class="rel-kpi rel-kpi--success">
+            <div class="rel-kpi-label">Concluídas</div>
+            <div class="rel-kpi-value">{{ tarefas_concluidas|default:0 }}</div>
+        </div>
+        <div class="rel-kpi rel-kpi--warning">
+            <div class="rel-kpi-label">Em andamento</div>
+            <div class="rel-kpi-value">{{ tarefas_andamento|default:0 }}</div>
+        </div>
+        <div class="rel-kpi rel-kpi--danger">
+            <div class="rel-kpi-label">Atrasadas</div>
+            <div class="rel-kpi-value">{{ tarefas_atrasadas|default:0 }}</div>
+        </div>
+    </div>
 
-    <!-- Tabela -->
+    {# ===== GRÁFICOS ===== #}
+    <div class="rel-charts-grid">
+        <div class="rel-card">
+            <div class="rel-card-header"><h6 class="rel-card-title">Por status</h6></div>
+            <div class="rel-card-body">
+                <div class="rel-chart-container"><canvas id="chartStatus"></canvas></div>
+            </div>
+        </div>
+        <div class="rel-card">
+            <div class="rel-card-header"><h6 class="rel-card-title">Por prioridade</h6></div>
+            <div class="rel-card-body">
+                <div class="rel-chart-container"><canvas id="chartPrioridade"></canvas></div>
+            </div>
+        </div>
+    </div>
+    {{ chart_status|json_script:"chart-status-data" }}
+    {{ chart_prioridade|json_script:"chart-prioridade-data" }}
+
+    {# ===== TABELA ===== #}
     <div class="rel-card">
         <div class="rel-card-header">
-            <h6 class="rel-card-title"><i class="bi bi-table me-2"></i>Resultados</h6>
-            <span class="rel-count">{{ total_tarefas|default:0 }}</span>
+            <h6 class="rel-card-title"><i class="bi bi-table me-2"></i>Detalhamento</h6>
+            <span class="rel-count">{{ object_list|length }}</span>
         </div>
 
+        {# Filtros (GET) #}
+        <form method="get" class="rel-filter-bar">
+            <select name="status" class="form-select form-select-sm rel-filter-select">
+                <option value="">Todos os status</option>
+                {% for val, label in status_choices %}
+                <option value="{{ val }}" {% if current_filters.status == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <select name="prioridade" class="form-select form-select-sm rel-filter-select">
+                <option value="">Todas as prioridades</option>
+                {% for val, label in prioridade_choices %}
+                <option value="{{ val }}" {% if current_filters.prioridade == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <select name="responsavel" class="form-select form-select-sm rel-filter-select">
+                <option value="">Todos os responsáveis</option>
+                {% for u in responsaveis %}
+                <option value="{{ u.pk }}" {% if current_filters.responsavel == u.pk|stringformat:"d" %}selected{% endif %}>
+                    {{ u.get_full_name|default:u.username }}
+                </option>
+                {% endfor %}
+            </select>
+            <input type="text" name="projeto" value="{{ current_filters.projeto }}"
+                   class="form-control form-control-sm rel-filter-select" style="max-width:180px;" placeholder="Projeto">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Limpar">
+                <i class="bi bi-x-lg"></i>
+            </a>
+        </form>
+
+        {% if object_list %}
         <div class="rel-table-scroll">
             <table class="rel-table rel-table-sticky">
                 <thead>
                     <tr>
+                        <th>#</th>
                         <th>Título</th>
                         <th>Responsável</th>
                         <th>Status</th>
@@ -59,238 +110,103 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for tarefa in tarefas %}
+                    {% for t in object_list %}
                     <tr>
-                        <td data-label="Título"><span class="rel-table-title">{{ tarefa.titulo }}</span></td>
+                        <td data-label="#">{{ forloop.counter }}</td>
+                        <td data-label="Título" class="rel-table-title">
+                            <a href="{% url 'tarefas:tarefa_detail' t.pk %}" class="task-link">{{ t.titulo }}</a>
+                        </td>
                         <td data-label="Responsável">
-                            {% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}
+                            {% if t.responsavel %}{{ t.responsavel.get_full_name|default:t.responsavel.username }}{% else %}—{% endif %}
                         </td>
                         <td data-label="Status">
-                            <span class="rel-badge" style="--badge-bg: {% status_color tarefa.status 'bg' %}; --badge-fg: {% status_color tarefa.status 'fg' %};">
-                                {{ tarefa.get_status_display }}
+                            <span class="rel-badge" style="--badge-bg: {% status_color t.status 'bg' %}; --badge-fg: {% status_color t.status 'fg' %};">
+                                {{ t.get_status_display }}
                             </span>
                         </td>
                         <td data-label="Prioridade">
-                            <span class="rel-badge" style="--badge-bg: {% priority_color tarefa.prioridade 'bg' %}; --badge-fg: {% priority_color tarefa.prioridade 'fg' %};">
-                                {{ tarefa.get_prioridade_display }}
+                            <span class="rel-badge" style="--badge-bg: {% priority_color t.prioridade 'bg' %}; --badge-fg: {% priority_color t.prioridade 'fg' %};">
+                                {{ t.get_prioridade_display }}
                             </span>
                         </td>
-                        <td data-label="Projeto">{{ tarefa.projeto|default:"—" }}</td>
-                        <td data-label="Criação">{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
-                        <td data-label="Prazo">{{ tarefa.prazo|date:"d/m/Y"|default:"—" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7">
-                            <div class="rel-empty">
-                                <i class="bi bi-inbox d-block mb-2" style="font-size:2rem;opacity:0.4;"></i>
-                                Nenhuma tarefa encontrada. Use os filtros para refinar.
-                            </div>
-                        </td>
+                        <td data-label="Projeto">{% if t.projeto %}{{ t.projeto }}{% else %}—{% endif %}</td>
+                        <td data-label="Criação">{{ t.data_criacao|date:"d/m/Y" }}</td>
+                        <td data-label="Prazo">{% if t.prazo %}{{ t.prazo|date:"d/m/Y" }}{% else %}—{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        {% else %}
+        <div class="rel-empty"><i class="bi bi-inbox d-block mb-2"></i>Nenhuma tarefa encontrada.</div>
+        {% endif %}
 
-        {% include 'tarefas/partials/_quick_export.html' %}
-    </div>
-
-    <!-- Gráficos -->
-    <div class="rel-charts-grid">
-        <div class="rel-card">
-            <div class="rel-card-header">
-                <h6 class="rel-card-title"><i class="bi bi-pie-chart me-2"></i>Por Status</h6>
-            </div>
-            <div class="rel-card-body">
-                <div class="rel-chart-container">
-                    <canvas id="statusChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="rel-card">
-            <div class="rel-card-header">
-                <h6 class="rel-card-title"><i class="bi bi-bar-chart me-2"></i>Por Prioridade</h6>
-            </div>
-            <div class="rel-card-body">
-                <div class="rel-chart-container">
-                    <canvas id="priorityChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Offcanvas: Filtros e Exportação -->
-<div class="offcanvas offcanvas-end rel-offcanvas" tabindex="-1" id="offcanvasFilters">
-    <div class="offcanvas-header">
-        <h5 class="offcanvas-title"><i class="bi bi-sliders me-2"></i>Filtros e Exportação</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body">
-
-        <form method="get">
-            <div class="rel-section-label"><i class="bi bi-funnel me-1"></i> Filtrar</div>
-
-            <div class="mb-3">
-                <label for="status" class="form-label">Status</label>
-                <select name="status" id="status" class="form-select form-select-sm">
-                    <option value="">Todos</option>
-                    {% for key, value in status_choices %}
-                    <option value="{{ key }}" {% if current_filters.status == key %}selected{% endif %}>{{ value }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label for="responsavel" class="form-label">Responsável</label>
-                <select name="responsavel" id="responsavel" class="form-select form-select-sm">
-                    <option value="">Todos</option>
-                    {% for user in responsaveis %}
-                    <option value="{{ user.pk }}" {% if current_filters.responsavel == user.pk|stringformat:"d" %}selected{% endif %}>
-                        {{ user.get_full_name|default:user.username }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="d-grid gap-2 mb-4">
-                <button type="submit" class="btn btn-sm btn-primary">
-                    <i class="bi bi-check-lg me-1"></i> Aplicar
-                </button>
-                <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-x-lg me-1"></i> Limpar
-                </a>
-            </div>
+        {# Exportação (POST mantém os filtros atuais) #}
+        {% if pode_exportar %}
+        <form method="post" class="rel-quick-export">
+            {% csrf_token %}
+            {% for k, v in current_filters.items %}{% if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+            <span class="rel-quick-export-label">Exportar:</span>
+            <button type="submit" name="export_format" value="pdf"  class="rel-export-btn rel-export-btn--pdf"  style="width:auto"><i class="bi bi-file-earmark-pdf"></i>PDF</button>
+            <button type="submit" name="export_format" value="xlsx" class="rel-export-btn rel-export-btn--xlsx" style="width:auto"><i class="bi bi-file-earmark-excel"></i>Excel</button>
+            <button type="submit" name="export_format" value="docx" class="rel-export-btn rel-export-btn--docx" style="width:auto"><i class="bi bi-file-earmark-word"></i>Word</button>
+            <button type="submit" name="export_format" value="csv"  class="rel-export-btn rel-export-btn--csv"  style="width:auto"><i class="bi bi-filetype-csv"></i>CSV</button>
         </form>
-
-        <hr>
-
-        <div class="rel-section-label"><i class="bi bi-download me-1"></i> Exportar</div>
-        <div class="rel-export-grid">
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf&{{ request.GET.urlencode }}" class="rel-export-btn rel-export-btn--pdf">
-                <i class="bi bi-file-earmark-pdf"></i> PDF
-            </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=xlsx&{{ request.GET.urlencode }}" class="rel-export-btn rel-export-btn--xlsx">
-                <i class="bi bi-file-earmark-excel"></i> Excel
-            </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx&{{ request.GET.urlencode }}" class="rel-export-btn rel-export-btn--docx">
-                <i class="bi bi-file-earmark-word"></i> Word
-            </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv&{{ request.GET.urlencode }}" class="rel-export-btn rel-export-btn--csv">
-                <i class="bi bi-filetype-csv"></i> CSV
-            </a>
-        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+{{ block.super }}
+{# Remova a linha abaixo se o base.html já carrega o Chart.js #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    let statusData = [], priorityData = [];
-    try {
-        statusData   = JSON.parse('{{ status_data_json|escapejs }}'   || '[]');
-        priorityData = JSON.parse('{{ priority_data_json|escapejs }}' || '[]');
-    } catch(e) { console.error('Erro ao parsear dados:', e); }
-
-    const isDark    = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-    const textColor = isDark ? '#8b8ea8' : '#6b7280';
-
-    Chart.defaults.color       = textColor;
-    Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
-
-    const statusColors = {
-        'pendente': '#f59e0b', 'andamento': '#3b82f6', 'concluida': '#22c55e',
-        'atrasada': '#ef4444', 'cancelada': '#64748b', 'pausada': '#8b5cf6'
+(function () {
+    const COLORS = {
+        pendente: '#f59e0b', em_andamento: '#3b82f6', andamento: '#3b82f6',
+        concluida: '#22c55e', atrasada: '#ef4444', pausada: '#8b5cf6', cancelada: '#64748b',
+        urgente: '#dc2626', alta: '#ef4444', media: '#f59e0b', baixa: '#22c55e'
     };
-    const prioColors = { 'alta': '#ef4444', 'media': '#f59e0b', 'baixa': '#22c55e' };
+    const charts = [];
+    const textColor = () => getComputedStyle(document.body).color;
 
-    const statusCtx = document.getElementById('statusChart');
-    if (statusCtx && statusData.length) {
-        new Chart(statusCtx, {
+    function build(canvasId, dataId) {
+        const el = document.getElementById(canvasId);
+        const raw = document.getElementById(dataId);
+        if (!el || !raw || typeof Chart === 'undefined') return;
+
+        const data = JSON.parse(raw.textContent || '[]');
+        if (!data.reduce((s, d) => s + d.value, 0)) {
+            el.parentElement.innerHTML = '<div class="rel-empty">Sem dados para exibir.</div>';
+            return;
+        }
+        charts.push(new Chart(el, {
             type: 'doughnut',
             data: {
-                labels: statusData.map(i => i.label),
+                labels: data.map(d => d.label),
                 datasets: [{
-                    data: statusData.map(i => i.total),
-                    backgroundColor: statusData.map(i => statusColors[i.key] || '#94a3b8'),
-                    borderWidth: 0,
-                    hoverOffset: 6,
+                    data: data.map(d => d.value),
+                    backgroundColor: data.map(d => COLORS[d.slug] || '#94a3b8'),
+                    borderWidth: 0
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '60%',
-                plugins: {
-                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14, font: { size: 11 } } },
-                    tooltip: {
-                        callbacks: {
-                            label: function(ctx) {
-                                const item = statusData[ctx.dataIndex];
-                                return ` ${item.label}: ${item.total} (${item.percentual}%)`;
-                            }
-                        }
-                    }
-                }
+                cutout: '62%',
+                plugins: { legend: { position: 'bottom', labels: { color: textColor(), usePointStyle: true } } }
             }
-        });
+        }));
     }
 
-    const prioCtx = document.getElementById('priorityChart');
-    if (prioCtx && priorityData.length) {
-        new Chart(prioCtx, {
-            type: 'bar',
-            data: {
-                labels: priorityData.map(i => i.label),
-                datasets: [{
-                    label: 'Tarefas',
-                    data: priorityData.map(i => i.total),
-                    backgroundColor: priorityData.map(i => prioColors[i.key] || '#94a3b8'),
-                    borderRadius: 6,
-                    borderSkipped: false,
-                    barThickness: 40,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(ctx) {
-                                const item = priorityData[ctx.dataIndex];
-                                return ` ${item.label}: ${item.total} (${item.percentual}%)`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { stepSize: 1 } }
-                }
-            }
-        });
-    }
+    build('chartStatus', 'chart-status-data');
+    build('chartPrioridade', 'chart-prioridade-data');
 
-    window.addEventListener('beforeprint', function() {
-        document.querySelectorAll('.rel-chart-container canvas').forEach(function(canvas) {
-            if (canvas.parentNode.querySelector('.print-chart-img')) return;
-            try {
-                const img = document.createElement('img');
-                img.src = canvas.toDataURL('image/png');
-                img.className = 'print-chart-img';
-                img.style.cssText = 'width:100%; height:auto; display:none;';
-                canvas.parentNode.appendChild(img);
-            } catch(e) { console.error('Erro ao converter gráfico para imagem:', e); }
-        });
-    });
-});
+    new MutationObserver(() => charts.forEach(c => {
+        c.options.plugins.legend.labels.color = textColor();
+        c.update();
+    })).observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+})();
 </script>
 {% endblock %}
-
-

@@ -1,553 +1,236 @@
-
-<!-- templates/tarefas/tarefa_form.html -->
-{% extends 'base.html' %}
+{% extends "tarefas/base_tarefas.html" %}
 {% load static %}
 
 {% block title %}{% if object.pk %}Editar{% else %}Nova{% endif %} Tarefa{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
-<style>
-/* =============================================================================
-   FORMULÁRIO DE TAREFAS — Tema Claro / Escuro
-   ============================================================================= */
-
-:root,
-[data-bs-theme="light"] {
-    --form-bg: #f4f6fb;
-    --form-card-bg: #ffffff;
-    --form-card-border: #e2e6ee;
-    --form-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    --form-text: #1a1a2e;
-    --form-text-muted: #6b7280;
-    --form-divider: #edf0f5;
-    --form-section-icon-bg: rgba(99, 102, 241, 0.1);
-    --form-section-icon-color: #6366f1;
-    --form-input-bg: #ffffff;
-    --form-input-border: #d1d5e0;
-    --form-input-focus-border: #6366f1;
-    --form-input-focus-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
-    --form-help-text: #9ca3af;
-}
-
-[data-bs-theme="dark"] {
-    --form-bg: #13131f;
-    --form-card-bg: #1e1e2e;
-    --form-card-border: #2e2e44;
-    --form-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    --form-text: #e2e4f0;
-    --form-text-muted: #8b8ea8;
-    --form-divider: #2e2e44;
-    --form-section-icon-bg: rgba(99, 102, 241, 0.15);
-    --form-section-icon-color: #818cf8;
-    --form-input-bg: #252536;
-    --form-input-border: #3a3a52;
-    --form-input-focus-border: #6366f1;
-    --form-input-focus-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-    --form-help-text: #6b6e85;
-}
-
-/* ── Layout ── */
-.form-wrapper {
-    padding: 1rem;
-    min-height: calc(100vh - 60px);
-}
-
-@media (min-width: 768px) {
-    .form-wrapper {
-        padding: 1.5rem 2rem;
-    }
-}
-
-/* ── Header ── */
-.form-header {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-}
-
-.form-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--form-text);
-    margin-bottom: 0.15rem;
-}
-
-.form-subtitle {
-    font-size: 0.85rem;
-    color: var(--form-text-muted);
-    margin: 0;
-}
-
-.form-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-shrink: 0;
-}
-
-/* ── Form Card ── */
-.form-card {
-    background: var(--form-card-bg);
-    border: 1px solid var(--form-card-border);
-    border-radius: 12px;
-    box-shadow: var(--form-card-shadow);
-    overflow: hidden;
-    max-width: 860px;
-    margin: 0 auto;
-}
-
-.form-card-body {
-    padding: 1.5rem;
-}
-
-@media (min-width: 768px) {
-    .form-card-body {
-        padding: 2rem 2.5rem;
-    }
-}
-
-/* ── Section Titles ── */
-.form-section {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    margin-bottom: 1rem;
-    padding-bottom: 0.65rem;
-    border-bottom: 1px solid var(--form-divider);
-}
-
-.form-section-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: var(--form-section-icon-bg);
-    color: var(--form-section-icon-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9rem;
-    flex-shrink: 0;
-}
-
-.form-section-title {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--form-text);
-    margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-}
-
-/* ── Labels ── */
-.form-field-label {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--form-text);
-    margin-bottom: 0.35rem;
-}
-
-[data-bs-theme="dark"] .form-field-label {
-    color: #e2e4f0 !important; /* Cor clara explícita para tema escuro */
-}
-
-[data-bs-theme="light"] .form-field-label {
-    color: #1a1a2e !important; /* Cor escura explícita para tema claro */
-}
-
-.form-field-label .required {
-    color: #ef4444;
-    margin-left: 2px;
-}
-
-/* ── Inputs Override ── */
-.form-card .form-control,
-.form-card .form-select {
-    background: var(--form-input-bg);
-    border-color: var(--form-input-border);
-    color: var(--form-text);
-    font-size: 0.85rem;
-    border-radius: 8px;
-    padding: 0.55rem 0.85rem;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.form-card .form-control:focus,
-.form-card .form-select:focus {
-    border-color: var(--form-input-focus-border);
-    box-shadow: var(--form-input-focus-shadow);
-}
-
-.form-card .form-control::placeholder {
-    color: var(--form-help-text);
-}
-
-.form-card textarea.form-control {
-    min-height: 100px;
-    resize: vertical;
-}
-
-.form-card .form-text {
-    font-size: 0.72rem;
-    color: var(--form-help-text);
-}
-
-.form-card .invalid-feedback {
-    font-size: 0.73rem;
-}
-
-/* ── Switch ── */
-.form-card .form-check-input {
-    background-color: var(--form-input-border);
-    border-color: var(--form-input-border);
-}
-
-.form-card .form-check-input:checked {
-    background-color: #6366f1;
-    border-color: #6366f1;
-}
-
-.form-card .form-check-label {
-    font-size: 0.82rem;
-    color: var(--form-text);
-}
-
-/* ── System Info ── */
-.form-system-info {
-    background: var(--form-section-icon-bg);
-    border-radius: 10px;
-    padding: 1rem 1.25rem;
-}
-
-.form-system-label {
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: var(--form-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
-.form-system-value {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--form-text);
-    margin: 0;
-}
-
-/* ── Footer ── */
-.form-footer {
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--form-divider);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-}
-
-/* ── Select2 Dark Override ── */
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
-    background-color: var(--form-input-bg) !important;
-    border-color: var(--form-input-border) !important;
-    color: var(--form-text) !important;
-}
-
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
-    background-color: var(--form-card-bg) !important;
-    border-color: var(--form-card-border) !important;
-}
-
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted {
-    background-color: #2e2e44 !important;
-}
-
-/* ── Select2 Dark Override ── */
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
-    background-color: var(--form-input-bg) !important;
-    border-color: var(--form-input-border) !important;
-    color: var(--form-text) !important;
-}
-
-/* 🎯 Texto digitado/placeholder dentro do multi-select */
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection__rendered,
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-search__field {
-    color: var(--form-text) !important;
-}
-
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection__placeholder {
-    color: var(--form-help-text) !important;
-}
-
-/* 🏷️ TAGS selecionadas (chips) — multi-select */
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
-    background-color: #3a3a52 !important;
-    border-color: #4a4a68 !important;
-    color: #f0f1f5 !important;
-}
-
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__display {
-    color: #f0f1f5 !important;
-}
-
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
-    color: #e2e4f0 !important;
-    border-color: #4a4a68 !important;
-}
-
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
-    background-color: #ef4444 !important;
-    color: #fff !important;
-}
-
-/* 📋 Dropdown aberto */
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
-    background-color: var(--form-card-bg) !important;
-    border-color: var(--form-card-border) !important;
-}
-
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option {
-    color: var(--form-text) !important;
-}
-
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted,
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected] {
-    background-color: #6366f1 !important;
-    color: #fff !important;
-}
-
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option[aria-selected="true"] {
-    background-color: #2e2e44 !important;
-    color: var(--form-text) !important;
-}
-
-/* 🔍 Campo de busca dentro do dropdown */
-[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field {
-    background-color: var(--form-input-bg) !important;
-    border-color: var(--form-input-border) !important;
-    color: var(--form-text) !important;
-}
-
-</style>
-{% endblock %}
-
-{% block content %}
+{% block tarefas_content %}
 <div class="form-wrapper">
 
-    <!-- Header -->
+    {# ── Header ── #}
     <div class="form-header">
         <div>
             <h1 class="form-title">
                 <i class="bi bi-{% if object.pk %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
                 {% if object.pk %}Editar Tarefa{% else %}Nova Tarefa{% endif %}
             </h1>
-            {% if object.pk %}
-            <p class="form-subtitle">Editando: {{ object.titulo }}</p>
-            {% else %}
-            <p class="form-subtitle">Preencha os campos para criar uma nova tarefa</p>
-            {% endif %}
+            <p class="form-subtitle">
+                {% if object.pk %}Editando: {{ object.titulo }}{% else %}Preencha os campos para criar uma nova tarefa{% endif %}
+            </p>
         </div>
+
         <div class="form-actions">
             <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i> Voltar
             </a>
             {% if object.pk %}
-            <a href="{% url 'tarefas:tarefa_detail' object.pk %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-eye me-1"></i> Detalhes
-            </a>
+                <a href="{% url 'tarefas:tarefa_detail' object.pk %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-eye me-1"></i> Detalhes
+                </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Formulário -->
+    {# ── Card ── #}
     <div class="form-card">
         <div class="form-card-body">
             <form method="post" novalidate>
                 {% csrf_token %}
 
                 {% if form.non_field_errors %}
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    {% for error in form.non_field_errors %}
-                    <p class="mb-0"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</p>
-                    {% endfor %}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {% for error in form.non_field_errors %}
+                            <p class="mb-0"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</p>
+                        {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                    </div>
                 {% endif %}
 
-                <!-- Seção: Informações -->
+                {# ── Informações ── #}
                 <div class="form-section">
                     <span class="form-section-icon"><i class="bi bi-info-circle"></i></span>
                     <h6 class="form-section-title">Informações da Tarefa</h6>
                 </div>
+
                 <div class="row g-3 mb-4">
                     <div class="col-12">
                         <label for="{{ form.titulo.id_for_label }}" class="form-field-label">
                             Título <span class="required">*</span>
                         </label>
                         {{ form.titulo }}
-                        {% for error in form.titulo.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
+                        {% for error in form.titulo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
+
                     <div class="col-12">
                         <label for="{{ form.descricao.id_for_label }}" class="form-field-label">Descrição</label>
                         {{ form.descricao }}
-                        {% for error in form.descricao.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
+                        {% for error in form.descricao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
+
                     <div class="col-12">
                         <label for="{{ form.ata_reuniao.id_for_label }}" class="form-field-label">Atividade da Ata de Reunião</label>
                         {{ form.ata_reuniao }}
-                        <small class="form-text">{{ form.ata_reuniao.help_text }}</small>
-                        {% for error in form.ata_reuniao.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
+                        {% if form.ata_reuniao.help_text %}<small class="form-text">{{ form.ata_reuniao.help_text }}</small>{% endif %}
+                        {% for error in form.ata_reuniao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
                 </div>
 
-                <!-- Seção: Organização -->
+                {# ── Organização e prazos ── #}
                 <div class="form-section">
                     <span class="form-section-icon"><i class="bi bi-diagram-3"></i></span>
                     <h6 class="form-section-title">Organização e Prazos</h6>
                 </div>
+
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <label for="{{ form.responsavel.id_for_label }}" class="form-field-label">Responsável</label>
                         {{ form.responsavel }}
-                        {% for error in form.responsavel.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
+                        {% for error in form.responsavel.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
+
                     <div class="col-md-6">
                         <label for="{{ form.projeto.id_for_label }}" class="form-field-label">Projeto</label>
                         {{ form.projeto }}
-                        {% for error in form.projeto.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
+                        {% for error in form.projeto.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
+
                     <div class="col-12">
                         <label for="{{ form.participantes.id_for_label }}" class="form-field-label">Participantes</label>
                         {{ form.participantes }}
                         <small class="form-text">Selecione um ou mais participantes.</small>
-                        {% for error in form.participantes.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
+                        {% for error in form.participantes.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
+
+                    {% if user.is_superuser or perms.tarefas.manage_grupos_acesso %}
+                        <div class="col-12">
+                            <label for="{{ form.grupos_com_acesso.id_for_label }}" class="form-field-label">Grupos com acesso</label>
+                            {{ form.grupos_com_acesso }}
+                            <small class="form-text">
+                                Somente membros dos grupos selecionados poderão ver esta tarefa,
+                                além do criador, responsável e participantes.
+                            </small>
+                            {% for error in form.grupos_com_acesso.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                    {% endif %}
+
                     <div class="col-md-6">
                         <label for="{{ form.status.id_for_label }}" class="form-field-label">Status</label>
                         {{ form.status }}
+                        {% for error in form.status.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
+
                     <div class="col-md-6">
                         <label for="{{ form.prioridade.id_for_label }}" class="form-field-label">Prioridade</label>
                         {{ form.prioridade }}
+                        {% for error in form.prioridade.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
+
                     <div class="col-md-6">
                         <label for="{{ form.data_inicio.id_for_label }}" class="form-field-label">Data de Início</label>
                         {{ form.data_inicio }}
-                        {% if form.data_inicio.help_text %}
-                        <small class="form-text">{{ form.data_inicio.help_text }}</small>
-                        {% endif %}
-                        {% for error in form.data_inicio.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
+                        {% if form.data_inicio.help_text %}<small class="form-text">{{ form.data_inicio.help_text }}</small>{% endif %}
+                        {% for error in form.data_inicio.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
+
                     <div class="col-md-6">
                         <label for="{{ form.prazo.id_for_label }}" class="form-field-label">Prazo Final</label>
                         {{ form.prazo }}
-                        {% for error in form.prazo.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
+                        {% for error in form.prazo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
+
                     <div class="col-md-6">
                         <label for="{{ form.dias_lembrete.id_for_label }}" class="form-field-label">Dias para Lembrete</label>
                         {{ form.dias_lembrete }}
-                        <small class="form-text">{{ form.dias_lembrete.help_text }}</small>
-                        {% for error in form.dias_lembrete.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
+                        {% if form.dias_lembrete.help_text %}<small class="form-text">{{ form.dias_lembrete.help_text }}</small>{% endif %}
+                        {% for error in form.dias_lembrete.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
                 </div>
 
-                <!-- Seção: Estimativas -->
+                {# ── Estimativas ── #}
                 <div class="form-section">
                     <span class="form-section-icon"><i class="bi bi-clock"></i></span>
                     <h6 class="form-section-title">Estimativas de Tempo</h6>
                 </div>
+
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <label for="{{ form.duracao_prevista.id_for_label }}" class="form-field-label">Duração Prevista</label>
                         {{ form.duracao_prevista }}
-                        <small class="form-text">{{ form.duracao_prevista.help_text }}</small>
+                        {% if form.duracao_prevista.help_text %}<small class="form-text">{{ form.duracao_prevista.help_text }}</small>{% endif %}
+                        {% for error in form.duracao_prevista.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
+
                     <div class="col-md-6">
                         <label for="{{ form.tempo_gasto.id_for_label }}" class="form-field-label">Tempo Gasto</label>
                         {{ form.tempo_gasto }}
-                        <small class="form-text">{{ form.tempo_gasto.help_text }}</small>
+                        {% if form.tempo_gasto.help_text %}<small class="form-text">{{ form.tempo_gasto.help_text }}</small>{% endif %}
+                        {% for error in form.tempo_gasto.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
                 </div>
 
-                <!-- Seção: Recorrência -->
+                {# ── Recorrência ── #}
                 <div class="form-section">
                     <span class="form-section-icon"><i class="bi bi-arrow-repeat"></i></span>
                     <h6 class="form-section-title">Recorrência</h6>
                 </div>
+
                 <div class="mb-4">
                     <div class="form-check form-switch mb-3">
                         {{ form.recorrente }}
-                        <label class="form-check-label" for="id_recorrente">
-                            {{ form.recorrente.label }}
-                        </label>
+                        <label class="form-check-label" for="{{ form.recorrente.id_for_label }}">{{ form.recorrente.label }}</label>
+                        {% for error in form.recorrente.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
-                    <div class="row g-3" id="campos-recorrencia" style="display: none;">
+
+                    <div class="row g-3 d-none" id="campos-recorrencia">
                         <div class="col-md-6">
                             <label for="{{ form.frequencia_recorrencia.id_for_label }}" class="form-field-label">
                                 {{ form.frequencia_recorrencia.label }}
                             </label>
                             {{ form.frequencia_recorrencia }}
+                            {% for error in form.frequencia_recorrencia.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                         </div>
+
                         <div class="col-md-6">
                             <label for="{{ form.data_fim_recorrencia.id_for_label }}" class="form-field-label">
                                 {{ form.data_fim_recorrencia.label }}
                             </label>
                             {{ form.data_fim_recorrencia }}
+                            {% for error in form.data_fim_recorrencia.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                         </div>
                     </div>
                 </div>
 
-                <!-- Info do Sistema (edição) -->
+                {# ── Sistema (só edição) ── #}
                 {% if object.pk %}
-                <div class="form-section">
-                    <span class="form-section-icon"><i class="bi bi-gear"></i></span>
-                    <h6 class="form-section-title">Informações do Sistema</h6>
-                </div>
-                <div class="form-system-info mb-4">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="form-system-label">Criado em</div>
-                            <p class="form-system-value">{{ object.data_criacao|date:"d/m/Y H:i" }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-system-label">Última Atualização</div>
-                            <p class="form-system-value">{{ object.data_atualizacao|date:"d/m/Y H:i" }}</p>
+                    <div class="form-section">
+                        <span class="form-section-icon"><i class="bi bi-gear"></i></span>
+                        <h6 class="form-section-title">Informações do Sistema</h6>
+                    </div>
+
+                    <div class="form-system-info mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-system-label">Criado em</div>
+                                <p class="form-system-value">{{ object.data_criacao|date:"d/m/Y H:i" }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-system-label">Última Atualização</div>
+                                <p class="form-system-value">{{ object.data_atualizacao|date:"d/m/Y H:i" }}</p>
+                            </div>
                         </div>
                     </div>
-                </div>
                 {% endif %}
 
-                <!-- Footer -->
+                {# ── Footer ── #}
                 <div class="form-footer">
                     <div>
                         {% if object.pk %}
-                        <a href="{% url 'tarefas:excluir_tarefa' object.pk %}" class="btn btn-outline-danger btn-sm"
-                           onclick="return confirm('Excluir esta tarefa?')">
-                            <i class="bi bi-trash me-1"></i> Excluir
-                        </a>
+                            <a href="{% url 'tarefas:excluir_tarefa' object.pk %}"
+                               class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash me-1"></i> Excluir
+                            </a>
                         {% endif %}
                     </div>
+
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i>
                         {% if object.pk %}Salvar Alterações{% else %}Criar Tarefa{% endif %}
@@ -560,64 +243,70 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // ─── Flatpickr ────────────────────────────────────────────
-    flatpickr(".datetime-picker", {
-        enableTime: true,
-        dateFormat: "d/m/Y H:i",
-        locale: "pt",
-        time_24hr: true,
-        disableMobile: true
+    {{ block.super }}
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Flatpickr
+        if (typeof flatpickr !== "undefined") {
+            document.querySelectorAll(".datetime-picker").forEach(function (el) {
+                flatpickr(el, {
+                    enableTime: true,
+                    dateFormat: "d/m/Y H:i",
+                    locale: "pt",
+                    time_24hr: true,
+                    disableMobile: true
+                });
+            });
+        }
+
+        // Select2
+        if (window.jQuery && jQuery.fn.select2) {
+            const participantesId = "{{ form.participantes.auto_id|escapejs }}";
+
+            jQuery(".select2-widget").each(function () {
+                const $el = jQuery(this);
+                if ($el.hasClass("select2-hidden-accessible")) return;
+
+                const isParticipantes = this.id === participantesId;
+                $el.select2({
+                    theme: "bootstrap-5",
+                    placeholder: isParticipantes ? "Selecione participantes" : "Selecione...",
+                    allowClear: true,
+                    closeOnSelect: !isParticipantes,
+                    width: "100%"
+                });
+            });
+
+            // Garante Select2 em participantes mesmo sem a classe .select2-widget
+            const participantes = document.getElementById(participantesId);
+            if (participantes && !jQuery(participantes).hasClass("select2-hidden-accessible")) {
+                jQuery(participantes).select2({
+                    theme: "bootstrap-5",
+                    placeholder: "Selecione participantes",
+                    allowClear: true,
+                    closeOnSelect: false,
+                    width: "100%"
+                });
+            }
+        }
+
+        // Recorrência
+        const toggle = document.getElementById("{{ form.recorrente.id_for_label|escapejs }}");
+        const campos = document.getElementById("campos-recorrencia");
+
+        if (toggle && campos) {
+            const atualizar = function () {
+                campos.classList.toggle("d-none", !toggle.checked);
+            };
+            atualizar();
+            toggle.addEventListener("change", atualizar);
+        }
     });
-
-    // ─── Select2 ──────────────────────────────────────────────
-    if (typeof $ !== 'undefined' && $.fn.select2) {
-        $('.select2-widget').select2({
-            theme: 'bootstrap-5',
-            placeholder: "Selecione...",
-            allowClear: true
-        });
-        $('#{{ form.participantes.auto_id }}').select2({
-            theme: 'bootstrap-5',
-            placeholder: "Selecione participantes",
-            allowClear: true,
-            closeOnSelect: false
-        });
-    }
-
-    // ─── Toggle Recorrência (CORRIGIDO) ───────────────────────
-    const toggle = document.getElementById('id_recorrente');
-    const campos = document.getElementById('campos-recorrencia');
-
-    function toggleRecorrencia() {
-        if (!campos || !toggle) {
-            console.warn('[Recorrência] Elementos não encontrados');
-            return;
-        }
-        if (toggle.checked) {
-            // Remove o display:none inline e força flex
-            campos.style.display = 'flex';
-            console.log('[Recorrência] Campos EXIBIDOS');
-        } else {
-            campos.style.display = 'none';
-            console.log('[Recorrência] Campos OCULTADOS');
-        }
-    }
-
-    if (toggle) {
-        // Estado inicial — IMPORTANTE para edição de tarefa já recorrente
-        toggleRecorrencia();
-        // Reage a cliques do usuário
-        toggle.addEventListener('change', toggleRecorrencia);
-    } else {
-        console.error('[Recorrência] Checkbox #id_recorrente não encontrado!');
-    }
-});
-</script>
+    </script>
 {% endblock %}
-
-
-

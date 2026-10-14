@@ -42,7 +42,7 @@ class TarefaForm(forms.ModelForm):
             'data_inicio', 'prazo', 'responsavel', 'participantes',
             'projeto', 'duracao_prevista', 'tempo_gasto',
             'dias_lembrete', 'recorrente', 'frequencia_recorrencia',
-            'data_fim_recorrencia', 'ata_reuniao',
+            'data_fim_recorrencia', 'ata_reuniao', 'grupos_com_acesso',
         ]
         widgets = {
             'titulo': forms.TextInput(attrs={'class': 'form-control'}),
@@ -53,6 +53,9 @@ class TarefaForm(forms.ModelForm):
                 'class': 'form-control datetime-picker',
                 'placeholder': 'Data e hora de início'
             }),
+            'grupos_com_acesso': forms.SelectMultiple(
+                attrs={'class': 'form-select'}
+            ),
             'prazo': forms.DateTimeInput(attrs={
                 'class': 'form-control datetime-picker',
                 'placeholder': 'Prazo final'
@@ -73,6 +76,22 @@ class TarefaForm(forms.ModelForm):
 
         # Filtra usuários ativos para campos de responsável e participantes
         user_qs = User.objects.filter(is_active=True)
+
+        pode_gerenciar_grupos = (
+            self.request
+            and self.request.user.is_authenticated
+            and (
+                self.request.user.is_superuser
+                or self.request.user.has_perm(
+                    'tarefas.manage_grupos_acesso'
+                )
+            )
+        )
+
+        if not pode_gerenciar_grupos:
+            # Campo ausente do formulário: edição não autorizada
+            # não altera os grupos já associados à tarefa.
+            self.fields.pop('grupos_com_acesso', None)
 
         # Se usuário pertence a uma equipe, filtra pela equipe
         if self.request and hasattr(self.request.user, 'equipe') and self.request.user.equipe:

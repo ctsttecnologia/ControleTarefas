@@ -30,6 +30,13 @@ def preparar_contexto_relatorio(queryset):
 
     total = queryset.count()
 
+    # Em andamento (aceita os dois slugs possíveis)
+    em_andamento = queryset.filter(status__in=['em_andamento', 'andamento']).count()
+
+    # Aliases usados pelos templates (web e PDF)
+    def _alias(lista):
+        return [{**i, 'slug': i['key'], 'quantidade': i['total']} for i in lista]
+    
     # Dicionários de labels legíveis
     status_labels = dict(Tarefas.STATUS_CHOICES)
     prioridade_labels = dict(Tarefas.PRIORIDADE_CHOICES)
@@ -87,8 +94,13 @@ def preparar_contexto_relatorio(queryset):
         'total_tarefas': total,
         'status_data': status_data,
         'prioridade_data': prioridade_data,
+        'analise_status': _alias(status_data),
+        'analise_prioridade': _alias(prioridade_data),
         'atrasadas': atrasadas,
         'concluidas': concluidas,
+        'tarefas_atrasadas': atrasadas,
+        'tarefas_concluidas': concluidas,
+        'tarefas_andamento': em_andamento,
         'tarefas': queryset,
     }
 
@@ -101,17 +113,21 @@ def gerar_pdf_relatorio(context):
     """
     Gera um relatório em PDF usando WeasyPrint (prioridade) ou xhtml2pdf (fallback).
     """
+    request = context.get('request')
+    base_url = request.build_absolute_uri('/') if request else None
     try:
         from weasyprint import HTML
 
         html_string = render_to_string('reports/relatorio_tarefas.html', context)
-        pdf_file = HTML(string=html_string).write_pdf()
+
+        pdf_file = HTML(string=html_string, base_url=base_url).write_pdf()
 
     except ImportError:
         try:
             from xhtml2pdf import pisa
 
             html_string = render_to_string('reports/relatorio_tarefas.html', context)
+
             result = io.BytesIO()
             pisa_status = pisa.CreatePDF(io.StringIO(html_string), dest=result)
             if pisa_status.err:

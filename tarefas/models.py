@@ -1,5 +1,6 @@
 # tarefas/models.py
 from datetime import timedelta
+from django.contrib.auth.models import Group
 
 from django.conf import settings
 from django.db import models
@@ -18,6 +19,7 @@ class Tarefas(models.Model):
     """
 
     STATUS_CHOICES = [
+        ('programada',  'programada'),
         ('pendente',  'Pendente'),
         ('andamento', 'Em Andamento'),
         ('pausada',   'Pausada'),
@@ -137,6 +139,13 @@ class Tarefas(models.Model):
         'Recorrência encerrada', default=False,
         help_text='Marca True quando a recorrência atingiu data_fim ou limite máximo.',
     )
+    grupos_com_acesso = models.ManyToManyField(
+        'auth.Group',
+        blank=True,
+        related_name='tarefas_com_acesso',
+        verbose_name='Grupos com acesso',
+    )
+
 
     class Meta:
         verbose_name = 'Tarefa'
@@ -144,9 +153,12 @@ class Tarefas(models.Model):
         ordering = ['-data_criacao']
         # Além das permissões padrão (add/change/delete/view_tarefas)
         permissions = [
-            ('view_all_tarefas', 'Pode ver todas as tarefas da filial (sem filtro)'),
+            ('view_all_tarefas', 'Pode ver todas as tarefas da filial'),
+            ('view_group_tarefas', 'Pode ver tarefas associadas aos seus grupos'),
             ('export_tarefas', 'Pode exportar relatórios de tarefas (LGPD)'),
             ('view_desempenho_equipe', 'Pode ver desempenho/ranking da equipe'),
+            ('manage_grupos_acesso', 'Pode definir os grupos com acesso às tarefas'),
+
         ]
         indexes = [
             models.Index(fields=['status', 'prazo']),

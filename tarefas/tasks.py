@@ -347,9 +347,8 @@ def _marcar_atrasadas_logica(agora=None):
 
     return Tarefas.objects.filter(
         prazo__lt=agora,
-        status__in=('pendente', 'andamento', 'pausada'),
+        status__in=('programada', 'pendente', 'andamento', 'pausada'),
     )
-
 
 @shared_task(name='tarefas.marcar_tarefas_atrasadas')
 def marcar_tarefas_atrasadas():

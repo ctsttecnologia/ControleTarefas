@@ -186,6 +186,11 @@ class TarefasAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAd
 
     # ---------- ACTIONS ----------
 
+    @admin.action(description=_('Marcar selecionadas como: PROGRAMADA'))
+    def marcar_como_programda(self, request, queryset):
+        updated = queryset.update(status='programada', programada_em=timezone.now())
+        self.message_user(request, _(f'{updated} tarefas marcadas como programada.'))
+
     @admin.action(description=_('Marcar selecionadas como: CONCLUÍDA'))
     def marcar_como_concluidas(self, request, queryset):
         updated = queryset.update(status='concluida', concluida_em=timezone.now())
