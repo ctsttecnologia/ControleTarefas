@@ -5,7 +5,9 @@ Models do LTCAT - Laudo Técnico das Condições Ambientais do Trabalho
 Seguindo
 """
 
+import base64
 import os
+import uuid
 
 from django.conf import settings
 from django.db import models
@@ -13,6 +15,8 @@ from django.urls import reverse
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model
 from datetime import date
+
+from django.utils import timezone
 from core.upload import delete_old_file, safe_delete_file
 from core.validators import SecureFileValidator, SecureImageValidator
 from logradouro.constant import ESTADOS_BRASIL
@@ -23,6 +27,11 @@ from seguranca_trabalho.models import Funcao
 from cliente.models import Cliente
 from core.mixins import make_upload_path, sanitize_image
 from core.magic_utils import get_mime_type
+from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from core.models import AssinavelMixin
+
+
 
 User = get_user_model()
 
@@ -85,12 +94,42 @@ CODIGO_GFIP_CHOICES = [
 ]
 
 TIPO_PERICULOSIDADE_CHOICES = [
-    ('explosivos', 'Explosivos (NR-16, Anexo 01)'),
-    ('inflamaveis', 'Inflamáveis (NR-16, Anexo 02)'),
-    ('violencia', 'Exposição a Roubos/Violência (NR-16, Anexo 03)'),
-    ('eletricidade', 'Eletricidade (NR-16, Anexo 04)'),
-    ('transito', 'Agentes de Trânsito (NR-16, Anexo 06)'),
-    ('radiacao', 'Radiações Ionizantes (NR-16)'),
+    (
+        'explosivos',
+        'Explosivos (NR-16, Anexo I)',
+    ),
+    (
+        'inflamaveis',
+        'Inflamáveis (NR-16, Anexo II)',
+    ),
+    (
+        'violencia',
+        'Roubos ou violência física — segurança pessoal ou patrimonial '
+        '(NR-16, Anexo III)',
+    ),
+    (
+        'eletricidade',
+        'Energia elétrica (NR-16, Anexo IV)',
+    ),
+    (
+        'motocicleta',
+        'Atividades com motocicleta (NR-16, Anexo V)',
+    ),
+    (
+        'transito',
+        'Atividades dos agentes das autoridades de trânsito '
+        '(NR-16, Anexo VI)',
+    ),
+    (
+        'radiacao',
+        'Radiações ionizantes ou substâncias radioativas '
+        '(NR-16, anexo específico)',
+    ),
+    (
+        'outro',
+        'Outra situação — análise e fundamentação específica '
+        '(sem enquadramento automático)',
+    ),
 ]
 
 PRIORIDADE_CHOICES = [
@@ -162,6 +201,30 @@ SECAO_LTCAT_CHOICES = [
     # Customizado
     ('custom', 'Seção Personalizada'),
 ]
+
+TIPO_LAUDO_CHOICES = [('coletivo', 'Coletivo (por GHE)'), ('individual', 'Individual')]
+
+TIPO_HABILITACAO_CHOICES = [
+    ('eng_seg', 'Engenheiro(a) de Segurança do Trabalho'),
+    ('med_trab', 'Médico(a) do Trabalho'),
+]
+
+TIPO_MEDIDA_CHOICES = [('epc', 'EPC'), ('epi', 'EPI'), ('administrativa', 'Administrativa')]
+
+# Agentes que geram enquadramento previdenciário (Anexo IV, Decreto 3.048/99)
+TIPOS_RISCO_PREVIDENCIARIOS = {'fisico', 'quimico', 'biologico'}
+
+GFIP_APOSENTADORIA = {'02': 15, '03': 20, '04': 25, '06': 15, '07': 20, '08': 25}
+
+MAX_ASSINATURA_BYTES = 2 * 1024 * 1024
+
+
+
+
+# Assinatura
+def caminho_assinatura_ltcat(instance, filename):
+    # sem nome da pessoa no path (LGPD)
+    return f"ltcat_assinatura/{uuid.uuid4().hex}.png"
 
 
 # =============================================================================
@@ -351,8 +414,13 @@ class LocalPrestacaoServicoLTCAT(BaseModel):
         return ', '.join(partes) or 'Endereço não cadastrado'
 
 
-class ProfissionalResponsavelLTCAT(BaseModel):
+class ProfissionalResponsavelLTCAT(AssinavelMixin, BaseModel):
     """Profissionais responsáveis pela elaboração do LTCAT"""
+
+    # Sobrescreve o campo do mixin para manter o diretório protegido atual
+    assinatura_imagem = models.ImageField(
+        'Assinatura', upload_to=caminho_assinatura_ltcat, null=True, blank=True)
+    # data_assinatura e ip_assinatura vêm do mixin
 
     funcionario = models.ForeignKey(
         Funcionario, on_delete=models.SET_NULL,
@@ -385,17 +453,73 @@ class ProfissionalResponsavelLTCAT(BaseModel):
         validators=[SecureImageValidator('ltcat_assinatura')],  # Validação completa
     )
 
+    tipo_habilitacao = models.CharField('Habilitação legal', max_length=10,
+                                        choices=TIPO_HABILITACAO_CHOICES, blank=True)
+    numero_art = models.CharField('Nº ART/RRT', max_length=50, blank=True)
+    nit = models.CharField('PIS/NIT', max_length=14, blank=True)  # dado pessoal — exibir mascarado
+
+
     class Meta:
         db_table = 'ltcat_profissional_responsavel'
         verbose_name = 'Profissional Responsável LTCAT'
         verbose_name_plural = 'Profissionais Responsáveis LTCAT'
         ordering = ['nome_completo']
 
+    # ── Protocolo do core ──
+    def pode_ser_assinado(self):
+        # Libera nova assinatura depois de "Remover assinatura" (zera data_assinatura)
+        return self.ativo and self.data_assinatura is None
+
+
     def __str__(self):
         return f"{self.nome_completo} - {self.funcao}"
 
+    def salvar_assinatura(self, assinatura_base64=None, imagem_upload=None, ip=None):
+        """Versão endurecida: valida o MIME real, o tamanho e sanitiza a imagem."""
+        if not self.pode_ser_assinado():
+            raise ValidationError("Este profissional já possui assinatura registrada.")
+        if imagem_upload:
+            if imagem_upload.size > MAX_ASSINATURA_BYTES:
+                raise ValidationError("Arquivo maior que 2MB.")
+            raw = imagem_upload.read()
+        elif assinatura_base64:
+            try:
+                _, dados = assinatura_base64.split(';base64,', 1)
+                raw = base64.b64decode(dados, validate=True)
+            except (ValueError, TypeError):
+                raise ValidationError("Assinatura inválida ou corrompida.")
+        else:
+            raise ValidationError("Nenhuma assinatura foi informada.")
+
+        if len(raw) > MAX_ASSINATURA_BYTES:
+            raise ValidationError("Assinatura muito grande.")
+        if get_mime_type(raw) not in ('image/png', 'image/jpeg'):
+            raise ValidationError("Formato inválido. Envie PNG ou JPEG.")
+
+        arquivo = ContentFile(raw, name='assinatura.png')
+        SecureImageValidator('ltcat_assinatura')(arquivo)
+        arquivo.seek(0)
+
+        if self.assinatura_imagem:
+            self.assinatura_imagem.delete(save=False)
+        self.assinatura_imagem.save('assinatura.png', sanitize_image(arquivo), save=False)
+        self.data_assinatura = timezone.now()
+        self.ip_assinatura = ip
+        self.save(update_fields=['assinatura_imagem', 'data_assinatura',
+                                 'ip_assinatura', 'atualizado_em'])
+
+    def limpar_assinatura(self):
+        if self.assinatura_imagem:
+            self.assinatura_imagem.delete(save=False)
+        self.assinatura_imagem = None
+        self.data_assinatura = None
+        self.ip_assinatura = None
+        self.save(update_fields=['assinatura_imagem', 'data_assinatura',
+                                 'ip_assinatura', 'atualizado_em'])
+
+
     def save(self, *args, **kwargs):
-        delete_old_file(self, 'assinatura_imagem')           # ← adicionar
+        delete_old_file(self, 'assinatura_imagem') 
 
         if self.funcionario and not self.nome_completo:
             self.nome_completo = self.funcionario.nome_completo
@@ -414,6 +538,11 @@ class ProfissionalResponsavelLTCAT(BaseModel):
     def delete(self, *args, **kwargs):
         safe_delete_file(self, 'assinatura_imagem')
         super().delete(*args, **kwargs)
+
+    @property
+    def nit_mascarado(self):
+        return f"***.{self.nit[-6:-2]}.**-*" if self.nit else ''
+    
 # =============================================================================
 # DOCUMENTO LTCAT (Principal)
 # =============================================================================
@@ -423,20 +552,19 @@ class LTCATDocumento(BaseModel):
 
     # ── Empresa CONTRATANTE (Cliente) ──
     empresa = models.ForeignKey(
-        Cliente, on_delete=models.CASCADE,
+        Cliente, on_delete=models.PROTECT,
         related_name='documentos_ltcat',
         related_query_name='documento_ltcat',
         verbose_name='Empresa Contratante (Cliente)',
-        default=None
     )
 
     # ── Empresa CONTRATADA (CETEST)
     empresa_contratada = models.ForeignKey(
-        'EmpresaLTCAT', on_delete=models.SET_NULL,
+        'EmpresaLTCAT', on_delete=models.PROTECT,
         null=True, blank=True,
         related_name='documentos_ltcat_contratada',
-        verbose_name='Empresa Contratada (CETEST)',
-        help_text='Empresa que elabora o LTCAT (ex: CETEST)'
+        verbose_name='Empresa Contratada',
+        help_text='Empresa que elabora o LTCAT',
     )
 
     # ── Locais de Prestação (MÚLTIPLOS)
@@ -454,7 +582,6 @@ class LTCATDocumento(BaseModel):
     )
 
     # ── Restante dos campos permanece IGUAL ──
-    codigo_documento = models.CharField('Código do Documento', max_length=50, unique=True)
     titulo = models.CharField(
         'Título', max_length=300,
         default='LTCAT - Laudo Técnico das Condições Ambientais do Trabalho'
@@ -483,6 +610,18 @@ class LTCATDocumento(BaseModel):
     )
     observacoes = models.TextField('Observações', blank=True)
 
+    codigo_documento = models.CharField('Código', max_length=50, unique=True, editable=False)
+    tipo_laudo = models.CharField('Tipo de Laudo', max_length=10,
+                                  choices=TIPO_LAUDO_CHOICES, default='coletivo')
+    periodo_avaliado_inicio = models.DateField('Período avaliado — início', null=True, blank=True)
+    periodo_avaliado_fim = models.DateField('Período avaliado — fim', null=True, blank=True)
+    data_avaliacao_campo = models.DateField('Data da avaliação em campo', null=True, blank=True)
+    local_avaliacao = models.CharField('Local da avaliação', max_length=200, blank=True)
+    metodologia_geral = models.TextField(
+        'Metodologia e documentos consultados', blank=True,
+        help_text='Inspeções, entrevistas, medições, normas (NHO/NR-15) e documentos considerados.',
+    )
+
     class Meta:
         db_table = 'ltcat_documento'
         verbose_name = 'Documento LTCAT'
@@ -499,6 +638,23 @@ class LTCATDocumento(BaseModel):
 
     def get_absolute_url(self):
         return reverse('ltcat:documento_detail', kwargs={'pk': self.pk})
+
+    def save(self, *args, **kwargs):
+        if not self.codigo_documento:
+            self.codigo_documento = self._gerar_codigo()
+        super().save(*args, **kwargs)
+
+    def _gerar_codigo(self):
+            from django.db import transaction
+            ano = (self.data_elaboracao or date.today()).year
+            prefixo = f"LTCAT-{self.filial_id}-{ano}-"
+            with transaction.atomic():
+                ultimo = (LTCATDocumento.objects.select_for_update()
+                        .filter(codigo_documento__startswith=prefixo)
+                        .order_by('-codigo_documento')
+                        .values_list('codigo_documento', flat=True).first())
+                seq = int(ultimo.rsplit('-', 1)[-1]) + 1 if ultimo else 1
+            return f"{prefixo}{seq:04d}"
 
     # ── Novas properties ──
     @property
@@ -565,6 +721,36 @@ class LTCATDocumento(BaseModel):
         ]
         return (sum(itens) / len(itens)) * 100
 
+    @property
+    def pendencias_legais(self):
+        """Lista o que impede a aprovação (requisitos da IN 128/2022)."""
+        p = []
+        if not self.responsavel_info.filter(
+            profissional__tipo_habilitacao__in=['eng_seg', 'med_trab']).exists():
+            p.append('Responsável técnico habilitado (Eng. Seg. ou Médico do Trabalho)')
+        if not self.metodologia_geral:
+            p.append('Metodologia e documentos consultados')
+        if not self.data_avaliacao_campo:
+            p.append('Data da avaliação em campo')
+        funcoes = self.funcoes.filter(ativo=True)
+        if not funcoes.exists():
+            p.append('Ao menos uma função/GHE')
+        if funcoes.exclude(conclusoes__isnull=False).exists():
+            p.append('Conclusão para todas as funções')
+        if not self.avaliacoes_periculosidade.exists():
+            p.append('Avaliação de periculosidade (NR-16)')
+        if ReconhecimentoRisco.objects.filter(
+            funcao__ltcat_documento=self, tipo_avaliacao='quantitativo',
+        ).filter(models.Q(equipamento='') | models.Q(data_calibracao__isnull=True)).exists():
+            p.append('Equipamento/calibração nas avaliações quantitativas')
+        return p
+
+    def delete(self, *args, **kwargs):
+        """Soft delete — guarda legal mínima de 20 anos."""
+        self.ativo = False
+        self.status = 'cancelado'
+        self.save(update_fields=['ativo', 'status', 'atualizado_em'])
+
 
 # =============================================================================
 # DOCUMENTO LTCAT — MODELS FILHOS (sem campo filial, usam _filial_lookup)
@@ -629,6 +815,12 @@ class RevisaoLTCAT(models.Model):
 
     def __str__(self):
         return f"Rev. {self.numero_revisao:02d} - {self.descricao[:50]}"
+
+    def get_absolute_url(self):
+        return reverse(
+            'ltcat:ltcat_detail',
+            kwargs={'pk': self.ltcat_documento_id},
+        )
 
 class DocumentoLocalPrestacao(models.Model):
     """
@@ -882,6 +1074,14 @@ class ReconhecimentoRisco(models.Model):
     criado_em = models.DateTimeField('Criado em', auto_now_add=True)
     atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
 
+    metodologia = models.CharField('Metodologia/Norma', max_length=200, blank=True,
+                                   help_text='Ex: NHO 01 Fundacentro, NR-15 Anexo 1')
+    equipamento = models.CharField('Equipamento (marca/modelo/nº série)', max_length=200, blank=True)
+    data_calibracao = models.DateField('Data da calibração', null=True, blank=True)
+    habitual_permanente = models.BooleanField('Habitual e permanente?', default=False)
+    codigo_esocial = models.CharField('Código eSocial (Tabela 24)', max_length=20, blank=True)
+
+
     # ── Filtro por filial via FK do avô ──
     _filial_lookup = 'funcao__ltcat_documento__filial_id'
     objects = FilialManager()
@@ -894,6 +1094,19 @@ class ReconhecimentoRisco(models.Model):
 
     def __str__(self):
         return f"{self.get_tipo_risco_display()} - {self.agente}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.tipo_avaliacao == 'quantitativo':
+            faltando = {k: 'Obrigatório em avaliação quantitativa.'
+                        for k in ('resultado_avaliacao', 'unidade_medida', 'metodologia')
+                        if not getattr(self, k)}
+            if faltando:
+                raise ValidationError(faltando)
+
+    @property
+    def enquadravel_previdencia(self):
+        return self.tipo_risco in TIPOS_RISCO_PREVIDENCIARIOS
 
     @property
     def cor_tipo_risco(self):
@@ -1192,15 +1405,14 @@ class AnexoLTCAT(models.Model):
 
         # Auto-numerar (lógica existente mantida)
         if not self.numero_romano:
-            existentes = AnexoLTCAT.objects.filter(
-                ltcat_documento=self.ltcat_documento
-            ).exclude(pk=self.pk).count()
-            numeros = [
-                'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII',
-                'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'
-            ]
-            idx = existentes
-            self.numero_romano = numeros[idx] if idx < len(numeros) else str(idx + 1)
+            usados = set(AnexoLTCAT.objects.filter(ltcat_documento=self.ltcat_documento)
+                         .exclude(pk=self.pk).values_list('numero_romano', flat=True))
+            romanos = ['I','II','III','IV','V','VI','VII','VIII','IX','X',
+                       'XI','XII','XIII','XIV','XV']
+            self.numero_romano = next(
+                (r for r in romanos if r not in usados),
+                str(len(usados) + 1),
+            )
 
         # Auto-ordem (lógica existente mantida)
         if self.ordem == 0 and not self.pk:
@@ -1243,4 +1455,35 @@ class TabelaRuidoNR15(models.Model):
 
     def __str__(self):
         return f"{self.nivel_ruido_db} dB(A) - {self.max_exposicao_diaria}"
+
+class MedidaControle(models.Model):
+    """EPC/EPI por risco — exigência do Art. 58 §2º Lei 8.213/91."""
+    risco = models.ForeignKey(ReconhecimentoRisco, on_delete=models.CASCADE,
+                              related_name='medidas', verbose_name='Risco')
+    tipo = models.CharField('Tipo', max_length=15, choices=TIPO_MEDIDA_CHOICES)
+    descricao = models.CharField('Descrição', max_length=300)
+    numero_ca = models.CharField('Nº do CA', max_length=20, blank=True)
+    eficaz = models.BooleanField('Eficaz?', default=False)
+    atende_nr06 = models.BooleanField(
+        'Atende requisitos NR-06 (uso, troca, higienização, treinamento)?', default=False)
+    evidencias = models.TextField('Evidências de eficácia / limitações', blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    _filial_lookup = 'risco__funcao__ltcat_documento__filial_id'
+    objects = FilialManager()
+
+    class Meta:
+        db_table = 'ltcat_medida_controle'
+        verbose_name = 'Medida de Controle'
+        verbose_name_plural = 'Medidas de Controle'
+        ordering = ['tipo', 'descricao']
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.tipo == 'epi' and not self.numero_ca:
+            raise ValidationError({'numero_ca': 'CA é obrigatório para EPI.'})
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — {self.descricao}"
 

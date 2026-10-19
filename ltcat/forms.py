@@ -1,19 +1,21 @@
 
 # ltcat/forms.py
 
-import puremagic
+import os
+import re
+
 from django import forms
+from django.core.exceptions import ValidationError
 from core.forms import SecureUploadFormMixin  
 from cliente.models import Cliente
-from core.validators import SecureFileValidator
 from .models import (
-    LTCATDocumento, RevisaoLTCAT, FuncaoAnalisada, ReconhecimentoRisco,
+    GFIP_APOSENTADORIA, TIPOS_RISCO_PREVIDENCIARIOS, LTCATDocumento, MedidaControle, RevisaoLTCAT, FuncaoAnalisada, ReconhecimentoRisco,
     AvaliacaoPericulosidade, ConclusaoFuncao, RecomendacaoTecnica,
     AnexoLTCAT, EmpresaLTCAT, LocalPrestacaoServicoLTCAT,
     ProfissionalResponsavelLTCAT, DocumentoLocalPrestacao,
 )
 from core.mixins import sanitize_image
-
+from .mixins import LTCATChildUniqueMixin
 
 class BaseFormMixin:
     """Aplica classes Bootstrap 5 em todos os campos do form."""
@@ -60,7 +62,6 @@ class EmpresaLTCATForm(BaseFormMixin, forms.ModelForm):
             'descricao_cnae': forms.Textarea(attrs={'rows': 2}),
             'atividade_principal': forms.Textarea(attrs={'rows': 2}),
         }
-        exclude = ["filial"]
 
     def __init__(self, *args, filial=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -118,8 +119,6 @@ class EmpresaLTCATForm(BaseFormMixin, forms.ModelForm):
         return instance
         
 
-# No forms.py, DEPOIS de ProfissionalResponsavelForm, ADICIONE:
-
 class LocalPrestacaoServicoForm(BaseFormMixin, forms.ModelForm):
     """Form para cadastro de Local de Prestação de Serviço LTCAT."""
 
@@ -174,7 +173,18 @@ class LocalPrestacaoServicoForm(BaseFormMixin, forms.ModelForm):
 class ProfissionalResponsavelForm(BaseFormMixin, forms.ModelForm):
     class Meta:
         model = ProfissionalResponsavelLTCAT
-        exclude = ["filial"]
+        exclude = ['filial', 'criado_por', 'assinatura_imagem']
+
+    def __init__(self, *args, filial=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        qs = self.fields['funcionario'].queryset
+        self.fields['funcionario'].queryset = qs.filter(filial=filial) if filial else qs.none()
+
+    def clean_tipo_habilitacao(self):
+        v = self.cleaned_data.get('tipo_habilitacao')
+        if not v:
+            raise forms.ValidationError('O LTCAT exige Eng. de Segurança ou Médico do Trabalho.')
+        return v
 
 
 class LTCATForm(BaseFormMixin, forms.ModelForm):
@@ -194,21 +204,29 @@ class LTCATForm(BaseFormMixin, forms.ModelForm):
     class Meta:
         model = LTCATDocumento
         fields = [
-            "empresa", "empresa_contratada", "titulo",
+            "empresa", "empresa_contratada", "titulo", "tipo_laudo", "status",
             "data_elaboracao", "data_ultima_revisao", "data_vencimento",
-            "status", "objetivo", "condicoes_preliminares",
-            "avaliacao_periculosidade_texto", "referencias_bibliograficas",
+            # Avaliação ambiental (IN 128/2022)
+            "data_avaliacao_campo", "periodo_avaliado_inicio", "periodo_avaliado_fim",
+            "local_avaliacao", "metodologia_geral",
+            # Conteúdo do laudo
+            "objetivo", "condicoes_preliminares",
+            "avaliacao_periculosidade_texto", "referencias_bibliograficas", "observacoes",
         ]
+        _date = lambda: forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
         widgets = {
-            "data_elaboracao": forms.DateInput(
-                attrs={"type": "date"}, format="%Y-%m-%d"
-            ),
-            "data_ultima_revisao": forms.DateInput(
-                attrs={"type": "date"}, format="%Y-%m-%d"
-            ),
-            "data_vencimento": forms.DateInput(
-                attrs={"type": "date"}, format="%Y-%m-%d"
-            ),
+            "data_elaboracao": _date(),
+            "data_ultima_revisao": _date(),
+            "data_vencimento": _date(),
+            "data_avaliacao_campo": _date(),
+            "periodo_avaliado_inicio": _date(),
+            "periodo_avaliado_fim": _date(),
+            "metodologia_geral": forms.Textarea(attrs={"rows": 4}),
+            "objetivo": forms.Textarea(attrs={"rows": 5}),
+            "condicoes_preliminares": forms.Textarea(attrs={"rows": 3}),
+            "avaliacao_periculosidade_texto": forms.Textarea(attrs={"rows": 4}),
+            "referencias_bibliograficas": forms.Textarea(attrs={"rows": 5}),
+            "observacoes": forms.Textarea(attrs={"rows": 3}),
         }
 
     def __init__(self, *args, filial=None, **kwargs):
@@ -263,17 +281,19 @@ class LTCATForm(BaseFormMixin, forms.ModelForm):
             )
 
     def clean(self):
-        """Valida que o local pertence à empresa selecionada."""
         cleaned = super().clean()
         empresa = cleaned.get("empresa")
         local = cleaned.get("local_prestacao")
-
         if local and empresa and local.empresa_id != empresa.pk:
-            self.add_error(
-                "local_prestacao",
-                "Este local não pertence à empresa selecionada."
-            )
+            self.add_error("local_prestacao", "Este local não pertence à empresa selecionada.")
 
+        ini, fim = cleaned.get("periodo_avaliado_inicio"), cleaned.get("periodo_avaliado_fim")
+        if ini and fim and fim < ini:
+            self.add_error("periodo_avaliado_fim", "O fim do período não pode ser anterior ao início.")
+        campo = cleaned.get("data_avaliacao_campo")
+        elab = cleaned.get("data_elaboracao")
+        if campo and elab and campo > elab:
+            self.add_error("data_avaliacao_campo", "A avaliação em campo não pode ser posterior à elaboração.")
         return cleaned
 
     def save(self, commit=True):
@@ -347,11 +367,9 @@ class RevisaoLTCATForm(BaseFormMixin, forms.ModelForm):
 class FuncaoAnalisadaForm(BaseFormMixin, forms.ModelForm):
     class Meta:
         model = FuncaoAnalisada
-        fields = [
-            'cargo', 'funcao_st',
-            'nome_funcao', 'cbo', 'ghe', 'departamento',
-            'local_prestacao', 'descricao_atividades',
-        ]
+        fields = ['cargo', 'funcao_st', 'nome_funcao', 'cbo', 'ghe', 'departamento',
+                  'local_prestacao', 'numero_trabalhadores', 'jornada_trabalho',
+                  'descricao_atividades']
         widgets = {
             'descricao_atividades': forms.Textarea(attrs={'rows': 5}),
             'nome_funcao': forms.TextInput(attrs={
@@ -404,7 +422,12 @@ class FuncaoAnalisadaForm(BaseFormMixin, forms.ModelForm):
             self.fields['local_prestacao'].queryset = (
                 self.fields['local_prestacao'].queryset.filter(pk__in=locais_ids)
             )
-
+            
+    def clean_cbo(self):
+        v = re.sub(r'\D', '', self.cleaned_data.get('cbo') or '')
+        if v and len(v) != 6:
+            raise ValidationError('O CBO deve ter 6 dígitos.')
+        return v
 
 # ═══════════════════════════════════════════════════════
 # RECONHECIMENTO DE RISCO (Seção 7)
@@ -412,15 +435,13 @@ class FuncaoAnalisadaForm(BaseFormMixin, forms.ModelForm):
 class ReconhecimentoRiscoForm(BaseFormMixin, forms.ModelForm):
     class Meta:
         model = ReconhecimentoRisco
-        fields = [
-            'funcao',  # ← ADICIONADO
-            'tipo_risco', 'agente', 'fonte_geradora',
-            'exposicao', 'tipo_avaliacao',
-            'limite_tolerancia', 'resultado_avaliacao', 'unidade_medida',
-        ]
-        widgets = {
-            'fonte_geradora': forms.Textarea(attrs={'rows': 3}),
-        }
+        fields = ['funcao', 'tipo_risco', 'agente', 'fonte_geradora', 'meio_propagacao',
+                  'exposicao', 'habitual_permanente', 'tipo_avaliacao', 'metodologia',
+                  'equipamento', 'data_calibracao', 'limite_tolerancia',
+                  'resultado_avaliacao', 'unidade_medida', 'codigo_esocial',
+                  'possiveis_efeitos_saude', 'nr_referencia']
+        widgets = {'data_calibracao': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')}
+
         labels = {
             'funcao': 'Função / GHE',
             'tipo_risco': 'Tipo de Risco',
@@ -450,7 +471,8 @@ class ReconhecimentoRiscoForm(BaseFormMixin, forms.ModelForm):
 # ═══════════════════════════════════════════════════════
 # PERICULOSIDADE (Seção 8)
 # ═══════════════════════════════════════════════════════
-class AvaliacaoPericulosidadeForm(BaseFormMixin, forms.ModelForm):
+class AvaliacaoPericulosidadeForm(LTCATChildUniqueMixin, BaseFormMixin, forms.ModelForm):
+    unique_field = 'tipo'
     class Meta:
         model = AvaliacaoPericulosidade
         fields = [
@@ -469,6 +491,7 @@ class AvaliacaoPericulosidadeForm(BaseFormMixin, forms.ModelForm):
 
     def __init__(self, *args, ltcat=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.ltcat = ltcat
         if ltcat:
             self.fields['funcoes_expostas'].queryset = (
                 FuncaoAnalisada.objects.filter(
@@ -476,16 +499,29 @@ class AvaliacaoPericulosidadeForm(BaseFormMixin, forms.ModelForm):
                 ).order_by('nome_funcao')
             )
 
+    def clean(self):
+           c = super().clean()
+           if c.get('aplicavel') and not c.get('funcoes_expostas'):
+               self.add_error('funcoes_expostas', 'Selecione ao menos uma função exposta.')
+           if not c.get('aplicavel'):
+               c['funcoes_expostas'] = []
+           if not (c.get('descricao') or '').strip():
+               self.add_error('descricao', 'A fundamentação técnica é obrigatória (sem presunção).')
+           return c
+
 # ═══════════════════════════════════════════════════════
 # CONCLUSÃO POR FUNÇÃO (Seção 9)
 # ═══════════════════════════════════════════════════════
-class ConclusaoFuncaoForm(BaseFormMixin, forms.ModelForm):
+class ConclusaoFuncaoForm(LTCATChildUniqueMixin, BaseFormMixin, forms.ModelForm):
+    GFIP_EXPOSICAO = {'02', '03', '04', '06', '07', '08'}
+    unique_field = 'funcao'
     class Meta:
         model = ConclusaoFuncao
-        fields = [
-            'funcao', 'tipo_conclusao', 'codigo_gfip',
-            'faz_jus_insalubridade', 'faz_jus_periculosidade',
-            'faz_jus_aposentadoria_especial', 'justificativa',
+        fields = ['funcao', 'tipo_conclusao', 'codigo_gfip',
+                  'faz_jus_insalubridade', 'grau_insalubridade',
+                  'faz_jus_periculosidade',
+                  'faz_jus_aposentadoria_especial', 'anos_aposentadoria_especial',
+                  'justificativa', 'nr_referencia'
         ]
         widgets = {
             'justificativa': forms.Textarea(attrs={'rows': 6}),
@@ -502,6 +538,7 @@ class ConclusaoFuncaoForm(BaseFormMixin, forms.ModelForm):
 
     def __init__(self, *args, ltcat=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.ltcat = ltcat
         if ltcat:
             self.fields['funcao'].queryset = (
                 FuncaoAnalisada.objects.filter(
@@ -509,6 +546,26 @@ class ConclusaoFuncaoForm(BaseFormMixin, forms.ModelForm):
                 ).order_by('nome_funcao')
             )
 
+    def clean(self):
+        c = super().clean()
+        gfip = c.get('codigo_gfip')
+        anos_gfip = GFIP_APOSENTADORIA.get(gfip)
+        if c.get('faz_jus_aposentadoria_especial'):
+            if not anos_gfip:
+                self.add_error('codigo_gfip', 'Aposentadoria especial exige código 02–04 ou 06–08.')
+            if c.get('anos_aposentadoria_especial') != anos_gfip:
+                self.add_error('anos_aposentadoria_especial', 'Divergente do código GFIP.')
+        elif anos_gfip:
+            self.add_error('faz_jus_aposentadoria_especial', 'O código GFIP indica aposentadoria especial.')
+        if c.get('faz_jus_insalubridade') and not c.get('grau_insalubridade'):
+            self.add_error('grau_insalubridade', 'Informe o grau.')
+        if not (c.get('justificativa') or '').strip():
+            self.add_error('justificativa', 'A fundamentação técnica e legal é obrigatória (sem presunção).')
+        funcao = c.get('funcao')
+        if anos_gfip and funcao and not funcao.riscos.filter(
+                tipo_risco__in=TIPOS_RISCO_PREVIDENCIARIOS, habitual_permanente=True).exists():
+            self.add_error('codigo_gfip', 'Não há agente previdenciário habitual e permanente nesta função.')
+        return c
 
 # ═══════════════════════════════════════════════════════
 # RECOMENDAÇÃO TÉCNICA (Seção 10)
@@ -538,23 +595,40 @@ class RecomendacaoTecnicaForm(BaseFormMixin, forms.ModelForm):
             'data_implementacao': 'Data de Implementação',
         }
 
+    def clean(self):
+           c = super().clean()
+           if c.get('implementada') and not c.get('data_implementacao'):
+               self.add_error('data_implementacao', 'Informe a data de implementação.')
+           if not c.get('implementada'):
+               c['data_implementacao'] = None
+           return c
+
 # ═══════════════════════════════════════════════════════
 # ANEXO
 # ═══════════════════════════════════════════════════════
 class AnexoLTCATForm(SecureUploadFormMixin, forms.ModelForm):
     UPLOAD_APP = 'ltcat_anexos'       # 🔒 Config de validação
     UPLOAD_FIELD = 'arquivo'          # 🔒 Nome do campo FileField
+    EXT = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png'}
 
     class Meta:
         model = AnexoLTCAT
-        fields = ['tipo', 'titulo', 'descricao', 'arquivo', 'incluir_no_pdf']
+        fields = ["tipo", "titulo", "ordem", "arquivo", "descricao"]   # "ordem" faltava na tela
         widgets = {
-            'arquivo': forms.ClearableFileInput(attrs={
-                'accept': '.pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx',
-                'class': 'form-control',
-            }),
+            "tipo": forms.Select(attrs={"class": "form-select"}),
+            "titulo": forms.TextInput(attrs={"class": "form-control", "placeholder": "Opcional — usa o tipo se vazio"}),
+            "ordem": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+            "descricao": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
         }
 
+    def clean_arquivo(self):
+        f = self.cleaned_data.get('arquivo')
+        if f and hasattr(f, 'size'):
+            if os.path.splitext(f.name)[1].lower() not in self.EXT:
+                raise ValidationError('Tipo de arquivo não permitido.')
+            if f.size > 50 * 1024 * 1024:
+                raise ValidationError('Tamanho máximo: 50 MB.')
+        return f
 
 class ProfissionalAssinaturaForm(SecureUploadFormMixin, forms.ModelForm):
     UPLOAD_APP = 'ltcat_assinatura'        # 🔒 Config de validação
@@ -569,25 +643,13 @@ class ProfissionalAssinaturaForm(SecureUploadFormMixin, forms.ModelForm):
                 'class': 'form-control',
             }),
         }
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["titulo"].required = False
+        self.fields["arquivo"].required = not self.instance.pk   # na edição, manter o arquivo atual
 
-class SecureUploadFormMixin:
-    
-    def clean(self):
-        cleaned = super().clean()
-        file = cleaned.get(self.UPLOAD_FIELD)
-
-        if file and hasattr(file, 'seek'):
-            validator = SecureFileValidator(app_name=self.UPLOAD_APP)
-            validator(file)
-
-            file.seek(0)
-            try:
-                mime = puremagic.from_string(file.read(2048), mime=True)
-            except puremagic.PureError:
-                mime = "application/octet-stream"
-            file.seek(0)
-
-            if mime.startswith('image/'):
-                cleaned[self.UPLOAD_FIELD] = sanitize_image(file) 
-
-        return cleaned
+class MedidaControleForm(BaseFormMixin, forms.ModelForm):
+    class Meta:
+        model = MedidaControle
+        fields = ['tipo', 'descricao', 'numero_ca', 'eficaz', 'atende_nr06', 'evidencias']

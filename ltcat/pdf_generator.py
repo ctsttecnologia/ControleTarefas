@@ -27,7 +27,13 @@ from reportlab.platypus import (
 )
 from reportlab.graphics.shapes import Drawing, Rect, String
 from reportlab.lib.colors import linearlyInterpolatedColor
+import logging
+from xml.sax.saxutils import escape
 
+from django.utils import timezone
+from reportlab.lib.utils import ImageReader
+
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 # CONSTANTES DE LAYOUT
@@ -319,6 +325,85 @@ class LTCATPDFGenerator:
 
     def pb(self):
         self.elements.append(PageBreak())
+
+        # ─── Assinatura ─────────────────────────────────────────────
+
+    def _ler_assinatura(self, prof):
+        """Lê via storage (funciona com mídia protegida, S3 e disco)."""
+        f = getattr(prof, 'assinatura_imagem', None)
+        if not f or not f.name:
+            return None
+        try:
+            with f.open('rb') as fh:
+                return BytesIO(fh.read())
+        except Exception:
+            logger.warning('Assinatura ilegível prof=%s', prof.pk)
+            return None
+
+    def _legenda_assinatura(self, prof):
+        if not getattr(prof, 'data_assinatura', None):
+            return ''
+        dt = timezone.localtime(prof.data_assinatura).strftime('%d/%m/%Y %H:%M')
+        return f"Assinatura eletrônica registrada em {dt}"   # sem IP (minimização LGPD)
+
+    def bloco_assinatura(self, prof, tipo_resp=''):
+        """Imagem + linha + identificação + legenda. Usado na pág. 7 e no item 13."""
+        s = self.styles
+        buf = self._ler_assinatura(prof)
+        if buf:
+            iw, ih = ImageReader(buf).getSize()
+            buf.seek(0)
+            h = 22 * mm
+            w = min(65 * mm, h * iw / ih)
+            h = w * ih / iw
+            assin = Image(buf, width=w, height=h)
+        else:
+            assin = Spacer(1, 20 * mm)
+
+        info = [f"<b>{escape(prof.nome_completo)}</b>"]
+        if prof.funcao:
+            info.append(escape(prof.funcao))
+        reg = ' — '.join(filter(None, [prof.registro_classe, getattr(prof, 'orgao_classe', '')]))
+        if reg:
+            info.append(escape(reg))
+        if getattr(prof, 'numero_art', ''):
+            info.append(f"ART/RRT: {escape(prof.numero_art)}")
+        if getattr(prof, 'nit', ''):
+            info.append(f"NIT: {prof.nit_mascarado}")
+        if tipo_resp:
+            info.append(f"<i>{escape(tipo_resp)}</i>")
+
+        linhas = [
+            [assin],
+            [HRFlowable(width=75 * mm, thickness=0.7, color=colors.black)],
+            [Paragraph('<br/>'.join(info), s['corpo_center'])],
+        ]
+        legenda = self._legenda_assinatura(prof)
+        if legenda:
+            linhas.append([Paragraph(legenda, ParagraphStyle(
+                'legenda_ass', parent=s['corpo_small'], alignment=TA_CENTER,
+                textColor=CINZA_ESCURO))])
+
+        t = Table(linhas, colWidths=[CONTENT_WIDTH])
+        t.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'BOTTOM'),
+            ('TOPPADDING', (0, 0), (-1, -1), 1),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+        ]))
+        return KeepTogether([t, Spacer(1, 8 * mm)])
+
+    def blocos_responsaveis(self):
+        """Adiciona um bloco por responsável vinculado. Retorna False se não houver."""
+        from ltcat.models import LTCATDocumentoResponsavel
+        resps = (LTCATDocumentoResponsavel.objects
+                 .filter(ltcat_documento=self.doc)
+                 .select_related('profissional')
+                 .order_by('tipo_responsabilidade'))
+        for r in resps:
+            self.elements.append(
+                self.bloco_assinatura(r.profissional, r.get_tipo_responsabilidade_display()))
+        return resps.exists()
 
     # ─── Helpers de Seção (usados por _render_pagina_identificacao) ──
 

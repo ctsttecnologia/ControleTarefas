@@ -1,4 +1,6 @@
-
+<!-- ═══════════════════════════════════════════════════════════════════
+   ltcat/templates/ltcat/ltcat_form.html
+   ═══════════════════════════════════════════════════════════════════ -->
 {% extends "ltcat/base_ltcat.html" %}
 
 {% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} LTCAT{% endblock %}
@@ -6,294 +8,132 @@
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_list' %}">Laudos</a></li>
 {% if form.instance.pk %}
-    <li class="breadcrumb-item">
-        <a href="{% url 'ltcat:ltcat_detail' form.instance.pk %}">{{ form.instance.codigo_documento }}</a>
-    </li>
-    <li class="breadcrumb-item active">Editar</li>
+<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_detail' form.instance.pk %}">{{ form.instance.codigo_documento }}</a></li>
+<li class="breadcrumb-item active" aria-current="page">Editar</li>
 {% else %}
-    <li class="breadcrumb-item active">Novo Laudo</li>
+<li class="breadcrumb-item active" aria-current="page">Novo laudo</li>
 {% endif %}
 {% endblock %}
 
 {% block ltcat_content %}
-<div class="row justify-content-center">
-    <div class="col-xl-10 col-lg-11">
-        <div class="card shadow-sm border-0">
 
-            {# ── Header ── #}
-            <div class="card-header border-0 py-3"
-                 style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0"
-                         style="width:44px; height:44px; background: rgba(255,255,255,0.15);">
-                        <i class="fas fa-file-medical text-white fa-lg"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <h5 class="mb-0 text-white fw-bold">
-                            {% if form.instance.pk %}Editar LTCAT{% else %}Novo Documento LTCAT{% endif %}
-                        </h5>
-                        <small class="text-white-50 text-truncate d-block">
-                            Laudo Técnico das Condições Ambientais de Trabalho
-                        </small>
-                    </div>
-                </div>
-            </div>
 
-            <div class="card-body p-lg-4 p-3">
-                <form method="post" novalidate>
-                    {% csrf_token %}
-
-                    {# ── Erros gerais ── #}
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        {% for error in form.non_field_errors %}
-                            <span>{{ error }}</span>{% if not forloop.last %}<br>{% endif %}
-                        {% endfor %}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    {% endif %}
-
-                    {# ═══════════ EMPRESA E CONTRATADA ═══════════ #}
-                    <fieldset class="mb-4">
-                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-building me-2"></i>Empresa e Contratada
-                        </legend>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="{{ form.empresa.id_for_label }}" class="form-label fw-semibold">
-                                    {{ form.empresa.label }} <span class="text-danger">*</span>
-                                </label>
-                                {{ form.empresa }}
-                                {% if form.empresa.help_text %}
-                                <div class="form-text">{{ form.empresa.help_text }}</div>
-                                {% endif %}
-                                {% for error in form.empresa.errors %}
-                                <div class="invalid-feedback d-block">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <div class="col-md-6">
-                                <label for="{{ form.empresa_contratada.id_for_label }}" class="form-label fw-semibold">
-                                    {{ form.empresa_contratada.label }}
-                                </label>
-                                {{ form.empresa_contratada }}
-                                {% if form.empresa_contratada.help_text %}
-                                <div class="form-text">{{ form.empresa_contratada.help_text }}</div>
-                                {% endif %}
-                                {% for error in form.empresa_contratada.errors %}
-                                <div class="invalid-feedback d-block">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    {# ═══════════ IDENTIFICAÇÃO DO DOCUMENTO ═══════════ #}
-                    <fieldset class="mb-4">
-                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-id-card me-2"></i>Identificação do Documento
-                        </legend>
-                        <div class="row g-3">
-                            <div class="col-md-8">
-                                <label for="{{ form.titulo.id_for_label }}" class="form-label fw-semibold">
-                                    {{ form.titulo.label }}
-                                </label>
-                                {{ form.titulo }}
-                                {% for error in form.titulo.errors %}
-                                <div class="invalid-feedback d-block">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <div class="col-md-4">
-                                <label for="{{ form.status.id_for_label }}" class="form-label fw-semibold">
-                                    {{ form.status.label }}
-                                </label>
-                                {{ form.status }}
-                                {% for error in form.status.errors %}
-                                <div class="invalid-feedback d-block">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    {# ═══════════ DATAS ═══════════ #}
-                    <fieldset class="mb-4">
-                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-calendar-alt me-2"></i>Datas
-                        </legend>
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label for="{{ form.data_elaboracao.id_for_label }}" class="form-label fw-semibold">
-                                    {{ form.data_elaboracao.label }}
-                                </label>
-                                {{ form.data_elaboracao }}
-                                {% for error in form.data_elaboracao.errors %}
-                                <div class="invalid-feedback d-block">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <div class="col-md-4">
-                                <label for="{{ form.data_ultima_revisao.id_for_label }}" class="form-label fw-semibold">
-                                    {{ form.data_ultima_revisao.label }}
-                                </label>
-                                {{ form.data_ultima_revisao }}
-                                {% for error in form.data_ultima_revisao.errors %}
-                                <div class="invalid-feedback d-block">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <div class="col-md-4">
-                                <label for="{{ form.data_vencimento.id_for_label }}" class="form-label fw-semibold">
-                                    {{ form.data_vencimento.label }}
-                                </label>
-                                {{ form.data_vencimento }}
-                                {% for error in form.data_vencimento.errors %}
-                                <div class="invalid-feedback d-block">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    {# ═══════════ LOCAL DE PRESTAÇÃO ═══════════ #}
-                    <fieldset class="mb-4">
-                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-map-marker-alt me-2"></i>Local de Prestação
-                        </legend>
-                        <div class="row g-3">
-                            <div class="col-md-12">
-                                <label for="{{ form.local_prestacao.id_for_label }}" class="form-label fw-semibold">
-                                    {{ form.local_prestacao.label }}
-                                </label>
-                                {{ form.local_prestacao }}
-                                {% if form.local_prestacao.help_text %}
-                                <div class="form-text">{{ form.local_prestacao.help_text }}</div>
-                                {% endif %}
-                                {% for error in form.local_prestacao.errors %}
-                                <div class="invalid-feedback d-block">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    {# ═══════════ TEXTOS DO LAUDO ═══════════ #}
-                    <fieldset class="mb-4">
-                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-align-left me-2"></i>Conteúdo do Laudo
-                        </legend>
-
-                        <div class="mb-3">
-                            <label for="{{ form.objetivo.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.objetivo.label }}
-                            </label>
-                            {{ form.objetivo }}
-                            {% for error in form.objetivo.errors %}
-                            <div class="invalid-feedback d-block">
-                                <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="{{ form.condicoes_preliminares.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.condicoes_preliminares.label }}
-                            </label>
-                            {{ form.condicoes_preliminares }}
-                            {% for error in form.condicoes_preliminares.errors %}
-                            <div class="invalid-feedback d-block">
-                                <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="{{ form.avaliacao_periculosidade_texto.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.avaliacao_periculosidade_texto.label }}
-                            </label>
-                            {{ form.avaliacao_periculosidade_texto }}
-                            {% for error in form.avaliacao_periculosidade_texto.errors %}
-                            <div class="invalid-feedback d-block">
-                                <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="{{ form.referencias_bibliograficas.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.referencias_bibliograficas.label }}
-                            </label>
-                            {{ form.referencias_bibliograficas }}
-                            {% for error in form.referencias_bibliograficas.errors %}
-                            <div class="invalid-feedback d-block">
-                                <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </fieldset>
-
-                    {# ═══════════ BOTÕES ═══════════ #}
-                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
-                        {% if form.instance.pk %}
-                            <a href="{% url 'ltcat:ltcat_detail' form.instance.pk %}"
-                               class="btn btn-outline-secondary order-2 order-sm-1">
-                                <i class="fas fa-arrow-left me-1"></i> Cancelar
-                            </a>
-                        {% else %}
-                            <a href="{% url 'ltcat:ltcat_list' %}"
-                               class="btn btn-outline-secondary order-2 order-sm-1">
-                                <i class="fas fa-arrow-left me-1"></i> Cancelar
-                            </a>
-                        {% endif %}
-                        <button type="submit" class="btn btn-primary px-4 order-1 order-sm-2">
-                            <i class="fas fa-save me-1"></i>
-                            {% if form.instance.pk %}Atualizar LTCAT{% else %}Criar LTCAT{% endif %}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+<div class="page-header">
+    <h1 class="h4"><i class="fas fa-file-medical me-2"></i>{% if form.instance.pk %}Editar LTCAT{% else %}Novo documento LTCAT{% endif %}</h1>
+    <p class="mb-0">
+        {% if form.instance.pk %}Código <strong>{{ form.instance.codigo_documento }}</strong>
+        {% else %}O código é gerado automaticamente ao salvar.{% endif %}
+    </p>
 </div>
 
-{# ═══════════ AJAX: Filtrar local por empresa ═══════════ #}
+<form method="post" novalidate class="row justify-content-center">
+    {% csrf_token %}
+    <div class="col-xl-10">
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            {% for e in form.non_field_errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+        </div>
+        {% endif %}
+
+        {% if form.status.errors %}
+        <div class="alert alert-warning" role="alert">
+            <i class="fas fa-gavel me-2"></i><strong>Aprovação bloqueada:</strong> resolva as pendências legais (IN 128/2022).
+        </div>
+        {% endif %}
+
+        <div class="form-section">
+            <h2 class="h6 fw-bold text-uppercase mb-3"><i class="fas fa-building me-2"></i>Empresas</h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.empresa col="col-md-6" %}
+                {% include "ltcat/includes/_field.html" with field=form.empresa_contratada col="col-md-6" %}
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2 class="h6 fw-bold text-uppercase mb-3"><i class="fas fa-id-card me-2"></i>Identificação</h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.titulo col="col-md-6" %}
+                {% include "ltcat/includes/_field.html" with field=form.tipo_laudo col="col-md-3" %}
+                {% include "ltcat/includes/_field.html" with field=form.status col="col-md-3" %}
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2 class="h6 fw-bold text-uppercase mb-3"><i class="fas fa-calendar-alt me-2"></i>Datas e vigência</h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.data_elaboracao col="col-md-4" %}
+                {% include "ltcat/includes/_field.html" with field=form.data_ultima_revisao col="col-md-4" %}
+                {% include "ltcat/includes/_field.html" with field=form.data_vencimento col="col-md-4" %}
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2 class="h6 fw-bold text-uppercase mb-3"><i class="fas fa-clipboard-check me-2"></i>Avaliação ambiental <small class="text-muted text-lowercase">(exigida pela IN 128/2022)</small></h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.data_avaliacao_campo col="col-md-4" %}
+                {% include "ltcat/includes/_field.html" with field=form.periodo_avaliado_inicio col="col-md-4" %}
+                {% include "ltcat/includes/_field.html" with field=form.periodo_avaliado_fim col="col-md-4" %}
+                {% include "ltcat/includes/_field.html" with field=form.local_avaliacao col="col-12" %}
+                {% include "ltcat/includes/_field.html" with field=form.metodologia_geral col="col-12" %}
+            </div>
+        </div>
+
+        {% if form.locais_prestacao %}
+        <div class="form-section">
+            <h2 class="h6 fw-bold text-uppercase mb-3"><i class="fas fa-map-marker-alt me-2"></i>Locais de prestação</h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.locais_prestacao col="col-12" %}
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info"><i class="fas fa-info-circle me-1"></i> Os locais de prestação são vinculados na tela de detalhes do laudo, depois de salvá-lo.</div>
+        {% endif %}
+
+        <div class="form-section">
+            <h2 class="h6 fw-bold text-uppercase mb-3"><i class="fas fa-align-left me-2"></i>Conteúdo do laudo</h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.objetivo %}
+                {% include "ltcat/includes/_field.html" with field=form.condicoes_preliminares %}
+                {% include "ltcat/includes/_field.html" with field=form.avaliacao_periculosidade_texto %}
+                {% include "ltcat/includes/_field.html" with field=form.referencias_bibliograficas %}
+                {% include "ltcat/includes/_field.html" with field=form.observacoes %}
+            </div>
+        </div>
+
+        <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 pt-3 border-top">
+            <a href="{% if form.instance.pk %}{% url 'ltcat:ltcat_detail' form.instance.pk %}{% else %}{% url 'ltcat:ltcat_list' %}{% endif %}" class="btn btn-outline-secondary order-2 order-sm-1">
+                <i class="fas fa-arrow-left me-1"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary px-4 order-1 order-sm-2">
+                <i class="fas fa-save me-1"></i> {% if form.instance.pk %}Atualizar{% else %}Criar{% endif %} LTCAT
+            </button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block ltcat_extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const empresaSelect = document.getElementById('id_empresa');
-    const localSelect = document.getElementById('id_local_prestacao');
+(function () {
+    const empresa = document.getElementById('id_empresa');
+    const locais = document.getElementById('id_locais_prestacao');
+    if (!empresa || !locais) return;
+    const URL_LOCAIS = "{% url 'ltcat:ajax_locais_por_empresa' %}";
 
-    if (empresaSelect && localSelect) {
-        empresaSelect.addEventListener('change', function() {
-            const empresaId = this.value;
-            if (!empresaId) {
-                localSelect.innerHTML = '<option value="">---------</option>';
-                return;
-            }
-
-            fetch(`{% url 'ltcat:ajax_locais_por_empresa' %}?empresa_id=${empresaId}`)
-                .then(r => r.json())
-                .then(data => {
-                    localSelect.innerHTML = '<option value="">---------</option>';
-                    data.forEach(loc => {
-                        const opt = document.createElement('option');
-                        opt.value = loc.id;
-                        opt.textContent = loc.nome;
-                        localSelect.appendChild(opt);
-                    });
-                })
-                .catch(err => console.error('Erro ao buscar locais:', err));
-        });
-    }
-});
+    empresa.addEventListener('change', function () {
+        const selecionados = new Set(Array.from(locais.selectedOptions).map(o => o.value));
+        locais.innerHTML = '';
+        if (!this.value) return;
+        fetch(`${URL_LOCAIS}?empresa_id=${encodeURIComponent(this.value)}`, {credentials: 'same-origin'})
+            .then(r => r.ok ? r.json() : [])
+            .then(data => data.forEach(loc => {
+                const opt = new Option(loc.nome, loc.id, false, selecionados.has(loc.id));
+                locais.add(opt);
+            }))
+            .catch(() => {});
+    });
+})();
 </script>
 {% endblock %}

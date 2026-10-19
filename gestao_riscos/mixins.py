@@ -1,6 +1,7 @@
 # gestao_riscos/mixins.py
 
 from django.core.checks import messages
+from django.core.exceptions import PermissionDenied
 
 from core.mixins import (
     AppPermissionMixin,

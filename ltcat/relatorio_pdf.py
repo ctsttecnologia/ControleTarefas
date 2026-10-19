@@ -22,6 +22,17 @@ from .models import (
     ConclusaoFuncao, RecomendacaoTecnica, RevisaoLTCAT, AnexoLTCAT,
     LTCATDocumentoResponsavel, LTCATSecaoTexto, EmpresaLTCAT,
 )
+from xml.sax.saxutils import escape
+from .texto_padrao import (
+    get_texto, TEXTOS_LTCAT, TABELA_RUIDO_NR15, TABELA_DEMAIS_AGENTES,
+    AVALIACAO_NAO_REGISTRADA,
+)
+from .models import (
+    FuncaoAnalisada, ReconhecimentoRisco, AvaliacaoPericulosidade,
+    ConclusaoFuncao, RecomendacaoTecnica, RevisaoLTCAT, AnexoLTCAT,
+    LTCATDocumentoResponsavel, LTCATSecaoTexto, EmpresaLTCAT,
+    MedidaControle,
+)
 
 
 class LTCATRelatorio(LTCATPDFGenerator):
@@ -40,6 +51,7 @@ class LTCATRelatorio(LTCATPDFGenerator):
         self._secao_05_ppp()
         self._secao_06_funcoes()
         self._secao_07_riscos()
+        self._secao_07b_medidas() # gerar() — incluir a nova seção 7.1
         self._secao_08_periculosidade()
         self._secao_09_conclusoes()
         self._secao_10_recomendacoes()
@@ -595,60 +607,57 @@ class LTCATRelatorio(LTCATPDFGenerator):
 
             self.tabela(headers, dados, col_widths=[20, 30, 35, 22, 25, 33])
 
+    # ═════════════════════════════════════════════════════════════════════
+    # 7.1 — NOVO método _secao_07b_medidas
+    # ═════════════════════════════════════════════════════════════════════
+    def _secao_07b_medidas(self):
+        self.titulo_secao('7.1', 'TECNOLOGIA DE PROTEÇÃO COLETIVA E INDIVIDUAL')
+        medidas = (MedidaControle.objects
+                   .filter(risco__funcao__ltcat_documento=self.doc)
+                   .select_related('risco', 'risco__funcao')
+                   .order_by('risco__funcao__nome_funcao', 'tipo'))
+        if not medidas.exists():
+            self.p(AVALIACAO_NAO_REGISTRADA)
+            return
+        headers = ['FUNÇÃO', 'AGENTE', 'TIPO', 'MEDIDA / CA', 'EFICAZ', 'NR-06']
+        dados = [[
+            escape(m.risco.funcao.nome_funcao), escape(m.risco.agente),
+            m.get_tipo_display(),
+            escape(m.descricao) + (f" — CA {escape(m.numero_ca)}" if m.numero_ca else ''),
+            'Sim' if m.eficaz else 'Não',
+            'Sim' if m.atende_nr06 else 'Não',
+        ] for m in medidas]
+        self.tabela(headers, dados, col_widths=[30, 28, 15, 52, 18, 22])
+
+
     # ================================================================
     # 8. AVALIAÇÃO DAS ATIVIDADES PERICULOSAS
     # ================================================================
 
     def _secao_08_periculosidade(self):
         self.titulo_secao('8', 'AVALIAÇÃO DAS ATIVIDADES E OPERAÇÕES PERICULOSAS')
+        avaliacoes = (AvaliacaoPericulosidade.objects
+                      .filter(ltcat_documento=self.doc)
+                      .prefetch_related('funcoes_expostas').order_by('tipo'))
 
-        avaliacoes = AvaliacaoPericulosidade.objects.filter(
-            ltcat_documento=self.doc
-        ).order_by('tipo')
+        if not avaliacoes.exists():                      # ← era o "else" presumido
+            self.p(f"<b>{AVALIACAO_NAO_REGISTRADA}</b>")
+            return
 
-        tipo_chave = {
-            'explosivos': 'periculosidade_explosivos',
-            'inflamaveis': 'periculosidade_inflamaveis',
-            'violencia': 'periculosidade_violencia',
-            'eletricidade': 'periculosidade_eletricidade',
-            'transito': 'periculosidade_transito',
-            'radiacao': 'periculosidade_radiacao',
-        }
+        for av in avaliacoes:
+            status = 'APLICÁVEL' if av.aplicavel else 'NÃO APLICÁVEL'
+            self.p(f"<b>{av.get_tipo_display()}</b> — {status}")
+            # Sem descrição → não presume nada
+            self.p(escape(av.descricao.strip()) if av.descricao and av.descricao.strip()
+                   else AVALIACAO_NAO_REGISTRADA)
+            if av.aplicavel:
+                nomes = ', '.join(escape(f.nome_funcao) for f in av.funcoes_expostas.all())
+                self.p(f"<b>Funções expostas:</b> {nomes or 'N/I'}", 'corpo_small')
+            self.sp(3)
 
-        if avaliacoes.exists():
-            for av in avaliacoes:
-                chave = tipo_chave.get(av.tipo)
-                if chave:
-                    if av.descricao and av.descricao.strip():
-                        titulo = av.get_tipo_display()
-                        self.p(f"<b>{titulo}</b>")
-                        self.p(av.descricao)
-                    else:
-                        if av.tipo == 'eletricidade':
-                            txt = get_texto(chave,
-                                            texto_periculosidade_eletricidade=av.descricao or '')
-                        else:
-                            txt = get_texto(chave)
-                        self.p(txt)
-                    self.sp(3)
-
-            if self.doc.avaliacao_periculosidade_texto:
-                self.sp(3)
-                self.p(self.doc.avaliacao_periculosidade_texto)
-            else:
-                self.sp(3)
-                self.p(get_texto('periculosidade_conclusao'))
-        else:
-            for chave in [
-                'periculosidade_explosivos', 'periculosidade_inflamaveis',
-                'periculosidade_violencia', 'periculosidade_eletricidade',
-                'periculosidade_transito', 'periculosidade_radiacao',
-            ]:
-                txt = get_texto(chave,
-                                texto_periculosidade_eletricidade='N/I')
-                self.p(txt)
-                self.sp(3)
-            self.p(get_texto('periculosidade_conclusao'))
+        if self.doc.avaliacao_periculosidade_texto:
+            self.sp(3)
+            self.p(escape(self.doc.avaliacao_periculosidade_texto))
 
     # ================================================================
     # 9. CONCLUSÕES FINAIS
@@ -656,60 +665,33 @@ class LTCATRelatorio(LTCATPDFGenerator):
 
     def _secao_09_conclusoes(self):
         self.titulo_secao('9', 'CONCLUSÕES FINAIS')
-
-        conclusoes = ConclusaoFuncao.objects.filter(
-            ltcat_documento=self.doc
-        ).select_related('funcao').order_by('funcao__nome_funcao')
-
+        conclusoes = (ConclusaoFuncao.objects.filter(ltcat_documento=self.doc)
+                      .select_related('funcao').order_by('funcao__nome_funcao'))
         if not conclusoes.exists():
-            self.p("Nenhuma conclusão registrada.")
+            self.p(AVALIACAO_NAO_REGISTRADA)
             return
 
         for c in conclusoes:
-            func_nome = c.funcao.nome_funcao if c.funcao else 'N/I'
+            func_nome = escape(c.funcao.nome_funcao) if c.funcao else 'N/I'
+            self.p(f"<b>{func_nome}</b> — {c.get_tipo_conclusao_display()}", 'corpo_bold')
+            justificativa = (c.justificativa or '').strip()
+            self.p(escape(justificativa) if justificativa else AVALIACAO_NAO_REGISTRADA)
 
-            if c.justificativa and c.justificativa.strip():
-                texto = c.justificativa
-            elif c.faz_jus_periculosidade:
-                texto = (
-                    f"Os empregados que exercem a função de <b>{func_nome}</b> "
-                    f"estão expostos permanentemente a condições perigosas durante a "
-                    f"realização de atividades, portanto, <b>FAZEM JUS</b> ao direito "
-                    f"a receber o adicional de periculosidade no valor de 30% incidente "
-                    f"sobre o salário, sem os acréscimos resultantes de gratificações, "
-                    f"prêmios ou participações nos lucros da empresa, em períodos de "
-                    f"atividade com as devidas exposições, assim como faz jus à "
-                    f"aposentadoria especial, conforme a Lei 8213/91, com alteração "
-                    f"dada pela Lei 9032/95, da Previdência Social."
-                )
-            elif c.faz_jus_insalubridade:
-                grau_display = c.get_grau_insalubridade_display() if c.grau_insalubridade else 'N/I'
-                perc = {'minimo': '10', 'medio': '20', 'maximo': '40'}.get(
-                    c.grau_insalubridade, 'N/I'
-                )
-                texto = (
-                    f"Os empregados que exercem a função de <b>{func_nome}</b>, "
-                    f"estão expostos a condições insalubres por executarem atividades "
-                    f"envolvendo riscos. Assim, esses profissionais <b>FAZEM JUS</b> "
-                    f"ao direito a receber o adicional de insalubridade em "
-                    f"<b>GRAU {grau_display.upper()}</b> ({perc}% do salário mínimo)."
-                )
-            else:
-                texto = (
-                    f"Os empregados que exercem a função de <b>{func_nome}</b>, "
-                    f"não estão expostos a condições insalubres por executarem atividades "
-                    f"envolvendo riscos físicos, visto que os valores apresentados nas "
-                    f"avaliações estão abaixo dos LIMITES DE TOLERÂNCIA. Assim, esses "
-                    f"profissionais <b>NÃO FAZEM JUS</b> ao direito a receber o "
-                    f"adicional de insalubridade (10, 20 ou 40% do salário mínimo)."
-                )
-
-            self.p(texto)
-            self.p(
-                f"<b>Código GFIP/SEFIP:</b> {c.codigo_gfip} — "
-                f"{c.get_codigo_gfip_display()}", 'corpo_small'
-            )
+            linhas = [f"<b>GFIP/SEFIP:</b> {c.get_codigo_gfip_display()}"]
+            if c.faz_jus_insalubridade:
+                grau = c.get_grau_insalubridade_display() if c.grau_insalubridade else 'N/I'
+                linhas.append(f"<b>Insalubridade (NR-15):</b> {grau}")
+            if c.faz_jus_periculosidade:
+                linhas.append("<b>Periculosidade (NR-16):</b> adicional de 30% — verba "
+                              "trabalhista, sem efeito no enquadramento previdenciário.")
+            if c.faz_jus_aposentadoria_especial:
+                linhas.append(f"<b>Aposentadoria especial:</b> "
+                              f"{c.anos_aposentadoria_especial or 'N/I'} anos")
+            if c.nr_referencia:
+                linhas.append(f"<b>Referência:</b> {escape(c.nr_referencia)}")
+            self.p('<br/>'.join(linhas), 'corpo_small')
             self.sp(4)
+
 
     # ================================================================
     # 10. RECOMENDAÇÕES TÉCNICAS
@@ -825,25 +807,14 @@ class LTCATRelatorio(LTCATPDFGenerator):
 
     def _secao_13_responsavel_tecnico(self):
         self.titulo_secao('13', 'RESPONSÁVEL TÉCNICO')
+        local = self.doc.local_avaliacao or self.get_local_campo('cidade')
+        data = self.doc.data_avaliacao_campo or self.doc.data_elaboracao
+        if data:
+            self.p(f"{escape(str(local))}, {data:%d/%m/%Y}.", 'corpo_center')
+        self.sp(10)
+        if not self.blocos_responsaveis():
+            self.p(AVALIACAO_NAO_REGISTRADA)
 
-        self.p(get_texto('responsavel_tecnico'))
-        self.sp(20)
-
-        responsaveis = LTCATDocumentoResponsavel.objects.filter(
-            ltcat_documento=self.doc
-        ).select_related('profissional')
-
-        if responsaveis.exists():
-            for resp in responsaveis:
-                prof = resp.profissional
-                self.p("________________________________________", 'corpo_center')
-                self.p(f"<b>{prof.nome_completo}</b>", 'corpo_center')
-                self.p(prof.funcao, 'corpo_center')
-                self.p(prof.registro_classe, 'corpo_center')
-                self.sp(10)
-        else:
-            self.p("________________________________________", 'corpo_center')
-            self.p("Responsável Técnico", 'corpo_center')
 
     # ================================================================
     # ANEXOS

@@ -1,15 +1,20 @@
 ﻿
 
-<!-- ltcat/templates/ltcat/partials/_messages.html -->
-{% if messages %}
+<!-- ═══════════════════════════════════════════════════════════════════
+   ltcat/templates/ltcat/partials/_messages.html
+   Inclua no base_ltcat.html (antes do ltcat_content) SÓ se o base.html
+   global ainda não renderiza messages — senão aparecem em dobro.
+   ═══════════════════════════════════════════════════════════════════ -->
 {% for message in messages %}
-<div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-    <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}x-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-1"></i>
-    {{ message }}
+{% with lvl=message.level_tag %}
+<div class="alert alert-{% if lvl == 'error' %}danger{% else %}{{ lvl|default:'info' }}{% endif %} alert-dismissible fade show d-flex align-items-start gap-2"
+     role="{% if lvl == 'error' or lvl == 'warning' %}alert{% else %}status{% endif %}">
+    <i class="fas {% if lvl == 'success' %}fa-check-circle{% elif lvl == 'error' %}fa-times-circle{% elif lvl == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} mt-1" aria-hidden="true"></i>
+    <div class="flex-grow-1">{{ message }}</div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
 </div>
+{% endwith %}
 {% endfor %}
-{% endif %}
 
 
 

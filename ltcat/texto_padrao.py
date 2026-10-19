@@ -12,12 +12,11 @@ Variáveis entre {chaves} são substituídas em tempo de geração.
 # =============================================================================
 
 OBJETIVO = (
-    "O LTCAT tem por finalidade cumprir as exigências da legislação previdenciária "
-    "- Art. 58 da Lei nº 9528 de 10.12.97, dar sustentabilidade técnica às condições "
-    "ambientais existentes na empresa e subsidiar o enquadramento de tais atividades "
-    "referente ao recolhimento das denominadas Alíquotas Suplementares do Seguro de "
-    "Acidentes do Trabalho (SAT) criadas pelo texto da Lei nº 9.732 de 11.12.98, e "
-    "convertida em Lei nº 9528 de 10.12.97.\n\n"
+    "O LTCAT tem por finalidade atender ao Art. 58 da Lei nº 8.213/91, com redação "
+    "dada pela Lei nº 9.528/97, e ao Decreto nº 3.048/99 (alterado pelo Decreto nº "
+    "10.410/2020), registrando as condições ambientais de trabalho e subsidiando o "
+    "enquadramento previdenciário, o PPP eletrônico (eSocial S-2240) e a contribuição "
+    "adicional do GILRAT (Lei nº 9.732/98).\n\n"
     "Art. 58 - § 1º A comprovação da efetiva exposição do segurado aos agentes nocivos "
     "será feita mediante formulário, na forma estabelecida pelo Instituto Nacional do "
     "Seguro Social - INSS, emitido pela empresa ou seu preposto, com base em laudo "
@@ -276,6 +275,12 @@ EMBASAMENTO_DEMAIS_INTRO = (
 # =============================================================================
 
 REFERENCIAS_BIBLIOGRAFICAS = (
+    "• Lei nº 8.213/91 e alterações (Leis 9.032/95, 9.528/97, 9.732/98);\n"
+    "• Decreto nº 3.048/99, Anexo IV, alterado pelo Decreto nº 10.410/2020;\n"
+    "• IN PRES/INSS nº 128/2022 e Portaria DIRBEN/INSS nº 991/2022;\n"
+    "• Portaria nº 3.214/78 — NR-06, NR-09, NR-15 e NR-16;\n"
+    "• Fundacentro — NHO 01 (Ruído), NHO 06 (Calor), NHO 09/10 (Vibração);\n"
+    "• Leiaute eSocial — evento S-2240 e Tabela 24."
     "• Legislação de Segurança e Medicina do Trabalho, Lei N° 6514/77 que regulamentou "
     "a Portaria N° 3.214/78, do Ministério do Trabalho e Emprego.\n\n"
     "• Lei n° 8213/91 e alterações de seu texto pelas Leis n° 9.032/95, 9528/97 e "
@@ -288,6 +293,7 @@ REFERENCIAS_BIBLIOGRAFICAS = (
     "Ocupacional de Ruído."
 )
 
+AVALIACAO_NAO_REGISTRADA = "Avaliação não registrada pelo responsável técnico."
 
 # =============================================================================
 # SEÇÃO 13 — RESPONSÁVEL TÉCNICO (encerramento)

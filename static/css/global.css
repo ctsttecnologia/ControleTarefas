@@ -1358,3 +1358,20 @@ body.has-submenu {
 
 @media print { .pgr-kpi { box-shadow: none !important; } }
 
+/* ═══ Seções de formulário ═══ */
+.ltcat-app .form-section { margin-bottom: 1.75rem; }
+.ltcat-app .form-section:last-of-type { margin-bottom: 1rem; }
+.ltcat-app .form-label { display: block; margin-bottom: .375rem; font-weight: 600; }
+.ltcat-app .form-control,
+.ltcat-app .form-select {
+    width: 100%;
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    border-color: var(--bs-border-color);
+}
+.ltcat-app .form-control:focus,
+.ltcat-app .form-select:focus {
+    border-color: var(--ltcat-secondary);
+    box-shadow: 0 0 0 .2rem rgba(0, 184, 212, .25);
+}
+.ltcat-app textarea.form-control { min-height: 110px; resize: vertical; }

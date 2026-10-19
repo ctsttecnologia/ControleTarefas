@@ -91,17 +91,29 @@ class AssinavelMixin(models.Model):
         if imagem_upload.size > max_mb * 1024 * 1024:
             raise ValidationError(f"Arquivo maior que {max_mb}MB.")
 
-    def _base64_para_arquivo(self, assinatura_base64):
+    def _base64_para_arquivo(self, assinatura_base64, max_bytes=2 * 1024 * 1024):
+        from core.magic_utils import get_mime_type
         try:
-            formato, dados = assinatura_base64.split(';base64,')
-            extensao = formato.split('/')[-1]
-            return ContentFile(
-                base64.b64decode(dados),
-                name=f"assinatura_{uuid.uuid4().hex}.{extensao}",
-            )
-        except Exception:
+            _, dados = assinatura_base64.split(';base64,', 1)
+            raw = base64.b64decode(dados, validate=True)
+        except (ValueError, TypeError):
             raise ValidationError("Assinatura inválida ou corrompida.")
+        if len(raw) > max_bytes:
+            raise ValidationError("Assinatura muito grande.")
+        mime = get_mime_type(raw)
+        ext = {'image/png': 'png', 'image/jpeg': 'jpg'}.get(mime)
+        if not ext:
+            raise ValidationError("Formato inválido.")
+        return ContentFile(raw, name=f"assinatura_{uuid.uuid4().hex}.{ext}")
 
+    @staticmethod
+    def _validar_upload(imagem_upload, max_mb=2):
+        from core.magic_utils import get_mime_type
+        if get_mime_type(imagem_upload) not in ('image/png', 'image/jpeg'):   # MIME real, não o do navegador
+            raise ValidationError("Formato inválido. Envie apenas PNG ou JPEG.")
+        if imagem_upload.size > max_mb * 1024 * 1024:
+            raise ValidationError(f"Arquivo maior que {max_mb}MB.")
+        
 def default_expira_em():
 
     return timezone.now() + timedelta(days=7)

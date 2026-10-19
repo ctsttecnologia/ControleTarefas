@@ -1,120 +1,281 @@
-
-
+<!--Dashboard-->
 {% extends "ltcat/base_ltcat.html" %}
 {% load ltcat_tags %}
 
 {% block ltcat_title %}Dashboard - LTCAT{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item active">Dashboard</li>
+<li class="breadcrumb-item active" aria-current="page">Dashboard</li>
 {% endblock %}
 
 {% block ltcat_content %}
-<div class="page-header mb-4">
-    <div class="d-flex justify-content-between align-items-center">
+{# ═══ HEADER ═══ #}
+<div class="page-header">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div>
-            <h3 class="fw-bold mb-1">
-                <i class="fas fa-tachometer-alt me-2"></i>Dashboard LTCAT
-            </h3>
-            <p class="mb-0 opacity-75">Visão geral dos Laudos Técnicos das Condições Ambientais de Trabalho</p>
+            <h1 class="h3 fw-bold mb-1"><i class="fas fa-tachometer-alt me-2"></i>Dashboard LTCAT</h1>
+            <p class="mb-0 opacity-75">Situação dos laudos, exposições e pendências legais — atualizado em {% now "d/m/Y H:i" %}</p>
         </div>
-        {% if perms.ltcat.add_ltcat or user.is_superuser %}
-        <a href="{% url 'ltcat:ltcat_create' %}" class="btn btn-light">
+        {% if perms.ltcat.add_ltcatdocumento %}
+        <a href="{% url 'ltcat:ltcat_create' %}" class="btn btn-light btn-main">
             <i class="fas fa-plus me-1"></i> Novo LTCAT
         </a>
         {% endif %}
     </div>
 </div>
 
-<!-- Stat Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
-        <div class="card stats-card shadow-sm">
-            <div class="card-body">
-                <div class="text-muted small text-uppercase fw-semibold">Total LTCATs</div>
-                <div class="fs-3 fw-bold mt-1">{{ total_ltcats }}</div>
+{# ═══ ALERTAS LEGAIS (não somem automaticamente) ═══ #}
+{% if alertas %}
+<div class="alert alert-warning d-flex align-items-start gap-2" role="alert">
+    <i class="fas fa-exclamation-triangle mt-1"></i>
+    <div>
+        <strong>Atenção:</strong>
+        <ul class="mb-0 ps-3">
+            {% for a in alertas %}<li>{{ a }}</li>{% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+{# ═══ KPIs — LAUDOS ═══ #}
+<div class="row g-3 mb-2">
+    {% for k in kpis %}
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card stats-card {{ k.cor }} shadow-sm h-100 mb-0">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="text-muted small text-uppercase fw-semibold">{{ k.label }}</div>
+                    <i class="fas {{ k.icone }} text-muted" aria-hidden="true"></i>
+                </div>
+                <div class="fs-3 fw-bold mt-1">{{ k.valor }}</div>
+                {% if k.sub %}<div class="small text-muted">{{ k.sub }}</div>{% endif %}
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="card stats-card success shadow-sm">
-            <div class="card-body">
-                <div class="text-muted small text-uppercase fw-semibold">Vigentes</div>
-                <div class="fs-3 fw-bold text-success mt-1">{{ total_vigentes }}</div>
+    {% endfor %}
+</div>
+
+{# ═══ KPIs — EXPOSIÇÃO ═══ #}
+<div class="row g-3 mb-4 mt-0">
+    {% for k in kpis_exposicao %}
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card shadow-sm h-100 mb-0">
+            <div class="card-body py-3 text-center">
+                <div class="fs-4 fw-bold" style="color: var(--ltcat-link);">{{ k.valor }}</div>
+                <div class="small text-muted">{{ k.label }}</div>
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="card stats-card info shadow-sm">
-            <div class="card-body">
-                <div class="text-muted small text-uppercase fw-semibold">Rascunhos</div>
-                <div class="fs-3 fw-bold mt-1">{{ total_rascunhos }}</div>
-            </div>
+    {% endfor %}
+</div>
+
+{# ═══ GRÁFICOS ═══ #}
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><i class="fas fa-chart-pie me-1"></i> Laudos por status</div>
+            <div class="card-body"><canvas id="chartStatus" height="240" aria-label="Laudos por status" role="img"></canvas></div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="card stats-card danger shadow-sm">
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><i class="fas fa-chart-line me-1"></i> Laudos elaborados — últimos 12 meses</div>
+            <div class="card-body"><canvas id="chartMensal" height="110" aria-label="Laudos por mês" role="img"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><i class="fas fa-radiation me-1"></i> Riscos reconhecidos por tipo</div>
+            <div class="card-body"><canvas id="chartRiscos" height="160" aria-label="Riscos por tipo" role="img"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><i class="fas fa-gavel me-1"></i> Conclusões por função</div>
             <div class="card-body">
-                <div class="text-muted small text-uppercase fw-semibold">Vencidos</div>
-                <div class="fs-3 fw-bold text-danger mt-1">{{ total_vencidos }}</div>
+                <div class="row text-center g-2 mb-3">
+                    <div class="col-3"><div class="fs-4 fw-bold text-warning">{{ conclusoes.insalubre }}</div><small class="text-muted">Insalubridade</small></div>
+                    <div class="col-3"><div class="fs-4 fw-bold text-danger">{{ conclusoes.periculoso }}</div><small class="text-muted">Periculosidade</small></div>
+                    <div class="col-3"><div class="fs-4 fw-bold text-info">{{ conclusoes.aposentadoria }}</div><small class="text-muted">Apos. especial</small></div>
+                    <div class="col-3"><div class="fs-4 fw-bold text-success">{{ conclusoes.sem_exposicao }}</div><small class="text-muted">Sem exposição</small></div>
+                </div>
+                <h2 class="h6 fw-semibold">Códigos GFIP</h2>
+                {% for g in gfip %}
+                <div class="d-flex justify-content-between small border-bottom py-1">
+                    <span>{{ g.label }}</span><span class="fw-semibold">{{ g.n }}</span>
+                </div>
+                {% empty %}
+                <p class="text-muted small mb-0">Nenhuma conclusão registrada.</p>
+                {% endfor %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Laudos Recentes -->
-<div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="fas fa-clock me-1"></i> Laudos Recentes</span>
-        <a href="{% url 'ltcat:ltcat_list' %}" class="btn btn-sm btn-light">Ver todos</a>
+{# ═══ QUALIDADE / CONFORMIDADE ═══ #}
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><i class="fas fa-clipboard-check me-1"></i> Conformidade técnica</div>
+            <ul class="list-group list-group-flush">
+                {% for c in conformidade %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span><i class="fas {% if c.n %}fa-times-circle text-danger{% else %}fa-check-circle text-success{% endif %} me-2"></i>{{ c.label }}</span>
+                    <span class="badge {% if c.n %}bg-danger{% else %}bg-success{% endif %}">{{ c.n }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Empresa</th>
-                        <th>Elaboração</th>
-                        <th>Responsável</th>
-                        <th>Status</th>
-                        <th class="text-end">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ltcat in recentes %}
-                    <tr>
-                        <td>
-                            <div class="fw-semibold">{{ ltcat.empresa.razao_social|truncatechars:40 }}</div>
-                            <small class="text-muted">{{ ltcat.filial.nome }}</small>
-                        </td>
-                        <td>{{ ltcat.data_elaboracao|date:"d/m/Y" }}</td>
-                        <td>{{ ltcat.responsavel_tecnico.nome|default:"-" }}</td>
-                        <td>
-                            <span class="badge {{ ltcat.status|status_badge }}">
-                                {{ ltcat.get_status_display }}
-                            </span>
-                        </td>
-                        <td class="text-end">
-                            {% if perms.ltcat.view_ltcat or user.is_superuser %}
-                            <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}"
-                               class="btn btn-sm btn-outline-primary" title="Visualizar">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center text-muted py-5">
-                            <i class="fas fa-inbox fa-2x d-block mb-2"></i>
-                            Nenhum LTCAT cadastrado ainda.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><i class="fas fa-tasks me-1"></i> Recomendações técnicas</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>Implementadas</span>
+                    <span class="fw-semibold">{{ recomendacoes.implementadas }} de {{ recomendacoes.total }} ({{ recomendacoes.pct }}%)</span>
+                </div>
+                <div class="progress mb-3" style="height:8px" role="progressbar" aria-valuenow="{{ recomendacoes.pct }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar bg-success" style="width: {{ recomendacoes.pct }}%"></div>
+                </div>
+                <div class="row text-center g-2">
+                    <div class="col-4"><div class="fs-4 fw-bold">{{ recomendacoes.pendentes }}</div><small class="text-muted">Pendentes</small></div>
+                    <div class="col-4"><div class="fs-4 fw-bold text-danger">{{ recomendacoes.atrasadas }}</div><small class="text-muted">Atrasadas</small></div>
+                    <div class="col-4"><div class="fs-4 fw-bold text-warning">{{ recomendacoes.alta }}</div><small class="text-muted">Alta prioridade</small></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+{# ═══ TABELAS ═══ #}
+<div class="row g-3">
+    <div class="col-xl-8">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-clock me-1"></i> Laudos atualizados recentemente</span>
+                <a href="{% url 'ltcat:ltcat_list' %}" class="btn btn-sm btn-light">Ver todos</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Documento / Empresa</th>
+                            <th scope="col">Elaboração</th>
+                            <th scope="col">Vencimento</th>
+                            <th scope="col">Responsável</th>
+                            <th scope="col">Status</th>
+                            <th scope="col" class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ltcat in recentes %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">{{ ltcat.empresa.razao_social|truncatechars:40 }}</div>
+                                <small class="text-muted">{{ ltcat.codigo_documento }} · {{ ltcat.filial.nome }}</small>
+                            </td>
+                            <td>{{ ltcat.data_elaboracao|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if ltcat.data_vencimento %}
+                                <span class="{% if ltcat.is_vencido %}text-danger fw-semibold{% endif %}">{{ ltcat.data_vencimento|date:"d/m/Y" }}</span>
+                                {% else %}<span class="text-muted">—</span>{% endif %}
+                            </td>
+                            <td>
+                                {% with r=ltcat.responsavel_info.all|first %}
+                                {% if r %}{{ r.profissional.nome_completo|truncatechars:25 }}<br><small class="text-muted">{{ r.get_tipo_responsabilidade_display }}</small>
+                                {% else %}<span class="text-danger small"><i class="fas fa-exclamation-circle me-1"></i>Sem responsável</span>{% endif %}
+                                {% endwith %}
+                            </td>
+                            <td><span class="badge {{ ltcat.status|status_badge }}">{{ ltcat.get_status_display }}</span></td>
+                            <td class="text-end">
+                                <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}" class="btn btn-sm btn-outline-primary" title="Visualizar" aria-label="Visualizar {{ ltcat.codigo_documento }}">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="fas fa-inbox fa-2x d-block mb-2"></i>Nenhum LTCAT cadastrado ainda.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card shadow-sm">
+            <div class="card-header"><i class="fas fa-calendar-alt me-1"></i> Vencimentos — próximos 90 dias</div>
+            <ul class="list-group list-group-flush">
+                {% for d in proximos_vencimentos %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{% url 'ltcat:ltcat_detail' d.pk %}" class="text-decoration-none">
+                        <div class="fw-semibold small">{{ d.empresa.razao_social|truncatechars:30 }}</div>
+                        <small class="text-muted">{{ d.data_vencimento|date:"d/m/Y" }}</small>
+                    </a>
+                    <span class="badge {% if d.dias_para_vencimento <= 30 %}bg-danger{% elif d.dias_para_vencimento <= 60 %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                        {{ d.dias_para_vencimento }} dia{{ d.dias_para_vencimento|pluralize }}
+                    </span>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted small text-center py-4">Nenhum vencimento próximo.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header"><i class="fas fa-building me-1"></i> Empresas com mais laudos</div>
+            <ul class="list-group list-group-flush">
+                {% for e in top_empresas %}
+                <li class="list-group-item d-flex justify-content-between small">
+                    <span>{{ e.empresa__razao_social|truncatechars:35 }}</span>
+                    <span class="badge bg-secondary">{{ e.n }}</span>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted small text-center py-4">Sem dados.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+{{ charts|json_script:"ltcat-charts" }}
 {% endblock %}
 
+{% block ltcat_extra_js %}
+<script>
+(function () {
+    'use strict';
+    if (typeof Chart === 'undefined') return;
+    var d = JSON.parse(document.getElementById('ltcat-charts').textContent);
+    var css = getComputedStyle(document.body);
+    Chart.defaults.color = css.getPropertyValue('--bs-body-color').trim() || '#555';
+    Chart.defaults.borderColor = css.getPropertyValue('--bs-border-color').trim() || '#ddd';
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) Chart.defaults.animation = false;
+
+    new Chart(document.getElementById('chartStatus'), {
+        type: 'doughnut',
+        data: { labels: d.status.labels, datasets: [{ data: d.status.values, backgroundColor: d.status.colors }] },
+        options: { plugins: { legend: { position: 'bottom' } }, cutout: '60%' }
+    });
+
+    var prim = getComputedStyle(document.documentElement).getPropertyValue('--ltcat-secondary').trim() || '#2e9e5e';
+    new Chart(document.getElementById('chartMensal'), {
+        type: 'line',
+        data: { labels: d.mensal.labels, datasets: [{ label: 'Laudos', data: d.mensal.values, borderColor: prim, backgroundColor: prim + '33', fill: true, tension: .3 }] },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+
+    new Chart(document.getElementById('chartRiscos'), {
+        type: 'bar',
+        data: { labels: d.riscos.labels, datasets: [{ label: 'Riscos', data: d.riscos.values, backgroundColor: d.riscos.colors }] },
+        options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+})();
+</script>
+{% endblock %}

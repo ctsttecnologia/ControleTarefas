@@ -1,250 +1,124 @@
-
+<!-- ═══════════════════════════════════════════════════════════════════
+   ltcat/templates/ltcat/empresa_ltcat_form.html
+   ═══════════════════════════════════════════════════════════════════ -->
 {% extends "ltcat/base_ltcat.html" %}
 
-{% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Empresa Contratada{% endblock %}
+{% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} empresa contratada — LTCAT{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item"><a href="{% url 'ltcat:empresa_ltcat_list' %}">Empresas Contratadas</a></li>
-<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %}</li>
+<li class="breadcrumb-item"><a href="{% url 'ltcat:empresa_ltcat_list' %}">Empresas contratadas</a></li>
+<li class="breadcrumb-item active" aria-current="page">{% if form.instance.pk %}Editar{% else %}Nova{% endif %}</li>
 {% endblock %}
 
 {% block ltcat_content %}
-<div class="row justify-content-center">
-    <div class="col-lg-10">
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h5 class="mb-0 fw-semibold">
-                    <i class="fas fa-{% if form.instance.pk %}edit{% else %}plus-circle{% endif %} me-2"></i>
-                    {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Empresa Contratada (Elaboradora do LTCAT)
-                </h5>
+<div class="page-header">
+    <h1 class="h4"><i class="fas fa-building me-2"></i>{% if form.instance.pk %}Editar{% else %}Nova{% endif %} empresa contratada</h1>
+    <p class="mb-0">{% if form.instance.pk %}<strong>{{ form.instance.razao_social }}</strong>{% else %}Empresa que elabora o laudo{% endif %}</p>
+</div>
+
+<form method="post" novalidate class="row justify-content-center">
+    {% csrf_token %}
+    <div class="col-xl-10">
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            {% for e in form.non_field_errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="form-section">
+            <h2 class="h6 fw-bold text-uppercase mb-3 pb-2 border-bottom"><i class="fas fa-id-card me-2"></i>Identificação</h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.cliente col="col-md-8" %}
+                {% include "ltcat/includes/_field.html" with field=form.cnpj col="col-md-4" %}
             </div>
-            <div class="card-body">
-                <form method="POST" novalidate>
-                    {% csrf_token %}
+            <div class="form-text mt-1"><i class="fas fa-magic me-1"></i>Ao escolher o cliente, o CNPJ, o endereço e o contato são preenchidos. Antes de substituir o que você já digitou, o sistema pede confirmação.</div>
+            <div id="autoFillMsg" class="small text-success mt-2" role="status" aria-live="polite"></div>
+        </div>
 
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        {% for error in form.non_field_errors %}
-                        <div>{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
+        <div class="form-section">
+            <h2 class="h6 fw-bold text-uppercase mb-3 pb-2 border-bottom"><i class="fas fa-clipboard-list me-2"></i>Dados da atividade</h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.cnae col="col-md-4" %}
+                {% include "ltcat/includes/_field.html" with field=form.descricao_cnae col="col-md-8" %}
+                {% include "ltcat/includes/_field.html" with field=form.grau_risco col="col-md-3" %}
+                {% include "ltcat/includes/_field.html" with field=form.grau_risco_texto col="col-md-5" %}
+                {% include "ltcat/includes/_field.html" with field=form.jornada_trabalho col="col-md-4" %}
+                {% include "ltcat/includes/_field.html" with field=form.atividade_principal col="col-md-8" %}
+                {% include "ltcat/includes/_field.html" with field=form.numero_empregados col="col-md-2" %}
+                {% include "ltcat/includes/_field.html" with field=form.numero_empregados_texto col="col-md-2" %}
+            </div>
+            <div class="form-text mt-1">O grau de risco (de 1 a 4) segue o CNAE, conforme o Quadro I da NR-04.</div>
+        </div>
 
-                    <!-- ════ Seleção do Cliente ════ -->
-                    <div class="alert alert-info mb-4">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Selecione o <b>Cliente</b> correspondente à empresa contratada (ex: CETEST).
-                        Os campos de endereço serão preenchidos automaticamente e você pode complementar as informações específicas do LTCAT.
-                    </div>
-
-                    <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
-                        <i class="fas fa-building me-1"></i> Identificação
-                    </h6>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-8">
-                            <label class="form-label">{{ form.cliente.label }} *</label>
-                            {{ form.cliente }}
-                            {% if form.cliente.errors %}
-                            <div class="invalid-feedback d-block">{{ form.cliente.errors.0 }}</div>
-                            {% endif %}
-                            <small class="text-muted">{{ form.cliente.help_text }}</small>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">{{ form.cnpj.label }}</label>
-                            {{ form.cnpj }}
-                            <small class="text-muted">{{ form.cnpj.help_text }}</small>
-                        </div>
-                    </div>
-
-                    <!-- ════ Dados Complementares LTCAT ════ -->
-                    <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
-                        <i class="fas fa-clipboard-list me-1"></i> Dados Complementares do LTCAT
-                    </h6>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label">{{ form.cnae.label }}</label>
-                            {{ form.cnae }}
-                        </div>
-                        <div class="col-md-8">
-                            <label class="form-label">{{ form.descricao_cnae.label }}</label>
-                            {{ form.descricao_cnae }}
-                        </div>
-                    </div>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-3">
-                            <label class="form-label">{{ form.grau_risco.label }}</label>
-                            {{ form.grau_risco }}
-                            <small class="text-muted">{{ form.grau_risco.help_text }}</small>
-                        </div>
-                        <div class="col-md-5">
-                            <label class="form-label">{{ form.grau_risco_texto.label }}</label>
-                            {{ form.grau_risco_texto }}
-                            <small class="text-muted">{{ form.grau_risco_texto.help_text }}</small>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">{{ form.jornada_trabalho.label }}</label>
-                            {{ form.jornada_trabalho }}
-                        </div>
-                    </div>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-8">
-                            <label class="form-label">{{ form.atividade_principal.label }}</label>
-                            {{ form.atividade_principal }}
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">{{ form.numero_empregados.label }}</label>
-                            {{ form.numero_empregados }}
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Nº Empregados (Texto)</label>
-                            {{ form.numero_empregados_texto }}
-                            <small class="text-muted">{{ form.numero_empregados_texto.help_text }}</small>
-                        </div>
-                    </div>
-
-                    <!-- ════ Endereço ════ -->
-                    <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
-                        <i class="fas fa-map-marker-alt me-1"></i> Endereço
-                    </h6>
-                    <div id="endereco-auto-info" class="alert alert-secondary mb-3 d-none">
-                        <i class="fas fa-magic me-2"></i>
-                        Endereço preenchido a partir do cliente. Ajuste conforme necessário.
-                    </div>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.endereco.label }}</label>
-                            {{ form.endereco }}
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">{{ form.numero.label }}</label>
-                            {{ form.numero }}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">{{ form.complemento.label }}</label>
-                            {{ form.complemento }}
-                        </div>
-                    </div>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-3">
-                            <label class="form-label">{{ form.bairro.label }}</label>
-                            {{ form.bairro }}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">{{ form.cidade.label }}</label>
-                            {{ form.cidade }}
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">{{ form.estado.label }}</label>
-                            {{ form.estado }}
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">{{ form.cep.label }}</label>
-                            {{ form.cep }}
-                        </div>
-                    </div>
-
-                    <!-- ════ Contato ════ -->
-                    <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
-                        <i class="fas fa-phone me-1"></i> Contato
-                    </h6>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label">{{ form.telefone.label }}</label>
-                            {{ form.telefone }}
-                        </div>
-                        <div class="col-md-8">
-                            <label class="form-label">{{ form.email.label }}</label>
-                            {{ form.email }}
-                        </div>
-                    </div>
-
-                    <hr>
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'ltcat:empresa_ltcat_list' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left me-1"></i> Cancelar
-                        </a>
-                        {% if perms.ltcat.add_empresa_ltcat or user.is_superuser %}
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-check me-1"></i> Salvar
-                        </button>
-                        {% endif %}
-                    </div>
-                </form>
+        <div class="form-section">
+            <h2 class="h6 fw-bold text-uppercase mb-3 pb-2 border-bottom"><i class="fas fa-map-marker-alt me-2"></i>Endereço</h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.endereco col="col-md-6" %}
+                {% include "ltcat/includes/_field.html" with field=form.numero col="col-md-2" %}
+                {% include "ltcat/includes/_field.html" with field=form.complemento col="col-md-4" %}
+                {% include "ltcat/includes/_field.html" with field=form.bairro col="col-md-3" %}
+                {% include "ltcat/includes/_field.html" with field=form.cidade col="col-md-4" %}
+                {% include "ltcat/includes/_field.html" with field=form.estado col="col-md-2" %}
+                {% include "ltcat/includes/_field.html" with field=form.cep col="col-md-3" %}
             </div>
         </div>
+
+        <div class="form-section">
+            <h2 class="h6 fw-bold text-uppercase mb-3 pb-2 border-bottom"><i class="fas fa-phone me-2"></i>Contato</h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.telefone col="col-md-4" %}
+                {% include "ltcat/includes/_field.html" with field=form.email col="col-md-8" %}
+            </div>
+        </div>
+
+        <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 pt-3 border-top">
+            <a href="{% url 'ltcat:empresa_ltcat_list' %}" class="btn btn-outline-secondary order-2 order-sm-1"><i class="fas fa-arrow-left me-1"></i> Cancelar</a>
+            {% if form.instance.pk and perms.ltcat.change_empresaltcat or not form.instance.pk and perms.ltcat.add_empresaltcat %}
+            <button type="submit" class="btn btn-primary px-4 order-1 order-sm-2"><i class="fas fa-save me-1"></i> {% if form.instance.pk %}Salvar alterações{% else %}Cadastrar empresa{% endif %}</button>
+            {% endif %}
+        </div>
     </div>
-</div>
+</form>
 {% endblock %}
 
 {% block ltcat_extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var clienteSelect = document.getElementById('id_cliente');
-    var ajaxUrl = "{% url 'ltcat:ajax_dados_cliente' %}";
-    var enderecoInfo = document.getElementById('endereco-auto-info');
+(function () {
+    'use strict';
+    const URL_DADOS = "{% url 'ltcat:ajax_dados_cliente' %}";
+    const CAMPOS = ['cnpj', 'telefone', 'email', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep'];
+    const sel = document.getElementById('id_cliente'), msg = document.getElementById('autoFillMsg');
+    if (!sel) return;
+    let req = 0;
 
-    // Campos que serão auto-preenchidos
-    var camposMap = {
-        'cnpj': 'id_cnpj',
-        'telefone': 'id_telefone',
-        'email': 'id_email',
-        'endereco': 'id_endereco',
-        'numero': 'id_numero',
-        'complemento': 'id_complemento',
-        'bairro': 'id_bairro',
-        'cidade': 'id_cidade',
-        'estado': 'id_estado',
-        'cep': 'id_cep',
-    };
+    const el = k => document.getElementById('id_' + k);
+    const fmtCnpj = v => v.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2}\.\d{3})(\d)/, '$1.$2')
+                          .replace(/^(\d{2}\.\d{3}\.\d{3})(\d)/, '$1/$2').replace(/(\/\d{4})(\d)/, '$1-$2');
+    el('cnpj')?.addEventListener('input', e => { e.target.value = fmtCnpj(e.target.value.replace(/\D/g, '').slice(0, 14)); });
+    el('cep')?.addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8).replace(/^(\d{5})(\d)/, '$1-$2'); });
 
-    function preencherCampos(dados) {
-        for (var chave in camposMap) {
-            var el = document.getElementById(camposMap[chave]);
-            if (el && dados[chave] !== undefined) {
-                // Só preenche se o campo estiver vazio
-                if (!el.value || el.value === '') {
-                    el.value = dados[chave];
-                }
-            }
-        }
-        if (enderecoInfo) {
-            enderecoInfo.classList.remove('d-none');
-        }
-    }
-
-    function limparCampos() {
-        for (var chave in camposMap) {
-            var el = document.getElementById(camposMap[chave]);
-            if (el) el.value = '';
-        }
-        if (enderecoInfo) {
-            enderecoInfo.classList.add('d-none');
-        }
-    }
-
-    if (clienteSelect) {
-        clienteSelect.addEventListener('change', function() {
-            var clienteId = this.value;
-            if (!clienteId) {
-                limparCampos();
-                return;
-            }
-
-            fetch(ajaxUrl + '?cliente_id=' + clienteId)
-                .then(function(resp) { return resp.json(); })
-                .then(function(dados) {
-                    if (!dados.error) {
-                        // Limpa tudo primeiro para forçar preenchimento
-                        limparCampos();
-                        preencherCampos(dados);
-                    }
-                })
-                .catch(function(err) {
-                    console.error('Erro ao buscar dados do cliente:', err);
-                });
-        });
-    }
-});
+    sel.addEventListener('change', async () => {
+        msg.textContent = '';
+        if (!sel.value) return;                       // limpar o cliente NÃO apaga os dados digitados
+        const id = ++req;
+        try {
+            const r = await fetch(`${URL_DADOS}?cliente_id=${encodeURIComponent(sel.value)}`, {credentials: 'same-origin'});
+            const d = r.ok ? await r.json() : {};
+            if (id !== req || d.error) return;
+            const conflitos = CAMPOS.filter(k => d[k] && el(k)?.value.trim() && el(k).value.trim() !== String(d[k]));
+            const sobrescrever = !conflitos.length || confirm(`Substituir os ${conflitos.length} campo(s) já preenchidos pelos dados do cliente?`);
+            let n = 0;
+            CAMPOS.forEach(k => {
+                const i = el(k);
+                if (!i || !d[k] || (i.value.trim() && !sobrescrever)) return;
+                i.value = d[k]; n++;
+            });
+            if (n) msg.innerHTML = `<i class="fas fa-check-circle me-1"></i>${n} campo(s) preenchido(s). Revise antes de salvar.`;
+        } catch (_) { /* erro de rede: os dados digitados continuam como estão */ }
+    });
+})();
 </script>
 {% endblock %}
 

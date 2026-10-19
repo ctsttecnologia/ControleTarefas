@@ -27,6 +27,8 @@ from core.mixins import (
     SSTPermissionMixin,
 )
 
+from django.urls import reverse_lazy
+
 
 # =============================================================================
 # == MIXIN BASE DO APP
@@ -120,3 +122,35 @@ class LTCATChildMixin(LTCATBaseMixin, LTCATAccessMixin):
         return ctx
 
 
+class LTCATChildUniqueMixin:
+    """Valida unique_together com ltcat_documento (campo fora do form)."""
+    unique_field = None
+
+    def clean(self):
+        cleaned = super().clean()
+        valor = cleaned.get(self.unique_field)
+        if self.ltcat and valor:
+            qs = self._meta.model.objects.filter(
+                ltcat_documento=self.ltcat, **{self.unique_field: valor})
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error(self.unique_field, 'Já existe registro para este item neste LTCAT.')
+        return cleaned
+
+class LTCATDeleteContextMixin:
+    cancel_url_name = None
+    voltar_label = ""
+    soft_delete = False
+    confirm_label = "Excluir Permanentemente"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.update({
+            "can_delete": self.request.user.has_perm(self.permission_required),
+            "cancel_url": reverse_lazy(self.cancel_url_name),
+            "voltar_label": self.voltar_label,
+            "soft_delete": self.soft_delete,
+            "confirm_label": self.confirm_label,
+        })
+        return ctx

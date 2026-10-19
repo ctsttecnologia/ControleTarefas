@@ -588,6 +588,9 @@ LOGGING = {
         'lgpd.auditoria': {'handlers': ['lgpd_file'], 'level': 'INFO', 'propagate': False},
         'pgr.audit': {'handlers': ['audit_file'], 'level': 'INFO', 'propagate': False},
         'chat': {'handlers': ['console'], 'level': 'DEBUG', 'propagate': False},
+        'ltcat.audit': {
+            'handlers': ['audit_file'], 'level': 'INFO', 'propagate': False,
+        },
     },
 }
 

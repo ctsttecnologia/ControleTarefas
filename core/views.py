@@ -11,6 +11,7 @@ from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidd
 from django.apps import apps
 from django.views.generic import TemplateView
 from prompt_toolkit.validation import ValidationError
+from core.utils import get_filial_ativa, usuario_ve_todas_filiais
 from usuario.models import Filial
 import logging
 from django.contrib.auth.decorators import login_required
@@ -22,7 +23,7 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
-from .models import TokenAssinaturaRemota
+from .models import AssinavelMixin, TokenAssinaturaRemota
 from django.db import close_old_connections, models
 from django.core.exceptions import ValidationError 
 
@@ -318,7 +319,7 @@ def _obter_token_valido(token):
 
 
 @method_decorator(login_required, name='dispatch')
-class GerarLinkAssinaturaView(View):
+class GerarLinkAssinaturaView(LoginRequiredMixin, View):
     """
     Gera (ou reaproveita) um token de assinatura remota para qualquer objeto.
     Uso via URL: /core/assinatura-remota/gerar/<app_label>/<model_name>/<object_id>/
@@ -327,13 +328,14 @@ class GerarLinkAssinaturaView(View):
     def post(self, request, app_label, model_name, object_id):
         content_type = get_object_or_404(ContentType, app_label=app_label, model=model_name)
         modelo = content_type.model_class()
-        objeto = get_object_or_404(modelo, pk=object_id)
-
-        if hasattr(objeto, 'pode_ser_assinado') and not objeto.pode_ser_assinado():
-            return JsonResponse({
-                'ok': False,
-                'erro': 'Este registro já foi assinado ou não pode ser assinado neste momento.',
-            }, status=400)
+        if not issubclass(modelo, AssinavelMixin):
+            raise Http404
+        if not request.user.has_perm(f'{app_label}.change_{model_name}'):
+            return JsonResponse({'ok': False, 'erro': 'Sem permissão.'}, status=403)
+        qs = modelo.objects.all()
+        if not usuario_ve_todas_filiais(request.user) and hasattr(modelo, 'filial'):
+            qs = qs.filter(filial=get_filial_ativa(request.user, request))
+        objeto = get_object_or_404(qs, pk=object_id)
 
         # Invalida tokens antigos ainda não usados para o mesmo objeto
         TokenAssinaturaRemota.objects.filter(

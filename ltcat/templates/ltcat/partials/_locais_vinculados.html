@@ -1,0 +1,57 @@
+
+<!-- ═══════════════════════════════════════════════════════════════════
+   ltcat/templates/ltcat/partials/_locais_vinculados.html
+   Uso: {% include "ltcat/partials/_locais_vinculados.html" with vinculos=doc_locais %}
+   Classes/data-* compatíveis com o JS do ltcat_detail.html
+   (.js-toggle-principal, .js-desvincular-local, data-id).
+   ═══════════════════════════════════════════════════════════════════ -->
+{% if vinculos %}
+<div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+        <thead>
+            <tr>
+                <th scope="col">Local</th>
+                <th scope="col">CNPJ</th>
+                <th scope="col">Endereço</th>
+                <th scope="col" class="text-center">Principal</th>
+                <th scope="col" class="text-end no-print">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for v in vinculos %}
+        {% with loc=v.local_prestacao %}
+            <tr>
+                <td class="text-strong">{{ loc.nome_local }}</td>
+                <td><code>{{ loc.cnpj|default:"—" }}</code></td>
+                <td class="small">{{ loc.endereco_completo|default:"—" }}</td>
+                <td class="text-center">
+                    {% if perms.ltcat.change_ltcatdocumento %}
+                    <button type="button" class="btn btn-link p-0 js-toggle-principal" data-id="{{ v.pk }}"
+                            aria-pressed="{{ v.principal|yesno:'true,false' }}"
+                            aria-label="{% if v.principal %}Desmarcar{% else %}Marcar{% endif %} {{ loc.nome_local }} como principal">
+                        <i class="{% if v.principal %}fas fa-star text-warning{% else %}far fa-star text-muted{% endif %}" aria-hidden="true"></i>
+                    </button>
+                    {% elif v.principal %}
+                    <i class="fas fa-star text-warning" aria-label="Principal"></i>
+                    {% endif %}
+                </td>
+                <td class="text-end no-print">
+                    {% if perms.ltcat.change_ltcatdocumento %}
+                    <button type="button" class="btn btn-sm btn-outline-danger js-desvincular-local"
+                            data-id="{{ v.pk }}" data-nome="{{ loc.nome_local }}"
+                            title="Desvincular" aria-label="Desvincular {{ loc.nome_local }}">
+                        <i class="fas fa-unlink" aria-hidden="true"></i>
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endwith %}
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="table-empty-state text-center">
+    <i class="fas fa-map-marker-alt d-block" aria-hidden="true"></i>Nenhum local vinculado a este documento.
+</div>
+{% endif %}

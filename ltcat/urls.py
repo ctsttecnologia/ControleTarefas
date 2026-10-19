@@ -13,7 +13,12 @@ urlpatterns = [
     path("empresas/", views.EmpresaLTCATListView.as_view(), name="empresa_ltcat_list"),
     path("empresas/nova/", views.EmpresaLTCATCreateView.as_view(), name="empresa_ltcat_create"),
     path("empresas/<int:pk>/editar/", views.EmpresaLTCATUpdateView.as_view(), name="empresa_ltcat_update"),
-    path("empresas/<int:pk>/excluir/", views.EmpresaLTCATDeleteView.as_view(), name="empresa_ltcat_delete"),
+   
+
+    path("laudos/<int:ltcat_pk>/riscos/<int:risco_pk>/medidas/nova/", views.MedidaCreateView.as_view(), name="medida_create"),
+    path("laudos/<int:ltcat_pk>/medidas/<int:pk>/editar/", views.MedidaUpdateView.as_view(), name="medida_update"),
+    path("laudos/<int:ltcat_pk>/medidas/<int:pk>/excluir/", views.MedidaDeleteView.as_view(), name="medida_delete"),
+    path("laudos/<int:ltcat_pk>/anexos/<int:pk>/download/", views.anexo_download, name="anexo_download"),
 
     # ── LTCAT Documento ──
     path("laudos/", views.LTCATListView.as_view(), name="ltcat_list"),
@@ -82,5 +87,8 @@ urlpatterns = [
 
     # ── PDF ──
     path("laudos/<int:pk>/pdf/", views.gerar_pdf_ltcat, name="gerar_pdf"),
+
+    path("laudos/<int:ltcat_pk>/responsaveis/<int:prof_pk>/link-assinatura/", views.ajax_gerar_link_assinatura, name="ajax_gerar_link_assinatura"),
+
 ]
 

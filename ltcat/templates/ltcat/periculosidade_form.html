@@ -1,179 +1,89 @@
-
+<!-- ═══════════════════════════════════════════════════════════════════
+   ltcat/templates/ltcat/periculosidade_form.html
+   ═══════════════════════════════════════════════════════════════════ -->
 {% extends "ltcat/base_ltcat.html" %}
 
-{% block ltcat_title %}Avaliação de Periculosidade - LTCAT{% endblock %}
+{% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} periculosidade — LTCAT{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_list' %}">Laudos</a></li>
 <li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}">{{ ltcat.codigo_documento }}</a></li>
-<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Periculosidade</li>
+<li class="breadcrumb-item active" aria-current="page">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} periculosidade</li>
 {% endblock %}
 
 {% block ltcat_content %}
-<div class="row justify-content-center">
-    <div class="col-xl-9 col-lg-10">
+<div class="page-header">
+    <h1 class="h4"><i class="fas fa-bolt me-2"></i>{% if form.instance.pk %}Editar{% else %}Nova{% endif %} avaliação de periculosidade</h1>
+    <p class="mb-0">Seção 8 — NR-16 e anexos · <strong>{{ ltcat.codigo_documento }}</strong></p>
+</div>
 
-        <div class="card shadow-sm border-0">
-            <div class="card-header border-0 py-3"
-                 style="background: linear-gradient(135deg, #ef4444, #dc2626);">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0"
-                         style="width:44px; height:44px; background: rgba(255,255,255,0.15);">
-                        <i class="fas fa-bolt text-white fa-lg"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <h5 class="mb-0 text-white fw-bold">
-                            {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação de Periculosidade
-                        </h5>
-                        <small class="text-white-50 text-truncate d-block">
-                            Seção 8 — NR-16 e Anexos | {{ ltcat.codigo_documento }}
-                        </small>
-                    </div>
-                </div>
-            </div>
+<form method="post" novalidate class="row justify-content-center">
+    {% csrf_token %}
+    <div class="col-xl-9">
 
-            <div class="card-body p-lg-4 p-3">
-                <div class="alert border-0 py-2 mb-4" style="background: var(--bs-danger-bg-subtle, #f8d7da); color: var(--bs-danger-text-emphasis, #58151c);">
-                    <i class="fas fa-shield-alt me-2"></i>
-                    <small>
-                        A <strong>Seção 8</strong> avalia cada tipo de periculosidade conforme a NR-16 e seus anexos:
-                        Explosivos (Anexo 01), Inflamáveis (Anexo 02), Violência (Anexo 03),
-                        Eletricidade (Anexo 04), Trânsito (Anexo 06) e Radiações Ionizantes.
-                    </small>
-                </div>
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            {% for e in form.non_field_errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+        </div>
+        {% endif %}
 
-                <form method="post" novalidate>
-                    {% csrf_token %}
+        <div class="alert alert-secondary py-2">
+            <i class="fas fa-info-circle me-2"></i>Registre <strong>um tipo por avaliação</strong>. Periculosidade é verba trabalhista (30%) e
+            <strong>não gera enquadramento previdenciário</strong>.
+        </div>
 
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        {% for error in form.non_field_errors %}
-                            <span>{{ error }}</span>{% if not forloop.last %}<br>{% endif %}
-                        {% endfor %}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    {% endif %}
-
-                    {# ═══════════ TIPO E APLICABILIDADE ═══════════ #}
-                    <fieldset class="mb-4">
-                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-shield-alt me-2"></i>Tipo de Periculosidade
-                        </legend>
-                        <div class="row g-3 align-items-end">
-                            <div class="col-md-8">
-                                <label for="{{ form.tipo.id_for_label }}" class="form-label fw-semibold">
-                                    {{ form.tipo.label }} <span class="text-danger">*</span>
-                                </label>
-                                {{ form.tipo }}
-                                {% for error in form.tipo.errors %}
-                                <div class="invalid-feedback d-block">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card border-0 rounded-3 h-100" style="background: var(--bs-tertiary-bg, #f8f9fa);">
-                                    <div class="card-body d-flex align-items-center justify-content-between py-3 px-3">
-                                        <div>
-                                            <label class="form-label fw-semibold mb-0 d-block">
-                                                {{ form.aplicavel.label }}
-                                            </label>
-                                            <small class="text-muted" id="labelAplicavelDesc">Não aplicável</small>
-                                        </div>
-                                        <div class="form-check form-switch mb-0">
-                                            {{ form.aplicavel }}
-                                        </div>
-                                    </div>
-                                </div>
-                                {% for error in form.aplicavel.errors %}
-                                <div class="invalid-feedback d-block">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    {# ═══════════ FUNÇÕES EXPOSTAS ═══════════ #}
-                    <fieldset class="mb-4" id="fieldset-funcoes-expostas">
-                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-users me-2"></i>Funções Expostas
-                        </legend>
-                        <label for="{{ form.funcoes_expostas.id_for_label }}" class="form-label fw-semibold">
-                            {{ form.funcoes_expostas.label }}
-                        </label>
-                        {{ form.funcoes_expostas }}
-                        <div class="form-text">
-                            Selecione as funções que estão expostas a este tipo de periculosidade.
-                            Segure <kbd>Ctrl</kbd> para selecionar múltiplas.
-                        </div>
-                        {% for error in form.funcoes_expostas.errors %}
-                        <div class="invalid-feedback d-block">
-                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                        </div>
-                        {% endfor %}
-                    </fieldset>
-
-                    {# ═══════════ JUSTIFICATIVA ═══════════ #}
-                    <fieldset class="mb-4">
-                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
-                            <i class="fas fa-file-alt me-2"></i>Descrição / Justificativa
-                        </legend>
-                        <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">
-                            {{ form.descricao.label }}
-                        </label>
-                        {{ form.descricao }}
-                        <div class="form-text">
-                            Ex: <em>As funções avaliadas não lidam com explosivos e não trabalham em área de risco normatizada.</em>
-                        </div>
-                        {% for error in form.descricao.errors %}
-                        <div class="invalid-feedback d-block">
-                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                        </div>
-                        {% endfor %}
-                    </fieldset>
-
-                    {# ═══════════ BOTÕES ═══════════ #}
-                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
-                        <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}" class="btn btn-outline-secondary order-2 order-sm-1">
-                            <i class="fas fa-arrow-left me-1"></i> Voltar ao Documento
-                        </a>
-                        <button type="submit" class="btn btn-danger px-4 order-1 order-sm-2">
-                            <i class="fas fa-save me-1"></i>
-                            {% if form.instance.pk %}Atualizar{% else %}Cadastrar{% endif %}
-                        </button>
-                    </div>
-                </form>
+        <div class="form-section pb-2 border-bottom">
+            <h2 class="h6 fw-bold text-uppercase mb-3 pb-2 border-bottom"><i class="fas fa-shield-alt me-2"></i>Tipo e aplicabilidade</h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.tipo col="col-md-8" %}
+                {% include "ltcat/includes/_field.html" with field=form.aplicavel col="col-md-4" %}
             </div>
         </div>
 
+        <div class="form-section pb-2 border-bottom" id="blocoFuncoes">
+            <h2 class="h6 fw-bold text-uppercase mb-3"><i class="fas fa-users me-2"></i>Funções expostas</h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.funcoes_expostas %}
+            </div>
+            <div class="form-text mt-1">Segure <kbd>Ctrl</kbd> para selecionar várias.</div>
+        </div>
+
+        <div class="form-section pb-2 border-bottom">
+            <h2 class="h6 fw-bold text-uppercase mb-3"><i class="fas fa-file-alt me-2"></i>Fundamentação técnica</h2>
+            <div class="row g-3">
+                {% include "ltcat/includes/_field.html" with field=form.descricao %}
+            </div>
+            <div class="form-text mt-1">
+                Descreva o que foi <strong>verificado</strong> (inspeção, áreas, atividades, anexo da NR-16) — não presuma.
+                Ex: <em>Inspeção em 10/10/2026: não há armazenamento de inflamáveis acima dos limites do Anexo 2 nem acesso a área de risco.</em>
+            </div>
+        </div>
+
+        <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 pt-3 border-top">
+            <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}" class="btn btn-outline-secondary order-2 order-sm-1"><i class="fas fa-arrow-left me-1"></i> Voltar ao documento</a>
+            <button type="submit" class="btn btn-primary px-4 order-1 order-sm-2"><i class="fas fa-save me-1"></i> {% if form.instance.pk %}Atualizar{% else %}Cadastrar{% endif %} avaliação</button>
+        </div>
     </div>
-</div>
+</form>
 {% endblock %}
 
 {% block ltcat_extra_js %}
 <script>
-(function() {
-    const chk = document.getElementById('{{ form.aplicavel.id_for_label }}');
-    const desc = document.getElementById('labelAplicavelDesc');
-    const fieldsetFuncoes = document.getElementById('fieldset-funcoes-expostas');
-
-    function toggle() {
-        if (!chk) return;
-        if (chk.checked) {
-            if (desc) { desc.textContent = 'APLICÁVEL'; desc.classList.add('text-danger', 'fw-bold'); desc.classList.remove('text-muted'); }
-            if (fieldsetFuncoes) { fieldsetFuncoes.style.opacity = '1'; fieldsetFuncoes.style.pointerEvents = 'auto'; }
-        } else {
-            if (desc) { desc.textContent = 'Não aplicável'; desc.classList.remove('text-danger', 'fw-bold'); desc.classList.add('text-muted'); }
-            if (fieldsetFuncoes) { fieldsetFuncoes.style.opacity = '0.5'; fieldsetFuncoes.style.pointerEvents = 'none'; }
-        }
-    }
-
-    if (chk) { chk.addEventListener('change', toggle); toggle(); }
+(function () {
+    'use strict';
+    const chk = document.getElementById('id_aplicavel');
+    const bloco = document.getElementById('blocoFuncoes');
+    const sel = document.getElementById('id_funcoes_expostas');
+    if (!chk || !bloco || !sel) return;
+    const sync = () => {
+        bloco.hidden = !chk.checked;
+        sel.required = chk.checked;
+        if (!chk.checked) Array.from(sel.options).forEach(o => o.selected = false);   // não aplicável ⇒ sem funções
+        bloco.querySelector('.form-label')?.classList.toggle('required-field', chk.checked);
+    };
+    chk.addEventListener('change', sync); sync();
 })();
 </script>
 {% endblock %}
-
-
 

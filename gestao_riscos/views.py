@@ -255,9 +255,9 @@ class InspecaoEventsApiView(GestaoRiscosBaseMixin, View):
         qs_base = Inspecao.objects.for_request(request)
 
         # 2. Filtra pelo escopo do Tecnico (se aplicavel)
-        qs_scoped = filtrar_queryset_por_tecnico(
+        qs_scoped = _scoped(
             qs_base, request, 'responsavel',
-            permissao_view_all='gestao_riscos.view_all_inspecao'
+            perm='gestao_riscos.view_all_inspecao'
         )
 
         # 3. Filtra por status visiveis + garante data preenchida

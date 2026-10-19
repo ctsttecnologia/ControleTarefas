@@ -1,140 +1,112 @@
-
+<!-- ═══════════════════════════════════════════════════════════════════
+   ltcat/templates/ltcat/local_list.html
+   ═══════════════════════════════════════════════════════════════════ -->
 {% extends "ltcat/base_ltcat.html" %}
 
-{% block ltcat_title %}Locais de Prestação de Serviço{% endblock %}
+{% block ltcat_title %}Locais de prestação — LTCAT{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item active">Locais de Prestação</li>
+<li class="breadcrumb-item active" aria-current="page">Locais de prestação</li>
 {% endblock %}
 
 {% block ltcat_content %}
-{# ══ Mensagem de sucesso do cadastro em lote ══ #}
-{% if request.GET.msg == "bulk_created" %}
-<div class="alert alert-success alert-dismissible fade show" role="alert">
-    <i class="fas fa-check-circle me-2"></i>
-    <strong>{{ request.GET.total }} local(is)</strong> cadastrado(s) com sucesso!
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-{% endif %}
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">
-        <i class="fas fa-map-marker-alt me-2"></i>Locais de Prestação de Serviço
-    </h4>
-    {% if perms.ltcat.add_local or user.is_superuser %}
-    <a href="{% url 'ltcat:local_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus me-1"></i> Novo Local
-    </a>
-    {% endif %} 
+<div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+        <h1 class="h4"><i class="fas fa-map-marker-alt me-2"></i>Locais de prestação de serviço</h1>
+        <p class="mb-0">Unidades das empresas contratantes avaliadas nos laudos</p>
+    </div>
+    {% if perms.ltcat.add_localprestacaoservicoltcat %}
+    <div class="page-actions no-print">
+        <a href="{% url 'ltcat:local_create' %}" class="btn btn-main"><i class="fas fa-plus"></i> Novo local</a>
+    </div>
+    {% endif %}
 </div>
 
-<!-- Filtros -->
-<div class="card shadow-sm mb-4">
+<div class="card shadow-sm mb-4 no-print">
     <div class="card-body py-3">
-        <form method="GET" class="row g-2 align-items-end">
-            <div class="col-md-8">
-                <label class="form-label small">Buscar</label>
-                <input type="text" name="q" class="form-control form-control-sm"
-                       placeholder="Nome do local, empresa, cidade..."
-                       value="{{ busca }}">
+        <form method="get" class="row g-2 align-items-end" role="search">
+            <div class="col-md-9">
+                <label for="f-q" class="form-label small fw-semibold">Buscar</label>
+                <input id="f-q" type="search" name="q" class="form-control" placeholder="Nome do local, empresa, cidade..." value="{{ busca }}">
             </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-primary btn-sm w-100">
-                    <i class="fas fa-filter me-1"></i> Filtrar
-                </button>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-fill"><i class="fas fa-filter me-1"></i> Filtrar</button>
+                {% if busca %}
+                <a href="{% url 'ltcat:local_list' %}" class="btn btn-outline-secondary" title="Limpar filtros" aria-label="Limpar filtros"><i class="fas fa-times"></i></a>
+                {% endif %}
             </div>
         </form>
     </div>
 </div>
 
-<!-- Tabela -->
 <div class="card shadow-sm">
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+                <thead>
                     <tr>
                         <th>Local</th>
-                        <th>Empresa (Cliente)</th>
+                        <th>Empresa (cliente)</th>
                         <th>CNPJ</th>
                         <th>Cidade/UF</th>
                         <th>Endereço</th>
-                        <th class="text-end">Ações</th>
+                        <th class="text-end no-print">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for local in locais %}
+                {% for local in locais %}
                     <tr>
                         <td>
-                            <div class="fw-semibold">{{ local.nome_local }}</div>
-                            {% if local.razao_social %}
-                            <small class="text-muted">{{ local.razao_social }}</small>
-                            {% endif %}
+                            <div class="text-strong">{{ local.nome_local }}</div>
+                            {% if local.razao_social %}<small class="text-muted">{{ local.razao_social }}</small>{% endif %}
                         </td>
                         <td>{{ local.empresa.razao_social|truncatechars:40 }}</td>
-                        <td><code>{{ local.cnpj|default:"-" }}</code></td>
-                        <td>{{ local.cidade_display|default:"-" }}</td>
-                        <td>
-                            <small>{{ local.endereco_completo|truncatechars:60 }}</small>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                {% if perms.ltcat.change_local or user.is_superuser %}
-                                <a href="{% url 'ltcat:local_update' local.pk %}"
-                                   class="btn btn-outline-warning" title="Editar">
-                                    <i class="fas fa-pencil"></i>
-                                </a>
+                        <td><code>{{ local.cnpj|default:"—" }}</code></td>
+                        <td>{{ local.cidade_display|default:"—" }}</td>
+                        <td class="small">{{ local.endereco_completo|truncatechars:60 }}</td>
+                        <td class="text-end no-print">
+                            <div class="action-buttons">
+                                {% if perms.ltcat.change_localprestacaoservicoltcat %}
+                                <a href="{% url 'ltcat:local_update' local.pk %}" class="btn btn-outline-warning action-btn" title="Editar" aria-label="Editar"><i class="fas fa-pencil"></i></a>
                                 {% endif %}
-                                {% if perms.ltcat.delete_local or user.is_superuser %}
-                                <a href="{% url 'ltcat:local_delete' local.pk %}"
-                                   class="btn btn-outline-danger" title="Excluir">
-                                    <i class="fas fa-trash"></i>
-                                </a>
+                                {% if perms.ltcat.delete_localprestacaoservicoltcat %}
+                                <a href="{% url 'ltcat:local_delete' local.pk %}" class="btn btn-outline-danger action-btn" title="Excluir" aria-label="Excluir"><i class="fas fa-trash"></i></a>
                                 {% endif %}
                             </div>
                         </td>
                     </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-5">
-                            <i class="fas fa-map-marker-alt fa-2x d-block mb-2 opacity-50"></i>
-                            <p class="mb-2">Nenhum local de prestação cadastrado.</p>
-                            {% if perms.ltcat.add_local or user.is_superuser %}
-                            <a href="{% url 'ltcat:local_create' %}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-plus me-1"></i> Cadastrar primeiro local
-                            </a>
+                {% empty %}
+                    <tr><td colspan="6">
+                        <div class="table-empty-state text-center">
+                            <i class="fas fa-map-marker-alt d-block"></i>
+                            {% if busca %}Nenhum local encontrado para "{{ busca }}".{% else %}Nenhum local cadastrado.{% endif %}
+                            {% if not busca and perms.ltcat.add_localprestacaoservicoltcat %}
+                            <div class="mt-2"><a href="{% url 'ltcat:local_create' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus me-1"></i> Cadastrar primeiro local</a></div>
                             {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
+                        </div>
+                    </td></tr>
+                {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<!-- Paginação -->
 {% if is_paginated %}
-<nav class="mt-3">
+<nav class="mt-3" aria-label="Paginação">
     <ul class="pagination pagination-sm justify-content-center">
         {% if page_obj.has_previous %}
-        <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ busca }}">
-                <i class="fas fa-chevron-left"></i>
-            </a>
-        </li>
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ busca|urlencode }}" aria-label="Anterior"><i class="fas fa-chevron-left"></i></a></li>
         {% endif %}
         {% for num in page_obj.paginator.page_range %}
-        <li class="page-item {% if num == page_obj.number %}active{% endif %}">
-            <a class="page-link" href="?page={{ num }}&q={{ busca }}">{{ num }}</a>
-        </li>
+            {% if num == page_obj.number %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}&q={{ busca|urlencode }}">{{ num }}</a></li>
+            {% endif %}
         {% endfor %}
         {% if page_obj.has_next %}
-        <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ busca }}">
-                <i class="fas fa-chevron-right"></i>
-            </a>
-        </li>
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ busca|urlencode }}" aria-label="Próxima"><i class="fas fa-chevron-right"></i></a></li>
         {% endif %}
     </ul>
 </nav>
