@@ -15,7 +15,7 @@ urlpatterns = [
     path('<int:pk>/fotos/reordenar/', views.FotoReorderView.as_view(), name='foto_reorder'),
     path('foto/<int:pk>/editar/', views.FotoUpdateView.as_view(), name='foto_update'),
     path('foto/<int:pk>/excluir/', views.FotoDeleteView.as_view(), name='foto_delete'),
-
+    path('<int:pk>/finalizar/', views.RelatorioFinalizarView.as_view(), name='finalizar'),
     path('<int:pk>/exportar/docx/', views.RelatorioExportDocxView.as_view(), name='export_docx'),
     path('<int:pk>/exportar/pdf/', views.RelatorioExportPdfView.as_view(), name='export_pdf'),
 ]

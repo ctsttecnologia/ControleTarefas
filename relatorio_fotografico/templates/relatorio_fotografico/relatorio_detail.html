@@ -302,6 +302,16 @@
                 <a href="{% url 'relatorio_fotografico:export_pdf' relatorio.pk %}?inline=1" target="_blank" class="btn btn-outline-danger">
                     <i class="bi bi-file-earmark-pdf me-1"></i>PDF
                 </a>
+                {% if relatorio.status != 'finalizado' %}
+                    <form method="post" action="{% url 'relatorio_fotografico:finalizar' relatorio.pk %}"
+                        class="d-inline" onsubmit="return confirm('Marcar este relatório como finalizado?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check2-circle me-1"></i>Finalizar
+                        </button>
+                    </form>
+                {% endif %}
                 <button type="button" class="btn btn-danger"
                         data-bs-toggle="modal" data-bs-target="#modalExcluirRelatorio">
                     <i class="bi bi-trash me-1"></i>Excluir

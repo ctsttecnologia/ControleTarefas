@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 {% load static %}
 
@@ -7,7 +6,7 @@
 {% block content %}
 <div class="container-fluid py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h2 class="mb-0"><i class="bi bi-camera-fill me-2"></i>Relatórios Fotográficos</h2>
         <a href="{% url 'relatorio_fotografico:create' %}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-1"></i> Novo Relatório
@@ -90,26 +89,37 @@
                         {% elif relatorio.status == 'pendente' %}
                             <span class="badge bg-warning text-dark">Pendente</span>
                         {% else %}
-                            <span class="badge bg-secondary text-dark">Rascunho</span>
+                            <span class="badge bg-secondary">Rascunho</span>
                         {% endif %}
                     </td>
                     <td><span class="badge bg-secondary">{{ relatorio.fotos.count }}</span></td>
                     <td class="text-end">
-                        <a href="{% url 'relatorio_fotografico:detail' relatorio.pk %}"
-                           class="btn btn-sm btn-outline-primary" title="Visualizar">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        <a href="{% url 'relatorio_fotografico:update' relatorio.pk %}"
-                           class="btn btn-sm btn-outline-secondary" title="Editar">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-excluir-relatorio"
-                                data-bs-toggle="modal" data-bs-target="#modalExcluirRelatorio"
-                                data-url="{% url 'relatorio_fotografico:delete' relatorio.pk %}"
-                                data-titulo="{{ relatorio.titulo }}"
-                                title="Excluir">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        <div class="d-inline-flex gap-1">
+                            <a href="{% url 'relatorio_fotografico:detail' relatorio.pk %}"
+                               class="btn btn-sm btn-outline-primary" title="Visualizar">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'relatorio_fotografico:update' relatorio.pk %}"
+                               class="btn btn-sm btn-outline-secondary" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% if relatorio.status != 'finalizado' %}
+                            <button type="button" class="btn btn-sm btn-outline-success btn-finalizar-relatorio"
+                                    data-bs-toggle="modal" data-bs-target="#modalFinalizarRelatorio"
+                                    data-url="{% url 'relatorio_fotografico:finalizar' relatorio.pk %}"
+                                    data-titulo="{{ relatorio.titulo }}"
+                                    title="Finalizar">
+                                <i class="bi bi-check2-circle"></i>
+                            </button>
+                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-excluir-relatorio"
+                                    data-bs-toggle="modal" data-bs-target="#modalExcluirRelatorio"
+                                    data-url="{% url 'relatorio_fotografico:delete' relatorio.pk %}"
+                                    data-titulo="{{ relatorio.titulo }}"
+                                    title="Excluir">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -122,7 +132,7 @@
         <ul class="pagination justify-content-center">
             {% if page_obj.has_previous %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status_filtro }}&responsavel={{ responsavel_filtro }}&data_inicio={{ data_inicio }}&data_fim={{ data_fim }}">Anterior</a>
+                <a class="page-link" href="{% querystring page=page_obj.previous_page_number %}">Anterior</a>
             </li>
             {% endif %}
             <li class="page-item disabled">
@@ -130,7 +140,7 @@
             </li>
             {% if page_obj.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status_filtro }}&responsavel={{ responsavel_filtro }}&data_inicio={{ data_inicio }}&data_fim={{ data_fim }}">Próxima</a>
+                <a class="page-link" href="{% querystring page=page_obj.next_page_number %}">Próxima</a>
             </li>
             {% endif %}
         </ul>
@@ -145,7 +155,32 @@
     {% endif %}
 </div>
 
-<!-- Modal de confirmação de exclusão -->
+<!-- Modal: Finalizar -->
+<div class="modal fade" id="modalFinalizarRelatorio" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-check2-circle text-success me-2"></i>Finalizar Relatório</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Deseja marcar o relatório <strong id="tituloRelatorioFinalizar"></strong> como <strong>finalizado</strong>?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form id="formFinalizarRelatorio" method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check2-circle me-1"></i>Finalizar
+            </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Excluir -->
 <div class="modal fade" id="modalExcluirRelatorio" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -171,11 +206,18 @@
 </div>
 
 <script>
-document.querySelectorAll('.btn-excluir-relatorio').forEach(btn => {
-    btn.addEventListener('click', function () {
-        document.getElementById('tituloRelatorioExcluir').textContent = this.dataset.titulo;
-        document.getElementById('formExcluirRelatorio').action = this.dataset.url;
-    });
-});
+(function () {
+    function bindModal(btnSelector, tituloId, formId) {
+        document.querySelectorAll(btnSelector).forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.getElementById(tituloId).textContent = this.dataset.titulo;
+                document.getElementById(formId).action = this.dataset.url;
+            });
+        });
+    }
+    bindModal('.btn-finalizar-relatorio', 'tituloRelatorioFinalizar', 'formFinalizarRelatorio');
+    bindModal('.btn-excluir-relatorio', 'tituloRelatorioExcluir', 'formExcluirRelatorio');
+})();
 </script>
 {% endblock %}
+

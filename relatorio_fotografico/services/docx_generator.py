@@ -15,6 +15,9 @@ from docx.shared import Cm, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ROW_HEIGHT_RULE
 from docx.oxml.ns import qn
+from datetime import datetime
+from django.utils import timezone, translation
+from django.utils.formats import date_format
 
 from ..models import FOTOS_POR_PAGINA
 from docx.oxml import OxmlElement
@@ -52,6 +55,7 @@ def _adicionar_capa(doc, relatorio, largura_util):
     # Data (mês/ano)
     p_data = doc.add_paragraph()
     p_data.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run_data = p_data.add_run(_fmt_data(relatorio.data, 'F Y', 'F Y').upper())
     run_data = p_data.add_run(relatorio.data.strftime('%B %Y').upper())
     run_data.font.size = Pt(12)
     run_data.font.bold = True
@@ -112,6 +116,18 @@ def _resolver_capa_path():
             return caminho
     return None
 
+def _fmt_data(valor, formato_datetime='d/m/Y H:i', formato_date='d/m/Y'):
+    """Formata date/datetime em pt-BR, convertendo datetime para o fuso local."""
+    if not valor:
+        return ''
+    if isinstance(valor, datetime):
+        if timezone.is_aware(valor):
+            valor = timezone.localtime(valor)
+        formato = formato_datetime
+    else:  # date puro (sem hora)
+        formato = formato_date
+    with translation.override('pt-br'):
+        return date_format(valor, formato)
 
 def _resolver_logo_path():
     """
@@ -180,7 +196,7 @@ def _adicionar_cabecalho_novo(doc, relatorio, largura_util):
         run_logo.add_picture(logo_path, width=Cm(3))
 
     # Sub-tabela sem grade (apenas layout, sem bordas visíveis)
-    sub = cel_dados.add_table(rows=4, cols=4)
+    sub = cel_dados.add_table(rows=5, cols=4)
     sub.alignment = WD_TABLE_ALIGNMENT.LEFT
     sub.autofit = False
 
@@ -188,21 +204,20 @@ def _adicionar_cabecalho_novo(doc, relatorio, largura_util):
         relatorio.responsavel.get_full_name()
         or relatorio.responsavel.username
     )
-    criada_em = relatorio.created_at.strftime('%d/%m/%Y %H:%M')
     total_itens = relatorio.fotos.count()
 
     dados = [
-        ("Contato:", responsavel_nome, "Criada:", criada_em),
-        ("Empresa:", relatorio.empresa, "Localização:", str(relatorio.filial)),
-        ("Telefone:", relatorio.telefone, "Título:", relatorio.titulo),
-        ("Email:", relatorio.email, "No. Itens:", str(total_itens)),
+        ("Data Execução:", _fmt_data(relatorio.data), "Data Impressaão:", _fmt_data(relatorio.created_at)),
+        ("Contato:", responsavel_nome, "Localização:", str(relatorio.filial)),
+        ("Empresa:", relatorio.empresa, "Título:", relatorio.titulo),
+        ("Telefone:", relatorio.telefone, "No. Itens:", str(total_itens)),
+        ("Email:", relatorio.email, "", ""),
     ]
 
     for row_idx, (label1, valor1, label2, valor2) in enumerate(dados):
         celulas = sub.rows[row_idx].cells
         for i, texto in enumerate([label1, valor1, label2, valor2]):
-            p = celulas[i].paragraphs[0]
-            run = p.add_run(texto or "")
+            run = celulas[i].paragraphs[0].add_run(str(texto or ""))
             run.font.size = Pt(9)
             if i in (0, 2):
                 run.bold = True

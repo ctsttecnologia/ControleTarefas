@@ -1,8 +1,8 @@
-
+<!DOCTYPE html>
 {% load static %}
+{% load static i18n %}
 {% load relatorio_extras %}
 
-<!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
@@ -199,6 +199,7 @@
 </style>
 </head>
 <body>
+{% language 'pt-br' %}
 <div class="capa">
     <div class="capa-grafico">
         <img src="{% static 'images/capa.png' %}" alt="">
@@ -221,6 +222,10 @@
             <div class="cabecalho-coluna">
                 <table>
                     <tr>
+                        <td class="label">Data Execução:</td>
+                        <td>{{ relatorio.data|date:"d/m/Y" }}</td>
+                    </tr>
+                    <tr>
                         <td class="label">Responsável:</td>
                         <td>{{ relatorio.responsavel.get_full_name|default:relatorio.responsavel.username }}</td>
                     </tr>
@@ -242,7 +247,7 @@
             <div class="cabecalho-coluna">
                 <table>
                     <tr>
-                        <td class="label">Criada:</td>
+                        <td class="label">Data impressão:</td>
                         <td>{{ relatorio.created_at|date:"D d M H:i Y"|lower }}</td>
                     </tr>
                     <tr>
@@ -290,7 +295,7 @@
 
 </div>
 {% endfor %}
-
+{% endlanguage %}
 </body>
 </html>
 

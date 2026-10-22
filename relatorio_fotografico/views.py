@@ -20,7 +20,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q, Max
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404
+
 from django.urls import reverse_lazy
 from django.utils.dateparse import parse_date
 from django.views.generic import (
@@ -35,6 +35,9 @@ from .models import RelatorioFotografico, FotoRelatorio
 from .forms import RelatorioFotograficoForm
 from .services.docx_generator import gerar_docx_relatorio
 from .services.pdf_generator import gerar_pdf_relatorio
+
+from django.shortcuts import get_object_or_404, redirect
+from django.utils.http import url_has_allowed_host_and_scheme
 
 User = get_user_model()
 
@@ -301,6 +304,26 @@ class FotoReorderView(AppPermissionMixin, LoginRequiredMixin, View):
 
         return JsonResponse({'ok': True})
 
+class RelatorioFinalizarView(
+    AppPermissionMixin, ViewFilialScopedMixin, RelatorioScopeMixin, DetailView):
+    app_label_required = APP_LABEL
+    model = RelatorioFotografico
+    http_method_names = ['post']
+
+    def post(self, request, *args, **kwargs):
+        relatorio = self.get_object()
+
+        if relatorio.status == 'finalizado':
+            messages.info(request, 'Este relatório já está finalizado.')
+        else:
+            relatorio.status = 'finalizado'
+            relatorio.save(update_fields=['status'])
+            messages.success(request, f'Relatório "{relatorio.titulo}" finalizado.')
+
+        next_url = request.POST.get('next')
+        if next_url and url_has_allowed_host_and_scheme(next_url, {request.get_host()}):
+            return redirect(next_url)
+        return redirect('relatorio_fotografico:detail', pk=relatorio.pk)
 
 # -----------------------------------------------------------------------
 # EXPORTAÇÃO — WORD e PDF
