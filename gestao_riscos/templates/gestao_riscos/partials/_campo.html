@@ -1,0 +1,15 @@
+
+{# gestao_riscos/templates/gestao_riscos/partials/_campo.html #}
+{% if field.widget_type == 'checkbox' %}
+<div class="form-check form-switch">
+    {{ field }}
+    <label class="form-check-label fw-semibold" for="{{ field.id_for_label }}">{{ label|default:field.label }}</label>
+</div>
+{% else %}
+<label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+    {% if icone %}<i class="bi {{ icone }} me-1"></i>{% endif %}{{ label|default:field.label }}{% if field.field.required or obrigatorio %} <span class="text-danger">*</span>{% endif %}
+</label>
+{{ field }}
+{% endif %}
+{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+{% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}

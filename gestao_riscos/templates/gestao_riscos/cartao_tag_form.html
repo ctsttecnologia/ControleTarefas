@@ -1,33 +1,32 @@
-
-{# templates/gestao_riscos/cartao_tag_form.html #}
-{% extends "base.html" %}
+{# gestao_riscos/templates/gestao_riscos/cartao_tag_form.html #}
+{% extends 'gestao_riscos/base_riscos.html' %}
 {% load crispy_forms_tags %}
 
-{% block title %}
-    {% if object %}Editar Cartão de Bloqueio{% else %}Novo Cartão de Bloqueio{% endif %}
+{% block title %}{% if object %}Editar{% else %}Novo{% endif %} Cartão de Bloqueio{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'gestao_riscos:cartao_tag_list' %}">Cartões de Bloqueio</a></li>
+<li class="breadcrumb-item active">{% if object %}Editar{% else %}Novo{% endif %}</li>
 {% endblock %}
 
 {% block content %}
+{% if object %}{% url 'gestao_riscos:cartao_tag_detail' object.pk as url_voltar %}{% else %}{% url 'gestao_riscos:cartao_tag_list' as url_voltar %}{% endif %}
 <div class="container-fluid py-4">
 
-    <!-- Header -->
     <div class="card bg-primary text-white shadow-sm mb-4">
-        <div class="card-body py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 class="mb-1">
-                        {% if object %}
-                        <i class="bi bi-pencil-square me-2"></i>Editar Cartão de Bloqueio
-                        {% else %}
-                        <i class="bi bi-plus-circle me-2"></i>Novo Cartão de Bloqueio
-                        {% endif %}
-                    </h4>
-                    <small class="opacity-75">Tag de segurança para bloqueio de equipamentos</small>
-                </div>
-                <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-outline-light">
-                    <i class="bi bi-arrow-left me-1"></i> Voltar
-                </a>
+        <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h4 class="mb-1">
+                    <i class="bi {% if object %}bi-pencil-square{% else %}bi-plus-circle{% endif %} me-2"></i>
+                    {% if object %}Editar{% else %}Novo{% endif %} Cartão de Bloqueio
+                </h4>
+                <small class="opacity-75">
+                    {% if object %}{{ object.funcionario.nome_completo }}{% else %}Tag de segurança para bloqueio de equipamentos{% endif %}
+                </small>
             </div>
+            <a href="{{ url_voltar }}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
         </div>
     </div>
 
@@ -37,23 +36,20 @@
         <div class="col-lg-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-tag-fill text-primary me-2"></i>Dados do Cartão
-                    </h6>
+                    <h6 class="mb-0"><i class="bi bi-tag-fill text-primary me-2"></i>Dados do Cartão</h6>
                 </div>
                 <div class="card-body p-4">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data" novalidate id="form-cartao">
                         {% csrf_token %}
                         {{ form|crispy }}
-                        
-                        <!-- Botões -->
+
                         <div class="border-top pt-4 mt-4 d-flex justify-content-between">
-                            <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-outline-secondary">
+                            <a href="{{ url_voltar }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-lg me-1"></i> Cancelar
                             </a>
-                            {% if perms.gestao_riscos.add_cartaotag or user.is_superuser %}
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-check-lg me-1"></i> Salvar
+                            {% if object and perms.gestao_riscos.change_cartaotag or not object and perms.gestao_riscos.add_cartaotag %}
+                            <button type="submit" class="btn btn-primary btn-lg" id="btn-submit">
+                                <i class="bi bi-check-lg me-1"></i> {% if object %}Salvar Alterações{% else %}Criar Cartão{% endif %}
                             </button>
                             {% endif %}
                         </div>
@@ -62,9 +58,16 @@
             </div>
         </div>
     </div>
-
 </div>
 {% endblock %}
 
-
-       
+{% block extra_js %}
+<script>
+document.getElementById('form-cartao').addEventListener('submit', () => {
+    const b = document.getElementById('btn-submit');
+    if (!b) return;
+    b.disabled = true;
+    b.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Salvando...';
+});
+</script>
+{% endblock %}

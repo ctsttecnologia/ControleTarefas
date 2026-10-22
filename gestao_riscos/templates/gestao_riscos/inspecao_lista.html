@@ -1,0 +1,215 @@
+
+{% extends 'gestao_riscos/base_riscos.html' %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="card bg-warning shadow-sm mb-4">
+        <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h4 class="mb-1 text-dark"><i class="bi bi-clipboard-check me-2"></i>{{ titulo_pagina }}</h4>
+                <small class="text-dark opacity-75">Propostas automáticas (meia-vida dos EPIs), agendadas, concluídas e canceladas</small>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-dark">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </a>
+                <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-dark">
+                    <i class="bi bi-calendar3 me-1"></i> Calendário
+                </a>
+                {% if perms.gestao_riscos.add_inspecao %}
+                <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="btn btn-light">
+                    <i class="bi bi-calendar-plus me-1"></i> Agendar
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtro por status -->
+    <ul class="nav nav-pills mb-4 gap-1 flex-wrap">
+        <li class="nav-item">
+            <a class="nav-link {% if not status_atual %}active{% endif %}" href="?">
+                Todas <span class="badge bg-light text-dark ms-1">{{ cont.todas }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if status_atual == 'PENDENTE_APROVACAO' %}active{% endif %}" href="?status=PENDENTE_APROVACAO">
+                Propostas <span class="badge bg-warning text-dark ms-1">{{ cont.propostas }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if status_atual == 'PENDENTE' %}active{% endif %}" href="?status=PENDENTE">
+                Pendentes <span class="badge bg-primary ms-1">{{ cont.pendentes }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if status_atual == 'CONCLUIDA' %}active{% endif %}" href="?status=CONCLUIDA">
+                Concluídas <span class="badge bg-success ms-1">{{ cont.concluidas }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if status_atual == 'CANCELADA' %}active{% endif %}" href="?status=CANCELADA">
+                Canceladas <span class="badge bg-secondary ms-1">{{ cont.canceladas }}</span>
+            </a>
+        </li>
+    </ul>
+
+    {% if not inspecoes %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-inbox text-muted fs-1"></i>
+            <h5 class="text-muted mt-3">Nenhuma inspeção encontrada</h5>
+            {% if status_atual %}<a href="?" class="btn btn-outline-secondary mt-2">Ver todas</a>{% endif %}
+        </div>
+    </div>
+    {% else %}
+
+    <div class="row g-3">
+        {% for inspecao in inspecoes %}
+        {% with equip=inspecao.equipamento ficha=inspecao.entrega_epi %}
+        <div class="col-12">
+            <div class="card shadow-sm border-start border-1
+                {% if inspecao.status == 'PENDENTE_APROVACAO' %}border-warning
+                {% elif inspecao.status == 'PENDENTE' %}border-primary
+                {% elif inspecao.status == 'CONCLUIDA' %}border-success
+                {% else %}border-secondary{% endif %}">
+                <div class="card-body">
+                    <div class="row align-items-center g-3">
+
+                        <!-- Equipamento -->
+                        <div class="col-lg-3">
+                            <h6 class="mb-1 fw-bold">
+                                {% if equip %}{{ equip.nome }}{% elif ficha %}{{ ficha.equipamento.nome }}{% else %}—{% endif %}
+                            </h6>
+                            {% if ficha.numero_serie %}
+                            <p class="mb-1 text-muted small"><i class="bi bi-upc me-1"></i>N/S: <code>{{ ficha.numero_serie }}</code></p>
+                            {% endif %}
+                            <span class="badge
+                                {% if inspecao.status == 'PENDENTE_APROVACAO' %}bg-warning text-dark
+                                {% elif inspecao.status == 'PENDENTE' %}bg-primary
+                                {% elif inspecao.status == 'CONCLUIDA' %}bg-success
+                                {% else %}bg-secondary{% endif %}">
+                                {{ inspecao.get_status_display }}
+                            </span>
+                        </div>
+
+                        <!-- Funcionário / responsável -->
+                        <div class="col-lg-3">
+                            {% if ficha.ficha.funcionario %}
+                            <small class="text-muted d-block">Funcionário</small>
+                            <span class="fw-semibold d-block mb-1">
+                                <i class="bi bi-person me-1"></i>{{ ficha.ficha.funcionario.nome_completo }}
+                            </span>
+                            {% endif %}
+                            <small class="text-muted d-block">Responsável</small>
+                            <span>{{ inspecao.responsavel.get_short_name|default:inspecao.responsavel.username|default:"—" }}</span>
+                        </div>
+
+                        <!-- Datas -->
+                        <div class="col-lg-2">
+                            <small class="text-muted d-block">Agendada</small>
+                            <span class="fw-semibold {% if inspecao.status == 'PENDENTE' and inspecao.data_agendada < hoje %}text-danger{% endif %}">
+                                {{ inspecao.data_agendada|date:"d/m/Y" }}
+                            </span>
+                            {% if inspecao.data_realizacao %}
+                            <small class="text-muted d-block mt-1">Realizada</small>
+                            <span>{{ inspecao.data_realizacao|date:"d/m/Y" }}</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Ações -->
+                        <div class="col-lg-4">
+                            <div class="d-flex flex-wrap justify-content-lg-end align-items-center gap-2">
+
+                                {% if inspecao.status == 'PENDENTE_APROVACAO' and perms.gestao_riscos.change_inspecao %}
+                                <form method="post" action="{% url 'gestao_riscos:inspecao_confirmar' inspecao.pk %}" class="m-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <div class="input-group input-group-sm flex-nowrap">
+                                        <input type="date" id="data-{{ inspecao.pk }}" name="data_agendada"
+                                               value="{{ inspecao.data_agendada|date:'Y-m-d' }}"
+                                               min="{{ hoje|date:'Y-m-d' }}" required
+                                               aria-label="Data da inspeção" title="Data da inspeção"
+                                               class="form-control" style="color-scheme: dark; min-width: 140px;">
+                                        <button type="submit" class="btn btn-success text-nowrap" title="Confirmar">
+                                            <i class="bi bi-check-lg me-1"></i>Confirmar
+                                        </button>
+                                    </div>
+                                </form>
+                                {% endif %}
+
+                                {% if inspecao.status == 'PENDENTE' and perms.gestao_riscos.change_inspecao %}
+                                <a href="{% url 'gestao_riscos:inspecao_completar' inspecao.pk %}"
+                                   class="btn btn-success btn-sm text-nowrap" title="Concluir">
+                                    <i class="bi bi-check2-square me-1"></i>Concluir
+                                </a>
+                                {% endif %}
+
+                                {% if inspecao.status == 'PENDENTE_APROVACAO' or inspecao.status == 'PENDENTE' %}
+                                {% if perms.gestao_riscos.change_inspecao %}
+                                <form method="post" action="{% url 'gestao_riscos:inspecao_cancelar' inspecao.pk %}"
+                                      class="m-0" onsubmit="return confirm('Cancelar esta inspeção?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Cancelar">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% endif %}
+
+                                {% if inspecao.status == 'CANCELADA' and perms.gestao_riscos.change_inspecao %}
+                                <form method="post" action="{% url 'gestao_riscos:inspecao_reabrir' inspecao.pk %}"
+                                      class="m-0" onsubmit="return confirm('Reabrir esta inspeção para aprovação?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="btn btn-outline-primary btn-sm text-nowrap" title="Reabrir">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reabrir
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                <a href="{% url 'gestao_riscos:inspecao_detalhe' inspecao.pk %}"
+                                   class="btn btn-outline-secondary btn-sm" title="Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4">
+        <small class="text-muted">{{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }}</small>
+        <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}"><i class="bi bi-chevron-left"></i></a></li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+                <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}{% if querystring %}&{{ querystring }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}"><i class="bi bi-chevron-right"></i></a></li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% endif %}
+</div>
+{% endblock %}
+

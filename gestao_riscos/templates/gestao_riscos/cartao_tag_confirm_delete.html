@@ -1,58 +1,60 @@
 
-<!-- Template para confirmar exclusão de um Tipo de Risco -->   
-{% extends "base.html" %}
+{# gestao_riscos/templates/gestao_riscos/cartao_tag_confirm_delete.html #}
+{% extends 'gestao_riscos/base_riscos.html' %}
 
 {% block title %}Excluir Cartão de Bloqueio{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'gestao_riscos:cartao_tag_list' %}">Cartões de Bloqueio</a></li>
+<li class="breadcrumb-item active">Excluir</li>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-md-6 col-lg-5">
-            
             <div class="card shadow-sm border-danger">
                 <div class="card-header bg-danger text-white text-center py-3">
                     <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
                     <span class="fw-semibold">Confirmar Exclusão</span>
                 </div>
                 <div class="card-body text-center p-4">
-                    
                     <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-4"
                          style="width: 80px; height: 80px;">
                         <i class="bi bi-trash text-danger fs-1"></i>
                     </div>
-                    
                     <h5 class="mb-3">Deseja excluir este cartão?</h5>
-
-                    <div class="alert alert-warning py-3">
-                        <i class="bi bi-tag-fill me-2"></i>
-                        <strong>{{ object.funcionario.nome_completo }}</strong>
+                    <div class="alert alert-warning py-3 mb-3">
+                        <i class="bi bi-tag-fill me-2"></i><strong>{{ object.funcionario.nome_completo }}</strong>
+                        {% if object.data_validade %}<br><small class="text-muted">Validade: {{ object.data_validade|date:"d/m/Y" }}</small>{% endif %}
                     </div>
-
-                    <p class="text-muted small">
-                        Esta ação não poderá ser desfeita.
-                    </p>
-
+                    <p class="text-muted small mb-0">Esta ação não poderá ser desfeita.</p>
                 </div>
-                <div class="card-footer bg-light py-3">
-                    <div class="d-flex justify-content-center gap-3">
-                        <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i> Cancelar
-                        </a>
-                        <form method="post" class="d-inline">
-                            {% if perms.gestao_riscos.delete_cartaotag %}
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-danger">
-                                <i class="bi bi-trash me-1"></i> Confirmar Exclusão
-                            </button>
-                            {% endif %}
-                        </form>
-                    </div>
+                <div class="card-footer bg-light py-3 d-flex justify-content-center gap-3">
+                    <a href="{% url 'gestao_riscos:cartao_tag_detail' object.pk %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Cancelar
+                    </a>
+                    {% if perms.gestao_riscos.delete_cartaotag %}
+                    <form method="post" class="d-inline" id="form-delete">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger" id="btn-delete">
+                            <i class="bi bi-trash me-1"></i> Confirmar Exclusão
+                        </button>
+                    </form>
+                    {% endif %}
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 {% endblock %}
 
-
+{% block extra_js %}
+<script>
+document.getElementById('form-delete')?.addEventListener('submit', () => {
+    const b = document.getElementById('btn-delete');
+    b.disabled = true;
+    b.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Excluindo...';
+});
+</script>
+{% endblock %}

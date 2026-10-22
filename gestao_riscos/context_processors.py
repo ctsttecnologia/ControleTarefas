@@ -1,45 +1,37 @@
 
+# =============================================================================
 # gestao_riscos/context_processors.py
-
+# =============================================================================
+from django.core.cache import cache
 from django.utils import timezone
-from .models import Incidente
+
+from core.utils import get_filial_ativa
+
+CACHE_TTL = 60 * 15
 
 
 def dias_sem_acidentes(request):
-    """Disponibiliza dias_sem_acidentes em TODOS os templates (header incluso)."""
-    if not hasattr(request, 'user') or not request.user.is_authenticated:
+    """Roda em TODA request → resultado cacheado por filial (invalidado via signal)."""
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated:
         return {}
 
-    filial_ativa = getattr(request.user, 'filial_ativa', None)
-    if not filial_ativa:
+    filial = get_filial_ativa(user, request)
+    if not filial:
         return {'dias_sem_acidentes': 0, 'data_ultimo_acidente': None}
 
-    ultimo_acidente = Incidente.objects.filter(
-        filial=filial_ativa,
-        classificacao='COM_AFASTAMENTO'  # ← COM ACENTO, como está no model
-    ).order_by('-data_ocorrencia').first()
+    def _calcular():
+        from .models import Incidente, TIPOS_ZERAM_CONTADOR
+        base = Incidente.objects.filter(filial=filial)
+        ultimo = (base.filter(tipo_ocorrencia__in=TIPOS_ZERAM_CONTADOR)
+                  .order_by('-data_ocorrencia').values_list('data_ocorrencia', flat=True).first())
+        ref = ultimo or base.order_by('data_registro').values_list('data_registro', flat=True).first()
+        return {'ref': ref, 'ultimo': ultimo}
 
-    if ultimo_acidente and ultimo_acidente.data_ocorrencia:
-        data_ref = ultimo_acidente.data_ocorrencia
-        if hasattr(data_ref, 'date'):
-            data_ref = data_ref.date()
-        dias = (timezone.now().date() - data_ref).days
-        data_ultimo = ultimo_acidente.data_ocorrencia
-    else:
-        primeiro_registro = Incidente.objects.filter(
-            filial=filial_ativa
-        ).order_by('data_registro').first()
+    from .models import dias_sem_acidentes_cache_key
+    dados = cache.get_or_set(dias_sem_acidentes_cache_key(filial.pk), _calcular, CACHE_TTL)
 
-        if primeiro_registro:
-            data_ref = primeiro_registro.data_registro
-            if hasattr(data_ref, 'date'):
-                data_ref = data_ref.date()
-            dias = (timezone.now().date() - data_ref).days
-        else:
-            dias = 0
-        data_ultimo = None
+    ref = dados['ref']
+    dias = (timezone.localdate() - timezone.localtime(ref).date()).days if ref else 0
+    return {'dias_sem_acidentes': max(dias, 0), 'data_ultimo_acidente': dados['ultimo']}
 
-    return {
-        'dias_sem_acidentes': dias,
-        'data_ultimo_acidente': data_ultimo,
-    }

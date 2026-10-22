@@ -7,6 +7,7 @@ Todos os módulos devem usar estas funções.
 """
 
 import logging
+from django.urls import reverse, NoReverseMatch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -20,6 +21,10 @@ from .models import Notificacao
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
+
+
+GRUPO_SEGURANCA = 'SST-SEGURANÇA' 
+PERM_INSPECAO = {'codename': 'change_inspecao', 'content_type__app_label': 'gestao_riscos'}
 
 # =============================================================================
 # SERVIÇO DE NOTIFICAÇÕES (SISTEMA / SINO)
@@ -1460,6 +1465,53 @@ def notificar_documento_atualizado(documento, criado, instancia_anterior=None):
             mensagem=f'"{documento.nome}" foi {acao}.',
             url_destino=documento.get_absolute_url(),
         )
+
+# ═════════════════════════════════════════════════════════════════
+# SEGURANÇA DO TRABALHO — inspeções propostas
+# ═════════════════════════════════════════════════════════════════
+
+def _get_usuarios_seguranca(filial=None):
+    """Usuários do grupo seguranca_trabalho OU com a permissão gestao_riscos.change_inspecao."""
+    qs = User.objects.filter(is_active=True).filter(
+        Q(groups__name=GRUPO_SEGURANCA)
+        | Q(groups__permissions__codename=PERM_INSPECAO['codename'],
+            groups__permissions__content_type__app_label=PERM_INSPECAO['content_type__app_label'])
+        | Q(user_permissions__codename=PERM_INSPECAO['codename'],
+            user_permissions__content_type__app_label=PERM_INSPECAO['content_type__app_label'])
+    )
+    if filial:
+        qs = qs.filter(Q(filial_ativa=filial) | Q(filiais_permitidas=filial))
+    return qs.distinct()
+
+
+def notificar_inspecoes_propostas(filial, quantidade):
+    """Avisa a Segurança do Trabalho (sino + WebSocket) que há inspeções para confirmar."""
+    if not quantidade:
+        return []
+
+    try:
+        url = reverse('gestao_riscos:inspecao_lista')
+    except NoReverseMatch:
+        logger.warning('URL gestao_riscos:inspecao_lista não encontrada')
+        url = '/'
+
+    resultados = []
+    for user in _get_usuarios_seguranca(filial):
+        n = criar_notificacao(
+            usuario=user,
+            titulo='Inspeções propostas aguardando confirmação',
+            tipo='aviso',
+            categoria='sistema',
+            prioridade='alta',
+            mensagem=(f'{quantidade} nova(s) inspeção(ões) sugerida(s) pela meia-vida dos EPIs. '
+                      f'Confirme e ajuste a data, se necessário.'),
+            url_destino=url,
+            icone='bi-clipboard-check',
+            duplicar=False,   # não repete enquanto houver uma não lida
+        )
+        if n:
+            resultados.append(n)
+    return resultados
 
 
 # Alias para compatibilidade com imports antigos

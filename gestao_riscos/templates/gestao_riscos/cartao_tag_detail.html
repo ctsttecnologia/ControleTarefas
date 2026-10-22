@@ -1,8 +1,13 @@
-<!-- Template para exibir os detalhes de um Cartão de Bloqueio -->  
-{% extends "base.html" %}
-{% load static %}
+{# gestao_riscos/templates/gestao_riscos/cartao_tag_detail.html #}
+{% extends 'gestao_riscos/base_riscos.html' %}
+{% load static secure_url %}
 
 {% block title %}Cartão de {{ cartao.funcionario.nome_completo }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'gestao_riscos:cartao_tag_list' %}">Cartões de Bloqueio</a></li>
+<li class="breadcrumb-item active">{{ cartao.funcionario.nome_completo }}</li>
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -126,42 +131,44 @@
 </style>
 {% endblock %}
 
-{% load secure_url %}
 {% block content %}
+
 <div class="container-fluid py-4">
 
     <!-- Header -->
     <div class="card bg-primary text-white shadow-sm mb-4 no-print">
-        <div class="card-body py-3">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
-                    <h4 class="mb-1">
-                        <i class="bi bi-tag-fill me-2"></i>Cartão de Bloqueio
-                    </h4>
-                    <small class="opacity-75">{{ cartao.funcionario.nome_completo }}</small>
-                </div>
-                <div class="d-flex gap-2">
-                    <button id="print-btn" class="btn btn-info">
-                        <i class="bi bi-printer me-1"></i> Imprimir
-                    </button>
-                    {% if perms.gestao_riscos.change_cartaotag or user.is_superuser %}
-                    <a href="{% url 'gestao_riscos:cartao_tag_update' cartao.pk %}" class="btn btn-warning">
-                        <i class="bi bi-pencil me-1"></i> Editar
-                    </a>
-                    {% endif %}
-                    
-                    <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-outline-light">
-                        <i class="bi bi-arrow-left me-1"></i> Voltar
-                    </a>
-                </div>
+        <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h4 class="mb-1"><i class="bi bi-tag-fill me-2"></i>Cartão de Bloqueio</h4>
+                <small class="opacity-75">{{ cartao.funcionario.nome_completo }}</small>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" id="print-btn" class="btn btn-info">
+                    <i class="bi bi-printer me-1"></i> Imprimir
+                </button>
+                {% if perms.gestao_riscos.change_cartaotag %}
+                <a href="{% url 'gestao_riscos:cartao_tag_update' cartao.pk %}" class="btn btn-warning">
+                    <i class="bi bi-pencil me-1"></i> Editar
+                </a>
+                {% endif %}
+                <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Info Card (não imprime) -->
-    <div class="row mb-4 no-print">
+    <!-- Alertas (não imprime) -->
+    {% if not cartao.ativo %}
+    <div class="alert alert-secondary no-print"><i class="bi bi-slash-circle me-2"></i>Este cartão está <strong>inativo</strong> e não deve ser usado em bloqueios.</div>
+    {% elif vencido %}
+    <div class="alert alert-danger no-print"><i class="bi bi-exclamation-triangle-fill me-2"></i>Cartão <strong>vencido</strong> desde {{ cartao.data_validade|date:"d/m/Y" }}. Renove antes de imprimir.</div>
+    {% endif %}
+
+    <!-- Info Cards (não imprime) -->
+    <div class="row g-3 mb-4 no-print">
         <div class="col-md-6 col-lg-3">
-            <div class="card border-start border-primary border-4 shadow-sm">
+            <div class="card border-start border-primary border-4 shadow-sm h-100">
                 <div class="card-body">
                     <small class="text-muted">Funcionário</small>
                     <p class="fw-bold mb-0">{{ cartao.funcionario.nome_completo }}</p>
@@ -169,40 +176,38 @@
             </div>
         </div>
         <div class="col-md-6 col-lg-3">
-            <div class="card border-start border-info border-4 shadow-sm">
+            <div class="card border-start border-info border-4 shadow-sm h-100">
                 <div class="card-body">
                     <small class="text-muted">Cargo</small>
-                    <p class="fw-bold mb-0">{{ cartao.funcionario.cargo }}</p>
+                    <p class="fw-bold mb-0">{{ cartao.funcionario.cargo|default:"—" }}</p>
                 </div>
             </div>
         </div>
         <div class="col-md-6 col-lg-3">
-            <div class="card border-start border-warning border-4 shadow-sm">
+            <div class="card border-start border-4 shadow-sm h-100 {% if vencido %}border-danger{% else %}border-warning{% endif %}">
                 <div class="card-body">
                     <small class="text-muted">Validade</small>
-                    <p class="fw-bold mb-0">{{ cartao.data_validade|date:"d/m/Y"|default:"Sem validade" }}</p>
+                    <p class="fw-bold mb-0 {% if vencido %}text-danger{% endif %}">{{ cartao.data_validade|date:"d/m/Y"|default:"Sem validade" }}</p>
                 </div>
             </div>
         </div>
         <div class="col-md-6 col-lg-3">
-            <div class="card border-start border-success border-4 shadow-sm">
+            <div class="card border-start border-success border-4 shadow-sm h-100">
                 <div class="card-body">
                     <small class="text-muted">Status</small>
                     <p class="fw-bold mb-0">
-                        {% if cartao.ativo %}
-                            <span class="badge bg-success">Ativo</span>
-                        {% else %}
-                            <span class="badge bg-secondary">Inativo</span>
-                        {% endif %}
+                        <span class="badge {% if cartao.ativo %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if cartao.ativo %}Ativo{% else %}Inativo{% endif %}
+                        </span>
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Tags para impressão -->
+    <!-- Tags para impressão (ESTRUTURA ORIGINAL — NÃO ALTERAR) -->
     <div class="tag-container" id="tag-area">
-        
+
         <!-- FRENTE -->
         <div class="tag-card">
             <div class="tag-content">
@@ -270,8 +275,13 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('print-btn')?.addEventListener('click', function() {
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('print-btn')?.addEventListener('click', () => {
+        {% if not cartao.ativo %}
+        if (!confirm('Este cartão está INATIVO. Imprimir mesmo assim?')) return;
+        {% elif vencido %}
+        if (!confirm('Este cartão está VENCIDO. Imprimir mesmo assim?')) return;
+        {% endif %}
         window.print();
     });
 });

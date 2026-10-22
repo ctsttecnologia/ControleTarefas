@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% block pgr_title %}Gestão de Riscos{% endblock pgr_title %}{% endblock title %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'css/riscos-app.css' %}">
+    {% block extra_riscos_css %}{% endblock extra_riscos_css %}
+{% endblock extra_css %}
+
+{% block content %}
+<div class="riscos-app">
+    {% block riscos_content %}{% endblock riscos_content %}
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+    {{ block.super }}
+    {% block extra_riscos_js %}{% endblock extra_riscos_js %}
+{% endblock extra_js %}
+

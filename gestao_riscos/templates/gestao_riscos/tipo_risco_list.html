@@ -1,7 +1,6 @@
 
-<!-- gestao_riscos/templates/gestao_riscos/tipo_risco/tipo_risco_list.html -->
-{% extends 'base.html' %}
-{% load static %}
+{# gestao_riscos/templates/gestao_riscos/tipo_risco/tipo_risco_list.html #}
+{% extends 'gestao_riscos/base_riscos.html' %}
 
 {% block title %}Tipos de Riscos{% endblock %}
 
@@ -13,87 +12,77 @@
 {% csrf_token %}
 <div class="container-fluid py-4">
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         HEADER
-    ═══════════════════════════════════════════════════════════════════════ -->
-    <div class="card bg-primary text-white shadow-sm mb-4">
-        <div class="card-body py-3">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
-                    <h4 class="mb-1">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Tipos de Riscos Ocupacionais
-                    </h4>
-                    <small class="opacity-75">Cadastro conforme Tabela de Riscos Ambientais e Ocupacionais</small>
-                </div>
-                <div class="d-flex gap-2">
-                    <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-light">
-                        <i class="bi bi-arrow-left me-1"></i> Painel Inicial
-                    </a>
-                    {% if perms.gestao_riscos.btn_popular_padrao or user.is_superuser %}
-                    <button type="button" id="btnPopularPadrao" class="btn btn-info">
-                        <i class="bi bi-magic me-1"></i> Popular Padrão
-                    </button>
-                    {% endif %}
-                    {% if perms.gestao_riscos.add_tiporisco or user.is_superuser %}
-                    <a href="{% url 'gestao_riscos:tipo_risco_create' %}" class="btn btn-light">
-                        <i class="bi bi-plus-circle me-1"></i> Novo Tipo
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- HEADER -->
+    {% include 'gestao_riscos/partials/header.html' with titulo="Tipos de Riscos Ocupacionais" subtitulo="Cadastro conforme Tabela de Riscos Ambientais e Ocupacionais" icone="bi-list-task" %}
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         CARDS KPI - Por Categoria
-    ═══════════════════════════════════════════════════════════════════════ -->
-    <div class="row g-3 mb-4">
-        <!-- Total -->
-        <div class="col-6 col-md-2">
+    <!-- KPIs + AÇÕES -->
+    <div class="row g-3 mb-3 align-items-center">
+        <div class="col-6 col-lg-3">
             <div class="card border-start border-primary border-4 shadow-sm h-100">
-                <div class="card-body text-center py-3">
-                    <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-2"
+                <div class="card-body d-flex align-items-center py-3">
+                    <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-3"
                          style="width: 48px; height: 48px;">
                         <i class="bi bi-list-ul text-primary fs-5"></i>
                     </div>
-                    <h3 class="fw-bold mb-0">{{ total_tipos }}</h3>
-                    <small class="text-muted text-uppercase">Total</small>
+                    <div>
+                        <h3 class="fw-bold mb-0">{{ total_tipos }}</h3>
+                        <small class="text-muted text-uppercase">Total</small>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Ativos -->
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-lg-3">
             <div class="card border-start border-success border-4 shadow-sm h-100">
-                <div class="card-body text-center py-3">
-                    <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-2"
+                <div class="card-body d-flex align-items-center py-3">
+                    <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center me-3"
                          style="width: 48px; height: 48px;">
                         <i class="bi bi-check-circle text-success fs-5"></i>
                     </div>
-                    <h3 class="fw-bold text-success mb-0">{{ total_ativos }}</h3>
-                    <small class="text-muted text-uppercase">Ativos</small>
+                    <div>
+                        <h3 class="fw-bold text-success mb-0">{{ total_ativos }}</h3>
+                        <small class="text-muted text-uppercase">Ativos</small>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Categorias -->
-        {% for cat in categorias_info %}
-        <div class="col-4 col-md">
-            <div class="card shadow-sm h-100" style="border-top: 4px solid {{ cat.cor }} !important;">
-                <div class="card-body text-center py-3">
-                    <span class="d-inline-block rounded-circle mb-2"
-                          style="width: 20px; height: 20px; background-color: {{ cat.cor }};"></span>
-                    <h3 class="fw-bold mb-0">{{ cat.total }}</h3>
-                    <small class="text-muted">{{ cat.label }}</small>
-                </div>
+        {% if perms.gestao_riscos.add_tiporisco %}
+        <div class="col-12 col-lg-6">
+            <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                <button type="button" class="btn btn-outline-primary js-popular-padrao">
+                    <i class="bi bi-magic me-1"></i> Popular Padrão
+                </button>
+                <a href="{% url 'gestao_riscos:tipo_risco_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> Novo Tipo
+                </a>
             </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- CATEGORIAS (clicáveis = filtro) -->
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3 mb-4">
+        {% for cat in categorias_info %}
+        <div class="col">
+            <a href="?categoria={{ cat.key|urlencode }}" class="text-decoration-none text-reset">
+                <div class="card shadow-sm h-100 {% if request.GET.categoria == cat.key %}border-dark bg-light{% endif %}"
+                     style="border-top: 4px solid {{ cat.cor }} !important;">
+                    <div class="card-body d-flex align-items-center justify-content-between py-3">
+                        <div class="d-flex align-items-center">
+                            <span class="d-inline-block rounded-circle me-2"
+                                  style="width: 14px; height: 14px; background-color: {{ cat.cor }};"></span>
+                            <small class="fw-semibold">{{ cat.label }}</small>
+                        </div>
+                        <span class="fs-4 fw-bold">{{ cat.total }}</span>
+                    </div>
+                </div>
+            </a>
         </div>
         {% endfor %}
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         FILTROS
-    ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- FILTROS -->
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-white py-2">
             <i class="bi bi-funnel me-1"></i> <strong>Filtros</strong>
@@ -102,20 +91,18 @@
             <form method="get">
                 <div class="row g-3 align-items-end">
                     <div class="col-md-3">
-                        <label class="form-label small fw-semibold">Categoria</label>
-                        <select name="categoria" class="form-select">
+                        <label for="f-categoria" class="form-label small fw-semibold">Categoria</label>
+                        <select name="categoria" id="f-categoria" class="form-select">
                             <option value="">Todas</option>
                             {% for cat_key, cat_label in categorias %}
-                            <option value="{{ cat_key }}" {% if request.GET.categoria == cat_key %}selected{% endif %}>
-                                {{ cat_label }}
-                            </option>
+                            <option value="{{ cat_key }}" {% if request.GET.categoria == cat_key %}selected{% endif %}>{{ cat_label }}</option>
                             {% endfor %}
                         </select>
                     </div>
 
                     <div class="col-md-2">
-                        <label class="form-label small fw-semibold">Status</label>
-                        <select name="ativo" class="form-select">
+                        <label for="f-ativo" class="form-label small fw-semibold">Status</label>
+                        <select name="ativo" id="f-ativo" class="form-select">
                             <option value="">Todos</option>
                             <option value="true" {% if request.GET.ativo == 'true' %}selected{% endif %}>Ativos</option>
                             <option value="false" {% if request.GET.ativo == 'false' %}selected{% endif %}>Inativos</option>
@@ -123,45 +110,37 @@
                     </div>
 
                     <div class="col-md-4">
-                        <label class="form-label small fw-semibold">Buscar</label>
-                        <input type="text" name="search" class="form-control"
-                               placeholder="Nome, NR..." value="{{ request.GET.search }}">
+                        <label for="f-search" class="form-label small fw-semibold">Buscar</label>
+                        <input type="text" name="search" id="f-search" class="form-control" maxlength="100"
+                               placeholder="Nome, NR, descrição..." value="{{ request.GET.search }}">
                     </div>
 
                     <div class="col-md-3 d-flex gap-2">
                         <button type="submit" class="btn btn-primary flex-fill">
                             <i class="bi bi-search me-1"></i> Filtrar
                         </button>
-                        <a href="{% url 'gestao_riscos:tipo_risco_list' %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'gestao_riscos:tipo_risco_list' %}" class="btn btn-outline-secondary" title="Limpar filtros">
                             <i class="bi bi-x-lg"></i>
                         </a>
                     </div>
                 </div>
 
-                <!-- Tags de filtros ativos -->
                 {% if request.GET.categoria or request.GET.ativo or request.GET.search %}
                 <div class="mt-3 pt-2 border-top">
-                    <small class="text-muted me-2">Filtros:</small>
-                    {% if request.GET.categoria %}
-                    <span class="badge bg-primary me-1">{{ request.GET.categoria }}</span>
-                    {% endif %}
-                    {% if request.GET.ativo %}
-                    <span class="badge bg-success me-1">
-                        {% if request.GET.ativo == 'true' %}Ativos{% else %}Inativos{% endif %}
-                    </span>
-                    {% endif %}
-                    {% if request.GET.search %}
-                    <span class="badge bg-info me-1">"{{ request.GET.search }}"</span>
-                    {% endif %}
+                    <small class="text-muted me-2">Filtros ativos:</small>
+                    {% for k, l in categorias %}{% if k == request.GET.categoria %}
+                    <span class="badge bg-primary me-1">{{ l }}</span>
+                    {% endif %}{% endfor %}
+                    {% if request.GET.ativo == 'true' %}<span class="badge bg-success me-1">Ativos</span>
+                    {% elif request.GET.ativo == 'false' %}<span class="badge bg-secondary me-1">Inativos</span>{% endif %}
+                    {% if request.GET.search %}<span class="badge bg-info me-1">"{{ request.GET.search }}"</span>{% endif %}
                 </div>
                 {% endif %}
             </form>
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         TABELA
-    ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- TABELA -->
     <div class="card shadow-sm">
         <div class="card-header bg-white">
             <i class="bi bi-table me-1"></i> Lista de Tipos de Riscos
@@ -184,48 +163,43 @@
                         <tr>
                             <td>
                                 <span class="d-inline-block rounded-circle"
-                                      style="width: 24px; height: 24px; background-color: {{ tipo.codigo_cor }}; border: 2px solid #ddd;">
-                                </span>
+                                      style="width: 24px; height: 24px; background-color: {{ tipo.codigo_cor }}; border: 2px solid #ddd;"></span>
                             </td>
                             <td>
-                                <span class="badge" style="background-color: {{ tipo.codigo_cor }};
-                                      {% if tipo.categoria == 'ergonomico' %}color: #000;{% endif %}">
+                                <span class="badge" style="background-color: {{ tipo.codigo_cor }};{% if tipo.categoria == 'ergonomico' %} color: #000;{% endif %}">
                                     {{ tipo.get_categoria_display }}
                                 </span>
                             </td>
                             <td>
                                 <strong>{{ tipo.nome }}</strong>
-                                {% if tipo.descricao %}
-                                <br><small class="text-muted">{{ tipo.descricao|truncatewords:8 }}</small>
-                                {% endif %}
+                                {% if tipo.descricao %}<br><small class="text-muted">{{ tipo.descricao|truncatewords:8 }}</small>{% endif %}
                             </td>
                             <td>
-                                {% if tipo.nr_referencia %}
-                                <span class="badge bg-secondary">{{ tipo.nr_referencia }}</span>
-                                {% else %}—{% endif %}
+                                {% if tipo.nr_referencia %}<span class="badge bg-secondary">{{ tipo.nr_referencia }}</span>{% else %}—{% endif %}
                             </td>
                             <td class="text-center">
+                                {% if perms.gestao_riscos.change_tiporisco %}
                                 <button type="button"
                                         class="btn btn-sm btn-toggle-tipo {% if tipo.ativo %}btn-success{% else %}btn-outline-secondary{% endif %}"
-                                        data-id="{{ tipo.pk }}"
                                         data-nome="{{ tipo.nome }}"
                                         data-ativo="{{ tipo.ativo|yesno:'true,false' }}"
                                         data-url="{% url 'gestao_riscos:tipo_risco_toggle_ativo' tipo.pk %}">
                                     <i class="bi {% if tipo.ativo %}bi-toggle-on{% else %}bi-toggle-off{% endif %}"></i>
-                                    {% if tipo.ativo %}Ativo{% else %}Inativo{% endif %}
+                                    {{ tipo.ativo|yesno:"Ativo,Inativo" }}
                                 </button>
+                                {% else %}
+                                <span class="badge {% if tipo.ativo %}bg-success{% else %}bg-secondary{% endif %}">{{ tipo.ativo|yesno:"Ativo,Inativo" }}</span>
+                                {% endif %}
                             </td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
-                                    {% if perms.gestao_riscos.change_tiporisco or user.is_superuser %}
-                                    <a href="{% url 'gestao_riscos:tipo_risco_update' tipo.pk %}"
-                                       class="btn btn-outline-warning" title="Editar">
+                                    {% if perms.gestao_riscos.change_tiporisco %}
+                                    <a href="{% url 'gestao_riscos:tipo_risco_update' tipo.pk %}" class="btn btn-outline-warning" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     {% endif %}
-                                    {% if perms.gestao_riscos.delete_tiporisco or user.is_superuser %}
-                                    <a href="{% url 'gestao_riscos:tipo_risco_delete' tipo.pk %}"
-                                       class="btn btn-outline-danger" title="Excluir">
+                                    {% if perms.gestao_riscos.delete_tiporisco %}
+                                    <a href="{% url 'gestao_riscos:tipo_risco_delete' tipo.pk %}" class="btn btn-outline-danger" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </a>
                                     {% endif %}
@@ -236,19 +210,23 @@
                         <tr>
                             <td colspan="6" class="text-center py-5">
                                 <i class="bi bi-inbox text-muted fs-1"></i>
-                                <h6 class="mt-3 text-muted">Nenhum tipo de risco cadastrado</h6>
+                                <h6 class="mt-3 text-muted">
+                                    {% if request.GET.categoria or request.GET.ativo or request.GET.search %}
+                                        Nenhum resultado para os filtros aplicados
+                                    {% else %}
+                                        Nenhum tipo de risco cadastrado
+                                    {% endif %}
+                                </h6>
+                                {% if perms.gestao_riscos.add_tiporisco %}
                                 <div class="mt-3">
-                                    {% if perms.gestao_riscos.btn_popular_padrao or user.is_superuser %}
-                                    <button type="button" id="btnPopularVazio" class="btn btn-info me-2">
+                                    <button type="button" class="btn btn-outline-primary me-2 js-popular-padrao">
                                         <i class="bi bi-magic me-1"></i> Popular Padrão
                                     </button>
-                                    {% endif %}
-                                    {% if perms.gestao_riscos.add_tiporisco or user.is_superuser %}
                                     <a href="{% url 'gestao_riscos:tipo_risco_create' %}" class="btn btn-primary">
                                         <i class="bi bi-plus-circle me-1"></i> Cadastrar
                                     </a>
-                                    {% endif %}
                                 </div>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -257,46 +235,37 @@
             </div>
         </div>
 
-        <!-- Paginação -->
         {% if is_paginated %}
         <div class="card-footer bg-white">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <small class="text-muted">
                     {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }}
                 </small>
-                <nav>
+                <nav aria-label="Paginação">
                     <ul class="pagination pagination-sm mb-0">
                         {% if page_obj.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page=1{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">
-                                <i class="bi bi-chevron-double-left"></i>
-                            </a>
+                            <a class="page-link" href="?page=1&{{ querystring }}"><i class="bi bi-chevron-double-left"></i></a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">
-                                <i class="bi bi-chevron-left"></i>
-                            </a>
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ querystring }}"><i class="bi bi-chevron-left"></i></a>
                         </li>
                         {% endif %}
 
                         {% for num in page_obj.paginator.page_range %}
                             {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
                             <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                                <a class="page-link" href="?page={{ num }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">{{ num }}</a>
+                                <a class="page-link" href="?page={{ num }}&{{ querystring }}">{{ num }}</a>
                             </li>
                             {% endif %}
                         {% endfor %}
 
                         {% if page_obj.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ querystring }}"><i class="bi bi-chevron-right"></i></a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">
-                                <i class="bi bi-chevron-double-right"></i>
-                            </a>
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&{{ querystring }}"><i class="bi bi-chevron-double-right"></i></a>
                         </li>
                         {% endif %}
                     </ul>
@@ -305,70 +274,62 @@
         </div>
         {% endif %}
     </div>
-
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-var CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+document.addEventListener('DOMContentLoaded', () => {
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // Toggle Ativo/Inativo
-    document.querySelectorAll('.btn-toggle-tipo').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            var nome = this.dataset.nome;
-            var ativo = this.dataset.ativo === 'true';
-            var url = this.dataset.url;
-            
-            var msg = ativo 
-                ? 'Deseja INATIVAR "' + nome + '"?' 
-                : 'Deseja REATIVAR "' + nome + '"?';
-            
-            if (!confirm(msg)) return;
-            
-            this.disabled = true;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-            
-            fetch(url, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': CSRF_TOKEN }
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) location.reload();
-                else alert('Erro: ' + (data.error || 'Desconhecido'));
-            })
-            .catch(() => alert('Erro ao processar'));
+    async function postJSON(url) {
+        const r = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF_TOKEN, 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        let data = {};
+        try { data = await r.json(); } catch (_) { /* resposta não-JSON (403/500) */ }
+        if (!r.ok || !data.success) throw new Error(data.error || `HTTP ${r.status}`);
+        return data;
+    }
+
+    function setLoading(btn) {
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        return () => { btn.disabled = false; btn.innerHTML = original; };
+    }
+
+    document.querySelectorAll('.btn-toggle-tipo').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const ativo = btn.dataset.ativo === 'true';
+            if (!confirm(`Deseja ${ativo ? 'INATIVAR' : 'REATIVAR'} "${btn.dataset.nome}"?`)) return;
+            const restore = setLoading(btn);
+            try {
+                await postJSON(btn.dataset.url);
+                location.reload();
+            } catch (err) {
+                alert('Erro: ' + err.message);
+                restore();
+            }
         });
     });
 
-    // Popular Padrão
-    function popularPadrao() {
-        if (!confirm('Carregar Tipos de Riscos padrão?\n\nRiscos existentes NÃO serão duplicados.')) return;
-        
-        fetch('{% url "gestao_riscos:tipo_risco_popular" %}', {
-            method: 'POST',
-            headers: { 'X-CSRFToken': CSRF_TOKEN }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
+    document.querySelectorAll('.js-popular-padrao').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if (!confirm('Carregar Tipos de Riscos padrão?\n\nRiscos existentes NÃO serão duplicados.')) return;
+            const restore = setLoading(btn);
+            try {
+                const data = await postJSON('{% url "gestao_riscos:tipo_risco_popular" %}');
                 alert(data.message);
                 location.reload();
-            } else {
-                alert('Erro: ' + (data.error || 'Desconhecido'));
+            } catch (err) {
+                alert('Erro: ' + err.message);
+                restore();
             }
-        })
-        .catch(() => alert('Erro ao popular'));
-    }
-
-    document.getElementById('btnPopularPadrao')?.addEventListener('click', popularPadrao);
-    document.getElementById('btnPopularVazio')?.addEventListener('click', popularPadrao);
+        });
+    });
 });
 </script>
 {% endblock %}
-
 

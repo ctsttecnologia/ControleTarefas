@@ -1,7 +1,7 @@
 
 
 <!-- Template para exibir detalhes de uma Inspeção de Risco -->
-{% extends "base.html" %}
+{% extends 'gestao_riscos/base_riscos.html' %}
 {% load static %}
 
 {% block title %}Detalhes da Inspeção{% endblock %}
@@ -34,6 +34,10 @@
                     {% elif inspecao.status == 'PENDENTE_APROVACAO' %}
                         <span class="badge bg-warning text-dark fs-6 d-flex align-items-center">
                             <i class="bi bi-clock me-1"></i> {{ inspecao.get_status_display }}
+                        </span>
+                    {% elif inspecao.status == 'CANCELADA' %}
+                        <span class="badge bg-secondary fs-6 d-flex align-items-center">
+                            <i class="bi bi-x-circle me-1"></i> {{ inspecao.get_status_display }}
                         </span>
                     {% else %}
                         <span class="badge bg-info fs-6 d-flex align-items-center">
@@ -146,6 +150,11 @@
                     <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-calendar3 me-2"></i> Voltar ao Calendário
                     </a>
+                    {% if perms.gestao_riscos.add_inspecao %}
+                    <a href="{% url 'gestao_riscos:inspecao_lista' %}" class="btn btn-light">
+                        <i class="bi bi-calendar-plus me-1"></i> Inspeção
+                    </a>
+                    {% endif %}
 
                     <!-- Confirmar (se Pendente de Aprovação) -->
                     
@@ -179,6 +188,7 @@
             </div>
 
             <!-- Timeline de Status -->
+            {% with s=inspecao.status %}
             <div class="card shadow-sm mt-4">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">
@@ -187,9 +197,11 @@
                 </div>
                 <div class="card-body">
                     <div class="d-flex flex-column gap-3">
+
+                        <!-- 1. Criada -->
                         <div class="d-flex align-items-center">
-                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" 
-                                 style="width: 32px; height: 32px;">
+                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3"
+                                style="width: 32px; height: 32px;">
                                 <i class="bi bi-check"></i>
                             </div>
                             <div>
@@ -197,51 +209,72 @@
                                 <p class="mb-0 small">Inspeção agendada</p>
                             </div>
                         </div>
-                        
+
+                        <!-- 2. Confirmação -->
                         <div class="d-flex align-items-center">
-                            <div class="rounded-circle {% if inspecao.status != 'PENDENTE_APROVACAO' %}bg-success text-white{% else %}bg-warning text-dark{% endif %} d-flex align-items-center justify-content-center me-3" 
-                                 style="width: 32px; height: 32px;">
-                                {% if inspecao.status != 'PENDENTE_APROVACAO' %}
-                                <i class="bi bi-check"></i>
-                                {% else %}
-                                <i class="bi bi-hourglass-split"></i>
-                                {% endif %}
-                            </div>
+                            {% if s == 'PENDENTE_APROVACAO' %}
+                                <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center me-3"
+                                    style="width: 32px; height: 32px;">
+                                    <i class="bi bi-hourglass-split"></i>
+                                </div>
+                            {% elif s == 'CANCELADA' %}
+                                <div class="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center me-3"
+                                    style="width: 32px; height: 32px;">
+                                    <i class="bi bi-dash"></i>
+                                </div>
+                            {% else %}
+                                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3"
+                                    style="width: 32px; height: 32px;">
+                                    <i class="bi bi-check"></i>
+                                </div>
+                            {% endif %}
                             <div>
                                 <small class="text-muted">Confirmação</small>
                                 <p class="mb-0 small">
-                                    {% if inspecao.status == 'PENDENTE_APROVACAO' %}
-                                        Aguardando
-                                    {% else %}
-                                        Confirmada
-                                    {% endif %}
+                                    {% if s == 'PENDENTE_APROVACAO' %}Aguardando
+                                    {% elif s == 'CANCELADA' %}—
+                                    {% else %}Confirmada{% endif %}
                                 </p>
                             </div>
                         </div>
-                        
+
+                        <!-- 3. Conclusão ou Cancelamento -->
                         <div class="d-flex align-items-center">
-                            <div class="rounded-circle {% if inspecao.status == 'CONCLUIDA' %}bg-success text-white{% else %}bg-light text-muted{% endif %} d-flex align-items-center justify-content-center me-3" 
-                                 style="width: 32px; height: 32px;">
-                                {% if inspecao.status == 'CONCLUIDA' %}
-                                <i class="bi bi-check"></i>
-                                {% else %}
-                                <i class="bi bi-circle"></i>
-                                {% endif %}
-                            </div>
-                            <div>
-                                <small class="text-muted">Conclusão</small>
-                                <p class="mb-0 small">
-                                    {% if inspecao.status == 'CONCLUIDA' %}
-                                        Finalizada
-                                    {% else %}
-                                        Pendente
-                                    {% endif %}
-                                </p>
-                            </div>
+                            {% if s == 'CANCELADA' %}
+                                <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center me-3"
+                                    style="width: 32px; height: 32px;">
+                                    <i class="bi bi-x"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted">Cancelamento</small>
+                                    <p class="mb-0 small">Cancelada</p>
+                                </div>
+                            {% elif s == 'CONCLUIDA' %}
+                                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3"
+                                    style="width: 32px; height: 32px;">
+                                    <i class="bi bi-check"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted">Conclusão</small>
+                                    <p class="mb-0 small">Finalizada</p>
+                                </div>
+                            {% else %}
+                                <div class="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center me-3"
+                                    style="width: 32px; height: 32px;">
+                                    <i class="bi bi-circle"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted">Conclusão</small>
+                                    <p class="mb-0 small">Pendente</p>
+                                </div>
+                            {% endif %}
                         </div>
+
                     </div>
                 </div>
             </div>
+            {% endwith %}
+
         </div>
     </div>
 

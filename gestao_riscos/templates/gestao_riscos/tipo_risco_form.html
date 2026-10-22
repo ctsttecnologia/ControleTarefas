@@ -1,7 +1,6 @@
 
-<!-- gestao_riscos/templates/gestao_riscos/tipo_risco/tipo_risco_form.html -->
-{% extends 'base.html' %}
-{% load static %}
+{# gestao_riscos/templates/gestao_riscos/tipo_risco/tipo_risco_form.html #}
+{% extends 'gestao_riscos/base_riscos.html' %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -14,30 +13,14 @@
 <div class="container-fluid py-4">
 
     <!-- Header -->
-    <div class="card bg-primary text-white shadow-sm mb-4">
-        <div class="card-body py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 class="mb-1">
-                        <i class="bi bi-exclamation-triangle me-2"></i>{{ titulo }}
-                    </h4>
-                    <small class="opacity-75">Cadastro de agentes de risco ocupacional</small>
-                </div>
-                <a href="{% url 'gestao_riscos:tipo_risco_list' %}" class="btn btn-outline-light">
-                    <i class="bi bi-arrow-left me-1"></i> Voltar
-                </a>
-            </div>
-        </div>
-    </div>
+    {% include 'gestao_riscos/partials/header.html' with titulo="Novo Tipo de Risco" subtitulo="Cadastro de agentes de risco ocupacional" icone="bi-list-task" %}
 
     <div class="row g-4">
-        <!-- Formulário Principal -->
+        <!-- Formulário -->
         <div class="col-lg-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-pencil-square text-primary me-2"></i>Dados do Tipo de Risco
-                    </h6>
+                    <h6 class="mb-0"><i class="bi bi-pencil-square text-primary me-2"></i>Dados do Tipo de Risco</h6>
                 </div>
                 <div class="card-body p-4">
                     <form method="post" novalidate>
@@ -45,73 +28,62 @@
 
                         {% if form.non_field_errors %}
                         <div class="alert alert-danger">
-                            {% for error in form.non_field_errors %}
-                            <p class="mb-0">{{ error }}</p>
-                            {% endfor %}
+                            {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
                         </div>
                         {% endif %}
 
                         <!-- Categoria e Cor -->
                         <div class="row mb-4">
                             <div class="col-md-5">
-                                <label for="id_categoria" class="form-label fw-semibold">
+                                <label for="{{ form.categoria.id_for_label }}" class="form-label fw-semibold">
                                     {{ form.categoria.label }} <span class="text-danger">*</span>
                                 </label>
                                 {{ form.categoria }}
-                                {% if form.categoria.errors %}
-                                <div class="invalid-feedback d-block">{{ form.categoria.errors.0 }}</div>
-                                {% endif %}
+                                {% if form.categoria.errors %}<div class="invalid-feedback d-block">{{ form.categoria.errors.0 }}</div>{% endif %}
                             </div>
                             <div class="col-md-4">
-                                <label for="id_codigo_cor" class="form-label fw-semibold">
+                                <label for="{{ form.codigo_cor.id_for_label }}" class="form-label fw-semibold">
                                     {{ form.codigo_cor.label }}
                                 </label>
                                 <div class="input-group">
                                     {{ form.codigo_cor }}
                                     <span class="input-group-text p-1">
-                                        <span id="colorPreview" class="d-block rounded" 
+                                        <span id="colorPreview" class="d-block rounded"
                                               style="width: 30px; height: 30px; background-color: #808080;"></span>
                                     </span>
                                 </div>
+                                {% if form.codigo_cor.errors %}<div class="invalid-feedback d-block">{{ form.codigo_cor.errors.0 }}</div>{% endif %}
+                                <div class="form-text">Formato #RRGGBB</div>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label fw-semibold">Preview</label>
-                                <div>
-                                    <span class="badge fs-6" id="badgeCategoria" 
-                                          style="background-color: #808080; color: #fff;">
-                                        Selecione...
-                                    </span>
-                                </div>
+                                <span class="form-label fw-semibold d-block">Preview</span>
+                                <span class="badge fs-6" id="badgeCategoria" style="background-color: #808080; color: #fff;">Selecione...</span>
                             </div>
                         </div>
 
                         <!-- Nome -->
                         <div class="mb-4">
-                            <label for="id_nome" class="form-label fw-semibold">
+                            <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">
                                 {{ form.nome.label }} <span class="text-danger">*</span>
                             </label>
                             {{ form.nome }}
-                            {% if form.nome.errors %}
-                            <div class="invalid-feedback d-block">{{ form.nome.errors.0 }}</div>
-                            {% endif %}
+                            {% if form.nome.errors %}<div class="invalid-feedback d-block">{{ form.nome.errors.0 }}</div>{% endif %}
                             <div class="form-text">Nome do agente ou fator de risco</div>
                         </div>
 
-                        <!-- NR Referência -->
+                        <!-- NR -->
                         <div class="mb-4">
-                            <label for="id_nr_referencia" class="form-label fw-semibold">
-                                {{ form.nr_referencia.label }}
-                            </label>
+                            <label for="{{ form.nr_referencia.id_for_label }}" class="form-label fw-semibold">{{ form.nr_referencia.label }}</label>
                             {{ form.nr_referencia }}
+                            {% if form.nr_referencia.errors %}<div class="invalid-feedback d-block">{{ form.nr_referencia.errors.0 }}</div>{% endif %}
                             <div class="form-text">Ex: NR-15, NR-17, NR-12</div>
                         </div>
 
                         <!-- Descrição -->
                         <div class="mb-4">
-                            <label for="id_descricao" class="form-label fw-semibold">
-                                {{ form.descricao.label }}
-                            </label>
+                            <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">{{ form.descricao.label }}</label>
                             {{ form.descricao }}
+                            {% if form.descricao.errors %}<div class="invalid-feedback d-block">{{ form.descricao.errors.0 }}</div>{% endif %}
                             <div class="form-text">Descrição detalhada do risco (opcional)</div>
                         </div>
 
@@ -119,10 +91,9 @@
                         <div class="mb-4">
                             <div class="form-check form-switch">
                                 {{ form.ativo }}
-                                <label class="form-check-label fw-semibold" for="id_ativo">
-                                    Tipo de Risco Ativo
-                                </label>
+                                <label class="form-check-label fw-semibold" for="{{ form.ativo.id_for_label }}">Tipo de Risco Ativo</label>
                             </div>
+                            {% if form.ativo.errors %}<div class="invalid-feedback d-block">{{ form.ativo.errors.0 }}</div>{% endif %}
                             <div class="form-text">Desative para ocultar este risco das listagens</div>
                         </div>
 
@@ -140,138 +111,92 @@
             </div>
         </div>
 
-        <!-- Sidebar: Referência de Categorias -->
+        <!-- Sidebar -->
         <div class="col-lg-4">
             <div class="card shadow-sm">
                 <div class="card-header bg-info text-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-info-circle me-2"></i>Referência de Categorias
-                    </h6>
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Referência de Categorias</h6>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-sm mb-0">
                         <thead class="table-light">
-                            <tr>
-                                <th>Grupo</th>
-                                <th>Categoria</th>
-                                <th>Cor</th>
-                            </tr>
+                            <tr><th>Grupo</th><th>Categoria</th><th>Cor</th></tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>I</td>
-                                <td>Físicos</td>
-                                <td><span class="badge" style="background: #00a651;">Verde</span></td>
-                            </tr>
-                            <tr>
-                                <td>II</td>
-                                <td>Químicos</td>
-                                <td><span class="badge" style="background: #ed1c24;">Vermelho</span></td>
-                            </tr>
-                            <tr>
-                                <td>III</td>
-                                <td>Biológicos</td>
-                                <td><span class="badge" style="background: #8B4513;">Marrom</span></td>
-                            </tr>
-                            <tr>
-                                <td>IV</td>
-                                <td>Ergonômicos</td>
-                                <td><span class="badge" style="background: #f7ec13; color: #000;">Amarelo</span></td>
-                            </tr>
-                            <tr>
-                                <td>V</td>
-                                <td>Acidente</td>
-                                <td><span class="badge" style="background: #0068b7;">Azul</span></td>
-                            </tr>
+                            <tr><td>I</td><td>Físicos</td><td><span class="badge" style="background: #00a651;">Verde</span></td></tr>
+                            <tr><td>II</td><td>Químicos</td><td><span class="badge" style="background: #ed1c24;">Vermelho</span></td></tr>
+                            <tr><td>III</td><td>Biológicos</td><td><span class="badge" style="background: #8B4513;">Marrom</span></td></tr>
+                            <tr><td>IV</td><td>Ergonômicos</td><td><span class="badge" style="background: #f7ec13; color: #000;">Amarelo</span></td></tr>
+                            <tr><td>V</td><td>Acidente</td><td><span class="badge" style="background: #0068b7;">Azul</span></td></tr>
                         </tbody>
                     </table>
                 </div>
                 <div class="card-footer bg-light">
                     <small class="text-muted">
-                        <i class="bi bi-lightbulb me-1"></i>
-                        A cor é automaticamente preenchida ao selecionar a categoria
+                        <i class="bi bi-lightbulb me-1"></i>A cor padrão é preenchida ao trocar a categoria (pode ser ajustada)
                     </small>
                 </div>
             </div>
 
-            <!-- Dicas -->
             <div class="card shadow-sm mt-4">
                 <div class="card-header bg-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-lightbulb text-warning me-2"></i>Dicas
-                    </h6>
+                    <h6 class="mb-0"><i class="bi bi-lightbulb text-warning me-2"></i>Dicas</h6>
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled mb-0 small">
-                        <li class="mb-2">
-                            <i class="bi bi-check-circle text-success me-1"></i>
-                            Use nomes padronizados conforme a NR
-                        </li>
-                        <li class="mb-2">
-                            <i class="bi bi-check-circle text-success me-1"></i>
-                            Sempre informe a NR de referência
-                        </li>
-                        <li>
-                            <i class="bi bi-check-circle text-success me-1"></i>
-                            Descreva medidas de controle na descrição
-                        </li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-1"></i>Use nomes padronizados conforme a NR</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-1"></i>Sempre informe a NR de referência</li>
+                        <li><i class="bi bi-check-circle text-success me-1"></i>Descreva medidas de controle na descrição</li>
                     </ul>
                 </div>
             </div>
         </div>
     </div>
-
 </div>
+
+{{ cores_categorias|json_script:"cores-categorias" }}
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    
-    const coresCategoria = {
-        'fisico':     '#00a651',
-        'quimico':    '#ed1c24',
-        'biologico':  '#8B4513',
-        'ergonomico': '#f7ec13',
-        'acidente':   '#0068b7',
-    };
+document.addEventListener('DOMContentLoaded', () => {
+    const coresCategoria = JSON.parse(document.getElementById('cores-categorias').textContent);
+    const textoCores = { ergonomico: '#000' };
+    const COR_PADRAO = '#808080';
+    const HEX = /^#[0-9A-Fa-f]{6}$/;
 
-    const textoCores = {
-        'ergonomico': '#000',
-    };
+    const categoriaSelect = document.getElementById('{{ form.categoria.id_for_label }}');
+    const codigoCorInput  = document.getElementById('{{ form.codigo_cor.id_for_label }}');
+    const badge           = document.getElementById('badgeCategoria');
+    const colorPreview    = document.getElementById('colorPreview');
+    if (!categoriaSelect || !codigoCorInput) return;
 
-    const categoriaSelect = document.getElementById('id_categoria');
-    const codigoCorInput = document.getElementById('id_codigo_cor');
-    const badgeCategoria = document.getElementById('badgeCategoria');
-    const colorPreview = document.getElementById('colorPreview');
-
-    function atualizarPreview() {
+    // Só renderiza, sem alterar o valor salvo
+    function renderPreview() {
         const cat = categoriaSelect.value;
-        const cor = coresCategoria[cat] || '#808080';
-        const textoCor = textoCores[cat] || '#fff';
-        const label = categoriaSelect.options[categoriaSelect.selectedIndex]?.text || 'Selecione...';
-
-        codigoCorInput.value = cor;
-        badgeCategoria.style.backgroundColor = cor;
-        badgeCategoria.style.color = textoCor;
-        badgeCategoria.textContent = label;
+        const valor = codigoCorInput.value.trim();
+        const cor = HEX.test(valor) ? valor : (coresCategoria[cat] || COR_PADRAO);
+        badge.style.backgroundColor = cor;
+        badge.style.color = textoCores[cat] || '#fff';
+        badge.textContent = cat ? categoriaSelect.options[categoriaSelect.selectedIndex].text : 'Selecione...';
         colorPreview.style.backgroundColor = cor;
     }
 
-    categoriaSelect?.addEventListener('change', atualizarPreview);
-    
-    codigoCorInput?.addEventListener('input', function() {
-        const cor = this.value;
-        badgeCategoria.style.backgroundColor = cor;
-        colorPreview.style.backgroundColor = cor;
+    // Aplica a cor padrão somente quando o usuário troca a categoria
+    categoriaSelect.addEventListener('change', () => {
+        codigoCorInput.value = coresCategoria[categoriaSelect.value] || COR_PADRAO;
+        renderPreview();
     });
+    codigoCorInput.addEventListener('input', renderPreview);
 
-    // Se editando, disparar no carregamento
-    {% if form.instance.pk %}
-    atualizarPreview();
-    {% endif %}
+    // Criação sem cor: preenche a padrão da categoria escolhida
+    if (!codigoCorInput.value && categoriaSelect.value) {
+        codigoCorInput.value = coresCategoria[categoriaSelect.value] || COR_PADRAO;
+    }
+    renderPreview(); // edição e reexibição com erro mantêm a cor atual
 });
 </script>
 {% endblock %}
+
 
 

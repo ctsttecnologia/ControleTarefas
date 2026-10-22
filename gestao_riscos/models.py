@@ -1,26 +1,47 @@
+# =============================================================================
+# gestao_riscos/mixins.py
+# =============================================================================
+from core.mixins import (
+    AppPermissionMixin,
+    FuncionarioRequiredMixin,
+    RequireActiveFilialMixin,
+    TecnicoScopeMixin,
+    ViewFilialScopedMixin,
+)
 
-"""
-Models do módulo de Gestão de Riscos
-Integrado com PGR (Programa de Gerenciamento de Riscos)
-"""
+
+class GestaoRiscosBaseMixin(FuncionarioRequiredMixin, AppPermissionMixin):
+    """Auth + vínculo Funcionário + permissão por app (ou granular, se a view definir)."""
+    modulo_nome = 'Gestão de Riscos'
+    app_label_required = 'gestao_riscos'
+
+
+class GestaoRiscosWriteMixin(GestaoRiscosBaseMixin, RequireActiveFilialMixin):
+    """Escrita: exige filial ativa. Defina `permission_required` na view."""
+
+
+class GestaoRiscosTecnicoMixin(GestaoRiscosBaseMixin, TecnicoScopeMixin, ViewFilialScopedMixin):
+    """CRUD com escopo de técnico + filial. Defina `tecnico_scope_lookup`."""
+
+
+# =============================================================================
 # gestao_riscos/models.py
-from django.db import models
-from django.urls import reverse_lazy
-from django.utils import timezone
-from django.contrib.auth import get_user_model
+# =============================================================================
 from django.conf import settings
-from core.managers import FilialManager
-from usuario.models import Filial
-from departamento_pessoal.models import Cargo, Funcionario
+from django.core.cache import cache
+from django.core.validators import RegexValidator
+from django.db import models
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
+from django.urls import reverse
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from seguranca_trabalho.models import Equipamento, EntregaEPI
 
-User = get_user_model()
+from core.managers import FilialManager
+from departamento_pessoal.models import Cargo, Funcionario
+from usuario.models import Filial
 
-
-# ===========================================
-# CHOICES GLOBAIS
-# ===========================================
+User = settings.AUTH_USER_MODEL
 
 CATEGORIA_RISCO_CHOICES = [
     ('fisico', 'Físico'),
@@ -37,20 +58,6 @@ SETORES_CHOICES = [
     ('ADMINISTRACAO', 'Administração'),
 ]
 
-TIPO_OCORRENCIA_CHOICES = [
-    ('', '── Selecione ──'),
-    ('Incidentes', (
-        ('QUASE_ACIDENTE', 'Quase Acidente (Incidente)'),
-        ('CONDICAO_INSEGURA', 'Condição Insegura'),
-    )),
-    ('Acidentes', (
-        ('ACIDENTE_SEM_AFASTAMENTO', 'Acidente sem Afastamento'),
-        ('ACIDENTE_COM_AFASTAMENTO', 'Acidente com Afastamento'),
-        ('ACIDENTE_TRAJETO', 'Acidente de Trajeto'),
-        ('ACIDENTE_FATAL', 'Acidente Fatal'),
-    )),
-]
-
 TIPO_OCORRENCIA_FLAT = [
     ('QUASE_ACIDENTE', 'Quase Acidente (Incidente)'),
     ('CONDICAO_INSEGURA', 'Condição Insegura'),
@@ -59,6 +66,17 @@ TIPO_OCORRENCIA_FLAT = [
     ('ACIDENTE_TRAJETO', 'Acidente de Trajeto'),
     ('ACIDENTE_FATAL', 'Acidente Fatal'),
 ]
+
+TIPO_OCORRENCIA_CHOICES = [
+    ('', '── Selecione ──'),
+    ('Incidentes', TIPO_OCORRENCIA_FLAT[:2]),
+    ('Acidentes', TIPO_OCORRENCIA_FLAT[2:]),
+]
+
+# Ocorrências que "zeram" o contador de dias sem acidentes
+TIPOS_ZERAM_CONTADOR = ('ACIDENTE_COM_AFASTAMENTO', 'ACIDENTE_FATAL')
+
+CLASSIFICACAO_CHOICES = [('INCIDENTE', 'Incidente'), ('ACIDENTE', 'Acidente')]
 
 GRAVIDADE_CHOICES = [
     ('LEVE', 'Leve'),
@@ -74,143 +92,73 @@ STATUS_CHOICES = [
     ('CANCELADA', _('Cancelada')),
 ]
 
-class CartaoTagVisibilityMixin:
-    def apply_visibility(self, queryset):
-        user = self.request.user
-        if user.is_superuser or user.has_perm('gestao_riscos.view_all_cartaotag'):
-            return queryset
-        funcionario = getattr(user, 'funcionario', None)
-        if not funcionario:
-            return queryset.none()
-        return queryset.filter(funcionario=funcionario)
+hex_color_validator = RegexValidator(r'^#[0-9A-Fa-f]{6}$', 'Use o formato #RRGGBB.')
 
-
-# ===========================================
-# INCIDENTE / ACIDENTE
-# ===========================================
 
 class Incidente(models.Model):
-    """Registra qualquer ocorrência: incidentes E acidentes de segurança."""
+    """Ocorrência de SST. Campos de saúde são DADO SENSÍVEL (LGPD art. 11)."""
 
-    # ── Classificação ──
+    # Derivado de tipo_ocorrencia no save() (mantido p/ relatórios/compat.)
     classificacao = models.CharField(
-        max_length=30,
-        choices=TIPO_OCORRENCIA_CHOICES,
-        verbose_name="Classificacao",
-        default='Quase Acidente',
+        max_length=30, choices=CLASSIFICACAO_CHOICES, default='INCIDENTE',
+        editable=False, verbose_name='Classificação',
     )
     tipo_ocorrencia = models.CharField(
-        max_length=30,
-        choices=TIPO_OCORRENCIA_FLAT,
-        verbose_name="Tipo de Ocorrência",
-        default='Quase Acidente',
+        max_length=30, choices=TIPO_OCORRENCIA_FLAT, default='QUASE_ACIDENTE',
+        verbose_name='Tipo de Ocorrência', db_index=True,
     )
-    gravidade = models.CharField(
-        max_length=15,
-        choices=GRAVIDADE_CHOICES,
-        default='LEVE',
-        verbose_name="Gravidade",
-    )
+    gravidade = models.CharField(max_length=15, choices=GRAVIDADE_CHOICES, default='LEVE')
 
-    # ── Descrição ──
-    descricao = models.CharField(
-        max_length=255,
-        verbose_name="Título da Ocorrência",
-    )
-    detalhes = models.TextField(
-        verbose_name="Detalhes da Ocorrência",
-    )
+    descricao = models.CharField('Título da Ocorrência', max_length=255)
+    detalhes = models.TextField('Detalhes da Ocorrência')
 
-    # ── Local e Data ──
-    setor = models.CharField(
-        max_length=20,
-        choices=SETORES_CHOICES,
-        verbose_name="Setor",
-    )
-    local_especifico = models.CharField(
-        max_length=255,
-        blank=True,
-        verbose_name="Local Específico",
-        help_text="Ex: Linha de produção 3, Pátio de carga, Escritório 2º andar",
-    )
-    data_ocorrencia = models.DateTimeField(
-        default=timezone.now,
-        verbose_name="Data e Hora da Ocorrência",
-    )
+    setor = models.CharField('Setor', max_length=20, choices=SETORES_CHOICES)
+    local_especifico = models.CharField('Local Específico', max_length=255, blank=True)
+    data_ocorrencia = models.DateTimeField('Data e Hora da Ocorrência', default=timezone.now)
 
-    # ── Envolvidos (Acidente) ──
+    # ── Envolvidos / dados de saúde (sensíveis) ──
     funcionario_envolvido = models.ForeignKey(
-        'departamento_pessoal.Funcionario',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='ocorrencias',
-        verbose_name="Funcionário Envolvido",
-        help_text="Obrigatório para acidentes",
+        Funcionario, on_delete=models.PROTECT,  # preserva histórico legal (NR/eSocial)
+        null=True, blank=True, related_name='ocorrencias',
+        verbose_name='Funcionário Envolvido',
     )
-    parte_corpo_atingida = models.CharField(
-        max_length=255,
-        blank=True,
-        verbose_name="Parte do Corpo Atingida",
-        help_text="Ex: Mão direita, Coluna lombar, Olho esquerdo",
-    )
-    dias_afastamento = models.PositiveIntegerField(
-        default=0,
-        verbose_name="Dias de Afastamento",
-    )
-    cat_emitida = models.BooleanField(
-        default=False,
-        verbose_name="CAT Emitida?",
-        help_text="Comunicação de Acidente de Trabalho",
-    )
-    numero_cat = models.CharField(
-        max_length=50,
-        blank=True,
-        verbose_name="Nº da CAT",
-    )
+    parte_corpo_atingida = models.CharField('Parte do Corpo Atingida', max_length=255, blank=True)
+    dias_afastamento = models.PositiveIntegerField('Dias de Afastamento', default=0)
+    cat_emitida = models.BooleanField('CAT Emitida?', default=False)
+    numero_cat = models.CharField('Nº da CAT', max_length=50, blank=True)
 
-    # ── Ação Imediata ──
-    acao_imediata = models.TextField(
-        blank=True,
-        verbose_name="Ação Imediata Tomada",
-        help_text="Descreva o que foi feito logo após a ocorrência",
-    )
+    acao_imediata = models.TextField('Ação Imediata Tomada', blank=True)
 
-    # ── Metadados ──
     registrado_por = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='incidentes_registrados',
+        User, on_delete=models.SET_NULL, null=True, related_name='incidentes_registrados',
     )
-    data_registro = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Data do Registro",
-    )
-    filial = models.ForeignKey(
-        Filial,
-        on_delete=models.PROTECT,
-        related_name='incidentes',
-        null=True,
-        blank=False,
-    )
+    data_registro = models.DateTimeField('Data do Registro', auto_now_add=True)
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='incidentes')
 
     objects = FilialManager()
 
     class Meta:
-        verbose_name = "Ocorrência"
-        verbose_name_plural = "Ocorrências"
+        verbose_name = 'Ocorrência'
+        verbose_name_plural = 'Ocorrências'
         ordering = ['-data_ocorrencia']
+        indexes = [models.Index(fields=['filial', 'tipo_ocorrencia', '-data_ocorrencia'])]
         permissions = [
-            ("view_all_incidente", _("Pode visualizar todas as ocorrências da filial")),
+            ('view_all_incidente', _('Pode visualizar todas as ocorrências da filial')),
+            ('view_dados_saude_incidente', _('Pode visualizar dados de saúde (LGPD)')),
         ]
 
     def __str__(self):
         return f"[{self.get_tipo_ocorrencia_display()}] {self.descricao}"
 
+    def save(self, *args, **kwargs):
+        self.classificacao = 'ACIDENTE' if self.is_acidente else 'INCIDENTE'
+        if not self.cat_emitida:
+            self.numero_cat = ''
+        super().save(*args, **kwargs)
+
     @property
     def is_acidente(self):
-        return self.tipo_ocorrencia.startswith('ACIDENTE')
+        return (self.tipo_ocorrencia or '').startswith('ACIDENTE')
 
     @property
     def is_incidente(self):
@@ -218,152 +166,99 @@ class Incidente(models.Model):
 
     @property
     def cor_gravidade(self):
-        cores = {
-            'LEVE': 'success',
-            'MODERADA': 'warning',
-            'GRAVE': 'danger',
-            'GRAVISSIMA': 'dark',
-        }
-        return cores.get(self.gravidade, 'secondary')
+        return {'LEVE': 'success', 'MODERADA': 'warning',
+                'GRAVE': 'danger', 'GRAVISSIMA': 'dark'}.get(self.gravidade, 'secondary')
 
     @property
     def cor_tipo(self):
         if self.tipo_ocorrencia == 'ACIDENTE_FATAL':
             return 'dark'
-        if self.is_acidente:
-            return 'danger'
-        return 'warning'
+        return 'danger' if self.is_acidente else 'warning'
 
-
-# ===========================================
-# INSPEÇÃO
-# ===========================================
 
 class Inspecao(models.Model):
-    """Agenda e registra inspeções de segurança."""
-
     equipamento = models.ForeignKey(
-        'seguranca_trabalho.Equipamento',
-        on_delete=models.SET_NULL,
-        related_name='inspecoes',
-        null=True, blank=True,
+        'seguranca_trabalho.Equipamento', on_delete=models.SET_NULL,
+        related_name='inspecoes', null=True, blank=True,
     )
-
     entrega_epi = models.ForeignKey(
-        'seguranca_trabalho.EntregaEPI',
-        on_delete=models.CASCADE,
-        related_name='inspecoes',
-        null=True, blank=True,
-        verbose_name=_("Item de EPI Específico"),
+        'seguranca_trabalho.EntregaEPI', on_delete=models.CASCADE,
+        related_name='inspecoes', null=True, blank=True,
+        verbose_name=_('Item de EPI Específico'),
     )
-
-    data_agendada = models.DateField(verbose_name="Data Agendada")
-    data_realizacao = models.DateField(verbose_name="Data de Realização", null=True, blank=True)
+    data_agendada = models.DateField('Data Agendada')
+    data_realizacao = models.DateField('Data de Realização', null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDENTE')
-
     responsavel = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
+        User, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='inspecoes_realizadas',
     )
     observacoes = models.TextField(blank=True)
-    filial = models.ForeignKey(
-        Filial,
-        on_delete=models.PROTECT,
-        related_name='inspecoes',
-        null=True, blank=False,
-    )
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='inspecoes')
 
     objects = FilialManager()
 
     class Meta:
-        verbose_name = "Inspeção"
-        verbose_name_plural = "Inspeções"
+        verbose_name = 'Inspeção'
+        verbose_name_plural = 'Inspeções'
         ordering = ['-data_agendada']
+        indexes = [models.Index(fields=['filial', 'status', 'data_agendada'])]
         permissions = [
-            ("view_all_inspecao", _("Pode visualizar todas as inspeções da filial")),
+            ('view_all_inspecao', _('Pode visualizar todas as inspeções da filial')),
         ]
 
     def __str__(self):
-        if self.entrega_epi:
+        if self.entrega_epi_id:
             return f"Inspeção de {self.entrega_epi} em {self.data_agendada}"
-        if self.equipamento:
+        if self.equipamento_id:
             return f"Inspeção de {self.equipamento.nome} em {self.data_agendada}"
-        return f"Inspeção (ID: {self.id}) em {self.data_agendada}"
+        return f"Inspeção (ID: {self.pk}) em {self.data_agendada}"
 
     def save(self, *args, **kwargs):
-        if self.entrega_epi:
+        if self.entrega_epi_id:
             if not self.equipamento_id:
-                self.equipamento = self.entrega_epi.equipamento
-            if not self.filial_ativa:
-                self.filial = self.entrega_epi.filial
-
+                self.equipamento_id = self.entrega_epi.equipamento_id
+            if not self.filial_id:  # bug anterior: self.filial_ativa
+                self.filial_id = self.entrega_epi.filial_id
         if not self.equipamento_id and not self.entrega_epi_id:
-            raise ValueError("A inspeção deve estar ligada a um Equipamento ou a uma Entrega de EPI.")
-
+            raise ValueError('A inspeção deve estar ligada a um Equipamento ou a uma Entrega de EPI.')
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse_lazy('gestao_riscos:inspecao_detalhe', kwargs={'pk': self.pk})
+        return reverse('gestao_riscos:inspecao_detalhe', kwargs={'pk': self.pk})
 
-
-# ===========================================
-# CARTÃO TAG
-# ===========================================
 
 class CartaoTag(models.Model):
-    """Representa um Cartão de Bloqueio (Tag de Perigo) individual para um funcionário."""
-
     funcionario = models.ForeignKey(
-        Funcionario,
-        on_delete=models.CASCADE,
-        related_name='cartoes_tag',
-        verbose_name="Funcionário Proprietário",
+        Funcionario, on_delete=models.CASCADE, related_name='cartoes_tag',
+        verbose_name='Funcionário Proprietário',
     )
     cargo = models.ForeignKey(
-        Cargo,
-        on_delete=models.CASCADE,
-        related_name='cartoes_tag',
-        verbose_name="Cargo",
-        null=True,
-        blank=True,
-        default=None,
+        Cargo, on_delete=models.SET_NULL, related_name='cartoes_tag',
+        null=True, blank=True,
     )
-    fone = models.CharField(
-        max_length=20,
-        default="(11) 3045-9400",
-        verbose_name="Telefone de Contato",
-    )
-    data_criacao = models.DateTimeField(auto_now_add=True, verbose_name="Data de Criação")
-    data_validade = models.DateField(verbose_name="Data de Validade", null=True, blank=True)
-    ativo = models.BooleanField(default=True, verbose_name="Ativo")
-    filial = models.ForeignKey(
-        Filial,
-        on_delete=models.PROTECT,
-        related_name='cartoes_tag',
-    )
+    # Telefone CORPORATIVO (não coletar celular pessoal — minimização LGPD)
+    fone = models.CharField('Telefone de Contato', max_length=20, default='(11) 3045-9400')
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    data_validade = models.DateField('Data de Validade', null=True, blank=True)
+    ativo = models.BooleanField('Ativo', default=True)
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='cartoes_tag')
 
     objects = FilialManager()
 
     class Meta:
-        verbose_name = "Cartão de Bloqueio (Tag)"
-        verbose_name_plural = "Cartões de Bloqueio (Tags)"
+        verbose_name = 'Cartão de Bloqueio (Tag)'
+        verbose_name_plural = 'Cartões de Bloqueio (Tags)'
         ordering = ['-data_criacao']
         permissions = [
-            ("view_all_cartaotag", _("Pode visualizar todos os cartões de bloqueio da filial")),
+            ('view_all_cartaotag', _('Pode visualizar todos os cartões de bloqueio da filial')),
         ]
 
     def __str__(self):
         return f"Cartão de {self.funcionario.nome_completo}"
 
 
-# ===========================================
-# RISCOS
-# ===========================================
-
 class TipoRisco(models.Model):
-
     CORES_CATEGORIA = {
         'fisico': '#00a651',
         'quimico': '#ed1c24',
@@ -371,32 +266,17 @@ class TipoRisco(models.Model):
         'ergonomico': '#f7ec13',
         'acidente': '#0068b7',
     }
+    COR_PADRAO = '#808080'
 
-    categoria = models.CharField(
-        'Categoria',
-        max_length=20,
-        choices=CATEGORIA_RISCO_CHOICES,
-    )
+    categoria = models.CharField('Categoria', max_length=20, choices=CATEGORIA_RISCO_CHOICES)
     nome = models.CharField('Nome do Risco', max_length=200)
     descricao = models.TextField('Descrição', blank=True)
     codigo_cor = models.CharField(
-        'Código da Cor',
-        max_length=7,
-        default='#808080',
-        help_text='Cor no formato hexadecimal (#RRGGBB)',
+        'Código da Cor', max_length=7, default=COR_PADRAO, validators=[hex_color_validator],
     )
-    nr_referencia = models.CharField(
-        'NR de Referência',
-        max_length=50,
-        blank=True,
-        help_text='Ex: NR-15, NR-17',
-    )
+    nr_referencia = models.CharField('NR de Referência', max_length=50, blank=True)
     ativo = models.BooleanField('Ativo', default=True)
-    filial = models.ForeignKey(
-        Filial,
-        on_delete=models.PROTECT,
-        related_name='tipos_risco',
-    )
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='tipos_risco')
 
     objects = FilialManager()
 
@@ -405,15 +285,30 @@ class TipoRisco(models.Model):
         verbose_name = 'Tipo de Risco'
         verbose_name_plural = 'Tipos de Riscos'
         ordering = ['categoria', 'nome']
-        unique_together = ['categoria', 'nome', 'filial']
+        constraints = [
+            models.UniqueConstraint(fields=['categoria', 'nome', 'filial'],
+                                    name='uniq_tiporisco_cat_nome_filial'),
+        ]
 
     def __str__(self):
         return f"{self.get_categoria_display()} - {self.nome}"
 
     def get_cor_categoria(self):
-        return self.CORES_CATEGORIA.get(self.categoria, '#808080')
+        return self.CORES_CATEGORIA.get(self.categoria, self.COR_PADRAO)
 
     def save(self, *args, **kwargs):
-        if self.codigo_cor == '#808080':
+        if not self.codigo_cor or self.codigo_cor == self.COR_PADRAO:
             self.codigo_cor = self.get_cor_categoria()
         super().save(*args, **kwargs)
+
+
+# ── Invalidação do cache do contador "dias sem acidentes" ──
+def dias_sem_acidentes_cache_key(filial_id):
+    return f'gr:dias_sem_acidentes:{filial_id}'
+
+
+@receiver([post_save, post_delete], sender=Incidente)
+def _invalida_cache_dias(sender, instance, **kwargs):
+    if instance.filial_id:
+        cache.delete(dias_sem_acidentes_cache_key(instance.filial_id))
+

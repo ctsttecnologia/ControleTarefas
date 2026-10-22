@@ -1,85 +1,83 @@
 
-<!-- Template para exibir o formulário de criação/edição de um Tipo de Risco -->
-{% extends "base.html" %}
+{# gestao_riscos/templates/gestao_riscos/registrar_incidente.html #}
+{% extends 'gestao_riscos/base_riscos.html' %}
 
-{% block title %}{{ titulo_pagina|default:"Registrar Incidente" }}{% endblock %}
+{% block title %}{{ titulo_pagina|default:"Registrar Ocorrência" }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'gestao_riscos:lista_riscos' %}">Gestão de Riscos</a></li>
+<li class="breadcrumb-item active">Registrar Ocorrência</li>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
 
-    <!-- Header -->
-    <div class="card bg-danger text-white shadow-sm mb-4">
-        <div class="card-body py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 class="mb-1">
-                        <i class="bi bi-exclamation-octagon-fill me-2"></i>{{ titulo_pagina }}
-                    </h4>
-                    <small class="opacity-75">Registre ocorrências e incidentes de segurança</small>
-                </div>
-                <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-light">
-                    <i class="bi bi-arrow-left me-1"></i> Voltar
-                </a>
-            </div>
-        </div>
-    </div>
-
+    <!-- HEADER -->
+    {% include 'gestao_riscos/partials/header.html' with titulo="Registrar Nova Ocorrência" subtitulo="Registre ocorrências e incidentes de segurança" icone="bi bi-exclamation-octagon-fill me-2" %}
+   
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-pencil-square text-danger me-2"></i>Dados do Incidente
-                    </h6>
+                    <h6 class="mb-0"><i class="bi bi-pencil-square text-danger me-2"></i>Dados da Ocorrência</h6>
                 </div>
                 <div class="card-body p-4">
-                    <form method="post" novalidate>
+                    <form method="post" novalidate id="form-incidente">
                         {% csrf_token %}
+                        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
 
                         {% if form.non_field_errors %}
                         <div class="alert alert-danger">
-                            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                            {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
                         </div>
                         {% endif %}
 
-                        {% for field in form %}
+                        {% for field in form.visible_fields %}
                         <div class="mb-4">
-                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
-                                {{ field.label }}
-                                {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
-                            </label>
-                            
-                            {{ field }}
-                            
-                            {% if field.help_text %}
-                            <div class="form-text text-muted small">{{ field.help_text|safe }}</div>
-                            {% endif %}
-                            
-                            {% if field.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in field.errors %}{{ error }}{% endfor %}
+                            {% if field.widget_type == 'checkbox' %}
+                            <div class="form-check form-switch">
+                                {{ field }}
+                                <label class="form-check-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
                             </div>
+                            {% else %}
+                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                                {{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}
+                            </label>
+                            {{ field }}
                             {% endif %}
+
+                            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                            {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                         </div>
                         {% endfor %}
 
-                        <!-- Botões -->
                         <div class="border-top pt-4 mt-4 d-flex justify-content-between">
                             <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-lg me-1"></i> Cancelar
                             </a>
-                            {% if perms.gestao_riscos.add_incidente or user.is_superuser %}
-                            <button type="submit" class="btn btn-danger btn-lg">
-                                <i class="bi bi-check-lg me-1"></i> Registrar Incidente
+                            <button type="submit" class="btn btn-danger btn-lg" id="btn-submit">
+                                <i class="bi bi-check-lg me-1"></i> Registrar Ocorrência
                             </button>
-                            {% endif %}
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
-
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('form-incidente');
+    const btn = document.getElementById('btn-submit');
+    form.addEventListener('submit', () => {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Salvando...';
+    });
+});
+</script>
+{% endblock %}
+
 

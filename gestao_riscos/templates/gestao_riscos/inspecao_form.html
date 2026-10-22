@@ -1,0 +1,114 @@
+
+{# gestao_riscos/templates/gestao_riscos/inspecao_form.html #}
+{% extends 'gestao_riscos/base_riscos.html' %}
+
+{% block title %}{{ titulo_pagina|default:"Agendar Inspeção" }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'gestao_riscos:calendario' %}">Calendário</a></li>
+<li class="breadcrumb-item active">{{ titulo_pagina|default:"Agendar Inspeção" }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+
+    <!-- HEADER -->
+    {% include 'gestao_riscos/partials/header.html' with titulo="Registrar Nova Ocorrência" subtitulo="Preencha os dados para agendar uma inspeção" icone="bi bi-calendar-plus me-2" %}
+   
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-pencil-square text-primary me-2"></i>Dados da Inspeção</h6>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" novalidate id="form-inspecao">
+                        {% csrf_token %}
+                        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% for field in form.visible_fields %}
+                        <div class="mb-4" id="campo-{{ field.name }}">
+                            {% include 'gestao_riscos/partials/_campo.html' with field=field %}
+                        </div>
+                        {% endfor %}
+
+                        <div class="border-top pt-4 mt-4 d-flex justify-content-between">
+                            <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg" id="btn-submit">
+                                <i class="bi bi-check-lg me-1"></i> {{ botao_submit_texto|default:"Agendar Inspeção" }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const equipSelect   = document.getElementById('{{ form.equipamento.id_for_label|default:"id_equipamento" }}');
+    const entregaSelect = document.getElementById('{{ form.entrega_epi.id_for_label|default:"id_entrega_epi" }}');
+    const wrapper       = document.getElementById('campo-entrega_epi');
+    const URL_ENTREGAS  = '{% url "gestao_riscos:entregas_por_equipamento" %}';
+
+    const form = document.getElementById('form-inspecao');
+    form.addEventListener('submit', () => {
+        const b = document.getElementById('btn-submit');
+        b.disabled = true;
+        b.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Salvando...';
+    });
+
+    if (!equipSelect || !entregaSelect || !wrapper) return;
+
+    // Exibe só se houver opções além do vazio, ou se o campo tiver erro
+    const toggleEntrega = () => {
+        const temErro = wrapper.querySelector('.invalid-feedback');
+        wrapper.classList.toggle('d-none', entregaSelect.options.length <= 1 && !temErro);
+    };
+
+    function resetEntrega(texto = '---------') {
+        entregaSelect.replaceChildren(new Option(texto, ''));
+    }
+
+    async function carregarEntregas() {
+        const equipId = equipSelect.value;
+        const selecionado = entregaSelect.value;
+        resetEntrega();
+        if (!equipId) return toggleEntrega();
+
+        entregaSelect.disabled = true;
+        try {
+            const r = await fetch(`${URL_ENTREGAS}?equipamento_id=${encodeURIComponent(equipId)}`,
+                                  { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const { entregas = [] } = await r.json();
+            entregas.forEach(({ id, texto }) => {
+                entregaSelect.add(new Option(texto, id, false, String(id) === selecionado));
+            });
+        } catch (err) {
+            console.error('Erro ao buscar entregas:', err);
+            resetEntrega('Erro ao carregar entregas');
+        } finally {
+            entregaSelect.disabled = false;
+            toggleEntrega();
+        }
+    }
+
+    equipSelect.addEventListener('change', carregarEntregas);
+    toggleEntrega();
+});
+</script>
+{% endblock %}
+
