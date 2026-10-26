@@ -35,6 +35,7 @@ requirements.txt.freeze.bak
 requirements.txt.utf16.bak
 notifications/services.py.bak
 "how Django *"
+qrcodes/ferramentas
 
 # Python
 __pycache__/
