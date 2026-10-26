@@ -9,6 +9,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.test import RequestFactory
 from django.views.generic import ListView, View
 
+from core.mixins import RequireActiveFilialMixin
 from usuario.mixins import (
     FilialScopedUserMixin,
     HideSuperusersMixin,
@@ -16,7 +17,6 @@ from usuario.mixins import (
     LastSuperuserProtectionMixin,
     PreventPrivilegeEscalationMixin,
     PreventSelfActionMixin,
-    RequireActiveFilialMixin,
 )
 from usuario.models import Usuario
 
