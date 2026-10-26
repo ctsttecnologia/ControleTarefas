@@ -1,0 +1,52 @@
+
+<script>
+window.DashTheme = (() => {
+    const v = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+    const charts = [];
+    let builder = null;
+
+    function cores() {
+        return {
+            text:    v('--bs-body-color'),
+            muted:   v('--bs-text-muted'),
+            strong:  v('--text-strong'),
+            border:  v('--bs-border-color'),
+            surface: v('--surface-elevated'),
+            c1: v('--chart-color-1'), c2: v('--chart-color-2'),
+            c3: v('--chart-color-3'), c4: v('--chart-color-4'),
+            muitoGrave: v('--pgr-risco-muito-grave') || '#fd7e14',
+        };
+    }
+
+    function tooltip(t) {
+        return {
+            backgroundColor: t.surface, titleColor: t.strong, bodyColor: t.text,
+            borderColor: t.border, borderWidth: 1, padding: 12, cornerRadius: 8, boxPadding: 4
+        };
+    }
+
+    function render() {
+        charts.splice(0).forEach(c => c.destroy());
+        const t = cores();
+        Chart.defaults.color = t.muted;
+        Chart.defaults.borderColor = t.border;
+        Chart.defaults.font.family = "'Poppins', sans-serif";
+        if (builder) builder(t, c => charts.push(c));
+    }
+
+    // Recria os gráficos quando o tema muda
+    new MutationObserver(render).observe(document.documentElement,
+        { attributes: true, attributeFilter: ['data-bs-theme'] });
+
+    return {
+        tooltip,
+        init(fn) {
+            builder = fn;
+            document.readyState === 'loading'
+                ? document.addEventListener('DOMContentLoaded', render)
+                : render();
+        }
+    };
+})();
+</script>
+

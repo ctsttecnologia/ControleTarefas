@@ -49,8 +49,8 @@ venv/
 # Gerados automaticamente / runtime
 .expo/
 logs/
-midia/
-media/
+midia
+media
 sent_emails/
 staticfiles/
 
@@ -59,4 +59,5 @@ pytest.ini
 
 badges.txt
 chart.umd.js.map
-dfdg
+logs
+private_media

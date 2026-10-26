@@ -14,13 +14,13 @@
 }
 
 [data-bs-theme="dark"] {
-    --card-bg-color: rgba(40, 48, 64, 0.75);
+    --card-bg-color: rgba(29, 2, 2, 0.286);
     --card-border-color: rgba(108, 117, 125, 0.3);
     --card-shadow-color: rgba(0, 0, 0, 0.25);
-    --card-title-color: #e9ecef;
-    --card-link-color: #00b8d4;
-    --card-link-hover-bg: rgba(0, 184, 212, 0.15);
-    --card-link-hover-color: #1cfbff;
+    --card-title-color: #ffffff;
+    --card-link-color: #007bff;
+    --card-link-hover-bg: rgba(0, 123, 255, 0.1);
+    --card-link-hover-color: #0057b366;
 }
 
 /* --- Blend mode adaptado ao tema (GIF com fundo branco) --- */
@@ -118,7 +118,7 @@
     opacity: 0.7; /* Realce sutil no hover, sem ficar 100% opaco */
 }
 
-/* --- Partículas de fundo --- */
+/* --- fundo --- */
 #particles-js {
     position: fixed;
     width: 100%;
