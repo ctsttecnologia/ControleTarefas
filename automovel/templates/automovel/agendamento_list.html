@@ -226,7 +226,7 @@
                                 </span>
                             </td>
                             <td class="text-end pe-4">
-                                {% if perms.automovel.view_agendamento or user.is_superuser %}
+                                {% if perms.automovel.view_carro_agendamento or user.is_superuser %}
                                 <div class="d-flex justify-content-end gap-1">
                                     <a href="{% url 'automovel:agendamento_detail' agendamento.id %}"
                                     class="btn-action" title="Detalhes" data-bs-toggle="tooltip">

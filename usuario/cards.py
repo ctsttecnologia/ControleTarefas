@@ -38,9 +38,9 @@ ALL_CARDS = [
             ],
             'icon': 'images/tst.gif',
             'links': [
+                {'url': 'seguranca_trabalho:dashboard', 'text': 'Painel', 'permission': 'seguranca_trabalho.view_fichaepi'},
                 {'url': 'seguranca_trabalho:acesso_rapido', 'text': 'Acesso Rápido', 'permission': 'seguranca_trabalho.view_fichaepi'},
-                {'url': 'seguranca_trabalho:dashboard', 'text': 'Dashboard', 'permission': 'seguranca_trabalho.view_fichaepi'},
-                {'url': 'gestao_riscos:lista_riscos', 'text': 'Gestão de Riscos', 'permission': 'gestao_riscos.view_tiporisco'},
+                {'url': 'gestao_riscos:lista_riscos', 'text': 'Gestão de Riscos', 'permission': 'gestao_riscos.view_listariscos'},
             ],
         },
 
