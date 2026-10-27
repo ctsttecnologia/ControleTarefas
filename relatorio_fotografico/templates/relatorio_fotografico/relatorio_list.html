@@ -6,12 +6,11 @@
 {% block content %}
 <div class="container-fluid py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h2 class="mb-0"><i class="bi bi-camera-fill me-2"></i>Relatórios Fotográficos</h2>
-        <a href="{% url 'relatorio_fotografico:create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Novo Relatório
-        </a>
-    </div>
+    {% if perms.relatorio_fotografico.add_relatoriofotografico or user.is_administrador %}
+    <a href="{% url 'relatorio_fotografico:create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Novo Relatório
+    </a>
+    {% endif %}
 
     <!-- Filtros -->
     <form method="get" class="row g-2 mb-4">
@@ -30,9 +29,9 @@
         <div class="col-md-2">
             <select name="responsavel" class="form-select">
                 <option value="">Todos os responsáveis</option>
-                {% for user in responsaveis %}
-                <option value="{{ user.id }}" {% if responsavel_filtro == user.id|stringformat:"s" %}selected{% endif %}>
-                    {{ user.get_full_name|default:user.username }}
+                {% for resp in responsaveis %}
+                <option value="{{ resp.id }}" {% if responsavel_filtro == resp.id|stringformat:"s" %}selected{% endif %}>
+                    {{ resp.get_full_name|default:resp.username }}
                 </option>
                 {% endfor %}
             </select>
@@ -95,30 +94,36 @@
                     <td><span class="badge bg-secondary">{{ relatorio.fotos.count }}</span></td>
                     <td class="text-end">
                         <div class="d-inline-flex gap-1">
+                            {% if perms.relatorio_fotografico.view_relatoriofotografico or user.is_administrador %}
                             <a href="{% url 'relatorio_fotografico:detail' relatorio.pk %}"
-                               class="btn btn-sm btn-outline-primary" title="Visualizar">
+                            class="btn btn-sm btn-outline-primary" title="Visualizar">
                                 <i class="bi bi-eye"></i>
                             </a>
-                            <a href="{% url 'relatorio_fotografico:update' relatorio.pk %}"
-                               class="btn btn-sm btn-outline-secondary" title="Editar">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            {% if relatorio.status != 'finalizado' %}
-                            <button type="button" class="btn btn-sm btn-outline-success btn-finalizar-relatorio"
-                                    data-bs-toggle="modal" data-bs-target="#modalFinalizarRelatorio"
-                                    data-url="{% url 'relatorio_fotografico:finalizar' relatorio.pk %}"
-                                    data-titulo="{{ relatorio.titulo }}"
-                                    title="Finalizar">
-                                <i class="bi bi-check2-circle"></i>
-                            </button>
                             {% endif %}
+
+                            {% if perms.relatorio_fotografico.change_relatoriofotografico or user.is_administrador %}
+                                {% if relatorio.status != 'finalizado' %}
+                                <a href="{% url 'relatorio_fotografico:update' relatorio.pk %}"
+                                class="btn btn-sm btn-outline-secondary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-success btn-finalizar-relatorio"
+                                        data-bs-toggle="modal" data-bs-target="#modalFinalizarRelatorio"
+                                        data-url="{% url 'relatorio_fotografico:finalizar' relatorio.pk %}"
+                                        data-titulo="{{ relatorio.titulo }}" title="Finalizar">
+                                    <i class="bi bi-check2-circle"></i>
+                                </button>
+                                {% endif %}
+                            {% endif %}
+
+                            {% if perms.relatorio_fotografico.delete_relatoriofotografico or user.is_administrador %}
                             <button type="button" class="btn btn-sm btn-outline-danger btn-excluir-relatorio"
                                     data-bs-toggle="modal" data-bs-target="#modalExcluirRelatorio"
                                     data-url="{% url 'relatorio_fotografico:delete' relatorio.pk %}"
-                                    data-titulo="{{ relatorio.titulo }}"
-                                    title="Excluir">
+                                    data-titulo="{{ relatorio.titulo }}" title="Excluir">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>

@@ -30,6 +30,17 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 # == MIXINS DE PERMISSÃO E ESCOPO (ARQUITETURA DE 3 NÍVEIS)
 # =============================================================================
 
+class AdminOrPermissionRequiredMixin(PermissionRequiredMixin):
+    """Libera superusuário/administrador; senão exige permission_required."""
+
+    def has_permission(self):
+        user = self.request.user
+        if user.is_authenticated and (
+            user.is_superuser or getattr(user, 'is_administrador', False)
+        ):
+            return True
+        return super().has_permission()
+
 class SSTPermissionMixin(PermissionRequiredMixin):
     """
     NÍVEL 1 (Página):
