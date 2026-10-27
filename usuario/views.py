@@ -32,7 +32,7 @@ from django.views.generic import (
 from django.views.generic.detail import SingleObjectMixin
 
 from core.mixins import AppPermissionMixin
-from usuario.cards import ALL_CARDS, CARD_SUMMARY, get_card_ids
+from usuario.cards import ALL_CARDS, CARD_SUMMARY, card_perms, get_card_ids
 from usuario.forms import (
     CustomPasswordChangeForm, CustomUserChangeForm,
     CustomUserCreationForm, FilialForm, GrupoForm,
@@ -213,59 +213,48 @@ class ProfileView(LoginRequiredMixin, DetailView):
         context['allowed_cards'] = self._build_visible_cards(self.request.user)
         return context
 
+    @staticmethod
+    def _is_full_access(user):
+        return user.is_superuser or getattr(user, 'is_administrador', False)
+
     def _build_visible_cards(self, user):
-            allowed_ids = self._get_allowed_card_ids(user)
-            visible = []
+        allowed_ids = self._get_allowed_card_ids(user)
+        visible = []
+        for card in ALL_CARDS:
+            if not self._user_can_see_card(user, card, allowed_ids):
+                continue
+            links = [
+                l for l in card['links']
+                if self._user_can_see_link(user, l, card['id'], allowed_ids)
+            ]
+            if links:
+                visible.append({**card, 'links': links})
+        return visible
 
-            for card in ALL_CARDS:
-                if not self._user_can_see_card(user, card, allowed_ids):
-                    continue
 
-                filtered_links = [
-                    link for link in card['links']
-                    if self._user_can_see_link(user, link, card['id'], allowed_ids)
-                ]
-
-                if filtered_links:
-                    visible.append({**card, 'links': filtered_links})
-
-            return visible
+    def _user_can_see_card(self, user, card, allowed_ids):
+        if self._is_full_access(user) or card['id'] in allowed_ids:
+            return True
+        return any(user.has_perm(p) for p in card_perms(card))
 
     def _user_can_see_link(self, user, link, card_id, allowed_ids):
         perm = link.get('permission')
-
-        if user.is_superuser or not perm:
+        if self._is_full_access(user) or not perm:
             return True
-
-        # Links de cadastro (add_*) exigem a permissão de verdade,
-        # mesmo que o card tenha sido liberado para o grupo.
-        if perm.split('.')[-1].startswith('add_'):
+        # Ações de escrita exigem a permissão real
+        if perm.split('.')[-1].startswith(('add_', 'change_', 'delete_')):
             return user.has_perm(perm)
-
-        # Demais links: permissão OU card liberado para o grupo
         return user.has_perm(perm) or card_id in allowed_ids
 
-    def _user_can_see_card(self, user, card, allowed_ids):
-        return (
-            user.is_superuser
-            or user.has_perm(card['permission'])
-            or card['id'] in allowed_ids
-        )
-
     def _get_allowed_card_ids(self, user):
-        if user.is_superuser:
+        if self._is_full_access(user):
             return get_card_ids()
-
         ids = set()
-        perms = GroupCardPermissions.objects.filter(
+        for cards_list in GroupCardPermissions.objects.filter(
             group__in=user.groups.all()
-        ).values_list('cards_visiveis', flat=True)
-
-        for cards_list in perms:
-            if cards_list:
-                ids.update(cards_list)
+        ).values_list('cards_visiveis', flat=True):
+            ids.update(cards_list or [])
         return ids
-
 
 @method_decorator(sensitive_post_parameters(
     'old_password', 'new_password1', 'new_password2'

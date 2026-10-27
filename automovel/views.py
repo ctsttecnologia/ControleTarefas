@@ -1,13 +1,12 @@
 
 # automovel/views.py
 
-import io
 import json
 from datetime import timedelta, datetime
 from core.mixins import AppPermissionMixin, ViewFilialScopedMixin, FuncionarioRequiredMixin
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import PermissionRequiredMixin
+
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
@@ -15,7 +14,7 @@ from django.http import (
     Http404, HttpResponse, HttpResponseBadRequest, JsonResponse,
 )
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import NoReverseMatch, reverse, reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -23,7 +22,8 @@ from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView, View,
 )
 # Bibliotecas de terceiros
-from docx import Document, settings
+from django.conf import settings
+from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.shared import Inches
@@ -153,12 +153,20 @@ class AutomovelBaseMixin(FuncionarioRequiredMixin, AppPermissionMixin, Automovel
 
         return response
 
+    permission_required = None
+
     def has_permission(self):
-        """Hook chamado pelo AppPermissionMixin (se for o caso)."""
-        funcionario = getattr(self.request, 'funcionario', None)
-        if self.request.user.is_superuser:
+        user = self.request.user
+        if user.is_superuser:
             return True
-        return self.tem_permissao_automovel(funcionario)
+        funcionario = getattr(self.request, 'funcionario', None)
+        if not self.tem_permissao_automovel(funcionario):
+            return False
+        perms = self.permission_required
+        if perms:
+            perms = (perms,) if isinstance(perms, str) else perms
+            return user.has_perms(perms)
+        return True
 
     def tem_permissao_automovel(self, funcionario):
         if funcionario is None:
@@ -354,7 +362,7 @@ class CalendarioAPIView(AutomovelBaseMixin, View):
 # CARRO CRUD
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class CarroListView(AutomovelBaseMixin, PermissionRequiredMixin, ListView):
+class CarroListView(AutomovelBaseMixin, ListView):
     """Carro não tem dono → apply_owner_filter = False"""
     model = Carro
     template_name = 'automovel/carro_list.html'
@@ -376,7 +384,7 @@ class CarroListView(AutomovelBaseMixin, PermissionRequiredMixin, ListView):
         return qs
 
 
-class CarroCreateView(AutomovelBaseMixin, PermissionRequiredMixin, CreateView):
+class CarroCreateView(AutomovelBaseMixin, CreateView):
     model = Carro
     form_class = CarroForm
     template_name = 'automovel/carro_form.html'
@@ -431,7 +439,7 @@ class CarroDetailView(AutomovelBaseMixin, DetailView):
         context['filial_ativa'] = self.get_filial_ativa()
         return context
 
-class CarroDeleteView(AutomovelBaseMixin, PermissionRequiredMixin, DeleteView):
+class CarroDeleteView(AutomovelBaseMixin, DeleteView):
     permission_required = 'automovel.delete_carro'
 
     def post(self, request, pk):
