@@ -2,18 +2,17 @@
 # relatorio_fotografico/models.py
 import math
 from io import BytesIO
-
+import logging
+from venv import logger
+from django.db import transaction
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile, UploadedFile
 from django.db import models
 from django.urls import reverse
 from PIL import Image, ImageOps
-
 from cloudinary.models import CloudinaryField
-
 from core.mixins import sanitize_image
 
-from .services.geocoding import obter_endereco_por_coordenadas
 
 FOTOS_POR_PAGINA = 6  # 2 colunas x 3 linhas
 
@@ -170,9 +169,6 @@ class FotoRelatorio(models.Model):
         return f'{float(self.latitude):.5f}, {float(self.longitude):.5f}'
 
     def save(self, *args, **kwargs):
-        # CloudinaryField não encapsula o arquivo bruto em FieldFile na
-        # atribuição (diferente do FileField nativo do Django), então
-        # verificamos diretamente se ainda é um UploadedFile "cru".
         if isinstance(self.imagem, UploadedFile):
             arquivo_sanitizado = sanitize_image(self.imagem)
             self.imagem = self._padronizar_imagem(arquivo_sanitizado)
@@ -180,10 +176,15 @@ class FotoRelatorio(models.Model):
         is_new = self._state.adding
         super().save(*args, **kwargs)
 
-        # Dispara a geocodificação de forma assíncrona, sem travar o request
-        if self.tem_geolocalizacao and not self.endereco:
+        if is_new and self.tem_geolocalizacao and not self.endereco:
+            transaction.on_commit(self._agendar_geocodificacao)
+
+    def _agendar_geocodificacao(self):
+        try:
             from .tasks import preencher_endereco_foto
-            preencher_endereco_foto.delay(self.pk)
+            preencher_endereco_foto.apply_async(args=[self.pk], retry=False)
+        except Exception as exc:
+            logger.warning("Geocodificação não agendada (foto %s): %s", self.pk, exc)
 
     def _padronizar_imagem(self, arquivo):
         """

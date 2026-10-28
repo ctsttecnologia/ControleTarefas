@@ -517,47 +517,77 @@
         return col;
     }
 
-    async function enviarArquivos(fileList) {
-        if (!fileList || fileList.length === 0) return;
+    function mostrarLoading(ativo) {
+        let el = document.getElementById('upload-loading');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'upload-loading';
+            el.className = 'position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center';
+            el.style.cssText = 'background:rgba(0,0,0,.4);z-index:2000';
+            el.innerHTML = '<div class="bg-white rounded p-3 d-flex align-items-center gap-2">' +
+                        '<div class="spinner-border spinner-border-sm"></div> Enviando fotos...</div>';
+            document.body.appendChild(el);
+        }
+        el.classList.toggle('d-none', !ativo);
+        el.classList.toggle('d-flex', ativo);
+    }
 
-        const localizacao = await obterLocalizacao();
+
+    async function enviarArquivos(files) {
+        if (!files || !files.length) return;
+
+        const url = "{% url 'relatorio_fotografico:foto_upload' relatorio.pk %}"; // ajuste o nome da rota
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+                || document.cookie.match(/csrftoken=([^;]+)/)?.[1];
+
         const formData = new FormData();
-        for (const file of fileList) {
-            formData.append('imagens', file);
-            formData.append('latitudes', localizacao ? localizacao.lat : '');
-            formData.append('longitudes', localizacao ? localizacao.lng : '');
+        for (const f of files) formData.append('imagens', f); // mesmo nome que a view lê
+        if (window.geoAtual) {
+            formData.append('latitude', geoAtual.lat);
+            formData.append('longitude', geoAtual.lng);
         }
 
-        spinner.style.display = 'block';
+        mostrarLoading(true); // sua função de "Enviando fotos..."
         try {
-            const resp = await fetch(uploadUrl, {
+            const resp = await fetch(url, {
                 method: 'POST',
-                headers: { 'X-CSRFToken': getCsrfCookie() },
                 body: formData,
+                headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
             });
-            const data = await resp.json();
-            if (data.ok) {
-                if (emptyMsg) emptyMsg.remove();
-                data.fotos.forEach(foto => grid.appendChild(criarCardFoto(foto)));
-                bindEventos();
-            } else {
-                alert('Erro ao enviar fotos: ' + (data.erro || 'desconhecido'));
+
+            // Sessão expirada → o Django redireciona para o login
+            if (resp.redirected && resp.url.includes('/contas/login/')) {
+                alert('Sua sessão expirou. Faça login novamente.');
+                window.location.href = '/contas/login/?next=' + encodeURIComponent(location.pathname);
+                return;
             }
-        } catch (e) {
-            alert('Falha na conexão ao enviar fotos.');
-            console.error(e);
+
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+            const data = await resp.json();
+            if (data.ok === false) throw new Error(data.erro || 'Falha no upload');
+
+            location.reload(); // ou insira as fotos no DOM
+        } catch (err) {
+            console.error('Erro upload:', err);
+            alert('Falha ao enviar fotos: ' + err.message);
         } finally {
-            spinner.style.display = 'none';
+            mostrarLoading(false);
+            document.querySelectorAll('input[type=file]').forEach(i => i.value = '');
         }
     }
 
+
     document.getElementById('input-galeria').addEventListener('change', (e) => {
-        enviarArquivos(e.target.files);
+        const files = Array.from(e.target.files);
         e.target.value = '';
+        enviarArquivos(files);
     });
     document.getElementById('input-camera').addEventListener('change', (e) => {
-        enviarArquivos(e.target.files);
+        const files = Array.from(e.target.files);
         e.target.value = '';
+        enviarArquivos(files);
     });
 
     const dropZone = document.getElementById('drop-zone');
