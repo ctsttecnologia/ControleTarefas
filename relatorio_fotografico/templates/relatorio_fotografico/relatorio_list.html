@@ -6,29 +6,36 @@
 {% block content %}
 <div class="container-fluid py-4">
 
-    {% if perms.relatorio_fotografico.add_relatoriofotografico or user.is_administrador %}
-    <a href="{% url 'relatorio_fotografico:create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Novo Relatório
-    </a>
-    {% endif %}
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Relatórios Fotográficos</h4>
+        {% if perms.relatorio_fotografico.add_relatoriofotografico or user.is_administrador %}
+        <a href="{% url 'relatorio_fotografico:create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Novo Relatório
+        </a>
+        {% endif %}
+    </div>
 
     <!-- Filtros -->
-    <form method="get" class="row g-2 mb-4">
+    <form method="get" class="row g-2 mb-4 align-items-end">
         <div class="col-md-3">
-            <input type="text" name="q" value="{{ q }}" class="form-control"
-                   placeholder="Buscar por título ou obra/contrato...">
+            <label for="q" class="form-label small mb-1">Busca</label>
+            <input type="text" id="q" name="q" value="{{ q }}" class="form-control"
+                   placeholder="Título ou obra/contrato...">
         </div>
         <div class="col-md-2">
-            <select name="status" class="form-select">
-                <option value="">Todos os status</option>
+            <label for="status" class="form-label small mb-1">Status</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">Todos</option>
                 {% for value, label in status_choices %}
                 <option value="{{ value }}" {% if status_filtro == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="col-md-2">
-            <select name="responsavel" class="form-select">
-                <option value="">Todos os responsáveis</option>
+            <label for="responsavel" class="form-label small mb-1">Responsável</label>
+            <select id="responsavel" name="responsavel" class="form-select">
+                <option value="">Todos</option>
                 {% for resp in responsaveis %}
                 <option value="{{ resp.id }}" {% if responsavel_filtro == resp.id|stringformat:"s" %}selected{% endif %}>
                     {{ resp.get_full_name|default:resp.username }}
@@ -37,10 +44,12 @@
             </select>
         </div>
         <div class="col-md-2">
-            <input type="date" name="data_inicio" value="{{ data_inicio }}" class="form-control" title="Data inicial">
+            <label for="data_inicio" class="form-label small mb-1">Data início</label>
+            <input type="date" id="data_inicio" name="data_inicio" value="{{ data_inicio }}" class="form-control">
         </div>
         <div class="col-md-2">
-            <input type="date" name="data_fim" value="{{ data_fim }}" class="form-control" title="Data final">
+            <label for="data_fim" class="form-label small mb-1">Data fim</label>
+            <input type="date" id="data_fim" name="data_fim" value="{{ data_fim }}" class="form-control">
         </div>
         <div class="col-md-1 d-flex gap-1">
             <button type="submit" class="btn btn-outline-secondary flex-fill" title="Filtrar">
