@@ -1,0 +1,9 @@
+
+{% load widget_tweaks %}
+{% with WIDGET_ERROR_CLASS="is-invalid" %}
+<div class="form-floating">
+  <label for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} *{% endif %}</label>
+  {% for e in campo.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+</div>
+{% endwith %}
+

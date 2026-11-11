@@ -1,0 +1,70 @@
+
+/* static/css/treinamentos/certificado_pdf.css — uso exclusivo do PDF (WeasyPrint) */
+@page { size: A4 landscape; margin: 0; }
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { width: 297mm; }
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #1a1a2e;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ═══ PÁGINA ═══ */
+.pagina { position: relative; width: 297mm; height: 210mm; overflow: hidden; page-break-after: always; break-after: page; }
+.pagina:last-child { page-break-after: auto; break-after: auto; }
+.pagina.frente { background: linear-gradient(135deg, #f8f9fc 0%, #eef0f7 100%); }
+.pagina.verso  { background: linear-gradient(135deg, #f0f2f5 0%, #e8eaf0 100%); }
+
+.imagem-fundo { position: absolute; top: 0; left: 0; width: 297mm; height: 210mm; object-fit: cover; z-index: 0; }
+
+/* ═══ BORDA DECORATIVA (sem imagem de fundo) ═══ */
+.borda-decorativa { position: absolute; top: 10mm; left: 10mm; right: 10mm; bottom: 10mm; z-index: 1;
+  border: 2px solid #c9a84c; border-radius: 4px; }
+.borda-decorativa::before { content: ''; position: absolute; top: 3mm; left: 3mm; right: 3mm; bottom: 3mm;
+  border: .5px solid rgba(201, 168, 76, .4); border-radius: 2px; }
+
+/* ═══ CONTEÚDO ═══ */
+.conteudo { position: relative; z-index: 2; height: 210mm; padding: 20mm 30mm;
+  display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+
+/* ═══ FRENTE ═══ */
+.emblema { width: 16mm; height: 16mm; margin: 0 auto 5mm; border: 2px solid #c9a84c; border-radius: 50%;
+  color: #c9a84c; font-size: 8mm; line-height: 14mm; text-align: center; }
+.empresa-nome { font-size: 11pt; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #4a5568; margin-bottom: 6mm; }
+.titulo-certificado { font-size: 36pt; font-weight: 300; letter-spacing: 12px; text-transform: uppercase; color: #1a1a2e; margin-bottom: 3mm; }
+.subtitulo { font-size: 9pt; letter-spacing: 2px; text-transform: uppercase; color: #858796; margin-bottom: 10mm; }
+.separador { width: 60mm; height: .3mm; margin: 0 auto 8mm; background: linear-gradient(90deg, transparent, #c9a84c, transparent); }
+.texto-principal { max-width: 220mm; font-size: 11pt; line-height: 1.8; color: #2d3748; margin-bottom: 12mm; }
+.texto-principal strong { color: #1a1a2e; font-weight: 700; }
+
+/* ═══ ASSINATURAS ═══ */
+.assinaturas { display: flex; justify-content: center; width: 100%; margin-top: auto; margin-bottom: 8mm; }
+.assinatura-block { min-width: 65mm; margin: 0 20mm; text-align: center; } /* margin no lugar de gap: compatibilidade WeasyPrint */
+.assinatura-img { display: block; height: 18mm; max-width: 60mm; object-fit: contain; margin: 0 auto 2mm; }
+.linha-assinatura { width: 100%; height: .3mm; background: #2d3748; margin-bottom: 2mm; }
+.nome-assinante  { font-size: 9pt; font-weight: 700; color: #1a1a2e; }
+.cargo-assinante { font-size: 7.5pt; line-height: 1.4; color: #858796; }
+
+.rodape { margin-top: auto; font-size: 7pt; letter-spacing: 1px; text-transform: uppercase; color: #a0aec0; }
+
+/* ═══ VERSO ═══ */
+.conteudo-verso { width: 100%; max-width: 220mm; margin-bottom: auto; text-align: left; font-size: 9.5pt; line-height: 1.7; color: #4a5568; }
+.conteudo-verso h3 { font-size: 12pt; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #1a1a2e; margin-bottom: 4mm; }
+.conteudo-verso p  { margin-bottom: 3mm; }
+.conteudo-verso ul { padding-left: 6mm; margin-bottom: 4mm; }
+.conteudo-verso li { margin-bottom: 1.5mm; }
+
+/* ═══ VALIDAÇÃO / QR ═══ */
+.validacao-qr { display: flex; align-items: center; width: 100%; margin-top: auto; padding: 5mm 6mm;
+  background: rgba(0,0,0,.03); border: .5px solid rgba(0,0,0,.08); border-radius: 3mm; page-break-inside: avoid; }
+.qr-code { flex-shrink: 0; width: 28mm; height: 28mm; margin-right: 6mm; }
+.qr-code svg, .qr-code img { width: 100%; height: 100%; }
+.qr-ajuda { margin-top: 2mm; }
+.qr-texto { font-size: 7.5pt; line-height: 1.5; color: #858796; text-align: left; }
+.qr-texto strong { font-size: 8.5pt; letter-spacing: .5px; color: #2d3748; }
+.protocolo-label { font-size: 6.5pt; letter-spacing: 1px; text-transform: uppercase; color: #a0aec0; margin-bottom: .5mm; }
+.protocolo-valor { font-family: 'Courier New', monospace; font-size: 9pt; font-weight: 700; letter-spacing: .5px; color: #2d3748; }
+

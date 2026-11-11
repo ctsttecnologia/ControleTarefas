@@ -17,13 +17,18 @@ from core.upload import UploadPath, delete_old_file, safe_delete_file
 from core.validators import SecureFileValidator
 from usuario.models import Filial
 from datetime import timedelta
+import re
+from .privacy import sanitizar_html, embed_seguro
+from django.utils.html import escape
 
+YT = re.compile(r'(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)([\w-]{11})')
+VM = re.compile(r'vimeo\.com/(\d+)')
 
 # =============================================================================
 # TIPO DE CURSO
 # =============================================================================
 class TipoCurso(models.Model):
-    # ... (sem campos de arquivo — sem alteração) ...
+   
     MODALIDADE_CHOICES = [
         ('P', 'Presencial'),
         ('O', 'Online'),
@@ -83,7 +88,7 @@ class TipoCurso(models.Model):
         try:
             return reverse('treinamentos:detalhe_tipo_curso', kwargs={'pk': self.pk})
         except Exception:
-            return reverse('treinamentos:lista_tipos_curso')
+            return reverse('treinamentos:lista_tipo_curso')
 
 
 # =============================================================================
@@ -97,33 +102,33 @@ class Treinamento(models.Model):
         ('F', 'Finalizado'),
     ]
 
-    nome                      = models.CharField("Nome do Treinamento", max_length=200)
-    tipo_curso                = models.ForeignKey(TipoCurso, on_delete=models.PROTECT, verbose_name="Tipo de Curso")
-    data_inicio               = models.DateTimeField("Data de Início")
-    data_fim                  = models.DateTimeField("Data de Fim", null=True, blank=True)
-    data_vencimento           = models.DateField("Data de Vencimento")
-    duracao                   = models.IntegerField("Duração (horas)")
-    atividade                 = models.CharField("Atividade Relacionada", max_length=200, blank=True)
-    descricao                 = models.TextField("Descrição Detalhada")
-    responsavel               = models.ForeignKey(
+    nome = models.CharField("Nome do Treinamento", max_length=200)
+    tipo_curso = models.ForeignKey(TipoCurso, on_delete=models.PROTECT, verbose_name="Tipo de Curso")
+    data_inicio = models.DateTimeField("Data de Início")
+    data_fim  = models.DateTimeField("Data de Fim", null=True, blank=True)
+    data_vencimento = models.DateField('Data de Vencimento', null=True, blank=True)
+    duracao = models.IntegerField("Duração (horas)")
+    atividade = models.CharField("Atividade Relacionada", max_length=200, blank=True)
+    descricao = models.TextField("Descrição Detalhada")
+    responsavel = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         blank=True, null=True,
         related_name='treinamentos_responsavel', verbose_name="Responsável",
     )
-    cm                        = models.CharField("CM (Centro de Custo?)", max_length=100, blank=True)
-    palestrante               = models.CharField("Palestrante/Instrutor", max_length=100)
-    palestrante_cargo         = models.CharField("Cargo do Palestrante", max_length=100, blank=True, null=True)
-    palestrante_registro      = models.CharField("Registro Prof. do Palestrante", max_length=50, blank=True, null=True)
-    assinaturas_solicitadas   = models.BooleanField("Assinaturas Solicitadas", default=False)
-    horas_homem               = models.PositiveIntegerField("HxH (Horas Homem)", null=True)
-    centro_custo              = models.CharField("CM (Centro de Custo)", max_length=100, blank=True)
-    status                    = models.CharField("Status", max_length=1, choices=STATUS_CHOICES, default='P')
-    local                     = models.CharField("Local", max_length=200)
-    custo                     = models.DecimalField("Custo Total", max_digits=10, decimal_places=2, default=0.00)
-    participantes_previstos   = models.IntegerField("Nº de Participantes Previstos")
-    data_cadastro             = models.DateTimeField(auto_now_add=True)
-    data_atualizacao          = models.DateTimeField(auto_now=True)
-    filial                    = models.ForeignKey(
+    cm = models.CharField("CM (Centro de Custo?)", max_length=100, blank=True)
+    palestrante = models.CharField("Palestrante/Instrutor", max_length=100)
+    palestrante_cargo = models.CharField("Cargo do Palestrante", max_length=100, blank=True, null=True)
+    palestrante_registro  = models.CharField("Registro Prof. do Palestrante", max_length=50, blank=True, null=True)
+    assinaturas_solicitadas = models.BooleanField("Assinaturas Solicitadas", default=False)
+    horas_homem  = models.PositiveIntegerField("HxH (Horas Homem)", null=True)
+    centro_custo = models.CharField("CM (Centro de Custo)", max_length=100, blank=True)
+    status = models.CharField("Status", max_length=1, choices=STATUS_CHOICES, default='P')
+    local = models.CharField("Local", max_length=200)
+    custo = models.DecimalField("Custo Total", max_digits=10, decimal_places=2, default=0.00)
+    participantes_previstos = models.IntegerField("Nº de Participantes Previstos")
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(auto_now=True)
+    filial = models.ForeignKey(
         Filial, on_delete=models.PROTECT,
         related_name='treinamentos', verbose_name="Filial", null=True,
     )
@@ -164,16 +169,17 @@ class Participante(models.Model):
     nome                 = models.CharField(max_length=200, verbose_name='Nome do funcionário')
     funcionario          = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='Funcionário')
     presente             = models.BooleanField(default=False, verbose_name='Presença Confirmada')
-    nota_avaliacao       = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True, verbose_name='Nota da Avaliação')
+    nota_avaliacao = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)], verbose_name='Nota da Avaliação (%)')
     certificado_emitido  = models.BooleanField(default=False, verbose_name='Certificado Emitido')
     data_registro        = models.DateTimeField(auto_now_add=True, verbose_name='Data de Registro', null=True)
     protocolo_validacao = models.UUIDField(
         "Protocolo de Validação",
         default=uuid.uuid4,
         editable=False,
-        unique=True,        # 🔧 mudou: garante unicidade
-        null=False,         # 🔧 mudou: sempre tem valor
-        db_index=True,      # (redundante com unique=True, mas tudo bem)
+        unique=True,
+        null=False,       
+        db_index=True, 
     )
 
     class Meta:
@@ -251,24 +257,32 @@ class GabaritoCertificado(models.Model):
         super().delete(*args, **kwargs)
     # ─────────────────────────────────────────────────────────────────────────
 
-    def renderizar_texto(self, context_dict):
-        return mark_safe(self.texto_principal.format(**context_dict))
+    def renderizar_texto(self, ctx):
+        return mark_safe(self.texto_principal.format(**{k: escape(v) for k, v in ctx.items()}))
 
-    def renderizar_verso(self, context_dict):
-        return mark_safe(self.texto_verso.format(**context_dict))
+    def renderizar_verso(self, ctx):
+        seguros = {'grade_curricular', 'qr_code_svg'}  # já gerados pelo sistema
+        return mark_safe(self.texto_verso.format(
+            **{k: (v if k in seguros else escape(v)) for k, v in ctx.items()}))
 
 
 # =============================================================================
 # ASSINATURA
 # =============================================================================
 class Assinatura(models.Model):
-    participante           = models.OneToOneField(Participante, on_delete=models.CASCADE, related_name='assinatura', null=True, blank=True)
+
+    criado_em = models.DateTimeField(auto_now_add=True, null=True)
+    ip_assinatura = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, blank=True)
+    assinado_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                     on_delete=models.SET_NULL, related_name='+')
+    participante = models.OneToOneField(Participante, on_delete=models.CASCADE, related_name='assinatura', null=True, blank=True)
     treinamento_responsavel = models.OneToOneField(Treinamento, on_delete=models.CASCADE, related_name='assinatura_responsavel', null=True, blank=True)
-    token_acesso           = models.CharField("Token de Acesso", max_length=100, unique=True, db_index=True, default=uuid.uuid4)
-    assinatura_json        = models.TextField("Dados da Assinatura (JSON)", blank=True, null=True)
-    data_assinatura        = models.DateTimeField("Data da Assinatura", null=True, blank=True)
-    nome_assinante         = models.CharField(max_length=255, blank=True)
-    documento_assinante    = models.CharField(max_length=50, blank=True)
+    token_acesso = models.CharField("Token de Acesso", max_length=100, unique=True, db_index=True, default=uuid.uuid4)
+    assinatura_json = models.TextField("Dados da Assinatura (JSON)", blank=True, null=True)
+    data_assinatura = models.DateTimeField("Data da Assinatura", null=True, blank=True)
+    nome_assinante = models.CharField(max_length=255, blank=True)
+    documento_assinante = models.CharField(max_length=50, blank=True)
 
     class Meta:
         verbose_name        = "Assinatura de Certificado"
@@ -294,6 +308,18 @@ class Assinatura(models.Model):
             return self.treinamento_responsavel.responsavel.get_full_name()
         return "Desconhecido"
 
+    VALIDADE_DIAS = 30
+
+    @property
+    def expirado(self):
+        return bool(self.criado_em) and timezone.now() > self.criado_em + timedelta(days=self.VALIDADE_DIAS)
+
+    def usuario_esperado(self):
+        if self.participante:
+            return self.participante.funcionario
+        if self.treinamento_responsavel:
+            return self.treinamento_responsavel.responsavel
+        return None
 
 # =============================================================================
 # CURSO EAD
@@ -322,25 +348,25 @@ class CursoEAD(models.Model):
         blank=True,
         null=True,
         validators=[SecureFileValidator('treinamentos')],
-        help_text=_("JPG, PNG ou WebP. Máx: 500MB."),
+        help_text=_("JPG, PNG ou WebP. Máx: 5MB. Proporção recomendada 16:9."),
     )
     # ─────────────────────────────────────────────────────────────────────────
 
-    tipo_curso                  = models.ForeignKey(TipoCurso, on_delete=models.PROTECT, related_name="cursos_ead", verbose_name="Tipo de Curso")
-    nivel                       = models.CharField("Nível", max_length=20, choices=Nivel.choices, default=Nivel.BASICO)
-    carga_horaria_total         = models.DecimalField("Carga Horária Total (horas)", max_digits=6, decimal_places=1, validators=[MinValueValidator(Decimal("0.5"))])
-    nota_minima                 = models.DecimalField("Nota Mínima para Aprovação", max_digits=4, decimal_places=1, default=Decimal("7.0"), validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("10"))])
-    max_tentativas_avaliacao    = models.PositiveIntegerField("Máx. Tentativas na Avaliação", default=3, validators=[MinValueValidator(1), MaxValueValidator(10)])
+    tipo_curso = models.ForeignKey(TipoCurso, on_delete=models.PROTECT, related_name="cursos_ead", verbose_name="Tipo de Curso")
+    nivel = models.CharField("Nível", max_length=20, choices=Nivel.choices, default=Nivel.BASICO)
+    carga_horaria_total = models.DecimalField("Carga Horária Total (horas)", max_digits=6, decimal_places=1, validators=[MinValueValidator(Decimal("0.5"))])
+    nota_minima = models.DecimalField("Nota Mínima para Aprovação", max_digits=4, decimal_places=1, default=Decimal("7.0"), validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("10"))])
+    max_tentativas_avaliacao = models.PositiveIntegerField("Máx. Tentativas na Avaliação", default=3, validators=[MinValueValidator(1), MaxValueValidator(10)])
     percentual_minimo_assistido = models.PositiveIntegerField("% Mínimo de Conteúdo Assistido", default=75, validators=[MinValueValidator(1), MaxValueValidator(100)])
-    instrutor_nome              = models.CharField("Nome do Instrutor", max_length=150, blank=True)
-    instrutor_qualificacao      = models.CharField("Qualificação do Instrutor", max_length=300, blank=True)
-    status                      = models.CharField("Status", max_length=20, choices=Status.choices, default=Status.RASCUNHO, db_index=True)
-    destaque                    = models.BooleanField("Em Destaque", default=False)
-    publicado_em                = models.DateTimeField("Publicado em", null=True, blank=True)
-    criado_em                   = models.DateTimeField(auto_now_add=True)
-    atualizado_em               = models.DateTimeField(auto_now=True)
-    filial                      = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name="cursos_ead", verbose_name="Filial")
-    criado_por                  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="cursos_ead_criados", verbose_name="Criado por")
+    instrutor_nome = models.CharField("Nome do Instrutor", max_length=150, blank=True)
+    instrutor_qualificacao  = models.CharField("Qualificação do Instrutor", max_length=300, blank=True)
+    status  = models.CharField("Status", max_length=20, choices=Status.choices, default=Status.RASCUNHO, db_index=True)
+    destaque  = models.BooleanField("Em Destaque", default=False)
+    publicado_em  = models.DateTimeField("Publicado em", null=True, blank=True)
+    criado_em  = models.DateTimeField(auto_now_add=True)
+    atualizado_em  = models.DateTimeField(auto_now=True)
+    filial  = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name="cursos_ead", verbose_name="Filial")
+    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="cursos_ead_criados", verbose_name="Criado por")
 
     objects = FilialManager()
 
@@ -491,23 +517,26 @@ class AulaEAD(models.Model):
 
     @property
     def embed_url(self):
-        url = self.url_video_externo
-        if not url:
-            return ""
-        if "youtube.com/watch" in url:
-            video_id = url.split("v=")[1].split("&")[0]
-            return f"https://www.youtube.com/embed/{video_id}?rel=0"
-        if "youtu.be/" in url:
-            video_id = url.split("youtu.be/")[1].split("?")[0]
-            return f"https://www.youtube.com/embed/{video_id}?rel=0"
-        if "vimeo.com/" in url:
-            video_id = url.split("vimeo.com/")[1].split("?")[0]
-            return f"https://player.vimeo.com/video/{video_id}"
-        return url
+        url = self.url_video_externo or ''
+        if m := YT.search(url):
+            return f'https://www.youtube-nocookie.com/embed/{m.group(1)}?rel=0'
+        if m := VM.search(url):
+            return f'https://player.vimeo.com/video/{m.group(1)}'
+        return embed_seguro(url)  # qualquer outra URL → ''
 
-    @property
-    def is_video(self):
-        return self.tipo_conteudo in (self.TipoConteudo.VIDEO_UPLOAD, self.TipoConteudo.VIDEO_EXTERNO)
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        regras = {
+            self.TipoConteudo.VIDEO_UPLOAD: ('arquivo_video', 'Envie o arquivo de vídeo.'),
+            self.TipoConteudo.VIDEO_EXTERNO: ('url_video_externo', 'Informe a URL do YouTube/Vimeo.'),
+            self.TipoConteudo.PDF: ('arquivo_pdf', 'Envie o PDF.'),
+            self.TipoConteudo.TEXTO: ('conteudo_texto', 'Escreva o conteúdo.'),
+        }
+        campo, msg = regras[self.tipo_conteudo]
+        if not getattr(self, campo):
+            raise ValidationError({campo: msg})
+        if self.tipo_conteudo == self.TipoConteudo.VIDEO_EXTERNO and not self.embed_url:
+            raise ValidationError({'url_video_externo': 'Apenas YouTube ou Vimeo são aceitos.'})
 
 
 # =============================================================================

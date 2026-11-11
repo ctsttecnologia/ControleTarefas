@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -7,81 +5,30 @@
     <title>Prova — {{ tentativa.matricula.funcionario }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.5;
-            padding: 20mm;
-            color: #333;
-        }
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #333;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
+        body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.5; padding: 20mm; color: #333; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
         .header h1 { font-size: 16px; margin-bottom: 5px; }
         .header p { font-size: 11px; color: #666; }
-        .info-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        .info-table td {
-            padding: 6px 10px;
-            border: 1px solid #ddd;
-        }
-        .info-table .label {
-            background: #f5f5f5;
-            font-weight: bold;
-            width: 150px;
-        }
-        .questao {
-            margin-bottom: 18px;
-            page-break-inside: avoid;
-        }
-        .questao-header {
-            font-weight: bold;
-            margin-bottom: 6px;
-            padding: 4px 8px;
-            background: #f0f0f0;
-            border-left: 3px solid #333;
-        }
-        .questao-enunciado {
-            margin: 8px 0;
-            padding-left: 10px;
-        }
-        .alternativa {
-            padding: 4px 10px 4px 25px;
-            margin: 2px 0;
-            position: relative;
-        }
-        .alternativa.correta {
-            background: #d4edda;
-            border-left: 3px solid #28a745;
-        }
-        .alternativa.errada {
-            background: #f8d7da;
-            border-left: 3px solid #dc3545;
-        }
-        .alternativa .marca {
-            position: absolute;
-            left: 6px;
-            font-weight: bold;
-        }
-        .resumo {
-            margin-top: 30px;
-            padding: 15px;
-            border: 2px solid #333;
-            text-align: center;
-        }
-        .resumo .nota {
-            font-size: 24px;
-            font-weight: bold;
-        }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .info-table td { padding: 6px 10px; border: 1px solid #ddd; }
+        .info-table .label { background: #f5f5f5; font-weight: bold; width: 150px; }
+        .questao { margin-bottom: 18px; page-break-inside: avoid; }
+        .questao-header { font-weight: bold; margin-bottom: 6px; padding: 4px 8px; background: #f0f0f0; border-left: 3px solid #333; }
+        .questao-header .peso { float: right; font-weight: normal; font-size: 10px; }
+        .questao-enunciado { margin: 8px 0; padding-left: 10px; }
+        .alternativa { padding: 4px 10px 4px 25px; margin: 2px 0; position: relative; }
+        .alternativa.correta { background: #d4edda; border-left: 3px solid #28a745; }
+        .alternativa.errada { background: #f8d7da; border-left: 3px solid #dc3545; }
+        .alternativa .marca { position: absolute; left: 6px; font-weight: bold; }
+        .resumo { margin-top: 30px; padding: 15px; border: 2px solid #333; text-align: center; }
+        .resumo .nota { font-size: 24px; font-weight: bold; }
+        .resumo .detalhes { font-size: 11px; margin-top: 8px; }
         .aprovado { color: #28a745; }
         .reprovado { color: #dc3545; }
-
+        .btn-print { padding: 10px 30px; font-size: 14px; cursor: pointer; }
+        .assinaturas { margin-top: 50px; display: flex; justify-content: space-around; }
+        .assinaturas div { width: 40%; border-top: 1px solid #333; text-align: center; padding-top: 5px; font-size: 11px; }
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         @media print {
             body { padding: 10mm; }
             .no-print { display: none !important; }
@@ -90,20 +37,15 @@
 </head>
 <body>
 
-    <!-- Botão imprimir -->
     <div class="no-print" style="text-align: center; margin-bottom: 20px;">
-        <button onclick="window.print()" style="padding: 10px 30px; font-size: 14px; cursor: pointer;">
-            🖨️ Imprimir
-        </button>
+        <button class="btn-print" onclick="window.print()">&#128424; Imprimir</button>
     </div>
 
-    <!-- Header -->
     <div class="header">
         <h1>{{ tentativa.avaliacao.titulo }}</h1>
         <p>{{ tentativa.matricula.curso.titulo }}</p>
     </div>
 
-    <!-- Info do aluno -->
     <table class="info-table">
         <tr>
             <td class="label">Colaborador</td>
@@ -116,55 +58,53 @@
             <td>{{ tentativa.numero_tentativa }}ª</td>
             <td class="label">Nota</td>
             <td>
-                <strong class="{% if tentativa.aprovado %}aprovado{% else %}reprovado{% endif %}">
-                    {{ tentativa.nota }}
-                </strong>
+                <strong class="{% if tentativa.aprovado %}aprovado{% else %}reprovado{% endif %}">{{ tentativa.nota }}</strong>
                 (Mínima: {{ tentativa.matricula.curso.nota_minima }})
             </td>
         </tr>
     </table>
 
-    <!-- Questões -->
     {% for item in gabarito %}
     <div class="questao">
         <div class="questao-header">
             Questão {{ forloop.counter }}
-            {% if item.acertou %}✔{% else %}✘{% endif %}
-            <span style="float:right; font-weight:normal; font-size:10px;">
-                Peso: {{ item.questao.peso }}
-            </span>
+            {% if item.acertou %}<span class="aprovado">&#10004;</span>{% else %}<span class="reprovado">&#10008;</span>{% endif %}
+            <span class="peso">Peso: {{ item.questao.peso }}</span>
         </div>
-        <div class="questao-enunciado">{{ item.questao.enunciado }}</div>
+        <div class="questao-enunciado">{{ item.questao.enunciado|linebreaksbr }}</div>
 
         {% for alt in item.alternativas %}
-        <div class="alternativa
-            {% if alt.correta %}correta
-            {% elif alt == item.escolhida and not alt.correta %}errada{% endif %}">
+        <div class="alternativa {% if alt.correta %}correta{% elif alt == item.escolhida %}errada{% endif %}">
             <span class="marca">
-                {% if alt.correta %}✔
-                {% elif alt == item.escolhida and not alt.correta %}✘
-                {% else %}â—‹{% endif %}
+                {% if alt.correta %}&#10004;{% elif alt == item.escolhida %}&#10008;{% else %}&#9675;{% endif %}
             </span>
             {{ alt.texto }}
             {% if alt == item.escolhida %}<strong>[Resposta do aluno]</strong>{% endif %}
         </div>
         {% endfor %}
+
+        {% if not item.escolhida %}
+        <div class="alternativa errada"><em>Questão não respondida</em></div>
+        {% endif %}
     </div>
     {% endfor %}
 
-    <!-- Resumo final -->
     <div class="resumo">
         <p>Resultado Final</p>
         <p class="nota {% if tentativa.aprovado %}aprovado{% else %}reprovado{% endif %}">
             {{ tentativa.nota }} — {% if tentativa.aprovado %}APROVADO{% else %}REPROVADO{% endif %}
         </p>
-        <p style="font-size:11px; margin-top:8px;">
+        <p class="detalhes">
             Acertos: {{ total_acertos }}/{{ total_questoes }} |
             Tentativa: {{ tentativa.numero_tentativa }}ª |
             Data: {{ tentativa.finalizada_em|date:"d/m/Y" }}
         </p>
     </div>
 
+    <div class="assinaturas">
+        <div>{{ tentativa.matricula.funcionario }}<br>Colaborador</div>
+        <div>Gestor / Instrutor</div>
+    </div>
+
 </body>
 </html>
-

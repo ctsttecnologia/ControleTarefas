@@ -1,285 +1,104 @@
+<!--resultados-->
+{% extends "treinamentos/base_treinamento.html" %}
 
-{% extends "base.html" %}
-
-{% block title %}Resultado da Avaliação{% endblock %}
-
-{% block extra_css %}
-<style>
-    .resultado-hero {
-        padding: 2.5rem 0;
-        color: #fff;
-        position: relative;
-        overflow: hidden;
-    }
-    .resultado-hero::after {
-        content: ''; position: absolute; top: -50%; right: -5%;
-        width: 300px; height: 300px;
-        background: rgba(255,255,255,.06); border-radius: 50%;
-    }
-    .hero-aprovado { background: linear-gradient(135deg, #1cc88a, #0d6e4f); }
-    .hero-reprovado { background: linear-gradient(135deg, #e74a3b, #a82323); }
-    .hero-pendente { background: linear-gradient(135deg, #f6c23e, #c99a08); }
-
-    .nota-big {
-        width: 100px; height: 100px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 2rem; font-weight: 800; color: #fff;
-        background: rgba(255,255,255,.2);
-        border: 3px solid rgba(255,255,255,.4);
-    }
-
-    .criterio-card {
-        border-radius: .75rem; padding: 1rem 1.25rem;
-        display: flex; align-items: center; gap: 1rem;
-        border: 2px solid;
-    }
-    .criterio-ok { border-color: #1cc88a; background: rgba(28,200,138,.05); }
-    .criterio-pendente { border-color: #f6c23e; background: rgba(246,194,62,.05); }
-    .criterio-falha { border-color: #e74a3b; background: rgba(231,74,59,.05); }
-
-    .questao-card { border: none; border-radius: .75rem; }
-    .questao-acertou { border-left: 4px solid #1cc88a; }
-    .questao-errou { border-left: 4px solid #e74a3b; }
-
-    .alt-item {
-        padding: .5rem .75rem; border-radius: .5rem;
-        margin-bottom: .25rem;
-    }
-    .alt-correta { background: #d1fae5; border: 1px solid #6ee7b7; }
-    .alt-errada { background: #fee2e2; border: 1px solid #fca5a5; }
-    .alt-neutra { background: #f8f9fa; border: 1px solid #e9ecef; }
-</style>
-{% endblock %}
+{% block title %}Resultado da avaliação{% endblock %}
 
 {% block content %}
+{% with curso=matricula.curso %}
+<div class="container py-4">
 
-<!-- ═══ HERO DO RESULTADO ═══ -->
-<section class="resultado-hero
-    {% if aprovado_completo %}hero-aprovado
-    {% elif nota_ok and not ch_ok %}hero-pendente
-    {% else %}hero-reprovado{% endif %}">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-md-2 text-center mb-3 mb-md-0">
-                <div class="nota-big mx-auto">{{ tentativa.nota }}</div>
-            </div>
-            <div class="col-md-7">
-                <h2 class="fw-bold mb-2">
-                    {% if aprovado_completo %}
-                        <i class="bi bi-trophy-fill me-2"></i>Parabéns! Você foi aprovado!
-                    {% elif nota_ok and not ch_ok %}
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Nota aprovada, mas falta carga horária
-                    {% elif not nota_ok and tentativa.matricula.tentativas_avaliacao < tentativa.matricula.curso.max_tentativas_avaliacao %}
-                        <i class="bi bi-arrow-repeat me-2"></i>Nota insuficiente
-                    {% else %}
-                        <i class="bi bi-x-circle-fill me-2"></i>Tentativas esgotadas
-                    {% endif %}
-                </h2>
-                <p class="mb-0" style="opacity:.85; font-size: 1.05rem;">
-                    {{ tentativa.matricula.curso.titulo }}
-                    — Tentativa {{ tentativa.numero_tentativa }}
-                    — {{ tentativa.finalizada_em|date:"d/m/Y H:i" }}
-                </p>
-            </div>
-            <div class="col-md-3 text-md-end mt-3 mt-md-0">
-                <div class="d-flex flex-column gap-2">
-                    <span class="text-white-50 small">Acertos</span>
-                    <span class="fw-bold fs-4">{{ total_acertos }}/{{ total_questoes }}</span>
-                </div>
-            </div>
-        </div>
+  <header class="tr-hero {% if aprovado_completo %}is-ok{% elif nota_ok %}is-warn{% else %}is-bad{% endif %}">
+    <div class="row align-items-center g-3">
+      <div class="col-md-2 text-center"><div class="tr-nota mx-auto" aria-label="Nota">{{ tentativa.nota|floatformat:1 }}</div></div>
+      <div class="col-md-7">
+        <h1 class="h3 fw-bold mb-2">
+          {% if aprovado_completo %}<i class="bi bi-trophy-fill me-2"></i>Parabéns! Você foi aprovado!
+          {% elif nota_ok %}<i class="bi bi-exclamation-triangle-fill me-2"></i>Nota aprovada, mas falta carga horária
+          {% elif tentativas_restantes %}<i class="bi bi-arrow-repeat me-2"></i>Nota insuficiente
+          {% else %}<i class="bi bi-x-circle-fill me-2"></i>Tentativas esgotadas{% endif %}
+        </h1>
+        <p class="mb-0 opacity-75">{{ curso.titulo }} · Tentativa {{ tentativa.numero_tentativa }} · {{ tentativa.finalizada_em|date:"d/m/Y H:i" }}</p>
+      </div>
+      <div class="col-md-3 text-md-end">
+        <small class="d-block opacity-75">Acertos</small>
+        <span class="fw-bold fs-4">{{ total_acertos }}/{{ total_questoes }}</span>
+      </div>
     </div>
-</section>
+  </header>
 
-<!-- ═══ CRITÉRIOS DE APROVAÇÃO ═══ -->
-<section class="container py-4">
-    <h5 class="fw-bold mb-3"><i class="bi bi-clipboard-check me-2"></i>Critérios de Aprovação</h5>
-
-    <div class="row g-3 mb-4">
-        <!-- Critério 1: Nota -->
-        <div class="col-md-6">
-            <div class="criterio-card {% if nota_ok %}criterio-ok{% else %}criterio-falha{% endif %}">
-                <div>
-                    {% if nota_ok %}
-                        <i class="bi bi-check-circle-fill text-success fs-3"></i>
-                    {% else %}
-                        <i class="bi bi-x-circle-fill text-danger fs-3"></i>
-                    {% endif %}
-                </div>
-                <div>
-                    <strong>Nota da Avaliação</strong>
-                    <br>
-                    <span class="text-muted">
-                        Sua nota: <strong>{{ tentativa.nota }}</strong>
-                        — Mínima: <strong>{{ tentativa.matricula.curso.nota_minima }}</strong>
-                    </span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Critério 2: Carga Horária -->
-        <div class="col-md-6">
-            <div class="criterio-card {% if ch_ok %}criterio-ok{% else %}criterio-pendente{% endif %}">
-                <div>
-                    {% if ch_ok %}
-                        <i class="bi bi-check-circle-fill text-success fs-3"></i>
-                    {% else %}
-                        <i class="bi bi-exclamation-triangle-fill text-warning fs-3"></i>
-                    {% endif %}
-                </div>
-                <div>
-                    <strong>Carga Horária Mínima</strong>
-                    <br>
-                    <span class="text-muted">
-                        Cumprida: <strong>{{ matricula.carga_horaria_cumprida_formatada }}</strong>
-                        — Exigida: <strong>{{ tentativa.matricula.curso.carga_horaria_total }}h</strong>
-                    </span>
-                    {% if not ch_ok %}
-                    <br>
-                    <small class="text-muted">
-                        ({{ matricula.percentual_carga_horaria }}% concluído)
-                    </small>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+  <h2 class="h5 fw-bold mb-3"><i class="bi bi-clipboard-check me-2"></i>Critérios de aprovação</h2>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card tr-card h-100 border-start border-4 border-{% if nota_ok %}success{% else %}danger{% endif %}"><div class="card-body d-flex gap-3 align-items-center">
+        <i class="bi bi-{% if nota_ok %}check-circle-fill text-success{% else %}x-circle-fill text-danger{% endif %} fs-3" aria-hidden="true"></i>
+        <div><strong>Nota da avaliação</strong><br>
+          <span class="text-body-secondary">Sua nota: <strong>{{ tentativa.nota|floatformat:1 }}</strong> · Mínima: <strong>{{ curso.nota_minima|floatformat:1 }}</strong></span></div>
+      </div></div>
     </div>
-
-    <!-- ═══ ALERTA DE CH PENDENTE ═══ -->
-    {% if nota_ok and not ch_ok %}
-    <div class="alert alert-warning border-warning d-flex align-items-start gap-3 mb-4"
-         style="border-left: 5px solid #f6c23e !important;">
-        <i class="bi bi-camera-video-fill fs-3 text-warning mt-1"></i>
-        <div>
-            <h6 class="fw-bold mb-1">
-                Volte aos vídeos — é necessário completar a carga horária!
-            </h6>
-            <p class="mb-2">
-                Sua nota <strong>{{ tentativa.nota }}</strong> atingiu a mínima,
-                mas você cumpriu apenas
-                <strong>{{ matricula.carga_horaria_cumprida_formatada }}</strong>
-                de <strong>{{ tentativa.matricula.curso.carga_horaria_total }}h</strong> exigidas
-                ({{ matricula.percentual_carga_horaria }}%).
-            </p>
-            <a href="{% url 'treinamentos:ead_curso_detail' slug=tentativa.matricula.curso.slug %}"
-               class="btn btn-warning btn-sm fw-bold">
-                <i class="bi bi-play-circle me-1"></i> Voltar ao Conteúdo do Curso
-            </a>
-        </div>
+    <div class="col-md-6">
+      <div class="card tr-card h-100 border-start border-4 border-{% if ch_ok %}success{% else %}warning{% endif %}"><div class="card-body d-flex gap-3 align-items-center">
+        <i class="bi bi-{% if ch_ok %}check-circle-fill text-success{% else %}exclamation-triangle-fill text-warning{% endif %} fs-3" aria-hidden="true"></i>
+        <div><strong>Carga horária mínima</strong><br>
+          <span class="text-body-secondary">Cumprida: <strong>{{ matricula.carga_horaria_cumprida_formatada }}</strong> · Exigida: <strong>{{ curso.carga_horaria_total }}h</strong>{% if not ch_ok %} ({{ matricula.percentual_carga_horaria|floatformat:0 }}%){% endif %}</span></div>
+      </div></div>
     </div>
+  </div>
+
+  {% if nota_ok and not ch_ok %}
+  <div class="alert alert-warning d-flex gap-3" role="status">
+    <i class="bi bi-camera-video-fill fs-3" aria-hidden="true"></i>
+    <div>
+      <h3 class="h6 fw-bold mb-1">Complete a carga horária para concluir</h3>
+      <p class="mb-2">Sua nota atingiu a mínima, mas você cumpriu {{ matricula.percentual_carga_horaria|floatformat:0 }}% da carga horária. A aprovação será automática ao completar.</p>
+      <a href="{% url 'treinamentos:ead_curso_detail' slug=curso.slug %}" class="btn btn-warning btn-sm fw-bold"><i class="bi bi-play-circle me-1"></i>Voltar ao conteúdo</a>
+    </div>
+  </div>
+  {% elif not nota_ok %}
+  <div class="alert alert-danger d-flex gap-3" role="status">
+    <i class="bi bi-journal-x fs-3" aria-hidden="true"></i>
+    <div>
+      <h3 class="h6 fw-bold mb-1">Nota abaixo da mínima</h3>
+      <p class="mb-0">{% if tentativas_restantes %}Você ainda tem <strong>{{ tentativas_restantes }} tentativa{{ tentativas_restantes|pluralize }}</strong>. Revise o conteúdo e tente novamente.{% else %}Suas tentativas acabaram. Aguarde o gestor liberar uma nova tentativa.{% endif %}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ═══ GABARITO ═══ #}
+  <h2 class="h5 fw-bold mb-3 mt-4"><i class="bi bi-list-ol me-2"></i>{% if mostrar_gabarito %}Gabarito{% else %}Suas respostas{% endif %}</h2>
+  {% if not mostrar_gabarito %}<p class="small text-body-secondary">As respostas corretas aparecem quando você for aprovado ou quando as tentativas acabarem.</p>{% endif %}
+
+  {% for item in gabarito %}
+  <article class="card tr-card mb-3 border-start border-4 border-{% if item.acertou %}success{% else %}danger{% endif %}">
+    <div class="card-header d-flex justify-content-between">
+      <strong><i class="bi bi-{% if item.acertou %}check-circle-fill text-success{% else %}x-circle-fill text-danger{% endif %} me-1"></i>Questão {{ forloop.counter }}</strong>
+      <span class="badge bg-secondary-subtle text-secondary-emphasis">Peso {{ item.questao.peso }}</span>
+    </div>
+    <div class="card-body">
+      <p class="fw-medium">{{ item.questao.enunciado|linebreaksbr }}</p>
+      <ul class="list-unstyled mb-0">
+      {% for alt in item.alternativas %}
+        <li class="d-flex gap-2 p-2 mb-1 rounded border {% if alt.cor %}bg-{{ alt.cor }}-subtle border-{{ alt.cor }}-subtle{% else %}bg-body-tertiary{% endif %}">
+          <i class="bi bi-{% if alt.cor == 'success' %}check-circle-fill text-success{% elif alt.cor == 'danger' %}x-circle-fill text-danger{% else %}circle text-body-secondary{% endif %} mt-1" aria-hidden="true"></i>
+          <span>{{ alt.obj.texto }}{% if alt.escolhida %} <span class="badge text-bg-{{ alt.cor }} ms-1">Sua resposta</span>{% endif %}</span>
+        </li>
+      {% endfor %}
+      </ul>
+      {% if mostrar_gabarito and item.questao.explicacao %}
+      <div class="alert alert-info mt-3 mb-0 py-2 small"><i class="bi bi-lightbulb me-1"></i><strong>Explicação:</strong> {{ item.questao.explicacao|linebreaksbr }}</div>
+      {% endif %}
+    </div>
+  </article>
+  {% endfor %}
+
+  <div class="d-flex flex-wrap justify-content-center gap-3 mt-4 pt-3 border-top">
+    {% if matricula.certificado_ead %}
+    <a href="{{ matricula.certificado_ead.get_absolute_url }}" class="btn btn-success btn-lg">
+      <i class="bi bi-award me-1"></i>Ver certificado</a>
+    {% elif not nota_ok and matricula.pode_fazer_avaliacao %}
+      <a href="{% url 'treinamentos:ead_avaliacao' matricula_id=matricula.pk %}" class="btn btn-primary btn-lg"><i class="bi bi-arrow-repeat me-1"></i>Nova tentativa</a>
     {% endif %}
-
-    <!-- ═══ ALERTA NOTA INSUFICIENTE ═══ -->
-    {% if not nota_ok %}
-    <div class="alert alert-danger border-danger d-flex align-items-start gap-3 mb-4"
-         style="border-left: 5px solid #e74a3b !important;">
-        <i class="bi bi-journal-x fs-3 text-danger mt-1"></i>
-        <div>
-            <h6 class="fw-bold mb-1">Nota insuficiente para aprovação</h6>
-            <p class="mb-2">
-                Sua nota <strong>{{ tentativa.nota }}</strong> ficou abaixo da mínima
-                <strong>{{ tentativa.matricula.curso.nota_minima }}</strong>.
-                {% if tentativa.matricula.tentativas_avaliacao < tentativa.matricula.curso.max_tentativas_avaliacao %}
-                Você ainda tem
-                <strong>{{ tentativa.matricula.curso.max_tentativas_avaliacao|add:"-"|add:tentativa.matricula.tentativas_avaliacao }} tentativa(s)</strong>.
-                Revise o conteúdo e tente novamente.
-                {% else %}
-                Suas tentativas foram esgotadas. Aguarde o gestor liberar uma nova tentativa.
-                {% endif %}
-            </p>
-            {% if tentativa.matricula.pode_fazer_avaliacao %}
-            <a href="{% url 'treinamentos:ead_avaliacao' matricula_id=tentativa.matricula.pk %}"
-               class="btn btn-danger btn-sm fw-bold">
-                <i class="bi bi-arrow-repeat me-1"></i> Tentar Novamente
-            </a>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- ═══ GABARITO ═══ -->
-    <h5 class="fw-bold mb-3 mt-4">
-        <i class="bi bi-list-ol me-2"></i>Gabarito Completo
-    </h5>
-
-    {% for item in gabarito %}
-    <div class="card questao-card shadow-sm mb-3
-                {% if item.acertou %}questao-acertou{% else %}questao-errou{% endif %}">
-        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-            <strong>
-                {% if item.acertou %}
-                    <i class="bi bi-check-circle-fill text-success me-1"></i>
-                {% else %}
-                    <i class="bi bi-x-circle-fill text-danger me-1"></i>
-                {% endif %}
-                Questão {{ forloop.counter }}
-            </strong>
-            <span class="badge bg-light text-dark">Peso: {{ item.questao.peso }}</span>
-        </div>
-        <div class="card-body">
-            <p class="fw-medium mb-3">{{ item.questao.enunciado }}</p>
-
-            {% for alt in item.alternativas %}
-            <div class="alt-item d-flex align-items-start gap-2
-                {% if alt.correta %}alt-correta
-                {% elif alt == item.escolhida and not alt.correta %}alt-errada
-                {% else %}alt-neutra{% endif %}">
-                <div class="mt-1">
-                    {% if alt.correta %}
-                        <i class="bi bi-check-circle-fill text-success"></i>
-                    {% elif alt == item.escolhida %}
-                        <i class="bi bi-x-circle-fill text-danger"></i>
-                    {% else %}
-                        <i class="bi bi-circle text-muted"></i>
-                    {% endif %}
-                </div>
-                <div>
-                    {{ alt.texto }}
-                    {% if alt == item.escolhida and not alt.correta %}
-                        <span class="badge bg-danger ms-1">Sua resposta</span>
-                    {% elif alt == item.escolhida and alt.correta %}
-                        <span class="badge bg-success ms-1">Sua resposta ✔</span>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-
-            {% if item.questao.explicacao %}
-            <div class="alert alert-info mt-3 mb-0 py-2 small">
-                <i class="bi bi-lightbulb me-1"></i>
-                <strong>Explicação:</strong> {{ item.questao.explicacao }}
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    {% endfor %}
-
-    <!-- ═══ AÇÕES FINAIS ═══ -->
-    <div class="d-flex justify-content-center gap-3 mt-4 pt-3 border-top">
-        {% if aprovado_completo %}
-            <a href="{% url 'treinamentos:ead_curso_detail' slug=tentativa.matricula.curso.slug %}"
-               class="btn btn-success btn-lg">
-                <i class="bi bi-award me-1"></i> Ver Certificado
-            </a>
-        {% elif nota_ok and not ch_ok %}
-            <a href="{% url 'treinamentos:ead_curso_detail' slug=tentativa.matricula.curso.slug %}"
-               class="btn btn-warning btn-lg">
-                <i class="bi bi-play-circle me-1"></i> Voltar aos Vídeos
-            </a>
-        {% elif tentativa.matricula.pode_fazer_avaliacao %}
-            <a href="{% url 'treinamentos:ead_avaliacao' matricula_id=tentativa.matricula.pk %}"
-               class="btn btn-primary btn-lg">
-                <i class="bi bi-arrow-repeat me-1"></i> Nova Tentativa
-            </a>
-        {% endif %}
-
-        <a href="{% url 'treinamentos:ead_curso_detail' slug=tentativa.matricula.curso.slug %}"
-           class="btn btn-outline-secondary btn-lg">
-            <i class="bi bi-arrow-left me-1"></i> Voltar ao Curso
-        </a>
-    </div>
-
-</section>
+    <a href="{% url 'treinamentos:ead_curso_detail' slug=curso.slug %}" class="btn btn-outline-secondary btn-lg"><i class="bi bi-arrow-left me-1"></i>Voltar ao curso</a>
+  </div>
+</div>
+{% endwith %}
 {% endblock %}
-
-

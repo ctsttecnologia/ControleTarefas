@@ -1,143 +1,49 @@
-<!-- Página de Relatório de Treinamentos -->
-{% extends 'base.html' %}
+{% extends "treinamentos/base_treinamento.html" %}
 {% load static %}
 
 {% block title %}Relatório de Treinamentos{% endblock %}
 
 {% block extra_css %}
 <style>
-    .page-hero {
-        background: linear-gradient(135deg, #e74a3b 0%, #be2617 50%, #9b1b0e 100%);
-        border-radius: 1rem;
-        color: #fff;
-        padding: 2rem 2.5rem;
-        margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
-    }
-    .page-hero::after {
-        content: '';
-        position: absolute;
-        top: -40%;
-        right: -8%;
-        width: 280px;
-        height: 280px;
-        background: rgba(255,255,255,0.06);
-        border-radius: 50%;
-        pointer-events: none;
-    }
-    .page-hero h1 { font-weight: 700; font-size: 1.65rem; margin-bottom: 0.25rem; }
-    .page-hero p { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
-
-    .filter-card { border: none; border-radius: 0.875rem; }
-    .filter-card .card-header {
-        background: transparent;
-        border-bottom: 2px solid #f0f2f5;
-        padding: 1.25rem 1.5rem;
-        font-weight: 700;
-        font-size: 0.95rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    .filter-card .form-select,
-    .filter-card .form-control {
-        border: 2px solid #e2e8f0;
-        border-radius: 0.625rem;
-    }
-    .filter-card .form-select:focus,
-    .filter-card .form-control:focus {
-        border-color: #e74a3b;
-        box-shadow: 0 0 0 0.2rem rgba(231,74,59,0.15);
-    }
-
-    .data-card { border: none; border-radius: 0.875rem; }
-    .data-card .card-header {
-        background: transparent;
-        border-bottom: 2px solid #f0f2f5;
-        padding: 1.25rem 1.5rem;
-        font-weight: 700;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
+    .page-hero { background: linear-gradient(135deg, #e74a3b 0%, #be2617 50%, #9b1b0e 100%); border-radius: 1rem; color: #fff; padding: 2rem 2.5rem; margin-bottom: 2rem; position: relative; overflow: hidden; }
+    .page-hero::after { content: ''; position: absolute; top: -40%; right: -8%; width: 280px; height: 280px; background: rgba(255,255,255,.06); border-radius: 50%; pointer-events: none; }
+    .page-hero h1 { font-weight: 700; font-size: 1.65rem; margin-bottom: .25rem; }
+    .page-hero p { opacity: .85; margin-bottom: 0; font-size: .9rem; }
+    .filter-card, .data-card { border: none; border-radius: .875rem; }
+    .filter-card .card-header, .data-card .card-header { background: transparent; border-bottom: 2px solid #f0f2f5; padding: 1.25rem 1.5rem; font-weight: 700; display: flex; align-items: center; gap: .5rem; }
+    .data-card .card-header { justify-content: space-between; }
+    .filter-card .form-select { border: 2px solid #e2e8f0; border-radius: .625rem; }
+    .filter-card .form-select:focus { border-color: #e74a3b; box-shadow: 0 0 0 .2rem rgba(231,74,59,.15); }
+    .filter-label { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #4a5568; }
     .data-table { border-collapse: separate; border-spacing: 0; }
-    .data-table thead th {
-        background: #f8f9fc;
-        border-bottom: 2px solid #e3e6f0;
-        font-size: 0.73rem;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        font-weight: 700;
-        color: #858796;
-        padding: 0.875rem 1rem;
-        white-space: nowrap;
-    }
-    .data-table tbody tr { transition: background 0.15s; }
-    .data-table tbody tr:hover { background: rgba(231,74,59,0.03); }
-    .data-table tbody td {
-        padding: 0.875rem 1rem;
-        vertical-align: middle;
-        border-bottom: 1px solid #f1f1f4;
-        font-size: 0.875rem;
-    }
+    .data-table thead th { background: #f8f9fc; border-bottom: 2px solid #e3e6f0; font-size: .73rem; text-transform: uppercase; letter-spacing: .6px; font-weight: 700; color: #858796; padding: .875rem 1rem; white-space: nowrap; }
+    .data-table tbody tr:hover { background: rgba(231,74,59,.03); }
+    .data-table tbody td { padding: .875rem 1rem; vertical-align: middle; border-bottom: 1px solid #f1f1f4; font-size: .875rem; }
     .data-table tbody tr:last-child td { border-bottom: none; }
-
-    .training-link { font-weight: 600; color: #2d3748; text-decoration: none; transition: color 0.15s; }
+    .training-link { font-weight: 600; color: #2d3748; text-decoration: none; }
     .training-link:hover { color: #e74a3b; }
-
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 0.3rem 0.75rem;
-        border-radius: 50rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-    .status-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-    .status-agendado { background: rgba(13,202,240,0.12); color: #0aa2c0; }
-    .status-agendado::before { background: #0dcaf0; }
-    .status-em_andamento { background: rgba(78,115,223,0.12); color: #4e73df; }
-    .status-em_andamento::before { background: #4e73df; }
-    .status-concluido { background: rgba(28,200,138,0.12); color: #13855c; }
-    .status-concluido::before { background: #1cc88a; }
-    .status-cancelado { background: rgba(231,74,59,0.12); color: #c0392b; }
-    .status-cancelado::before { background: #e74a3b; }
-
-    .btn-export {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 0.45rem 1rem;
-        border-radius: 0.5rem;
-        font-size: 0.82rem;
-        font-weight: 600;
-        border: 1.5px solid;
-        transition: all 0.2s;
-    }
-    .btn-export:hover { transform: translateY(-1px); }
-    .btn-export-word { border-color: #4e73df; color: #4e73df; background: rgba(78,115,223,0.05); }
-    .btn-export-word:hover { background: #4e73df; color: #fff; }
-
+    .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: .3rem .75rem; border-radius: 50rem; font-size: .75rem; font-weight: 600; }
+    .status-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; }
+    .status-agendado { background: rgba(13,202,240,.12); color: #0aa2c0; } .status-agendado::before { background: #0dcaf0; }
+    .status-em_andamento { background: rgba(78,115,223,.12); color: #4e73df; } .status-em_andamento::before { background: #4e73df; }
+    .status-concluido { background: rgba(28,200,138,.12); color: #13855c; } .status-concluido::before { background: #1cc88a; }
+    .status-cancelado { background: rgba(231,74,59,.12); color: #c0392b; } .status-cancelado::before { background: #e74a3b; }
+    .btn-export-word { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 34px; border-radius: .5rem; border: 1.5px solid #4e73df; color: #4e73df; background: rgba(78,115,223,.05); transition: all .2s; }
+    .btn-export-word:hover { background: #4e73df; color: #fff; transform: translateY(-1px); }
     .empty-state { padding: 4rem 2rem; }
-    .empty-state-icon {
-        width: 80px; height: 80px; border-radius: 50%;
-        background: linear-gradient(135deg, rgba(231,74,59,0.1), rgba(231,74,59,0.05));
-        display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;
-    }
+    .empty-state-icon { width: 80px; height: 80px; border-radius: 50%; background: rgba(231,74,59,.08); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; }
     .empty-state-icon i { font-size: 2rem; color: #e74a3b; }
 
     [data-bs-theme="dark"] .page-hero { background: linear-gradient(135deg, #be2617, #8b1a0d); }
-    [data-bs-theme="dark"] .filter-card .card-header, [data-bs-theme="dark"] .data-card .card-header { border-bottom-color: rgba(255,255,255,0.06); }
-    [data-bs-theme="dark"] .data-table thead th { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.5); border-bottom-color: rgba(255,255,255,0.06); }
-    [data-bs-theme="dark"] .data-table tbody td { border-bottom-color: rgba(255,255,255,0.04); }
+    [data-bs-theme="dark"] .filter-card .card-header, [data-bs-theme="dark"] .data-card .card-header { border-bottom-color: rgba(255,255,255,.06); }
+    [data-bs-theme="dark"] .data-table thead th { background: rgba(255,255,255,.03); color: rgba(255,255,255,.5); border-bottom-color: rgba(255,255,255,.06); }
+    [data-bs-theme="dark"] .data-table tbody td { border-bottom-color: rgba(255,255,255,.04); }
     [data-bs-theme="dark"] .training-link { color: #e2e8f0; }
+    [data-bs-theme="dark"] .filter-label { color: #a0aec0; }
 
     @media print {
         .no-print { display: none !important; }
-        .page-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .page-hero, .status-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
 </style>
 {% endblock %}
@@ -145,7 +51,6 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- ═══ HERO ═══ -->
     <div class="page-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
@@ -159,63 +64,55 @@
                 <a href="{% url 'treinamentos:treinamento_list' %}" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-list-check me-1"></i> Lista
                 </a>
-                <a href="{% url 'treinamentos:relatorio_geral_excel' %}?{{ request.GET.urlencode }}"
-                   class="btn btn-sm btn-light fw-semibold">
+                <a href="{% url 'treinamentos:relatorio_geral_excel' %}{% if filtros_qs %}?{{ filtros_qs }}{% endif %}" class="btn btn-sm btn-light fw-semibold">
                     <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar Excel
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- ═══ FILTROS ═══ -->
     <div class="card filter-card shadow-sm mb-4 no-print">
-        <div class="card-header">
-            <i class="bi bi-funnel text-muted"></i> Filtros do Relatório
-        </div>
+        <div class="card-header"><i class="bi bi-funnel text-muted"></i> Filtros do Relatório</div>
         <div class="card-body">
             <form method="get" class="row g-3 align-items-end">
                 <div class="col-md-5">
-                    <label for="tipo_curso" class="form-label small fw-bold text-uppercase" style="letter-spacing: 0.4px; color: #4a5568;">
-                        Tipo de Curso
-                    </label>
+                    <label for="tipo_curso" class="form-label filter-label">Tipo de Curso</label>
                     <select class="form-select" id="tipo_curso" name="tipo_curso">
                         <option value="">Todos os Tipos</option>
-                        {% for curso in tipos_curso %}
-                        <option value="{{ curso.pk }}" {% if request.GET.tipo_curso|stringformat:'s' == curso.pk|stringformat:'s' %}selected{% endif %}>
-                            {{ curso.nome }}
-                        </option>
+                        {% for tc in tipos_curso %}
+                        <option value="{{ tc.pk }}" {% if request.GET.tipo_curso == tc.pk|stringformat:'s' %}selected{% endif %}>{{ tc.nome }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-5">
-                    <label for="ano" class="form-label small fw-bold text-uppercase" style="letter-spacing: 0.4px; color: #4a5568;">
-                        Ano
-                    </label>
+                    <label for="ano" class="form-label filter-label">Ano</label>
                     <select class="form-select" id="ano" name="ano">
                         <option value="">Todos os Anos</option>
                         {% for date in anos %}
-                        <option value="{{ date.year }}" {% if request.GET.ano|stringformat:'s' == date.year|stringformat:'s' %}selected{% endif %}>
-                            {{ date.year }}
-                        </option>
+                        <option value="{{ date.year }}" {% if request.GET.ano == date.year|stringformat:'s' %}selected{% endif %}>{{ date.year }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100" style="border-radius: 0.625rem; padding: 0.625rem;">
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1" style="border-radius:.625rem;">
                         <i class="bi bi-filter me-1"></i> Filtrar
                     </button>
+                    {% if filtros_qs %}
+                    <a href="{% url 'treinamentos:relatorio_treinamentos' %}" class="btn btn-outline-secondary" style="border-radius:.625rem;" title="Limpar">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                    {% endif %}
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- ═══ RESULTADOS ═══ -->
     <div class="card data-card shadow-sm">
         <div class="card-header">
             <span><i class="bi bi-table me-2 text-muted"></i>Resultados</span>
-            {% if object_list %}
-            <span class="badge bg-dark bg-opacity-10 text-dark" style="border-radius: 50rem; font-size: 0.78rem;">
-                {{ object_list|length }} registro{{ object_list|length|pluralize:"s" }}
+            {% if total_registros %}
+            <span class="badge bg-dark bg-opacity-10 text-body" style="border-radius:50rem; font-size:.78rem;">
+                {{ total_registros }} registro{{ total_registros|pluralize:"s" }}
             </span>
             {% endif %}
         </div>
@@ -224,36 +121,29 @@
                 <table class="table data-table mb-0">
                     <thead>
                         <tr>
-                            <th style="min-width: 220px;">Treinamento</th>
+                            <th style="min-width:220px;">Treinamento</th>
                             <th>Tipo</th>
                             <th>Início</th>
                             <th>Vencimento</th>
                             <th class="text-center">Status</th>
                             <th>Responsável</th>
-                            <th class="text-center no-print" style="width: 80px;">Relatório</th>
+                            <th class="text-center no-print" style="width:80px;">Relatório</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for treinamento in object_list %}
                         <tr>
-                            <td>
-                                <a href="{{ treinamento.get_absolute_url }}" class="training-link">
-                                    {{ treinamento.nome }}
-                                </a>
-                            </td>
+                            <td><a href="{{ treinamento.get_absolute_url }}" class="training-link">{{ treinamento.nome }}</a></td>
                             <td>{{ treinamento.tipo_curso }}</td>
                             <td>{{ treinamento.data_inicio|date:"d/m/Y" }}</td>
                             <td>{{ treinamento.data_vencimento|date:"d/m/Y"|default:"—" }}</td>
                             <td class="text-center">
-                                <span class="status-badge status-{{ treinamento.status }}">
-                                    {{ treinamento.get_status_display }}
-                                </span>
+                                <span class="status-badge status-{{ treinamento.status }}">{{ treinamento.get_status_display }}</span>
                             </td>
                             <td>{{ treinamento.responsavel|default:"—" }}</td>
                             <td class="text-center no-print">
                                 <a href="{% url 'treinamentos:relatorio_treinamento_word' pk=treinamento.pk %}"
-                                   class="btn-export btn-export-word" title="Gerar Word"
-                                   data-bs-toggle="tooltip">
+                                   class="btn-export-word" title="Gerar Word" data-bs-toggle="tooltip">
                                     <i class="bi bi-file-earmark-word"></i>
                                 </a>
                             </td>
@@ -262,11 +152,9 @@
                         <tr>
                             <td colspan="7">
                                 <div class="empty-state text-center">
-                                    <div class="empty-state-icon">
-                                        <i class="bi bi-funnel"></i>
-                                    </div>
+                                    <div class="empty-state-icon"><i class="bi bi-funnel"></i></div>
                                     <h5 class="fw-bold mb-2">Nenhum treinamento encontrado</h5>
-                                    <p class="text-muted mb-3" style="max-width: 400px; margin: 0 auto;">
+                                    <p class="text-muted mb-0 mx-auto" style="max-width:400px;">
                                         Ajuste os filtros ou <a href="{% url 'treinamentos:relatorio_treinamentos' %}">limpe a busca</a>.
                                     </p>
                                 </div>
@@ -279,24 +167,8 @@
         </div>
 
         {% if is_paginated %}
-        <div class="card-footer bg-transparent border-0 px-4 py-3">
-            <nav>
-                <ul class="pagination justify-content-center mb-0">
-                    {% if page_obj.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}"><i class="bi bi-chevron-left"></i></a></li>
-                    {% endif %}
-                    {% for num in page_obj.paginator.page_range %}
-                        {% if page_obj.number == num %}
-                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item"><a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">{{ num }}</a></li>
-                        {% endif %}
-                    {% endfor %}
-                    {% if page_obj.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}"><i class="bi bi-chevron-right"></i></a></li>
-                    {% endif %}
-                </ul>
-            </nav>
+        <div class="card-footer bg-transparent border-0 px-4 py-3 no-print">
+            {% include "partials/paginacao.html" %}
         </div>
         {% endif %}
     </div>
@@ -306,10 +178,7 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-        new bootstrap.Tooltip(el, { trigger: 'hover' });
-    });
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el, { trigger: 'hover' }));
 });
 </script>
 {% endblock %}
-

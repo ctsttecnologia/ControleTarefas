@@ -7,7 +7,8 @@ from django.db.models import F
 from django.core.exceptions import ValidationError
 from py_serializable import logger
 
-from treinamentos.views import mark_safe
+from django.utils.safestring import mark_safe
+
 
 
 BASE64_RE = re.compile(r'^[A-Za-z0-9+/]+={0,2}$')

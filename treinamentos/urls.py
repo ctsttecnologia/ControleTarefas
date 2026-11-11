@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views  # <-- A importação correta está aqui
+from . import views
 
 app_name = 'treinamentos'
 
@@ -12,7 +12,7 @@ urlpatterns = [
     path('<int:pk>/excluir/', views.ExcluirTreinamentoView.as_view(), name='excluir_treinamento'),
         
     # Tipos de Curso
-    path('tipos/', views.TipoCursoListView.as_view(), name='lista_tipos_curso'),
+    path('tipos/', views.TipoCursoListView.as_view(), name='lista_tipo_curso'),
     path('tipos/criar/', views.CriarTipoCursoView.as_view(), name='criar_tipo_curso'),
     path('tipos/<int:pk>/editar/', views.EditarTipoCursoView.as_view(), name='editar_tipo_curso'),
     path('tipos/<int:pk>/excluir/', views.ExcluirTipoCursoView.as_view(), name='excluir_tipo_curso'),
@@ -50,7 +50,7 @@ urlpatterns = [
         # =================================================================
     # GESTÃO DE AVALIAÇÕES (Gestor)
     # =================================================================
-    path( 'ead/gestao/curso/<slug:slug>/avaliacoes/', views.GestaoAvaliacoesCursoView.as_view(), name='gestao_avaliacoes_curso',),
+    path('ead/gestao/curso/<slug:slug>/avaliacoes/', views.GestaoAvaliacoesCursoView.as_view(), name='gestao_avaliacoes_curso',),
     path('ead/gestao/tentativa/<int:tentativa_id>/', views.GestaoTentativaDetailView.as_view(), name='gestao_tentativa_detail',),
     path('ead/gestao/tentativa/<int:tentativa_id>/imprimir/', views.GestaoImprimirProvaView.as_view(), name='gestao_imprimir_prova', ),
     path('ead/gestao/matricula/<int:matricula_id>/liberar-tentativa/', views.GestaoLiberarTentativaView.as_view(), name='gestao_liberar_tentativa',),

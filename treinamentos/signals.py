@@ -1,146 +1,92 @@
 
 # treinamentos/signals.py
-
+# treinamentos/signals.py
+import logging
+from datetime import timedelta
+from django.conf import settings
+from django.core.mail import send_mail
+from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
-from django.conf import settings
 from django.utils import timezone
-from datetime import timedelta
-from .models import Treinamento, Assinatura
+
+from notifications.services import criar_notificacao
+from .models import Assinatura, CertificadoEAD, MatriculaEAD, Treinamento
+
+logger = logging.getLogger(__name__)
 
 
-# TODO: Implemente sua própria função de envio de e-mail
-# from core.utils import enviar_email_async
-
-def enviar_link_assinatura(email_destinatario, nome_destinatario, link_assinatura):
-    """
-    Função placeholder para enviar o e-mail.
-    Substitua pela sua implementação real (ex: usando Celery).
-    """
-    assunto = "Coleta de Assinatura para Certificado de Treinamento"
-    mensagem = f"""
-    Olá, {nome_destinatario},
-
-    O treinamento que você participou (ou pelo qual foi responsável) foi finalizado.
-    Por favor, acesse o link abaixo para registrar sua assinatura digital
-    para a emissão do certificado:
-
-    {link_assinatura}
-
-    Obrigado.
-    """
-    print(f"--- SIMULANDO ENVIO DE E-MAIL PARA: {email_destinatario} ---")
-    print(f"Link: {link_assinatura}")
-    print("--- FIM DA SIMULAÇÃO ---")
+def _enviar_link(user, assinatura, treinamento):
+    link = settings.SITE_URL + reverse('treinamentos:pagina_assinatura',
+                                       kwargs={'token': assinatura.token_acesso})
+    criar_notificacao(
+        usuario=user, titulo=f'Assine seu certificado: {treinamento.nome[:50]}',
+        tipo='sistema', categoria='sistema', prioridade='alta',
+        url_destino=link, icone='bi-pen',
+    )
+    if user.email:
+        send_mail(
+            'Assinatura de certificado de treinamento',
+            f'Olá, {user.get_first_name() if hasattr(user, "get_first_name") else user.first_name}.\n\n'
+            f'O treinamento "{treinamento.nome}" foi finalizado. Assine em até '
+            f'{Assinatura.VALIDADE_DIAS} dias:\n{link}\n',
+            settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=True,
+        )
 
 
 @receiver(post_save, sender=Treinamento)
-def disparar_coleta_de_assinaturas(sender, instance, created, **kwargs):
-    """
-    Dispara o envio de links de assinatura quando um treinamento é
-    marcado como 'Finalizado' (F).
-    """
-    if (instance.status == 'F' and
-        instance.tipo_curso.certificado and
-        not instance.assinaturas_solicitadas):
+def disparar_coleta_de_assinaturas(sender, instance, **kwargs):
+    if instance.status != 'F' or not instance.tipo_curso.certificado or instance.assinaturas_solicitadas:
+        return
 
-        print(f"Iniciando coleta de assinaturas para: {instance.nome}")
-        base_url = settings.SITE_URL
+    def _executar():
+        alvos = []
+        if instance.responsavel:
+            a, _ = Assinatura.objects.get_or_create(
+                treinamento_responsavel=instance,
+                defaults={'nome_assinante': instance.responsavel.get_full_name()})
+            alvos.append((instance.responsavel, a))
+        for p in instance.participantes.filter(presente=True).select_related('funcionario'):
+            a, _ = Assinatura.objects.get_or_create(
+                participante=p, defaults={'nome_assinante': p.funcionario.get_full_name()})
+            alvos.append((p.funcionario, a))
+        for user, a in alvos:
+            if not a.esta_assinada:
+                try:
+                    _enviar_link(user, a, instance)
+                except Exception:
+                    logger.exception('Falha ao enviar link de assinatura (user=%s)', user.pk)
+        Treinamento.objects.filter(pk=instance.pk).update(assinaturas_solicitadas=True)
 
-        # 1. Criar e enviar para o RESPONSÁVEL (Instrutor)
-        try:
-            responsavel = instance.responsavel
-            if responsavel:
-                assinatura_resp, created_resp = Assinatura.objects.get_or_create(
-                    treinamento_responsavel=instance,
-                    defaults={
-                        'nome_assinante': responsavel.get_full_name(),
-                        'documento_assinante': getattr(responsavel, 'cpf', 'Não informado')
-                    }
-                )
-
-                if created_resp or not assinatura_resp.esta_assinada:
-                    link_resp = base_url + reverse('treinamentos:pagina_assinatura',
-                                                   kwargs={'token': assinatura_resp.token_acesso})
-                    enviar_link_assinatura(responsavel.email, responsavel.get_full_name(), link_resp)
-
-        except Exception as e:
-            print(f"Erro ao gerar assinatura para responsável: {e}")
-
-        # 2. Criar e enviar para todos os PARTICIPANTES PRESENTES
-        participantes_presentes = instance.participantes.filter(presente=True)
-        for p in participantes_presentes:
-            try:
-                assinatura_part, created_part = Assinatura.objects.get_or_create(
-                    participante=p,
-                    defaults={
-                        'nome_assinante': p.funcionario.get_full_name(),
-                        'documento_assinante': getattr(p.funcionario, 'cpf', 'Não informado')
-                    }
-                )
-
-                if created_part or not assinatura_part.esta_assinada:
-                    link_part = base_url + reverse('treinamentos:pagina_assinatura',
-                                                   kwargs={'token': assinatura_part.token_acesso})
-                    enviar_link_assinatura(p.funcionario.email, p.funcionario.get_full_name(), link_part)
-
-            except Exception as e:
-                print(f"Erro ao gerar assinatura para participante {p.funcionario.email}: {e}")
-
-        # Marca que os links foram enviados para não duplicar
-        instance.assinaturas_solicitadas = True
-        instance.save(update_fields=['assinaturas_solicitadas'])
-
-
-# =============================================================================
-# SIGNAL: Emissão automática de Certificado EAD ao aprovar
-# =============================================================================
-from .models import MatriculaEAD, CertificadoEAD
+    transaction.on_commit(_executar)
 
 
 @receiver(post_save, sender=MatriculaEAD)
 def emitir_certificado_ead_ao_aprovar(sender, instance, **kwargs):
-    """
-    Quando a matrícula é marcada como APROVADO, gera automaticamente
-    o registro do CertificadoEAD (o PDF é gerado on-demand na view).
-    """
-    if instance.status != MatriculaEAD.Status.APROVADO:
+    if instance.status != MatriculaEAD.Status.APROVADO or not instance.pode_emitir_certificado:
         return
-
-    # Já tem certificado? Não duplicar
     if CertificadoEAD.objects.filter(matricula=instance).exists():
         return
-
+    f, curso = instance.funcionario, instance.curso
     try:
-        funcionario = instance.funcionario
-        curso = instance.curso
-        tipo_curso = curso.tipo_curso
-
-        # Calcula validade
-        validade = None
-        if tipo_curso and tipo_curso.validade_meses:
-            validade = (timezone.now() + timedelta(
-                days=tipo_curso.validade_meses * 30
-            )).date()
-
         CertificadoEAD.objects.create(
             matricula=instance,
-            nome_funcionario=funcionario.nome_completo,
-            cpf_funcionario=funcionario.matricula or '',
+            nome_funcionario=getattr(f, 'nome_completo', str(f)),
+            cpf_funcionario=getattr(f, 'cpf', '') or '',  
             nome_curso=curso.titulo,
-            nome_tipo_curso=tipo_curso.nome if tipo_curso else curso.titulo,
+            nome_tipo_curso=curso.tipo_curso.nome if curso.tipo_curso else '',
             carga_horaria_exigida=curso.carga_horaria_total,
             carga_horaria_cumprida=instance.carga_horaria_cumprida_horas,
             nota=instance.nota_final,
             nome_instrutor=curso.instrutor_nome or '',
-            data_validade=validade,
             filial=instance.filial,
             emitido_por=instance.matriculado_por,
+        )  # data_validade é calculada no save() do model
+        criar_notificacao(
+            usuario=f.usuario, titulo=f'🎓 Certificado disponível: {curso.titulo[:50]}',
+            categoria='sistema', prioridade='media',
+            url_destino=reverse('treinamentos:ead_meus_cursos'), icone='bi-award',
         )
-        print(f"✅ Certificado EAD emitido para {funcionario.nome_completo} - {curso.titulo}")
-
-    except Exception as e:
-        print(f"❌ Erro ao emitir certificado EAD: {e}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        logger.exception('Erro ao emitir certificado EAD (matrícula %s)', instance.pk)

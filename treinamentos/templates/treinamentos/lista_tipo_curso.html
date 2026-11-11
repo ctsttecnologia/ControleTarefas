@@ -1,374 +1,162 @@
-<!-- Lista de Tipos de Curso -->
-{% extends 'base.html' %}
+{% extends "treinamentos/base_treinamento.html" %}
 {% load static %}
 
 {% block title %}Tipos de Curso{% endblock %}
 
-{% block extra_css %}
-<style>
-    .page-hero {
-        background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 50%, #462585 100%);
-        border-radius: 1rem;
-        color: #fff;
-        padding: 2rem 2.5rem;
-        margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
-    }
-    .page-hero::after {
-        content: '';
-        position: absolute;
-        top: -40%;
-        right: -8%;
-        width: 280px;
-        height: 280px;
-        background: rgba(255,255,255,0.07);
-        border-radius: 50%;
-        pointer-events: none;
-    }
-    .page-hero h1 { font-weight: 700; font-size: 1.65rem; margin-bottom: 0.25rem; }
-    .page-hero p { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
-    .stat-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: rgba(255,255,255,0.15);
-        backdrop-filter: blur(4px);
-        border-radius: 50rem;
-        padding: 0.35rem 1rem;
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #fff;
-    }
-
-    .search-card { border: none; border-radius: 0.875rem; }
-    .search-input {
-        border: 2px solid #e9ecef;
-        border-radius: 0.625rem;
-        padding: 0.625rem 1rem 0.625rem 2.75rem;
-        font-size: 0.9rem;
-        transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .search-input:focus { border-color: #6f42c1; box-shadow: 0 0 0 0.2rem rgba(111,66,193,0.15); }
-    .search-icon {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #adb5bd;
-        pointer-events: none;
-        z-index: 5;
-    }
-
-    .data-table { border-collapse: separate; border-spacing: 0; }
-    .data-table thead th {
-        background: #f8f9fc;
-        border-bottom: 2px solid #e3e6f0;
-        font-size: 0.73rem;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        font-weight: 700;
-        color: #858796;
-        padding: 0.875rem 1rem;
-        white-space: nowrap;
-    }
-    .data-table tbody tr { transition: background 0.15s; }
-    .data-table tbody tr:hover { background: rgba(111,66,193,0.04); }
-    .data-table tbody td {
-        padding: 0.875rem 1rem;
-        vertical-align: middle;
-        border-bottom: 1px solid #f1f1f4;
-        font-size: 0.875rem;
-    }
-    .data-table tbody tr:last-child td { border-bottom: none; }
-
-    .curso-name { font-weight: 600; color: #2d3748; }
-    .curso-desc { font-size: 0.78rem; color: #a0aec0; }
-
-    .status-dot {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 0.3rem 0.75rem;
-        border-radius: 50rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-    .status-dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-    .status-active { background: rgba(28,200,138,0.12); color: #13855c; }
-    .status-active::before { background: #1cc88a; }
-    .status-inactive { background: rgba(231,74,59,0.12); color: #c0392b; }
-    .status-inactive::before { background: #e74a3b; }
-
-    .cert-badge {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.8rem;
-    }
-    .cert-yes { background: rgba(28,200,138,0.12); color: #1cc88a; }
-    .cert-no { background: rgba(108,117,125,0.1); color: #adb5bd; }
-
-    .btn-action {
-        width: 34px;
-        height: 34px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 0.5rem;
-        border: 1.5px solid #e3e6f0;
-        background: #fff;
-        color: #858796;
-        transition: all 0.2s;
-        font-size: 0.85rem;
-    }
-    .btn-action:hover { border-color: #4e73df; color: #4e73df; background: rgba(78,115,223,0.06); transform: translateY(-1px); }
-    .btn-action-danger:hover { border-color: #e74a3b; color: #e74a3b; background: rgba(231,74,59,0.06); }
-
-    .empty-state { padding: 4rem 2rem; }
-    .empty-state-icon {
-        width: 80px; height: 80px; border-radius: 50%;
-        background: linear-gradient(135deg, rgba(111,66,193,0.1), rgba(111,66,193,0.05));
-        display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;
-    }
-    .empty-state-icon i { font-size: 2rem; color: #6f42c1; }
-
-    .result-count { font-size: 0.8rem; color: #858796; font-weight: 500; }
-    .result-count strong { color: #2d3748; }
-
-    .validade-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        background: #f0f2f5;
-        border-radius: 50rem;
-        padding: 0.25rem 0.65rem;
-        font-size: 0.78rem;
-        font-weight: 600;
-        color: #4a5568;
-    }
-
-    [data-bs-theme="dark"] .page-hero { background: linear-gradient(135deg, #5a32a3, #3d1f73); }
-    [data-bs-theme="dark"] .search-input { border-color: #2d3748; background: var(--bs-body-bg); color: #fff; }
-    [data-bs-theme="dark"] .search-input:focus { border-color: #6f42c1; }
-    [data-bs-theme="dark"] .data-table thead th { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.5); border-bottom-color: rgba(255,255,255,0.06); }
-    [data-bs-theme="dark"] .data-table tbody td { border-bottom-color: rgba(255,255,255,0.04); }
-    [data-bs-theme="dark"] .data-table tbody tr:hover { background: rgba(111,66,193,0.06); }
-    [data-bs-theme="dark"] .curso-name { color: #e2e8f0; }
-    [data-bs-theme="dark"] .btn-action { background: var(--bs-body-bg); border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
-    [data-bs-theme="dark"] .validade-tag { background: rgba(255,255,255,0.06); color: #a0aec0; }
-</style>
-{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4 px-lg-5">
+<div class="tr-tipos container-fluid py-4 px-lg-5">
 
-    <!-- ═══ HERO ═══ -->
-    <div class="page-hero">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-            <div>
-                <h1><i class="bi bi-bookmarks-fill me-2"></i>Tipos de Curso</h1>
-                <p>Catálogo de todos os tipos de cursos e treinamentos disponíveis</p>
-                {% if cursos %}
-                <div class="d-flex flex-wrap gap-2 mt-3">
-                    <span class="stat-pill"><i class="bi bi-collection"></i> {{ cursos|length }} tipo{{ cursos|length|pluralize:"s" }}</span>
-                </div>
-                {% endif %}
-            </div>
-            <div class="d-flex gap-2 no-print">
-                <a href="{% url 'treinamentos:treinamento_list' %}" class="btn btn-sm btn-outline-light">
-                    <i class="bi bi-arrow-left me-1"></i> Treinamentos
-                </a>
-                {% if perms.treinamentos.add_tipocurso %}
-                <a href="{% url 'treinamentos:criar_tipo_curso' %}" class="btn btn-sm btn-light fw-semibold">
-                    <i class="bi bi-plus-circle me-1"></i> Novo Tipo
-                </a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══ TABLE CARD ═══ -->
-    <div class="card search-card shadow-sm">
-        <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
-            <form method="get">
-                <div class="row g-3 align-items-end">
-                    <div class="col-lg-6 col-md-8">
-                        <div class="position-relative">
-                            <i class="bi bi-search search-icon"></i>
-                            <input type="text" name="q" class="form-control search-input"
-                                   placeholder="Pesquisar por nome do curso..."
-                                   value="{{ request.GET.q|default:'' }}" autocomplete="off">
-                        </div>
-                    </div>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-primary px-4" style="border-radius: 0.625rem;">
-                            <i class="bi bi-search me-1"></i> Buscar
-                        </button>
-                    </div>
-                    {% if request.GET.q %}
-                    <div class="col-auto">
-                        <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-outline-secondary" style="border-radius: 0.625rem;">
-                            <i class="bi bi-x-circle me-1"></i> Limpar
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-            </form>
-        </div>
-
-        <!-- Results Count -->
-        <div class="px-4 pt-3 pb-2">
-            <span class="result-count">
-                {% if cursos %}
-                Exibindo <strong>{{ cursos|length }}</strong> tipo{{ cursos|length|pluralize:"s" }} de curso
-                {% if request.GET.q %} para "<strong>{{ request.GET.q }}</strong>"{% endif %}
-                {% endif %}
+    {# ===== Hero ===== #}
+    <header class="tr-hero is-green d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div class="tr-hero__content">
+            <h1><i class="bi bi-bookmarks-fill me-2"></i>Tipos de Curso</h1>
+            <p>Catálogo de todos os tipos de cursos e treinamentos disponíveis</p>
+            {% if total_registros %}
+            <span class="stat-pill mt-3">
+                <i class="bi bi-collection"></i> {{ total_registros }} tipo{{ total_registros|pluralize:"s" }}
             </span>
+            {% endif %}
         </div>
+        <nav class="d-flex gap-2 flex-wrap no-print" aria-label="Atalhos">
+            <a href="{% url 'treinamentos:treinamento_list' %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Treinamentos
+            </a>
+            {% if perms.treinamentos.add_tipocurso or user.is_superuser %}
+            <a href="{% url 'treinamentos:criar_tipo_curso' %}" class="btn btn-sm btn-light fw-semibold">
+                <i class="bi bi-plus-circle me-1"></i> Novo Tipo
+            </a>
+            {% endif %}
+        </nav>
+    </header>
 
-        <!-- Table -->
-        <div class="card-body pt-0 px-0 pb-0">
-            <div class="table-responsive">
-                <table class="table data-table mb-0">
-                    <thead>
-                        <tr>
-                            <th style="min-width: 220px;">Nome</th>
-                            <th>Modalidade</th>
-                            <th>Área</th>
-                            <th class="text-center">Validade</th>
-                            <th class="text-center">Certificado</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-end pe-4" style="width: 100px;">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for curso in cursos %}
-                        <tr>
-                            <td>
-                                <span class="curso-name">{{ curso.nome }}</span>
-                                {% if curso.descricao %}
-                                <div class="curso-desc">{{ curso.descricao|truncatewords:8 }}</div>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="d-inline-flex align-items-center gap-1">
-                                    {% if curso.modalidade == 'presencial' %}
-                                    <i class="bi bi-people text-primary" style="font-size: 0.8rem;"></i>
-                                    {% elif curso.modalidade == 'online' %}
-                                    <i class="bi bi-laptop text-info" style="font-size: 0.8rem;"></i>
-                                    {% else %}
-                                    <i class="bi bi-shuffle text-warning" style="font-size: 0.8rem;"></i>
-                                    {% endif %}
-                                    {{ curso.get_modalidade_display }}
-                                </span>
-                            </td>
-                            <td>{{ curso.get_area_display }}</td>
-                            <td class="text-center">
-                                <span class="validade-tag">
-                                    <i class="bi bi-calendar3" style="font-size: 0.7rem;"></i>
-                                    {{ curso.validade_meses }} meses
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                {% if curso.certificado %}
-                                <span class="cert-badge cert-yes" data-bs-toggle="tooltip" title="Emite certificado">
-                                    <i class="bi bi-check-lg"></i>
-                                </span>
-                                {% else %}
-                                <span class="cert-badge cert-no" data-bs-toggle="tooltip" title="Sem certificado">
-                                    <i class="bi bi-dash"></i>
-                                </span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                {% if curso.ativo %}
-                                <span class="status-dot status-active">Ativo</span>
-                                {% else %}
-                                <span class="status-dot status-inactive">Inativo</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end pe-4">
-                                <div class="d-flex justify-content-end gap-1">
-                                    {% if perms.treinamentos.change_tipocurso %}
-                                    <a href="{% url 'treinamentos:editar_tipo_curso' curso.pk %}"
-                                       class="btn-action" title="Editar" data-bs-toggle="tooltip">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    {% endif %}
-                                    {% if perms.treinamentos.delete_tipocurso %}
-                                    <a href="{% url 'treinamentos:excluir_tipo_curso' curso.pk %}"
-                                       class="btn-action btn-action-danger" title="Excluir" data-bs-toggle="tooltip">
-                                        <i class="bi bi-trash3"></i>
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="7">
-                                <div class="empty-state text-center">
-                                    <div class="empty-state-icon">
-                                        <i class="bi bi-bookmarks"></i>
-                                    </div>
-                                    <h5 class="fw-bold mb-2">Nenhum tipo de curso encontrado</h5>
-                                    <p class="text-muted mb-3" style="max-width: 400px; margin: 0 auto;">
-                                        {% if request.GET.q %}
-                                        Nenhum resultado para "<strong>{{ request.GET.q }}</strong>".
-                                        {% else %}
-                                        Cadastre o primeiro tipo de curso para começar.
-                                        {% endif %}
-                                    </p>
-                                    {% if perms.treinamentos.add_tipocurso %}
-                                    <a href="{% url 'treinamentos:criar_tipo_curso' %}" class="btn btn-primary">
-                                        <i class="bi bi-plus-circle me-1"></i> Cadastrar Tipo de Curso
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <section class="tr-panel">
+        {# ===== Busca ===== #}
+        <form method="get" action="{% url 'treinamentos:lista_tipo_curso' %}" class="tr-panel__toolbar" role="search">
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="search" name="q" class="form-control"
+                    placeholder="Pesquisar por nome, área ou modalidade..."
+                    value="{{ q }}" autocomplete="off" aria-label="Pesquisar tipos de curso">
             </div>
+            <button type="submit" class="btn btn-success btn-rounded px-4">
+                <i class="bi bi-search me-1"></i> Buscar
+            </button>
+            {% if q %}
+            <a href="{% url 'treinamentos:lista_tipo_curso' %}" class="btn btn-outline-secondary btn-rounded">
+                <i class="bi bi-x-circle me-1"></i> Limpar
+            </a>
+            {% endif %}
+        </form>
+
+        {% if total_registros %}
+        <div class="result-count">
+            Exibindo <strong>{{ cursos|length }}</strong> de <strong>{{ total_registros }}</strong>
+            tipo{{ total_registros|pluralize:"s" }} de curso
+            {% if request.GET.q %} para - "<strong>{{ request.GET.q }}</strong>"{% endif %}
+        </div>
+        {% endif %}
+
+        {# ===== Tabela ===== #}
+        <div class="table-responsive">
+            <table class="table data-table mb-0">
+                <thead>
+                    <tr>
+                        <th class="col-nome">Nome</th>
+                        <th>Modalidade</th>
+                        <th>Área</th>
+                        <th class="text-center">Validade</th>
+                        <th class="text-center">Certificado</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end col-acoes">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for curso in cursos %}
+                    {% with mod=curso.modalidade|lower %}
+                    <tr>
+                        <td>
+                            <span class="curso-name">{{ curso.nome }}</span>
+                            {% if curso.conteudo_programatico %}
+                            <div class="curso-desc">{{ curso.conteudo_programatico|truncatewords:8 }}</div>
+                            {% endif %}
+
+                        </td>
+                        <td>
+                            <span class="mod-tag mod-{{ mod }}">
+                                {% if mod == 'presencial' %}<i class="bi bi-people"></i>
+                                {% elif mod == 'online' %}<i class="bi bi-laptop"></i>
+                                {% else %}<i class="bi bi-shuffle"></i>{% endif %}
+                                {{ curso.get_modalidade_display }}
+                            </span>
+                        </td>
+                        <td>{{ curso.get_area_display }}</td>
+                        <td class="text-center">
+                            <span class="validade-tag">
+                                <i class="bi bi-calendar3"></i>
+                                {% if curso.validade_meses %}{{ curso.validade_meses }} mes{{ curso.validade_meses|pluralize:"es" }}{% else %}Sem validade{% endif %}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% if curso.certificado %}
+                            <span class="cert-badge cert-yes" data-bs-toggle="tooltip" title="Emite certificado"><i class="bi bi-check-lg"></i></span>
+                            {% else %}
+                            <span class="cert-badge cert-no" data-bs-toggle="tooltip" title="Sem certificado"><i class="bi bi-dash"></i></span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="status-dot {% if curso.ativo %}status-active">Ativo{% else %}status-inactive">Inativo{% endif %}</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1">
+                                {% if perms.treinamentos.change_tipocurso or user.is_superuser %}
+                                <a href="{% url 'treinamentos:editar_tipo_curso' curso.pk %}" class="btn-action" title="Editar" data-bs-toggle="tooltip"><i class="bi bi-pencil"></i></a>
+                                {% endif %}
+                                {% if perms.treinamentos.delete_tipocurso or user.is_superuser %}
+                                <a href="{% url 'treinamentos:excluir_tipo_curso' curso.pk %}" class="btn-action btn-action-danger" title="Excluir" data-bs-toggle="tooltip"><i class="bi bi-trash3"></i></a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <div class="empty-state-icon"><i class="bi bi-bookmarks"></i></div>
+                                <h5 class="fw-bold mb-2">Nenhum tipo de curso encontrado</h5>
+                                <p class="text-muted mb-3">
+                                    {% if q %}Nenhum resultado para "<strong>{{ q }}</strong>".
+                                    {% else %}Cadastre o primeiro tipo de curso para começar.{% endif %}
+                                </p>
+                                {% if perms.treinamentos.add_tipocurso or user.is_superuser %}
+                                <a href="{% url 'treinamentos:criar_tipo_curso' %}" class="btn btn-success">
+                                    <i class="bi bi-plus-circle me-1"></i> Cadastrar Tipo de Curso
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
 
         {% if is_paginated %}
-        <div class="card-footer bg-transparent border-0 px-4 py-3">
-            <nav>
-                <ul class="pagination justify-content-center mb-0">
-                    {% if page_obj.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"><i class="bi bi-chevron-left"></i></a></li>
-                    {% endif %}
-                    {% for num in page_obj.paginator.page_range %}
-                        {% if page_obj.number == num %}
-                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ num }}</a></li>
-                        {% endif %}
-                    {% endfor %}
-                    {% if page_obj.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"><i class="bi bi-chevron-right"></i></a></li>
-                    {% endif %}
-                </ul>
-            </nav>
+        <div class="tr-panel__footer">
+            {% include "treinamentos/partials/_paginacao.html" %}
         </div>
         {% endif %}
-    </div>
+    </section>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-        new bootstrap.Tooltip(el, { trigger: 'hover' });
-    });
+    document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        .forEach(el => new bootstrap.Tooltip(el, { trigger: 'hover' }));
 });
 </script>
 {% endblock %}
-

@@ -1,0 +1,56 @@
+
+{% extends "treinamentos/base_treinamento.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{% if object %}Editar{% else %}Novo{% endif %} Tipo de Curso{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">
+        <i class="bi bi-journal-bookmark me-2"></i>
+        {% if object %}Editar{% else %}Novo{% endif %} Tipo de Curso
+      </h5>
+    </div>
+    <div class="card-body">
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+        <div class="row g-3">
+          {% for field in form.visible_fields %}
+            <div class="col-md-6">
+              {% if field.field.widget.input_type == "checkbox" %}
+                <div class="form-check form-switch mt-4">
+                  {% render_field field class+="form-check-input" %}
+                  <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                </div>
+              {% else %}
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {% if field.errors %}
+                  {% render_field field class+="form-control is-invalid" %}
+                {% else %}
+                  {% render_field field class+="form-control" %}
+                {% endif %}
+              {% endif %}
+              {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a href="javascript:history.back()" class="btn btn-outline-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,143 +1,113 @@
-
 {% extends "base.html" %}
 
-{% block title %}Revisão — {{ tentativa.matricula.funcionario }}{% endblock %}
+{% block title %}Gestão de Avaliações — {{ curso.titulo }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-
-    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="fw-bold mb-1">
-                <i class="bi bi-search me-2"></i>Revisão de Prova
-            </h3>
-            <p class="text-muted mb-0">
-                {{ tentativa.matricula.funcionario }} —
-                Tentativa {{ tentativa.numero_tentativa }} —
-                {{ tentativa.matricula.curso.titulo }}
-            </p>
+            <h3 class="fw-bold mb-1"><i class="bi bi-clipboard2-check me-2"></i>Gestão de Avaliações</h3>
+            <p class="text-muted mb-0">{{ curso.titulo }}</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'treinamentos:gestao_imprimir_prova' tentativa_id=tentativa.pk %}"
-               class="btn btn-outline-secondary" target="_blank">
-                <i class="bi bi-printer me-1"></i> Imprimir
-            </a>
-            <a href="{% url 'treinamentos:gestao_avaliacoes_curso' slug=tentativa.matricula.curso.slug %}"
-               class="btn btn-outline-primary">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
-            </a>
-        </div>
+        <a href="{% url 'treinamentos:ead_curso_detail' slug=curso.slug %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar ao Curso
+        </a>
     </div>
 
-    <!-- Resumo -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-center border-0 shadow-sm p-3">
-                <div class="fs-2 fw-bold {% if tentativa.aprovado %}text-success{% else %}text-danger{% endif %}">
-                    {{ tentativa.nota }}
-                </div>
-                <small class="text-muted">Nota</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center border-0 shadow-sm p-3">
-                <div class="fs-2 fw-bold text-primary">{{ total_acertos }}/{{ total_questoes }}</div>
-                <small class="text-muted">Acertos</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center border-0 shadow-sm p-3">
-                <div class="fs-2 fw-bold">{{ tentativa.matricula.curso.nota_minima }}</div>
-                <small class="text-muted">Nota Mínima</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center border-0 shadow-sm p-3">
-                <div class="fs-2 fw-bold">
-                    {% if tentativa.aprovado %}
-                        <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
-                    {% else %}
-                        <span class="text-danger"><i class="bi bi-x-circle-fill"></i></span>
-                    {% endif %}
-                </div>
-                <small class="text-muted">Resultado</small>
-            </div>
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Colaborador</th>
+                        <th class="text-center">Tentativas</th>
+                        <th class="text-center">Melhor Nota</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in dados_alunos %}
+                    {% with m=item.matricula %}
+                    <tr>
+                        <td>
+                            <strong>{{ m.funcionario }}</strong><br>
+                            <small class="text-muted">Progresso: {{ m.progresso_percentual }}%</small>
+                        </td>
+                        <td class="text-center">{{ m.tentativas_avaliacao }}/{{ curso.max_tentativas_avaliacao }}</td>
+                        <td class="text-center">
+                            {% if m.nota_final is not None %}
+                                <span class="badge fs-6 {% if m.nota_final >= curso.nota_minima %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ m.nota_final }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge
+                                {% if m.status == 'aprovado' %}bg-success
+                                {% elif m.status == 'reprovado' %}bg-danger
+                                {% elif m.status == 'em_andamento' %}bg-info
+                                {% else %}bg-secondary{% endif %}">
+                                {{ m.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                {% if item.ultima %}
+                                <a href="{% url 'treinamentos:gestao_tentativa_detail' tentativa_id=item.ultima.pk %}"
+                                   class="btn btn-outline-primary" title="Revisar Prova">
+                                    <i class="bi bi-search"></i>
+                                </a>
+                                <a href="{% url 'treinamentos:gestao_imprimir_prova' tentativa_id=item.ultima.pk %}"
+                                   class="btn btn-outline-secondary" title="Imprimir Prova" target="_blank">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                                {% endif %}
+
+                                {% if m.status == 'reprovado' %}
+                                <form method="post" class="d-inline"
+                                      action="{% url 'treinamentos:gestao_liberar_tentativa' matricula_id=m.pk %}"
+                                      onsubmit="return confirm('Liberar nova tentativa para {{ m.funcionario|escapejs }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-warning" title="Liberar Nova Tentativa">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                {% if m.status == 'aprovado' %}
+                                    {% if m.certificado_ead %}
+                                    <a href="{% url 'treinamentos:certificado_ead_detail' pk=m.certificado_ead.pk %}"
+                                       class="btn btn-outline-success" title="Ver Certificado">
+                                        <i class="bi bi-award-fill"></i>
+                                    </a>
+                                    {% else %}
+                                    <form method="post" class="d-inline"
+                                          action="{% url 'treinamentos:gestao_gerar_certificado_ead' matricula_id=m.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-success" title="Gerar Certificado">
+                                            <i class="bi bi-award"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            Nenhum colaborador matriculado neste curso.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-
-    <!-- Gabarito -->
-    {% for item in gabarito %}
-    <div class="card mb-3 border-0 shadow-sm">
-        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-            <strong>
-                <span class="badge {% if item.acertou %}bg-success{% else %}bg-danger{% endif %} me-2">
-                    {% if item.acertou %}✔{% else %}✘{% endif %}
-                </span>
-                Questão {{ forloop.counter }}
-            </strong>
-            <span class="badge bg-light text-dark">Peso: {{ item.questao.peso }}</span>
-        </div>
-        <div class="card-body">
-            <p class="fw-medium mb-3">{{ item.questao.enunciado }}</p>
-
-            {% for alt in item.alternativas %}
-            <div class="d-flex align-items-start p-2 rounded mb-1
-                {% if alt.correta %}bg-success bg-opacity-10 border border-success
-                {% elif alt == item.escolhida and not alt.correta %}bg-danger bg-opacity-10 border border-danger
-                {% else %}bg-light{% endif %}">
-                <div class="me-2 mt-1">
-                    {% if alt.correta %}
-                        <i class="bi bi-check-circle-fill text-success"></i>
-                    {% elif alt == item.escolhida %}
-                        <i class="bi bi-x-circle-fill text-danger"></i>
-                    {% else %}
-                        <i class="bi bi-circle text-muted"></i>
-                    {% endif %}
-                </div>
-                <div>
-                    {{ alt.texto }}
-                    {% if alt == item.escolhida %}
-                        <span class="badge bg-primary ms-2">Resposta do aluno</span>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-
-            {% if item.questao.explicacao %}
-            <div class="alert alert-info mt-3 mb-0 py-2">
-                <i class="bi bi-lightbulb me-1"></i>
-                <strong>Explicação:</strong> {{ item.questao.explicacao }}
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    {% endfor %}
-
-    <!-- Ações do Gestor -->
-    <div class="d-flex justify-content-center gap-3 mt-4">
-        {% if not tentativa.aprovado and tentativa.matricula.status == 'reprovado' %}
-        <form method="post"
-              action="{% url 'treinamentos:gestao_liberar_tentativa' matricula_id=tentativa.matricula.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-warning btn-lg">
-                <i class="bi bi-arrow-repeat me-1"></i> Liberar Nova Tentativa
-            </button>
-        </form>
-        {% endif %}
-
-        {% if tentativa.aprovado and not tentativa.matricula.certificado_ead %}
-        <form method="post"
-              action="{% url 'treinamentos:gestao_gerar_certificado_ead' matricula_id=tentativa.matricula.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-success btn-lg">
-                <i class="bi bi-award me-1"></i> Gerar Certificado
-            </button>
-        </form>
-        {% endif %}
-    </div>
-
 </div>
 {% endblock %}
-
 

@@ -1,0 +1,46 @@
+<!-- Os atributos type="number" e step agora vêm do widget no forms.py 
+ (NumberInput(attrs={'step': '0.01'}) no campo custo), e não mais do template. 
+ No campo data_inicio, use DateTimeInput(attrs={'type': 'datetime-local'}, 
+ format='%Y-%m-%dT%H:%M') -->
+
+
+{% load widget_tweaks %}
+<div class="row g-2 align-items-center participante-form mb-2">
+    {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+    <div class="col-md-5">
+        {% render_field f.funcionario class+="form-select form-select-sm" %}
+    </div>
+    <div class="col-md-2">
+        <div class="input-group input-group-sm">
+            {% render_field f.nota_avaliacao class+="form-control" placeholder="Nota" %}
+            <span class="input-group-text">%</span>
+        </div>
+    </div>
+    <div class="col-md-2 text-center">
+        <div class="form-check form-switch d-inline-block">
+            {% render_field f.presente class+="form-check-input" %}
+            <label for="{{ f.presente.id_for_label }}" class="form-check-label">Presente</label>
+        </div>
+    </div>
+    <div class="col-md-2 text-center">
+        <div class="form-check form-switch d-inline-block">
+            {% render_field f.certificado_emitido class+="form-check-input" %}
+            <label for="{{ f.certificado_emitido.id_for_label }}" class="form-check-label">Certif.</label>
+        </div>
+    </div>
+    <div class="col-md-1 text-end">
+        <div class="d-none">{% render_field f.DELETE class+="form-check-input" %}</div>
+        {% if user.is_superuser or perms.treinamentos.add_treinamento or perms.treinamentos.change_treinamento %}
+        <button type="button" class="btn btn-sm btn-outline-danger remove-form-row" title="Remover Participante">
+            <i class="bi bi-trash3"></i>
+        </button>
+        {% endif %}
+    </div>
+    {% if f.errors %}
+    <div class="col-12"><div class="alert alert-danger py-1 px-2 small mb-0">{{ f.errors }}</div></div>
+    {% endif %}
+    {% if pf.errors %}
+    <div class="col-12"><div class="alert alert-danger py-1 px-2 small" role="alert">{{ pf.errors }}</div></div>
+    {% endif %}
+    </div>
+</div>

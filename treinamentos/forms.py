@@ -1,9 +1,27 @@
+# treinamentos/forms.py
+from decimal import Decimal
 
 from django import forms
-from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.apps import apps
 from django.conf import settings
-from .models import Participante, Treinamento, TipoCurso
+from django.forms import BaseInlineFormSet, inlineformset_factory
+
+from core.utils import get_filial_ativa
+from .models import Participante, TipoCurso, Treinamento
+from dateutil.relativedelta import relativedelta
+
+
+def _bootstrap(fields):
+    for f in fields.values():
+        w = f.widget
+        if isinstance(w, forms.CheckboxInput):
+            css = 'form-check-input'
+        elif isinstance(w, forms.Select):
+            css = 'form-select'
+        else:
+            css = 'form-control'
+        w.attrs.setdefault('class', css)
+
 
 class TipoCursoForm(forms.ModelForm):
     class Meta:
@@ -20,90 +38,131 @@ class TipoCursoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Remove "Online" das opções — cursos online usam o fluxo EAD
-        self.fields['modalidade'].choices = [
-            (k, v) for k, v in TipoCurso.MODALIDADE_CHOICES if k != 'O'
+        # "Online" usa o fluxo EAD — mantém se o registro já for 'O'
+        atual = getattr(self.instance, 'modalidade', None)
+        self.fields['modalidade'].choices = [('', '---------')] + [
+            (k, v) for k, v in TipoCurso.MODALIDADE_CHOICES if k != 'O' or k == atual
         ]
+        _bootstrap(self.fields)
+
 
 class TreinamentoForm(forms.ModelForm):
     class Meta:
         model = Treinamento
-        # Mude de 'exclude' para 'fields'
-        fields = [
-            'tipo_curso', 
-            'responsavel', 
-            'nome', 
-            'local', 
-            'data_inicio', 
-            'data_vencimento', 
-            'duracao',  
-            'descricao',
-            'status', 
-            'custo',
-            'palestrante', 
-            'horas_homem',
-            'centro_custo',
-            'participantes_previstos',
-            'atividade', 
-            'cm',
-            
-        ]
+        fields = ['nome', 'tipo_curso', 'status', 'data_inicio', 'data_fim', 'data_vencimento',
+                  'duracao', 'local', 'palestrante', 'palestrante_cargo', 'responsavel',
+                  'participantes_previstos', 'custo', 'centro_custo', 'descricao', 'horas_homem']
         widgets = {
-            'data_inicio': forms.DateTimeInput(
-                format='%Y-%m-%dT%H:%M',
-                attrs={'type': 'datetime-local'}
-            ),
-            'data_vencimento': forms.DateInput(
-                format='%Y-%m-%d',
-                attrs={'type': 'date'}
-            ),
-            'descricao': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
+            'data_inicio': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+            'data_fim': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+            'data_vencimento': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'descricao': forms.Textarea(attrs={'rows': 3}),
+        }
+        help_texts = {
+            'data_vencimento': 'Calculada a partir da validade do tipo de curso. Pode ser alterada.',
+            'duracao': 'Em horas. Aparece no certificado.',
         }
 
-    def __init__(self, *args, **kwargs):
-        self.request = kwargs.pop('request', None)
+    def __init__(self, *args, request=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['data_vencimento'].required = False
 
-        # Só mostra tipos Presencial (P) e Híbrido (H) — Online usa o fluxo EAD
-        self.fields['tipo_curso'].queryset = TipoCurso.objects.filter(
-            ativo=True,
-        ).exclude(modalidade='O')
-
+        tipos = TipoCurso.objects.filter(ativo=True)
         User = apps.get_model(settings.AUTH_USER_MODEL)
-        self.fields['responsavel'].queryset = User.objects.filter(is_active=True)
+        responsaveis = User.objects.filter(is_active=True)
 
-        if self.instance and self.instance.pk:
-            self.fields['data_inicio'].disabled = True
-            self.fields['data_vencimento'].disabled = True
+        if request is not None:
+            if hasattr(tipos, 'for_request'):
+                tipos = tipos.for_request(request)
+            filial = get_filial_ativa(request.user, request)
+            if filial:
+                responsaveis = responsaveis.filter(funcionario__filial=filial)
+
+        self.fields['tipo_curso'].queryset = tipos
+        self.fields['responsavel'].queryset = responsaveis.order_by('first_name')
+        _bootstrap(self.fields)
+
+    def clean(self):
+        cleaned = super().clean()
+        tipo = cleaned.get('tipo_curso')
+        inicio = cleaned.get('data_inicio')
+        venc = cleaned.get('data_vencimento')
+
+        validade = getattr(tipo, 'validade_meses', None) if tipo else None
+
+        if not venc and validade and inicio:
+            cleaned['data_vencimento'] = inicio + relativedelta(months=validade)
+        # Sem validade e sem vencimento → permitido (fica "Sem validade")
+
+        if venc and inicio and venc < inicio.date() if hasattr(inicio, 'date') else False:
+            self.add_error('data_vencimento', 'Vencimento não pode ser anterior ao início.')
+
+        return cleaned
+
+
+class ParticipanteForm(forms.ModelForm):
+    class Meta:
+        model = Participante
+        fields = ('funcionario', 'presente', 'nota_avaliacao')
+        widgets = {
+            'funcionario': forms.Select(attrs={'class': 'form-select form-select-sm js-busca-participante'}),
+            'nota_avaliacao': forms.NumberInput(attrs={'min': 0, 'max': 100, 'step': '0.01'}),
+        }
+
+    def clean_nota_avaliacao(self):
+        n = self.cleaned_data.get('nota_avaliacao')
+        if n is not None and not (Decimal('0') <= n <= Decimal('100')):
+            raise forms.ValidationError('A nota deve estar entre 0 e 100.')
+        return n
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if obj.funcionario_id:
+            obj.nome = obj.funcionario.get_full_name() or obj.funcionario.username
+        if commit:
+            obj.save()
+        return obj
+
 
 class BaseParticipanteFormSet(BaseInlineFormSet):
-    """ Adiciona validação para evitar participantes duplicados. """
+    """Filtra funcionários pela filial (LGPD) e impede duplicados."""
+
+    def __init__(self, *args, request=None, **kwargs):
+        self.request = request
+        super().__init__(*args, **kwargs)
+
+    def _queryset_funcionarios(self):
+        User = apps.get_model(settings.AUTH_USER_MODEL)
+        qs = User.objects.filter(is_active=True)
+        if self.request is not None:
+            filial = get_filial_ativa(self.request.user, self.request)
+            qs = qs.filter(funcionario__filial=filial) if filial else qs.none()
+        return qs.order_by('first_name', 'last_name')
+
+    def add_fields(self, form, index):
+        super().add_fields(form, index)
+        form.fields['funcionario'].queryset = self._queryset_funcionarios()
+
     def clean(self):
         super().clean()
         if any(self.errors):
             return
-
-        participantes = []
+        vistos = set()
         for form in self.forms:
-            if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
-                funcionario = form.cleaned_data.get('funcionario')
-                if not funcionario:
-                    continue
-                
-                if funcionario in participantes:
-                    # Este erro será um 'non_form_error' porque não pertence a um único campo, mas ao formset como um todo.
-                    raise forms.ValidationError('Não é possível adicionar o mesmo participante mais de uma vez.')
-                
-                participantes.append(funcionario)
+            if not form.cleaned_data or form.cleaned_data.get('DELETE'):
+                continue
+            func = form.cleaned_data.get('funcionario')
+            if not func:
+                continue
+            if func.pk in vistos:
+                raise forms.ValidationError('Não é possível adicionar o mesmo participante mais de uma vez.')
+            vistos.add(func.pk)
 
 
 ParticipanteFormSet = inlineformset_factory(
-    Treinamento,
-    Participante,
-    fields=('funcionario', 'nota_avaliacao', 'presente', 'certificado_emitido'),
-    formset=BaseParticipanteFormSet, # <--- Garanta que 'formset=...' está aqui!
-    extra=1,
-    can_delete=True
+    Treinamento, Participante,
+    form=ParticipanteForm,
+    formset=BaseParticipanteFormSet,
+    extra=0,
+    can_delete=True,
 )
-
-
