@@ -1,156 +1,174 @@
 /* =================================================================
-   ESTILO DOS CARDS DE PERFIL (VERSÃO REATORADA E MODERNA)
+   PERFIL — CARDS (escopo isolado em .profile-page-background)
    ================================================================= */
 
-/* --- Variáveis de Estilo para os Cards --- */
-:root {
-    --card-bg-color: rgba(255, 255, 255, 0.85);
-    --card-border-color: rgba(255, 255, 255, 0.4);
-    --card-shadow-color: rgba(0, 0, 0, 0.1);
-    --card-title-color: #212529;
-    --card-link-color: #007bff;
-    --card-link-hover-bg: rgba(0, 123, 255, 0.1);
-    --card-link-hover-color: #0056b3;
+.profile-page-background {
+    --card-bg: rgba(255, 255, 255, 0.88);
+    --card-border: rgba(255, 255, 255, 0.6);
+    --card-divider: rgba(15, 23, 42, 0.1);
+    --card-shadow: rgba(15, 23, 42, 0.18);
+    --card-title: #0f172a;
+    --card-link: #0e7490;              /* ciano 700 — contraste AA no claro */
+    --card-link-hover: #155e75;
+    --card-link-hover-bg: rgba(14, 116, 144, 0.1);
+    --card-icon-opacity: 0.35;
+    --card-icon-filter: none;
+    --card-icon-blend: multiply;
+    --footer-text: #e2e8f0;
 }
 
-[data-bs-theme="dark"] {
-    --card-bg-color: rgba(29, 2, 2, 0.286);
-    --card-border-color: rgba(108, 117, 125, 0.3);
-    --card-shadow-color: rgba(0, 0, 0, 0.25);
-    --card-title-color: #ffffff;
-    --card-link-color: #007bff;
-    --card-link-hover-bg: rgba(0, 123, 255, 0.1);
-    --card-link-hover-color: #0057b366;
+[data-bs-theme="dark"] .profile-page-background,
+.profile-page-background[data-bs-theme="dark"] {
+    --card-bg: rgba(15, 23, 42, 0.78);
+    --card-border: rgba(148, 163, 184, 0.2);
+    --card-divider: rgba(148, 163, 184, 0.18);
+    --card-shadow: rgba(0, 0, 0, 0.45);
+    --card-title: #f8fafc;
+    --card-link: #67e8f9;              /* ciano 300 — legível no escuro */
+    --card-link-hover: #cffafe;
+    --card-link-hover-bg: rgba(103, 232, 249, 0.12);
+    --card-icon-opacity: 0.45;
+    --card-icon-filter: invert(1) hue-rotate(180deg); /* fundo branco vira preto */
+    --card-icon-blend: screen;                         /* e o preto some */
 }
 
-/* --- Blend mode adaptado ao tema (GIF com fundo branco) --- */
-[data-bs-theme="dark"] .card-icon-wrapper img,
-[data-bs-theme="dark"] .card-icon {
-    mix-blend-mode: screen; /* remove fundo branco do GIF sobre fundo escuro */
-}
-
-
-/* --- Estrutura Principal do Card --- */
+/* --- Card --- */
 .profile-card {
-    background-color: var(--card-bg-color);
-    border: 1px solid var(--card-border-color);
-    border-radius: 1rem;
-    box-shadow: 0 4px 20px var(--card-shadow-color);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-
     display: flex;
     flex-direction: column;
     height: 100%;
     padding: 1.5rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px var(--card-shadow);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+    transition: transform .3s ease, box-shadow .3s ease;
+    cursor: grab;
 }
 
 .profile-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 10px 30px var(--card-shadow-color);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px var(--card-shadow);
 }
 
-/* --- Seção do Cabeçalho (Título) --- */
-.card-header-section {
+/* --- Cabeçalho --- */
+.profile-card .card-header-section {
     text-align: center;
     padding-bottom: 1rem;
     margin-bottom: 1rem;
-    border-bottom: 1px solid var(--card-border-color);
+    border-bottom: 1px solid var(--card-divider);
 }
 
-.card-title {
+.profile-card .card-title {
+    margin: 0;
     font-size: 1.3rem;
     font-weight: 600;
-    color: var(--card-title-color);
-    margin: 0;
+    color: var(--card-title);
 }
 
-/* --- Seção do Corpo (Links e Ícone) --- */
-.card-body-section {
+/* --- Corpo --- */
+.profile-card .card-body-section {
     display: flex;
-    flex-grow: 1; /* Faz esta seção ocupar todo o espaço restante */
-    align-items: flex-start; /* Alinha os itens no topo por padrão */
+    flex-grow: 1;
+    align-items: flex-start;
 }
 
-/* --- Links (Lado Esquerdo) --- */
-.card-links {
+.profile-card .card-links {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem; /* Espaçamento entre os links */
-    text-align: left;
+    gap: .35rem;
 }
 
-.card-link {
-    text-decoration: none;
-    color: var(--card-link-color);
+.profile-card .card-link {
+    margin: 0 !important;              /* anula .card-link + .card-link do Bootstrap */
+    padding: .45rem .75rem;
+    border-radius: .5rem;
+    color: var(--card-link);
     font-weight: 500;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    text-decoration: none;
+    transition: background-color .2s ease, color .2s ease;
 }
 
-.card-link:hover {
+.profile-card .card-link:hover,
+.profile-card .card-link:focus-visible {
+    color: var(--card-link-hover);
     background-color: var(--card-link-hover-bg);
-    color: var(--card-link-hover-color);
+    outline: none;
 }
 
-/* --- Ícone (Canto Inferior Direito) --- */
-.card-icon-wrapper {
-    margin-left: auto;    /* Empurra para a direita */
-    align-self: flex-end; /* Empurra para baixo */
-    padding-left: 1rem;   /* Espaço para não colar nos links */
+.profile-card .card-link.disabled {
+    color: var(--bs-text-muted);
+    opacity: .7;
+    pointer-events: none;
 }
 
-.card-icon-wrapper img,
-.card-icon {
-    width: 60px; /* Tamanho do ícone */
+/* --- Ícone --- */
+.profile-card .card-icon-wrapper {
+    margin-left: auto;
+    align-self: flex-end;
+    padding-left: 1rem;
+}
+
+.profile-card .card-icon {
+    width: 60px;
     height: auto;
-    opacity: 0.20;             /* Transparência base do GIF/ícone */
-    mix-blend-mode: multiply;  /* Remove fundo branco do GIF em fundo claro */
-    /* Se o card estiver em fundo escuro, troque para: mix-blend-mode: screen; */
-    transition: opacity 0.3s ease;
+    opacity: var(--card-icon-opacity);
+    filter: var(--card-icon-filter);
+    mix-blend-mode: var(--card-icon-blend);
+    transition: opacity .3s ease;
 }
 
-.profile-card:hover .card-icon-wrapper img,
 .profile-card:hover .card-icon {
-    opacity: 0.7; /* Realce sutil no hover, sem ficar 100% opaco */
+    opacity: .8;
 }
 
-/* --- fundo --- */
+/* --- Partículas / camadas --- */
 #particles-js {
     position: fixed;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
+    inset: 0;
     z-index: 0;
 }
 
-.container {
+.profile-page-background #main-content > .container {
     position: relative;
     z-index: 1;
 }
 
-/* --- Responsividade para Telas Pequenas --- */
+/* --- Footer legível sobre a foto --- */
+.profile-page-background #global-footer {
+    position: relative;
+    z-index: 1;
+    border-top-color: rgba(255, 255, 255, .1);
+}
+
+.profile-page-background #global-footer p,
+.profile-page-background #global-footer a {
+    color: var(--footer-text);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .6);
+}
+
+/* --- Responsivo --- */
 @media (max-width: 576px) {
-    .card-body-section {
-        flex-direction: column; /* Empilha os itens */
-        align-items: center;    /* Centraliza tudo */
+    .profile-card .card-body-section {
+        flex-direction: column;
+        align-items: center;
         text-align: center;
     }
 
-    .card-links {
-        text-align: center;
-        width: 100%;
-    }
+    .profile-card .card-links { width: 100%; }
 
-    .card-icon-wrapper {
-        margin: 1.5rem 0 0 0; /* Reseta margens e adiciona espaço no topo */
-        align-self: center;   /* Garante a centralização */
+    .profile-card .card-icon-wrapper {
+        margin: 1.5rem 0 0;
+        align-self: center;
         padding-left: 0;
     }
 }
 
+/* --- Exceção: ícone colorido do Dashboard Integrado --- */
+[data-bs-theme="dark"] [data-card-id="main_dashboard"] .card-icon {
+    filter: none;
+    mix-blend-mode: normal;
+}
 
