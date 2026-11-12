@@ -1,0 +1,65 @@
+[1mdiff --git a/requirements.txt b/requirements.txt[m
+[1mindex a9ab5f0b..7abcd03b 100644[m
+[1m--- a/requirements.txt[m
+[1m+++ b/requirements.txt[m
+[36m@@ -5,7 +5,7 @@[m [marabic-reshaper==3.0.0[m
+ asgiref==3.10.0[m
+ asn1crypto==1.5.1[m
+ attrs==25.3.0[m
+[31m-autobahn==26.7.1[m
+[32m+[m[32mautobahn==26.10.1[m
+ Automat==25.4.16[m
+ billiard==4.2.2[m
+ bleach==6.4.0[m
+[36m@@ -63,7 +63,7 @@[m [mdjango-widget-tweaks==1.5.0[m
+ djangorestframework==3.18.3[m
+ djangorestframework_simplejwt==5.5.1[m
+ django-simple-history==3.7.0[m
+[31m-dnspython==2.8.0[m
+[32m+[m[32mdnspython==2.9.0[m
+ docopt==0.6.2[m
+ docx==0.2.4[m
+ docx-mailmerge==0.5.0[m
+[36m@@ -113,13 +113,13 @@[m [mmarkdown-it-py==4.0.0[m
+ MarkupSafe==3.0.2[m
+ matplotlib==3.10.3[m
+ mdurl==0.1.2[m
+[31m-msgpack==1.2.1[m
+[32m+[m[32mmsgpack==1.2.3[m
+ mysqlclient==2.2.4[m
+ narwhals==1.47.1[m
+ npm==0.1.1[m
+ num2words==0.5.14[m
+ numpy==2.3.1[m
+[31m-oauthlib==4.0.0[m
+[32m+[m[32moauthlib==4.0.1[m
+ openpyxl==3.1.5[m
+ optional-django==0.1.0[m
+ orjson==3.11.6[m
+[36m@@ -146,7 +146,7 @@[m [mpsycopg2==2.9.10[m
+ puremagic==1.28[m
+ py-serializable==2.1.0[m
+ pyarrow==23.0.1[m
+[31m-pyasn1==0.6.4[m
+[32m+[m[32mpyasn1==0.6.5[m
+ pyasn1_modules==0.4.2[m
+ pyClamd==0.4.0[m
+ pycparser==2.22[m
+[36m@@ -160,7 +160,7 @@[m [mPyJWT==2.15.1[m
+ PyMySQL==1.1.2[m
+ pyOpenSSL==26.4.0[m
+ pyparsing==3.2.3[m
+[31m-pypdf==6.21.2[m
+[32m+[m[32mpypdf==6.21.4[m
+ pyphen==0.17.2[m
+ PySocks==1.7.1[m
+ pystray==0.19.5[m
+[36m@@ -202,7 +202,7 @@[m [mtinyhtml5==2.0.0[m
+ toml==0.10.2[m
+ tomli==2.4.1[m
+ tomli_w==1.2.0[m
+[31m-tornado==6.5.10[m
+[32m+[m[32mtornado==6.6[m
+ trio==0.29.0[m
+ trio-websocket==0.12.2[m
+ Twisted==26.10.0rc1[m
