@@ -1,68 +1,10 @@
 <!-- seguranca_trabalho/templates/seguranca_trabalho/confirm_delete.html -->
 
 {% extends "seguranca_trabalho/_base_sst.html" %}
+{% load i18n sst_extras %}
 
 {% block title %}Confirmar Exclusão{% endblock %}
 
-{% block extra_css %}
-{{ block.super }}
-<style>
-    /* ═══════════════════════════════════════════════════════
-       CONFIRM DELETE — TEMA CLARO
-       ═══════════════════════════════════════════════════════ */
-    :root,
-    [data-bs-theme="light"] {
-        --cd-bg:            #ffffff;
-        --cd-bg-alt:        #f8f9fc;
-        --cd-text:          #1e293b;
-        --cd-text-muted:    #64748b;
-        --cd-border:        #e2e8f0;
-        --cd-card-shadow:   0 4px 20px rgba(0,0,0,.08);
-        --cd-danger:        #ef4444;
-        --cd-danger-soft:   rgba(239,68,68,.06);
-        --cd-danger-border: rgba(239,68,68,.15);
-        --cd-danger-grad:   linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        --cd-warning-bg:    #fffbeb;
-        --cd-warning-border:#fde68a;
-        --cd-warning-text:  #92400e;
-        --cd-warning-icon:  #f59e0b;
-    }
-
-    [data-bs-theme="dark"] {
-        --cd-bg:            #1a1d23;
-        --cd-bg-alt:        #1e2128;
-        --cd-text:          #e2e8f0;
-        --cd-text-muted:    #94a3b8;
-        --cd-border:        #2d3748;
-        --cd-card-shadow:   0 4px 20px rgba(0,0,0,.3);
-        --cd-danger:        #f87171;
-        --cd-danger-soft:   rgba(239,68,68,.08);
-        --cd-danger-border: rgba(239,68,68,.2);
-        --cd-danger-grad:   linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-        --cd-warning-bg:    rgba(245,158,11,.1);
-        --cd-warning-border:rgba(245,158,11,.25);
-        --cd-warning-text:  #fbbf24;
-        --cd-warning-icon:  #fbbf24;
-    }
-
-    .cd-wrapper { max-width: 560px; margin: 2rem auto; }
-
-    .cd-confirm-icon {
-        width: 64px; height: 64px; border-radius: 50%;
-        background: var(--cd-danger-soft);
-        display: flex; align-items: center; justify-content: center;
-        color: var(--cd-danger); font-size: 1.8rem; margin: 0 auto 1.25rem;
-    }
-
-    .cd-confirm-name {
-        text-align: center; font-size: 1.15rem; font-weight: 700;
-        color: var(--cd-text); padding: 0.5rem 1rem;
-        background: var(--cd-danger-soft);
-        border: 1px dashed var(--cd-danger-border);
-        border-radius: 0.4rem; display: inline-block; margin: 0.5rem 0;
-    }
-</style>
-{% endblock %}
 
 {% block sst_content %}
 <div class="cd-wrapper">
