@@ -1,4 +1,5 @@
 ﻿{% extends "seguranca_trabalho/_base_sst.html" %}
+{% load static %}
 {% load secure_url %}
 {% load widget_tweaks %}
 {% load i18n sst_extras %}
@@ -46,12 +47,10 @@
                         src="{{ foto_url }}"
                         alt=""
                         class="sst-avatar sst-avatar--lg me-3"
-                        onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                    >
+                        onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <div
                         class="sst-avatar-placeholder sst-avatar-placeholder--lg me-3"
-                        style="display: none;"
-                    >
+                        style="display: none;">
                         <i class="bi bi-person"></i>
                     </div>
                 {% else %}
@@ -72,8 +71,7 @@
             <div class="d-flex gap-2 flex-wrap">
                 <a
                     href="{% url 'seguranca_trabalho:ficha_list' %}"
-                    class="sst-btn-header"
-                >
+                    class="sst-btn-header">
                     <i class="bi bi-arrow-left"></i>
                     Voltar
                 </a>
@@ -81,8 +79,7 @@
                 {% if perms.seguranca_trabalho.download_relatorio %}
                     <a
                         href="{% url 'seguranca_trabalho:ficha_pdf_template' ficha.pk %}"
-                        class="sst-btn-header sst-btn-header--primary"
-                    >
+                        class="sst-btn-header sst-btn-header--primary">
                         <i class="bi bi-file-pdf"></i>
                         PDF
                     </a>
@@ -96,8 +93,7 @@
                             data-bs-toggle="modal"
                             data-bs-target="#assinaturaModal"
                             data-form-url="{% url 'seguranca_trabalho:assinar_termo' ficha.pk %}"
-                            data-funcionario-nome="{{ ficha.funcionario.nome_completo }}"
-                        >
+                            data-funcionario-nome="{{ ficha.funcionario.nome_completo }}">
                             <i class="bi bi-pen"></i>
                             Assinar Termo
                         </button>
@@ -106,8 +102,7 @@
                             type="button"
                             class="sst-btn-header"
                             onclick="gerarLinkAssinatura('seguranca_trabalho', 'fichaepi', {{ ficha.pk }}, this)"
-                            title="Gerar link remoto para o termo"
-                        >
+                            title="Gerar link remoto para o termo">
                             <i class="bi bi-link-45deg"></i>
                             Link Remoto
                         </button>
@@ -205,8 +200,7 @@
                                                             data-form-url="{% url 'seguranca_trabalho:entrega_sign' entrega.pk %}"
                                                             data-funcionario-nome="{{ ficha.funcionario.nome_completo }}"
                                                             title="Assinar presencialmente"
-                                                            aria-label="Assinar entrega presencialmente"
-                                                        >
+                                                            aria-label="Assinar entrega presencialmente">
                                                             <i class="bi bi-pen"></i>
                                                         </button>
                                                     {% endif %}
@@ -217,8 +211,7 @@
                                                             class="sst-action-btn"
                                                             onclick="gerarLinkAssinatura('seguranca_trabalho', 'entregaepi', {{ entrega.pk }}, this)"
                                                             title="Gerar link remoto"
-                                                            aria-label="Gerar link remoto para assinatura"
-                                                        >
+                                                            aria-label="Gerar link remoto para assinatura">
                                                             <i class="bi bi-link-45deg"></i>
                                                         </button>
                                                     {% endif %}
@@ -229,16 +222,14 @@
                                                         <form
                                                             method="post"
                                                             action="{% url 'seguranca_trabalho:entrega_return' entrega.pk %}"
-                                                            class="d-inline"
-                                                        >
+                                                            class="d-inline">
                                                             {% csrf_token %}
                                                             <button
                                                                 type="submit"
                                                                 class="sst-action-btn sst-action-btn--return"
                                                                 title="Registrar devolução"
                                                                 aria-label="Registrar devolução"
-                                                                onclick="return confirm('Confirma a devolução deste EPI?')"
-                                                            >
+                                                                onclick="return confirm('Confirma a devolução deste EPI?')">
                                                                 <i class="bi bi-box-arrow-in-left"></i>
                                                             </button>
                                                         </form>
@@ -303,8 +294,7 @@
                             <div class="mb-3">
                                 <label
                                     for="{{ form.equipamento.id_for_label }}"
-                                    class="sst-form-label"
-                                >
+                                    class="sst-form-label">
                                     Equipamento <span class="required">*</span>
                                 </label>
 
@@ -319,8 +309,7 @@
                                 <div class="col-6">
                                     <label
                                         for="{{ form.quantidade.id_for_label }}"
-                                        class="sst-form-label"
-                                    >
+                                        class="sst-form-label">
                                         Quantidade
                                     </label>
                                     {% render_field form.quantidade class+="form-control" %}
@@ -329,8 +318,7 @@
                                 <div class="col-6">
                                     <label
                                         for="{{ form.lote.id_for_label }}"
-                                        class="sst-form-label"
-                                    >
+                                        class="sst-form-label">
                                         Lote
                                     </label>
                                     {% render_field form.lote class+="form-control" %}
@@ -340,8 +328,7 @@
                             <div class="mb-3">
                                 <label
                                     for="{{ form.numero_serie.id_for_label }}"
-                                    class="sst-form-label"
-                                >
+                                    class="sst-form-label">
                                     Número de Série
                                 </label>
                                 {% render_field form.numero_serie class+="form-control" %}
@@ -370,5 +357,6 @@
 {% block extra_js %}
     {{ block.super }}
     <script src="{% static 'seguranca_trabalho/js/assinatura_remota.js' %}"></script>
-{% endblock %}
+{% endblock %}    
+
 
