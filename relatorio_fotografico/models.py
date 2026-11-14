@@ -3,7 +3,6 @@
 import math
 from io import BytesIO
 import logging
-from venv import logger
 from django.db import transaction
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile, UploadedFile
@@ -13,6 +12,7 @@ from PIL import Image, ImageOps
 from cloudinary.models import CloudinaryField
 from core.mixins import sanitize_image
 
+logger = logging.getLogger(__name__)
 
 FOTOS_POR_PAGINA = 6  # 2 colunas x 3 linhas
 
@@ -184,7 +184,11 @@ class FotoRelatorio(models.Model):
             from .tasks import preencher_endereco_foto
             preencher_endereco_foto.apply_async(args=[self.pk], retry=False)
         except Exception as exc:
-            logger.warning("Geocodificação não agendada (foto %s): %s", self.pk, exc)
+            logger.warning(
+                "Geocodificação não agendada (foto %s): %s",
+                self.pk,
+                exc
+            )
 
     def _padronizar_imagem(self, arquivo):
         """
@@ -217,27 +221,122 @@ class FotoRelatorio(models.Model):
             None,
         )
 
+
 class RelatorioVisao(models.Model):
+    STATUS_AGUARDANDO = 'aguardando'
+    STATUS_PROCESSANDO = 'processando'
+    STATUS_CONCLUIDO = 'concluido'
+    STATUS_ERRO = 'erro'
+
+    STATUS_CHOICES = [
+        (STATUS_AGUARDANDO, 'Aguardando'),
+        (STATUS_PROCESSANDO, 'Processando'),
+        (STATUS_CONCLUIDO, 'Concluído'),
+        (STATUS_ERRO, 'Erro'),
+    ]
+
     relatorio = models.ForeignKey(
-        'RelatorioFotografico', on_delete=models.CASCADE, related_name='visoes'
-    )
-    foto = models.ForeignKey(
-        'FotoRelatorio', on_delete=models.CASCADE, null=True, blank=True,
+        'RelatorioFotografico',
+        on_delete=models.CASCADE,
         related_name='visoes',
     )
-    execucao_id = models.CharField(max_length=100, null=True, blank=True)
-    modelo = models.CharField(max_length=100, blank=True, default='')
-    resultado = models.JSONField()  # MySQL 5.7.8+
+
+    # NULL representa uma análise consolidada do relatório inteiro.
+    # Preenchido representa uma análise individual de fotografia.
+    foto = models.ForeignKey(
+        'FotoRelatorio',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='visoes',
+    )
+
+    # Identifica cada execução e permite manter o histórico.
+    execucao_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+    )
+
+    modelo = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_AGUARDANDO,
+        db_index=True,
+    )
+
+    resultado = models.JSONField(
+        null=True,
+        blank=True,
+    )
+
+    erro = models.TextField(
+        blank=True,
+        default='',
+    )
+
+    solicitado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='analises_relatorios_fotograficos',
+    )
+
+    versao_prompt = models.CharField(
+        max_length=30,
+        blank=True,
+        default='v1',
+    )
+
+    hash_entrada = models.CharField(
+        max_length=64,
+        blank=True,
+        default='',
+    )
+
+    iniciado_em = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    concluido_em = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        # MySQL aceita vários NULL em chave única -> idempotência só quando há execucao_id
         unique_together = [('relatorio', 'execucao_id')]
         ordering = ['-created_at']
+
         permissions = [
-            ('view_relatorio_visao', 'Pode visualizar visões do relatório fotográfico'),
-            ('add_relatorio_visao', 'Pode adicionar visões ao relatório fotográfico'),
-            ('change_relatorio_visao', 'Pode alterar visões do relatório fotográfico'),
-            ('delete_relatorio_visao', 'Pode excluir visões do relatório fotográfico'),
+            (
+                'view_relatorio_visao',
+                'Pode visualizar visões do relatório fotográfico',
+            ),
+            (
+                'add_relatorio_visao',
+                'Pode adicionar visões ao relatório fotográfico',
+            ),
+            (
+                'change_relatorio_visao',
+                'Pode alterar visões do relatório fotográfico',
+            ),
+            (
+                'delete_relatorio_visao',
+                'Pode excluir visões do relatório fotográfico',
+            ),
         ]
 
+    def __str__(self):
+        tipo = 'Relatório completo' if self.foto_id is None else f'Foto {self.foto_id}'
+        return f'Análise {self.execucao_id} - {tipo} ({self.status})'

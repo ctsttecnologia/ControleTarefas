@@ -8,6 +8,7 @@ import sys
 import ssl
 import logging
 from pathlib import Path
+from datetime import timedelta
 
 import cloudinary
 from dotenv import load_dotenv
@@ -15,12 +16,11 @@ from decouple import config
 from celery.schedules import crontab
 
 from core.upload_config import UPLOAD_CONFIG
-from datetime import timedelta
-
-load_dotenv()
-logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env", override=True)
+
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 # DETECÇÃO DE AMBIENTE — fonte da verdade: variável ENVIRONMENT
@@ -501,6 +501,24 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 FORMS_URLFIELD_ASSUME_HTTPS = True
+
+# =============================================================================
+# Análise de relatórios fotográficos por IA
+
+AI_PROVIDER = config('AI_PROVIDER', default='compatible')
+AI_API_KEY = config('AI_API_KEY', default='')
+AI_BASE_URL = config('AI_BASE_URL', default='https://generativelanguage.googleapis.com/v1beta/openai/')
+AI_MODEL = config('AI_MODEL', default='gemini-3.8-flash')
+AI_MAX_IMAGES = config('AI_MAX_IMAGES', default=100, cast=int)
+AI_TIMEOUT = config('AI_TIMEOUT', default=90, cast=int)
+AI_IMAGE_TIMEOUT = 30
+AI_IMAGE_MAX_SIDE = 1024
+AI_IMAGE_QUALITY = 75
+AI_IMAGE_DETAIL = 'auto'   # 'low' deixa mais rápido e mais barato
+AI_MAX_TOKENS = 8000
+
+AI_FALLBACK_MODELS = config('AI_FALLBACK_MODELS', default='gemini-2.5-flash', cast=lambda v: [s.strip() for s in v.split(',') if s.strip()])
+
 
 # =============================================================================
 # CHANNELS (WebSocket) - CONFIGURAÇÃO ADAPTATIVA

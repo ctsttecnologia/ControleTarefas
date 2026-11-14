@@ -216,6 +216,61 @@
             border: none;
         }
     }
+    
+    /* Skeleton adaptado ao tema */
+    #ia-skeleton {
+        background: var(--bs-tertiary-bg) !important;
+        border: 1px solid var(--bs-border-color);
+        position: relative;
+        overflow: hidden;
+    }
+    .ia-sk-linha {
+        height: 10px;
+        margin-bottom: 12px;
+        border-radius: 6px;
+        background: rgba(var(--bs-emphasis-color-rgb), .08);
+        position: relative;
+        overflow: hidden;
+    }
+    .ia-sk-linha:last-child { margin-bottom: 0; }
+    .ia-sk-linha::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(90deg, transparent, rgba(var(--bs-primary-rgb), .25), transparent);
+        animation: ia-shimmer 1.6s ease-in-out infinite;
+    }
+    .ia-sk-linha:nth-child(2)::after { animation-delay: .15s; }
+    .ia-sk-linha:nth-child(3)::after { animation-delay: .3s; }
+    .ia-sk-linha:nth-child(4)::after { animation-delay: .45s; }
+    @keyframes ia-shimmer { to { transform: translateX(100%); } }
+
+    /* Borda brilhando enquanto processa */
+    .ia-processando #ia-skeleton {
+        box-shadow: 0 0 0 1px rgba(var(--bs-primary-rgb), .4), 0 0 18px rgba(var(--bs-primary-rgb), .15);
+        animation: ia-glow 2s ease-in-out infinite;
+    }
+    @keyframes ia-glow { 50% { box-shadow: 0 0 0 1px rgba(var(--bs-primary-rgb), .7), 0 0 24px rgba(var(--bs-primary-rgb), .3); } }
+
+    /* Reticências com largura fixa (o texto não "pula") */
+    .ia-dots::after {
+        content: '';
+        display: inline-block;
+        width: 1.2em;
+        text-align: left;
+        animation: ia-dots 1.5s steps(4) infinite;
+    }
+    @keyframes ia-dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+
+    /* Resultado legível no tema escuro */
+    #ia-resultado {
+        background: var(--bs-tertiary-bg) !important;
+        color: var(--bs-body-color);
+        border: 1px solid var(--bs-border-color);
+    }
+    #ia-resultado.ia-fade { animation: ia-fade .4s ease-out; }
+    @keyframes ia-fade { from { opacity: 0; transform: translateY(6px); } }
 </style>
 {% endblock %}
 
@@ -360,6 +415,48 @@
         <span class="value p-4 mb-2">{{ relatorio.observacoes|linebreaksbr }}</span>
     </div>
 
+    {# ==================== ANÁLISE DE IA ==================== #}
+    <div class="card section-card mb-4">
+        {% if relatorio.status == 'finalizado' %}
+        <section class="card mt-4" id="secao-analise-ia">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-robot" id="ia-icone"></i>
+                    Análise inteligente do relatório
+                </h5>
+
+                {% if perms.relatorio_fotografico.change_relatoriofotografico %}
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="btn-analisar-ia"
+                    data-url="{% url 'relatorio_fotografico:ia_analisar' relatorio.pk %}">
+                    <span class="spinner-border spinner-border-sm d-none" id="ia-spinner" role="status" aria-hidden="true"></span>
+                    <i class="bi bi-images" id="ia-btn-icone"></i>
+                    <span id="ia-btn-texto">Solicitar análise</span>
+                </button>
+                {% endif %}
+
+                <span id="ia-status" class="ms-2" aria-live="polite">
+                    Nenhuma análise consultada.
+                </span>
+
+                <div id="ia-skeleton" class="mt-3 p-3 rounded d-none">
+                    <div class="ia-sk-linha" style="width: 90%"></div>
+                    <div class="ia-sk-linha" style="width: 75%"></div>
+                    <div class="ia-sk-linha" style="width: 85%"></div>
+                    <div class="ia-sk-linha" style="width: 60%"></div>
+                </div>
+
+                <pre
+                    id="ia-resultado"
+                    class="mt-3 p-3"
+                    style="white-space: pre-wrap; display: none;"></pre>
+            </div>
+        </section>
+        {% endif %}
+    </div>
+        
     {# ==================== GRID DE FOTOS ==================== #}
     <div class="card section-card">
         <div class="card-body p-4">
@@ -461,11 +558,14 @@
 (function () {
     const uploadUrl = "{% url 'relatorio_fotografico:foto_upload' relatorio.pk %}";
     const reorderUrl = "{% url 'relatorio_fotografico:foto_reorder' relatorio.pk %}";
-    const csrfToken = "{{ csrf_token }}";
+    const urlStatus = "{% url 'relatorio_fotografico:ia_status' relatorio.pk %}";
+    const csrfTokenInicial = "{{ csrf_token }}";
 
     const grid = document.getElementById('fotos-grid');
-    const spinner = document.getElementById('spinner-upload');
-    const emptyMsg = document.getElementById('fotos-empty');
+    const botao = document.getElementById('btn-analisar-ia');
+    const statusEl = document.getElementById('ia-status');
+    const resultadoEl = document.getElementById('ia-resultado');
+
     let fotoIdParaExcluir = null;
 
     function getCsrfCookie() {
@@ -473,48 +573,47 @@
         const decoded = decodeURIComponent(document.cookie);
         for (const part of decoded.split(';')) {
             const trimmed = part.trim();
-            if (trimmed.indexOf(name) === 0) return trimmed.substring(name.length);
+            if (trimmed.indexOf(name) === 0) {
+                return trimmed.substring(name.length);
+            }
         }
-        return csrfToken;
+        return csrfTokenInicial;
     }
 
-    function obterLocalizacao() {
-        return new Promise((resolve) => {
-            if (!navigator.geolocation) return resolve(null);
-            navigator.geolocation.getCurrentPosition(
-                (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-                () => resolve(null),
-                { timeout: 5000, maximumAge: 60000 }
-            );
-        });
+    function obterCsrfToken() {
+        return getCsrfCookie();
     }
 
-    function criarCardFoto(foto) {
-        const col = document.createElement('div');
-        col.className = 'col-md-6 foto-item';
-        col.dataset.id = foto.id;
-        const geoBadge = foto.coordenadas
-            ? `<span class="foto-geo-badge" title="${foto.coordenadas}">
-                 <i class="bi bi-geo-alt-fill"></i> ${foto.coordenadas}
-               </span>` : '';
-        col.innerHTML = `
-            <div class="foto-card">
-                <div class="foto-wrapper">
-                    <span class="foto-numero">${foto.ordem}</span>
-                    <button class="btn btn-sm btn-danger foto-remove-btn btn-remove-foto"
-                            data-id="${foto.id}" data-bs-toggle="modal" data-bs-target="#modalExcluirFoto" title="Remover">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                    <img src="${foto.url}" alt="Foto ${foto.ordem}">
-                    ${geoBadge}
-                </div>
-                <div class="foto-card-body">
-                    <textarea class="form-control foto-legenda-textarea legenda-input"
-                              data-id="${foto.id}" rows="2"
-                              placeholder="Descrição da foto..."></textarea>
-                </div>
-            </div>`;
-        return col;
+    function setStatus(texto) {
+        if (statusEl) statusEl.textContent = texto;
+    }
+
+    function mostrarResultado(texto) {
+        if (!resultadoEl) return;
+        resultadoEl.textContent = texto;
+        resultadoEl.style.display = 'block';
+        resultadoEl.classList.remove('ia-fade');
+        void resultadoEl.offsetWidth;
+        resultadoEl.classList.add('ia-fade');
+    }
+
+    function iaProcessando(ativo) {
+        document.getElementById('secao-analise-ia')?.classList.toggle('ia-processando', ativo);
+        document.getElementById('ia-skeleton')?.classList.toggle('d-none', !ativo);
+
+        if (botao) {
+            botao.disabled = ativo;
+            document.getElementById('ia-spinner')?.classList.toggle('d-none', !ativo);
+            document.getElementById('ia-btn-icone')?.classList.toggle('d-none', ativo);
+            const txt = document.getElementById('ia-btn-texto');
+            if (txt) txt.textContent = ativo ? 'Analisando' : 'Solicitar análise';
+        }
+
+        if (statusEl) {
+            statusEl.classList.toggle('ia-dots', ativo);
+            statusEl.classList.toggle('text-primary', ativo);
+        }
+        if (ativo && resultadoEl) resultadoEl.style.display = 'none';
     }
 
     function mostrarLoading(ativo) {
@@ -525,50 +624,43 @@
             el.className = 'position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center';
             el.style.cssText = 'background:rgba(0,0,0,.4);z-index:2000';
             el.innerHTML = '<div class="bg-white rounded p-3 d-flex align-items-center gap-2">' +
-                        '<div class="spinner-border spinner-border-sm"></div> Enviando fotos...</div>';
+                           '<div class="spinner-border spinner-border-sm"></div> Enviando fotos...</div>';
             document.body.appendChild(el);
         }
         el.classList.toggle('d-none', !ativo);
         el.classList.toggle('d-flex', ativo);
     }
 
-
     async function enviarArquivos(files) {
         if (!files || !files.length) return;
 
-        const url = "{% url 'relatorio_fotografico:foto_upload' relatorio.pk %}"; // ajuste o nome da rota
-        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value
-                || document.cookie.match(/csrftoken=([^;]+)/)?.[1];
-
         const formData = new FormData();
-        for (const f of files) formData.append('imagens', f); // mesmo nome que a view lê
+        for (const f of files) formData.append('imagens', f);
         if (window.geoAtual) {
-            formData.append('latitude', geoAtual.lat);
-            formData.append('longitude', geoAtual.lng);
+            formData.append('latitude', window.geoAtual.lat);
+            formData.append('longitude', window.geoAtual.lng);
         }
 
-        mostrarLoading(true); // sua função de "Enviando fotos..."
+        mostrarLoading(true);
         try {
-            const resp = await fetch(url, {
+            const resp = await fetch(uploadUrl, {
                 method: 'POST',
                 body: formData,
-                headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+                headers: { 'X-CSRFToken': obterCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin',
             });
 
-            // Sessão expirada → o Django redireciona para o login
             if (resp.redirected && resp.url.includes('/contas/login/')) {
                 alert('Sua sessão expirou. Faça login novamente.');
                 window.location.href = '/contas/login/?next=' + encodeURIComponent(location.pathname);
                 return;
             }
-
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
 
             const data = await resp.json();
             if (data.ok === false) throw new Error(data.erro || 'Falha no upload');
 
-            location.reload(); // ou insira as fotos no DOM
+            location.reload();
         } catch (err) {
             console.error('Erro upload:', err);
             alert('Falha ao enviar fotos: ' + err.message);
@@ -578,27 +670,112 @@
         }
     }
 
+    async function consultarStatus(inicial = false) {
+        const resposta = await fetch(urlStatus, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!resposta.ok) throw new Error('Não foi possível consultar a análise.');
 
-    document.getElementById('input-galeria').addEventListener('change', (e) => {
-        const files = Array.from(e.target.files);
-        e.target.value = '';
-        enviarArquivos(files);
-    });
-    document.getElementById('input-camera').addEventListener('change', (e) => {
-        const files = Array.from(e.target.files);
-        e.target.value = '';
-        enviarArquivos(files);
+        const dados = await resposta.json();
+
+        if (!dados.existe_analise) {
+            setStatus('Nenhuma análise realizada.');
+            return null;
+        }
+
+        if (inicial && dados.status === 'erro') {
+            setStatus('Nenhuma análise consultada.');
+            return null;
+        }
+
+        const rotulos = { pendente: 'Na fila', processando: 'Analisando as fotos', concluido: 'Análise concluída.', erro: 'Falha na análise.' };
+        setStatus(rotulos[dados.status] || 'Status: ' + dados.status);
+
+        if (dados.status === 'concluido') {
+            mostrarResultado(JSON.stringify(dados.resultado, null, 2));
+            return true;
+        }
+        if (dados.status === 'erro') {
+            mostrarResultado(dados.erro || 'Falha na análise.');
+            return true;
+        }
+        return false;
+    }
+
+
+    async function acompanharAnalise() {
+        iaProcessando(true);
+        try {
+            for (let tentativa = 0; tentativa < 120; tentativa++) {
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                try {
+                    if (await consultarStatus()) return;
+                } catch (erro) {
+                    setStatus(erro.message);
+                    return;
+                }
+            }
+            setStatus('A análise continua em processamento. Atualize a página para consultar.');
+        } finally {
+            iaProcessando(false);
+        }
+    }
+
+    if (botao) {
+        botao.addEventListener('click', async function () {
+            iaProcessando(true);
+            setStatus('Solicitando análise');
+
+            try {
+                const resposta = await fetch(botao.dataset.url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': obterCsrfToken(),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const dados = await resposta.json();
+                if (!resposta.ok) throw new Error(dados.erro || 'Erro ao solicitar análise.');
+
+                setStatus('Processando análise, isso pode levar alguns segundos');
+                await acompanharAnalise();
+            } catch (erro) {
+                setStatus(erro.message);
+            } finally {
+                iaProcessando(false);
+            }
+        });
+    }
+
+
+    if (statusEl) {
+        consultarStatus(true)
+            .then(finalizada => { if (finalizada === false) acompanharAnalise(); })
+            .catch(() => setStatus('Não foi possível carregar o histórico.'));
+    }
+
+
+    ['input-galeria', 'input-camera'].forEach(id => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            e.target.value = '';
+            enviarArquivos(files);
+        });
     });
 
     const dropZone = document.getElementById('drop-zone');
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('dragover');
-        enviarArquivos(e.dataTransfer.files);
-    });
-    dropZone.addEventListener('click', () => document.getElementById('input-galeria').click());
+    if (dropZone) {
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            enviarArquivos(e.dataTransfer.files);
+        });
+        dropZone.addEventListener('click', () => document.getElementById('input-galeria')?.click());
+    }
 
     function bindEventos() {
         document.querySelectorAll('.btn-remove-foto').forEach(btn => {
@@ -615,7 +792,7 @@
                     await fetch(`/relatorio-fotografico/foto/${id}/editar/`, {
                         method: 'POST',
                         headers: {
-                            'X-CSRFToken': getCsrfCookie(),
+                            'X-CSRFToken': obterCsrfToken(),
                             'Content-Type': 'application/x-www-form-urlencoded',
                         },
                         body: `legenda=${encodeURIComponent(legenda)}`,
@@ -625,47 +802,54 @@
         });
     }
 
-    document.getElementById('btnConfirmarExcluirFoto').addEventListener('click', async function () {
-        if (!fotoIdParaExcluir) return;
-        const resp = await fetch(`/relatorio-fotografico/foto/${fotoIdParaExcluir}/excluir/`, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': getCsrfCookie() },
-        });
-        const data = await resp.json();
-        if (data.ok) {
-            const item = document.querySelector(`.foto-item[data-id="${fotoIdParaExcluir}"]`);
-            if (item) item.remove();
-            if (!grid.querySelector('.foto-item') && !document.getElementById('fotos-empty')) {
-                const div = document.createElement('div');
-                div.id = 'fotos-empty';
-                div.className = 'text-center text-muted py-5';
-                div.innerHTML = '<i class="bi bi-images display-1"></i><p class="mt-3">Nenhuma foto adicionada ainda.</p>';
-                grid.parentNode.appendChild(div);
-            }
-        }
-        fotoIdParaExcluir = null;
-        bootstrap.Modal.getInstance(document.getElementById('modalExcluirFoto')).hide();
-    });
-
-    new Sortable(grid, {
-        animation: 150,
-        handle: '.foto-card',
-        onEnd: async function () {
-            const ids = Array.from(grid.querySelectorAll('.foto-item')).map(el => el.dataset.id);
-            await fetch(reorderUrl, {
+    const btnExcluir = document.getElementById('btnConfirmarExcluirFoto');
+    if (btnExcluir) {
+        btnExcluir.addEventListener('click', async function () {
+            if (!fotoIdParaExcluir) return;
+            const resp = await fetch(`/relatorio-fotografico/foto/${fotoIdParaExcluir}/excluir/`, {
                 method: 'POST',
-                headers: { 'X-CSRFToken': getCsrfCookie(), 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ordem: ids }),
+                headers: { 'X-CSRFToken': obterCsrfToken() },
             });
-            document.querySelectorAll('.foto-item').forEach((el, idx) => {
-                el.querySelector('.foto-numero').textContent = idx + 1;
-            });
-        },
-    });
+            const data = await resp.json();
+            if (data.ok) {
+                document.querySelector(`.foto-item[data-id="${fotoIdParaExcluir}"]`)?.remove();
+                if (grid && !grid.querySelector('.foto-item') && !document.getElementById('fotos-empty')) {
+                    const div = document.createElement('div');
+                    div.id = 'fotos-empty';
+                    div.className = 'text-center text-muted py-5';
+                    div.innerHTML = '<i class="bi bi-images display-1"></i><p class="mt-3">Nenhuma foto adicionada ainda.</p>';
+                    grid.parentNode.appendChild(div);
+                }
+            }
+            fotoIdParaExcluir = null;
+            bootstrap.Modal.getInstance(document.getElementById('modalExcluirFoto'))?.hide();
+        });
+    }
+
+    if (grid && typeof Sortable !== 'undefined') {
+        new Sortable(grid, {
+            animation: 150,
+            handle: '.foto-card',
+            onEnd: async function () {
+                const ids = Array.from(grid.querySelectorAll('.foto-item')).map(el => el.dataset.id);
+                await fetch(reorderUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': obterCsrfToken(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ordem: ids }),
+                });
+                document.querySelectorAll('.foto-item').forEach((el, idx) => {
+                    const n = el.querySelector('.foto-numero');
+                    if (n) n.textContent = idx + 1;
+                });
+            },
+        });
+    }
 
     bindEventos();
 })();
+
 </script>
+
 {% endblock %}
 
 

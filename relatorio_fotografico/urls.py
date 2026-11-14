@@ -18,6 +18,10 @@ urlpatterns = [
     path('<int:pk>/finalizar/', views.RelatorioFinalizarView.as_view(), name='finalizar'),
     path('<int:pk>/exportar/docx/', views.RelatorioExportDocxView.as_view(), name='export_docx'),
     path('<int:pk>/exportar/pdf/', views.RelatorioExportPdfView.as_view(), name='export_pdf'),
+
+    # Análise inteligente por IA
+    path('<int:pk>/ia/analisar/', views.RelatorioAnaliseIACreateView.as_view(), name='ia_analisar'),
+    path('<int:pk>/ia/status/',views.RelatorioAnaliseIAStatusView.as_view(), name='ia_status'),
 ]
 
 

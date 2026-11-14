@@ -1,6 +1,5 @@
 
 # relatorio_fotografico/views.py
-# relatorio_fotografico/views.py
 """
 Views do app Relatório Fotográfico.
 
@@ -16,11 +15,11 @@ Segurança (3 camadas):
 3. Escopo de objeto (ViewFilialScopedMixin + RelatorioScopeMixin):
    nenhuma view busca objeto fora do queryset escopado.
 """
-
+import uuid
 import json
 import logging
 from decimal import Decimal, InvalidOperation
-
+from django.utils import timezone
 import cloudinary.uploader
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -37,7 +36,7 @@ from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, UpdateView, View,
 )
 from django.views.generic.detail import SingleObjectMixin
-
+from django.conf import settings
 from core.mixins import (
     AdminOrPermissionRequiredMixin,
     AppPermissionMixin,
@@ -46,7 +45,11 @@ from core.mixins import (
 )
 
 from .forms import RelatorioFotograficoForm
-from .models import FotoRelatorio, RelatorioFotografico
+from .models import (
+    FotoRelatorio,
+    RelatorioFotografico,
+    RelatorioVisao,
+)
 from .services.docx_generator import gerar_docx_relatorio
 from .services.pdf_generator import gerar_pdf_relatorio
 
@@ -337,6 +340,146 @@ class RelatorioFinalizarView(BaseRelatorioMixin, SingleObjectMixin, View):
         ):
             return redirect(next_url)
         return redirect('relatorio_fotografico:detail', pk=relatorio.pk)
+
+
+
+class RelatorioAnaliseIACreateView(BaseRelatorioMixin, DetailView):
+    """
+        Solicita uma nova análise de um relatório finalizado.
+        Retorna JSON com {'ok': True, 'analise_id': <id>, 'status': <status>}.
+        Se já existir uma análise em andamento, retorna o ID e status dela."""
+    model = RelatorioFotografico
+    permission_required = PERM_CHANGE
+    http_method_names = ['post']
+
+    def get_object(self):
+        """
+        Busca o relatório respeitando as permissões
+        e o escopo de acesso do usuário.
+        """
+        return get_object_or_404(
+            self.get_queryset(),
+            pk=self.kwargs.get('pk')
+        )
+
+    def post(self, request, *args, **kwargs):
+        relatorio = self.get_object()
+
+        if relatorio.status != RelatorioFotografico.STATUS_FINALIZADO:
+            return JsonResponse({
+                'ok': False,
+                'erro': 'Somente relatórios finalizados podem ser analisados.',
+            }, status=400)
+
+        with transaction.atomic():
+            # Impede solicitações simultâneas para o mesmo relatório.
+            relatorio = (
+                self.get_queryset()
+                .select_for_update()
+                .get(pk=relatorio.pk)
+            )
+
+            existente = RelatorioVisao.objects.filter(
+                relatorio=relatorio,
+                foto__isnull=True,
+                status__in=[
+                    RelatorioVisao.STATUS_AGUARDANDO,
+                    RelatorioVisao.STATUS_PROCESSANDO,
+                ],
+            ).order_by('-created_at').first()
+
+            if existente:
+                return JsonResponse({
+                    'ok': True,
+                    'analise_id': existente.pk,
+                    'status': existente.status,
+                    'mensagem': 'Já existe uma análise em andamento.',
+                })
+
+            analise = RelatorioVisao.objects.create(
+                relatorio=relatorio,
+                foto=None,
+                execucao_id=str(uuid.uuid4()),
+                modelo=settings.AI_MODEL,
+                status=RelatorioVisao.STATUS_AGUARDANDO,
+                solicitado_por=request.user,
+                versao_prompt='v1',
+            )
+
+            # Só envia para o Celery depois do commit no banco.
+            from .tasks import analisar_relatorio_ia
+
+            transaction.on_commit(
+                lambda analise_pk=analise.pk:
+                    analisar_relatorio_ia.delay(analise_pk)
+            )
+
+        return JsonResponse({
+            'ok': True,
+            'analise_id': analise.pk,
+            'status': analise.status,
+            'mensagem': 'Análise solicitada com sucesso.',
+        }, status=202)
+
+
+class RelatorioAnaliseIAStatusView(BaseRelatorioMixin, DetailView):
+    """
+        Consulta a análise mais recente dentro do escopo do relatório.
+        Retorna JSON com {'ok': True, 'existe_analise': True/False, ...}.
+        Se existir uma análise, inclui ID, status, resultado e timestamps.
+        Se não existir, retorna apenas {'ok': True, 'existe_analise': False}.
+    """
+    model = RelatorioFotografico
+    permission_required = PERM_VIEW
+    http_method_names = ['get']
+
+    def get_object(self):
+        """
+        Busca o relatório respeitando as permissões
+        e o escopo de acesso do usuário.
+        """
+        return get_object_or_404(
+            self.get_queryset(),
+            pk=self.kwargs.get('pk')
+        )
+
+    def get(self, request, *args, **kwargs):
+        relatorio = self.get_object()
+
+        analise = (
+            RelatorioVisao.objects
+            .filter(
+                relatorio=relatorio,
+                foto__isnull=True,
+            )
+            .order_by('-created_at')
+            .first()
+        )
+
+        if not analise:
+            return JsonResponse({
+                'ok': True,
+                'existe_analise': False,
+            })
+
+        return JsonResponse({
+            'ok': True,
+            'existe_analise': True,
+            'analise_id': analise.pk,
+            'status': analise.status,
+            'resultado': analise.resultado,
+            'erro': analise.erro if analise.status == RelatorioVisao.STATUS_ERRO else '',
+            'modelo': analise.modelo,
+            'solicitado_em': (
+                analise.created_at.isoformat()
+                if analise.created_at else None
+            ),
+            'concluido_em': (
+                analise.concluido_em.isoformat()
+                if analise.concluido_em else None
+            ),
+        })
+
 
 
 # -----------------------------------------------------------------------
