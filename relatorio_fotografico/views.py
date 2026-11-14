@@ -1,5 +1,6 @@
 
 # relatorio_fotografico/views.py
+# relatorio_fotografico/views.py
 """
 Views do app Relatório Fotográfico.
 
@@ -18,11 +19,13 @@ Segurança (3 camadas):
 
 import json
 import logging
+from decimal import Decimal, InvalidOperation
 
 import cloudinary.uploader
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
 from django.db.models import Max, Q
 from django.http import HttpResponse, JsonResponse
@@ -63,10 +66,50 @@ PERM_FOTO_CHANGE = f'{APP_LABEL}.change_fotorelatorio'
 PERM_FOTO_DELETE = f'{APP_LABEL}.delete_fotorelatorio'
 
 
+# -----------------------------------------------------------------------
+# HELPERS
+# -----------------------------------------------------------------------
+
 def is_admin(user):
     return user.is_authenticated and (
         user.is_superuser or getattr(user, 'is_administrador', False)
     )
+
+
+def _parse_data(valor):
+    """Converte 'AAAA-MM-DD' em date; retorna None se vazio ou inválido."""
+    try:
+        return parse_date((valor or '').strip())
+    except ValueError:  # ex.: 2026-02-30
+        return None
+
+
+def _coord(lista, i):
+    """Retorna Decimal da posição i ou None se ausente/inválido."""
+    if i >= len(lista) or not lista[i]:
+        return None
+    try:
+        return Decimal(str(lista[i]).strip().replace(',', '.'))
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def _user_tem_campo_filial():
+    try:
+        User._meta.get_field('filial')
+        return True
+    except FieldDoesNotExist:
+        return False
+
+
+USER_TEM_FILIAL = _user_tem_campo_filial()
+
+
+def _destruir_cloudinary(public_id):
+    try:
+        cloudinary.uploader.destroy(public_id, resource_type='image')
+    except Exception:  # não bloqueia a operação por falha externa
+        logger.exception('Falha ao remover imagem %s do Cloudinary', public_id)
 
 
 # -----------------------------------------------------------------------
@@ -79,6 +122,9 @@ class RelatorioScopeMixin:
     - Admin/superuser ou 'view_all_relatorios_filial': todos da filial ativa
       (o filtro de filial é feito pelo ViewFilialScopedMixin).
     - Demais: apenas onde é responsável ou criador.
+
+    Sem .distinct(): os filtros são FKs da própria tabela (sem JOIN),
+    e DISTINCT é incompatível com select_for_update no PostgreSQL.
     """
 
     def get_queryset(self):
@@ -86,7 +132,7 @@ class RelatorioScopeMixin:
         user = self.request.user
         if is_admin(user) or user.has_perm(PERM_VIEW_ALL):
             return qs
-        return qs.filter(Q(responsavel=user) | Q(criado_por=user)).distinct()
+        return qs.filter(Q(responsavel=user) | Q(criado_por=user))
 
 
 class BaseRelatorioMixin(
@@ -156,8 +202,8 @@ class RelatorioListView(BaseRelatorioMixin, ListView):
         busca = g.get('q', '').strip()
         status = g.get('status', '').strip()
         responsavel_id = g.get('responsavel', '').strip()
-        data_ini = parse_date(g.get('data_inicio', '').strip() or '') if g.get('data_inicio') else None
-        data_fim = parse_date(g.get('data_fim', '').strip() or '') if g.get('data_fim') else None
+        data_ini = _parse_data(g.get('data_inicio'))
+        data_fim = _parse_data(g.get('data_fim'))
 
         if busca:
             qs = qs.filter(Q(titulo__icontains=busca) | Q(obra_contrato__icontains=busca))
@@ -227,27 +273,25 @@ class RelatorioUpdateView(BaseRelatorioMixin, BloqueiaFinalizadoMixin, UpdateVie
     form_class = RelatorioFotograficoForm
     template_name = 'relatorio_fotografico/relatorio_form.html'
 
-    def dispatch(self, request, *args, **kwargs):
-        response = super().dispatch(request, *args, **kwargs)
-        return response
-
     def get_object(self, queryset=None):
         obj = super().get_object(queryset)
         self._bloqueado = self.relatorio_bloqueado(obj) and not is_admin(self.request.user)
         return obj
 
+    def _redirect_bloqueado(self):
+        messages.warning(self.request, 'Relatório finalizado não pode ser editado.')
+        return redirect('relatorio_fotografico:detail', pk=self.object.pk)
+
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         if self._bloqueado:
-            messages.warning(request, 'Relatório finalizado não pode ser editado.')
-            return redirect('relatorio_fotografico:detail', pk=self.object.pk)
+            return self._redirect_bloqueado()
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         if self._bloqueado:
-            messages.warning(request, 'Relatório finalizado não pode ser editado.')
-            return redirect('relatorio_fotografico:detail', pk=self.object.pk)
+            return self._redirect_bloqueado()
         return super().post(request, *args, **kwargs)
 
     def get_success_url(self):
@@ -264,9 +308,11 @@ class RelatorioDeleteView(BaseRelatorioMixin, DeleteView):
             f.imagem.public_id for f in self.object.fotos.all()
             if getattr(f.imagem, 'public_id', None)
         ]
-        response = super().form_valid(form)
-        for pid in public_ids:
-            _destruir_cloudinary(pid)
+        with transaction.atomic():
+            response = super().form_valid(form)
+            # Só remove do Cloudinary se a exclusão for confirmada no banco
+            for pid in public_ids:
+                transaction.on_commit(lambda p=pid: _destruir_cloudinary(p))
         messages.success(self.request, 'Relatório excluído com sucesso.')
         return response
 
@@ -297,13 +343,6 @@ class RelatorioFinalizarView(BaseRelatorioMixin, SingleObjectMixin, View):
 # FOTOS (AJAX)
 # -----------------------------------------------------------------------
 
-def _destruir_cloudinary(public_id):
-    try:
-        cloudinary.uploader.destroy(public_id, resource_type='image')
-    except Exception:  # não bloqueia a operação por falha externa
-        logger.exception('Falha ao remover imagem %s do Cloudinary', public_id)
-
-
 class FotoUploadView(FotoBaseView):
     permission_required = PERM_FOTO_ADD
 
@@ -331,8 +370,8 @@ class FotoUploadView(FotoBaseView):
                     imagem=arquivo,
                     legenda=legendas[i] if i < len(legendas) else '',
                     ordem=ultima_ordem + i + 1,
-                    latitude=(latitudes[i] if i < len(latitudes) else None) or None,
-                    longitude=(longitudes[i] if i < len(longitudes) else None) or None,
+                    latitude=_coord(latitudes, i),
+                    longitude=_coord(longitudes, i),
                 )
                 criadas.append({
                     'id': foto.id,
@@ -355,7 +394,7 @@ class FotoUploadView(FotoBaseView):
             relatorio.obra_contrato = obra
             campos.append('obra_contrato')
 
-        data_convertida = parse_date(request.POST.get('data') or '')
+        data_convertida = _parse_data(request.POST.get('data'))
         if data_convertida:
             relatorio.data = data_convertida
             campos.append('data')
@@ -365,10 +404,12 @@ class FotoUploadView(FotoBaseView):
             relatorio.assunto = assunto
             campos.append('assunto')
 
-        responsavel_id = request.POST.get('responsavel')
-        if responsavel_id and responsavel_id.isdigit():
-            # Responsável precisa estar ativo (ajuste o filtro de filial ao seu modelo)
-            usuario = User.objects.filter(pk=responsavel_id, is_active=True).first()
+        responsavel_id = request.POST.get('responsavel', '')
+        if responsavel_id.isdigit():
+            usuarios = User.objects.filter(pk=responsavel_id, is_active=True)
+            if USER_TEM_FILIAL:
+                usuarios = usuarios.filter(filial=relatorio.filial)
+            usuario = usuarios.first()
             if usuario:
                 relatorio.responsavel = usuario
                 campos.append('responsavel')
@@ -404,9 +445,10 @@ class FotoDeleteView(FotoBaseView):
 
         relatorio_pk = foto.relatorio_id
         public_id = getattr(foto.imagem, 'public_id', None)
-        foto.delete()
-        if public_id:
-            transaction.on_commit(lambda: _destruir_cloudinary(public_id))
+        with transaction.atomic():
+            foto.delete()
+            if public_id:
+                transaction.on_commit(lambda: _destruir_cloudinary(public_id))
         return JsonResponse({'ok': True, 'relatorio': relatorio_pk})
 
 

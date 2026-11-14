@@ -167,7 +167,6 @@ INSTALLED_APPS = [
     'django_bootstrap5',
     'django_htmx',
     'django_select2',
-    'rest_framework.authtoken',
     'dj_rest_auth',
     'widget_tweaks',
     'crispy_forms',
@@ -180,6 +179,7 @@ INSTALLED_APPS = [
     'dal_select2',
 
     'rest_framework',
+    'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'corsheaders',
     'django.contrib.staticfiles',

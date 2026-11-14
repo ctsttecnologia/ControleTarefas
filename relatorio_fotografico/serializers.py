@@ -2,7 +2,7 @@
 # relatorio_fotografico/serializers.py
 from rest_framework import serializers
 from twisted.test import obj
-from .models import RelatorioFotografico, FotoRelatorio
+from .models import RelatorioFotografico, FotoRelatorio, RelatorioVisao
 
 
 class FotoRelatorioSerializer(serializers.ModelSerializer):
@@ -102,4 +102,9 @@ class RelatorioFotograficoListSerializer(serializers.ModelSerializer):
     def get_total_fotos(self, obj):
         return obj.fotos.count()
 
+class RelatorioVisaoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RelatorioVisao
+        fields = ["id", "relatorio", "conteudo", "resumo", "origem", "execucao_id", "criado_em"]
+        read_only_fields = ["id", "relatorio", "criado_em"]
 

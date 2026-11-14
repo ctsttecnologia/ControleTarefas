@@ -217,3 +217,27 @@ class FotoRelatorio(models.Model):
             None,
         )
 
+class RelatorioVisao(models.Model):
+    relatorio = models.ForeignKey(
+        'RelatorioFotografico', on_delete=models.CASCADE, related_name='visoes'
+    )
+    foto = models.ForeignKey(
+        'FotoRelatorio', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='visoes',
+    )
+    execucao_id = models.CharField(max_length=100, null=True, blank=True)
+    modelo = models.CharField(max_length=100, blank=True, default='')
+    resultado = models.JSONField()  # MySQL 5.7.8+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # MySQL aceita vários NULL em chave única -> idempotência só quando há execucao_id
+        unique_together = [('relatorio', 'execucao_id')]
+        ordering = ['-created_at']
+        permissions = [
+            ('view_relatorio_visao', 'Pode visualizar visões do relatório fotográfico'),
+            ('add_relatorio_visao', 'Pode adicionar visões ao relatório fotográfico'),
+            ('change_relatorio_visao', 'Pode alterar visões do relatório fotográfico'),
+            ('delete_relatorio_visao', 'Pode excluir visões do relatório fotográfico'),
+        ]
+
