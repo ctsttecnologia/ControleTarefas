@@ -278,8 +278,9 @@ def _chamar_com_fallback(cliente, conteudo):
         {'role': 'user', 'content': conteudo},
     ]
     falhas = []
+    retentavel = False
 
-    for modelo in modelos:
+    for i, modelo in enumerate(modelos):
         logger.info('Enviando para %s', modelo)
         try:
             return cliente.chat.completions.create(
@@ -291,23 +292,32 @@ def _chamar_com_fallback(cliente, conteudo):
         except APITimeoutError:
             logger.warning('Timeout no modelo %s', modelo)
             falhas.append(f'{modelo}: timeout')
+            retentavel = True
         except APIConnectionError as exc:
-            # problema de rede afeta todos os modelos; não adianta seguir
             raise ErroAnaliseIA(f'Falha de conexão com a IA: {exc}', retentavel=True) from exc
         except APIStatusError as exc:
             detalhe = _detalhe_erro(exc)
+            falhas.append(f'{modelo}: {exc.status_code} {detalhe}')
+
             if exc.status_code in CODIGOS_FALLBACK:
                 logger.warning('Modelo %s indisponível (%s): %s', modelo, exc.status_code, detalhe)
-                falhas.append(f'{modelo}: {exc.status_code} {detalhe}')
+                retentavel = True
                 continue
-            raise ErroAnaliseIA(
-                f'Erro {exc.status_code} do provedor de IA ({modelo}): {detalhe}',
-            ) from exc
+
+            # Erro definitivo no modelo principal: não adianta tentar reservas
+            if i == 0:
+                raise ErroAnaliseIA(
+                    f'Erro {exc.status_code} do provedor de IA ({modelo}): {detalhe}',
+                ) from exc
+
+            # Erro definitivo em um reserva: registra e segue, sem esconder o erro do principal
+            logger.error('Modelo reserva %s falhou (%s): %s', modelo, exc.status_code, detalhe)
 
     raise ErroAnaliseIA(
-        'Modelos de IA indisponíveis no momento. ' + ' | '.join(falhas),
-        retentavel=True,
+        'Modelos de IA indisponíveis. ' + ' | '.join(falhas),
+        retentavel=retentavel,
     )
+
 
 
 # ---------------------------------------------------------------- principal

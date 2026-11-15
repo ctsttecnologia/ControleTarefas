@@ -517,7 +517,8 @@ AI_IMAGE_QUALITY = 75
 AI_IMAGE_DETAIL = 'auto'   # 'low' deixa mais rápido e mais barato
 AI_MAX_TOKENS = 8000
 
-AI_FALLBACK_MODELS = config('AI_FALLBACK_MODELS', default='gemini-2.5-flash', cast=lambda v: [s.strip() for s in v.split(',') if s.strip()])
+
+AI_FALLBACK_MODELS = config('AI_FALLBACK_MODELS', default='', cast=lambda v: [s.strip() for s in v.split(',') if s.strip()])
 
 
 # =============================================================================
