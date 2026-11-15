@@ -196,6 +196,17 @@
         font-weight: 600;
         color: #0a4a75;
     }
+
+    .analise-titulo { font-size: 15px; font-weight: 700; color: #0a4a75; margin: 0 0 4px; }
+    .analise-texto {
+        white-space: pre-wrap; overflow-wrap: break-word;
+        font-size: 10.5px; line-height: 1.5; text-align: justify;
+    }
+    .analise-rodape {
+        margin-top: 14px; padding-top: 6px; border-top: 1px solid #004cff86;
+        font-size: 9px; font-style: italic; color: #555;
+    }
+
 </style>
 </head>
 <body>
@@ -276,6 +287,21 @@
             </td>
         </tr>
     </table>
+    {% if analise and analise.texto %}
+    <div class="pagina-quebra analise-ia">
+        <h2 class="analise-titulo">Parecer Técnico — Análise Assistida por IA</h2>
+        <div class="linha-separadora"></div>
+        <div class="analise-texto">{{ analise.texto }}</div>
+        <div class="analise-rodape">
+            {% if analise.foi_editado %}
+                Revisado por {{ analise.editado_por.get_full_name|default:analise.editado_por.username }}
+                em {{ analise.editado_em|date:"d/m/Y H:i" }}.
+            {% else %}
+                Texto gerado automaticamente ({{ analise.modelo }}) — não revisado por um responsável técnico.
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 
     {% if linhas %}
     <table class="fotos-grid">

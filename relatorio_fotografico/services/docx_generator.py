@@ -56,7 +56,7 @@ def _adicionar_capa(doc, relatorio, largura_util):
     p_data = doc.add_paragraph()
     p_data.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     run_data = p_data.add_run(_fmt_data(relatorio.data, 'F Y', 'F Y').upper())
-    run_data = p_data.add_run(relatorio.data.strftime('%B %Y').upper())
+    #run_data = p_data.add_run(relatorio.data.strftime('%B %Y').upper())
     run_data.font.size = Pt(12)
     run_data.font.bold = True
     run_data.font.color.rgb = RGBColor(0x0A, 0x4A, 0x75)
@@ -320,6 +320,54 @@ def _adicionar_rodape(doc):
         run_footer.font.size = Pt(9)
         run_footer.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
 
+COR_TITULO = RGBColor(0x0A, 0x4A, 0x75)
+
+
+def _eh_titulo_secao(linha):
+    """Títulos gerados por analise_para_texto: linha em MAIÚSCULAS, sem marcador."""
+    s = linha.strip()
+    return bool(s) and s.isupper() and not s.startswith('-') and len(s) <= 60
+
+
+def _adicionar_analise_ia(doc, relatorio):
+    visao = relatorio.analise_ia
+    if not visao or not visao.texto:
+        return
+
+    doc.add_page_break()
+    p = doc.add_paragraph()
+    r = p.add_run('PARECER TÉCNICO — ANÁLISE ASSISTIDA POR IA')
+    r.bold, r.font.size, r.font.color.rgb = True, Pt(13), COR_TITULO
+
+    for linha in visao.texto.splitlines():
+        s = linha.strip()
+        if not s:
+            continue
+        if _eh_titulo_secao(s):
+            p = doc.add_paragraph()
+            p.paragraph_format.space_before = Pt(8)
+            r = p.add_run(s)
+            r.bold, r.font.size, r.font.color.rgb = True, Pt(10.5), COR_TITULO
+        elif s.startswith('- '):
+            p = doc.add_paragraph(style='List Bullet')
+            p.add_run(s[2:]).font.size = Pt(9.5)
+        else:
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            p.add_run(s).font.size = Pt(9.5)
+        p.paragraph_format.space_after = Pt(2)
+
+    if visao.foi_editado:
+        por = visao.editado_por.get_full_name() or visao.editado_por.username if visao.editado_por else '-'
+        rodape = f'Revisado por {por} em {_fmt_data(visao.editado_em)}.'
+    else:
+        rodape = f'Texto gerado automaticamente ({visao.modelo}) — não revisado por um responsável técnico.'
+
+    p = doc.add_paragraph()
+    p.paragraph_format.space_before = Pt(12)
+    r = p.add_run(rodape)
+    r.italic, r.font.size, r.font.color.rgb = True, Pt(8.5), RGBColor(0x55, 0x55, 0x55)
+
 
 def gerar_docx_relatorio(relatorio):
     """
@@ -342,7 +390,8 @@ def gerar_docx_relatorio(relatorio):
     _adicionar_capa(doc, relatorio, largura_util)  # <-- nova capa
 
     _adicionar_cabecalho_novo(doc, relatorio, largura_util)
-    _adicionar_observacoes(doc, relatorio) 
+    _adicionar_observacoes(doc, relatorio)
+    _adicionar_analise_ia(doc, relatorio) 
     doc.add_paragraph()
 
     paginas = relatorio.paginas

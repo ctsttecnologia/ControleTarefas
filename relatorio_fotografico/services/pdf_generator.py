@@ -25,9 +25,11 @@ def gerar_pdf_relatorio(relatorio, request=None):
             'paginas': relatorio.paginas,
             'total_folhas': relatorio.total_folhas,
             'fotos_urls': fotos_urls,
+            'analise': relatorio.analise_ia,
         },
         request=request,
     )
+
     base_url = request.build_absolute_uri('/') if request else None
     return HTML(string=html_string, base_url=base_url).write_pdf()
 

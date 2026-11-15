@@ -5,6 +5,8 @@ from celery.exceptions import SoftTimeLimitExceeded
 from django.apps import apps
 from django.utils import timezone
 
+from relatorio_fotografico.services.analise_texto import analise_para_texto
+
 logger = logging.getLogger(__name__)
 
 
@@ -91,6 +93,8 @@ def analisar_relatorio_ia(self, analise_id):
     analise.erro = ''
     analise.concluido_em = timezone.now()
     analise.save(update_fields=['resultado', 'status', 'erro', 'concluido_em', 'updated_at'])
+    analise.texto = analise_para_texto(analise.resultado)
+
 
     logger.info('Análise IA %s concluída para relatório %s', analise.pk, analise.relatorio_id)
 

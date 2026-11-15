@@ -3,7 +3,7 @@
 from django import forms
 from django.forms import inlineformset_factory
 
-from .models import RelatorioFotografico, FotoRelatorio
+from .models import RelatorioFotografico, FotoRelatorio, RelatorioVisao
 
 
 class RelatorioFotograficoForm(forms.ModelForm):
@@ -68,5 +68,11 @@ class MultiFileField(forms.FileField):
 class MultiplaFotoUploadForm(forms.Form):
     imagens = MultiFileField(required=False)
 
+
+class AnaliseIAForm(forms.ModelForm):
+    class Meta:
+        model = RelatorioVisao
+        fields = ['texto']
+        widgets = {'texto': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'})}
 
     

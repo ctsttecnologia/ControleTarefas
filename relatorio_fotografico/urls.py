@@ -21,7 +21,10 @@ urlpatterns = [
 
     # Análise inteligente por IA
     path('<int:pk>/ia/analisar/', views.RelatorioAnaliseIACreateView.as_view(), name='ia_analisar'),
-    path('<int:pk>/ia/status/',views.RelatorioAnaliseIAStatusView.as_view(), name='ia_status'),
+    path('<int:pk>/ia/status/', views.RelatorioAnaliseIAStatusView.as_view(), name='ia_status'),
+    path('<int:pk>/analise-ia/', views.RelatorioAnaliseIAEditarView.as_view(), name='editar_analise_ia'),
+
+
 ]
 
 

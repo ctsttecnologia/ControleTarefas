@@ -271,6 +271,27 @@
     }
     #ia-resultado.ia-fade { animation: ia-fade .4s ease-out; }
     @keyframes ia-fade { from { opacity: 0; transform: translateY(6px); } }
+
+    #ia-texto {
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 10px;
+    padding: 16px;
+    white-space: pre-wrap;
+    font-size: .9rem;
+    line-height: 1.55;
+    }
+    #ia-texto.ia-fade { animation: ia-fade .4s ease-out; }
+    #ia-editor {
+        font-size: .9rem;
+        line-height: 1.55;
+        min-height: 320px;
+        background: var(--surface-elevated);
+        color: var(--bs-body-color);
+    }
+    .ia-meta { font-size: .8rem; color: var(--bs-secondary-color); }
+
 </style>
 {% endblock %}
 
@@ -416,46 +437,67 @@
     </div>
 
     {# ==================== ANÁLISE DE IA ==================== #}
-    <div class="card section-card mb-4">
-        {% if relatorio.status == 'finalizado' %}
-        <section class="card mt-4" id="secao-analise-ia">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="bi bi-robot" id="ia-icone"></i>
-                    Análise inteligente do relatório
-                </h5>
+    {% if relatorio.status == 'finalizado' %}
+    <div class="card section-card mb-4" id="secao-analise-ia"
+        data-url-status="{% url 'relatorio_fotografico:ia_status' relatorio.pk %}"
+        data-url-analisar="{% url 'relatorio_fotografico:ia_analisar' relatorio.pk %}"
+        data-url-editar="{% url 'relatorio_fotografico:editar_analise_ia' relatorio.pk %}"
+        data-pode-editar="{% if perms.relatorio_fotografico.change_relatoriofotografico %}1{% else %}0{% endif %}">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h6 class="section-title mb-0"><i class="bi bi-robot me-1"></i>Análise inteligente do relatório</h6>
 
                 {% if perms.relatorio_fotografico.change_relatoriofotografico %}
-                <button
-                    type="button"
-                    class="btn btn-primary"
-                    id="btn-analisar-ia"
-                    data-url="{% url 'relatorio_fotografico:ia_analisar' relatorio.pk %}">
-                    <span class="spinner-border spinner-border-sm d-none" id="ia-spinner" role="status" aria-hidden="true"></span>
-                    <i class="bi bi-images" id="ia-btn-icone"></i>
-                    <span id="ia-btn-texto">Solicitar análise</span>
-                </button>
-                {% endif %}
-
-                <span id="ia-status" class="ms-2" aria-live="polite">
-                    Nenhuma análise consultada.
-                </span>
-
-                <div id="ia-skeleton" class="mt-3 p-3 rounded d-none">
-                    <div class="ia-sk-linha" style="width: 90%"></div>
-                    <div class="ia-sk-linha" style="width: 75%"></div>
-                    <div class="ia-sk-linha" style="width: 85%"></div>
-                    <div class="ia-sk-linha" style="width: 60%"></div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="btn-ia-editar">
+                        <i class="bi bi-pencil me-1"></i>Editar
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btn-analisar-ia">
+                        <span class="spinner-border spinner-border-sm d-none" id="ia-spinner"></span>
+                        <i class="bi bi-stars" id="ia-btn-icone"></i>
+                        <span id="ia-btn-texto">Solicitar análise</span>
+                    </button>
                 </div>
-
-                <pre
-                    id="ia-resultado"
-                    class="mt-3 p-3"
-                    style="white-space: pre-wrap; display: none;"></pre>
+                {% endif %}
             </div>
-        </section>
-        {% endif %}
+
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                <span id="ia-status" aria-live="polite">Consultando…</span>
+                <span id="ia-badge" class="badge d-none"></span>
+            </div>
+
+            <div id="ia-skeleton" class="mt-3 p-3 rounded d-none">
+                <div class="ia-sk-linha" style="width:90%"></div>
+                <div class="ia-sk-linha" style="width:75%"></div>
+                <div class="ia-sk-linha" style="width:85%"></div>
+                <div class="ia-sk-linha" style="width:60%"></div>
+            </div>
+
+            {# Leitura #}
+            <div id="ia-leitura" class="d-none">
+                <div id="ia-texto"></div>
+                <div class="ia-meta mt-2" id="ia-meta"></div>
+            </div>
+
+            {# Edição #}
+            <div id="ia-edicao" class="d-none">
+                <textarea id="ia-editor" class="form-control" maxlength="20000"></textarea>
+                <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+                    <small class="ia-meta"><span id="ia-contador">0</span>/20000 · Este texto será usado no PDF e no Word.</small>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-warning" id="btn-ia-restaurar">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar texto da IA
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-ia-cancelar">Cancelar</button>
+                        <button type="button" class="btn btn-sm btn-success" id="btn-ia-salvar">
+                            <i class="bi bi-check2 me-1"></i>Salvar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+    {% endif %}
         
     {# ==================== GRID DE FOTOS ==================== #}
     <div class="card section-card">
@@ -556,298 +598,134 @@
 
 <script>
 (function () {
-    const uploadUrl = "{% url 'relatorio_fotografico:foto_upload' relatorio.pk %}";
-    const reorderUrl = "{% url 'relatorio_fotografico:foto_reorder' relatorio.pk %}";
-    const urlStatus = "{% url 'relatorio_fotografico:ia_status' relatorio.pk %}";
-    const csrfTokenInicial = "{{ csrf_token }}";
+    const secao = document.getElementById('secao-analise-ia');
+    if (!secao) return;
 
-    const grid = document.getElementById('fotos-grid');
-    const botao = document.getElementById('btn-analisar-ia');
-    const statusEl = document.getElementById('ia-status');
-    const resultadoEl = document.getElementById('ia-resultado');
+    const $ = id => document.getElementById(id);
+    const urls = { status: secao.dataset.urlStatus, analisar: secao.dataset.urlAnalisar, editar: secao.dataset.urlEditar };
+    const podeEditar = secao.dataset.podeEditar === '1';
+    const el = {
+        status: $('ia-status'), badge: $('ia-badge'), skeleton: $('ia-skeleton'),
+        leitura: $('ia-leitura'), texto: $('ia-texto'), meta: $('ia-meta'),
+        edicao: $('ia-edicao'), editor: $('ia-editor'), contador: $('ia-contador'),
+        btnAnalisar: $('btn-analisar-ia'), btnEditar: $('btn-ia-editar'),
+        btnSalvar: $('btn-ia-salvar'), btnCancelar: $('btn-ia-cancelar'), btnRestaurar: $('btn-ia-restaurar'),
+    };
+    let textoAtual = '';
 
-    let fotoIdParaExcluir = null;
+    const csrf = () => (document.cookie.split(';').map(c => c.trim())
+        .find(c => c.startsWith('csrftoken=')) || '').split('=')[1] || '{{ csrf_token }}';
 
-    function getCsrfCookie() {
-        const name = 'csrftoken=';
-        const decoded = decodeURIComponent(document.cookie);
-        for (const part of decoded.split(';')) {
-            const trimmed = part.trim();
-            if (trimmed.indexOf(name) === 0) {
-                return trimmed.substring(name.length);
-            }
-        }
-        return csrfTokenInicial;
+    const setStatus = t => { el.status.textContent = t; };
+
+    function setBadge(editado, por, em) {
+        el.badge.classList.remove('d-none', 'bg-success', 'bg-secondary');
+        el.badge.classList.add(editado ? 'bg-success' : 'bg-secondary');
+        el.badge.textContent = editado ? 'Revisado' : 'Não revisado';
+        el.meta.textContent = editado ? `Revisado por ${por} em ${em}` : 'Gerado automaticamente pela IA. Revise antes de enviar ao cliente.';
     }
 
-    function obterCsrfToken() {
-        return getCsrfCookie();
-    }
-
-    function setStatus(texto) {
-        if (statusEl) statusEl.textContent = texto;
-    }
-
-    function mostrarResultado(texto) {
-        if (!resultadoEl) return;
-        resultadoEl.textContent = texto;
-        resultadoEl.style.display = 'block';
-        resultadoEl.classList.remove('ia-fade');
-        void resultadoEl.offsetWidth;
-        resultadoEl.classList.add('ia-fade');
-    }
-
-    function iaProcessando(ativo) {
-        document.getElementById('secao-analise-ia')?.classList.toggle('ia-processando', ativo);
-        document.getElementById('ia-skeleton')?.classList.toggle('d-none', !ativo);
-
-        if (botao) {
-            botao.disabled = ativo;
-            document.getElementById('ia-spinner')?.classList.toggle('d-none', !ativo);
-            document.getElementById('ia-btn-icone')?.classList.toggle('d-none', ativo);
-            const txt = document.getElementById('ia-btn-texto');
-            if (txt) txt.textContent = ativo ? 'Analisando' : 'Solicitar análise';
-        }
-
-        if (statusEl) {
-            statusEl.classList.toggle('ia-dots', ativo);
-            statusEl.classList.toggle('text-primary', ativo);
-        }
-        if (ativo && resultadoEl) resultadoEl.style.display = 'none';
-    }
-
-    function mostrarLoading(ativo) {
-        let el = document.getElementById('upload-loading');
-        if (!el) {
-            el = document.createElement('div');
-            el.id = 'upload-loading';
-            el.className = 'position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center';
-            el.style.cssText = 'background:rgba(0,0,0,.4);z-index:2000';
-            el.innerHTML = '<div class="bg-white rounded p-3 d-flex align-items-center gap-2">' +
-                           '<div class="spinner-border spinner-border-sm"></div> Enviando fotos...</div>';
-            document.body.appendChild(el);
-        }
-        el.classList.toggle('d-none', !ativo);
-        el.classList.toggle('d-flex', ativo);
-    }
-
-    async function enviarArquivos(files) {
-        if (!files || !files.length) return;
-
-        const formData = new FormData();
-        for (const f of files) formData.append('imagens', f);
-        if (window.geoAtual) {
-            formData.append('latitude', window.geoAtual.lat);
-            formData.append('longitude', window.geoAtual.lng);
-        }
-
-        mostrarLoading(true);
-        try {
-            const resp = await fetch(uploadUrl, {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-CSRFToken': obterCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
-                credentials: 'same-origin',
-            });
-
-            if (resp.redirected && resp.url.includes('/contas/login/')) {
-                alert('Sua sessão expirou. Faça login novamente.');
-                window.location.href = '/contas/login/?next=' + encodeURIComponent(location.pathname);
-                return;
-            }
-            if (!resp.ok) throw new Error('HTTP ' + resp.status);
-
-            const data = await resp.json();
-            if (data.ok === false) throw new Error(data.erro || 'Falha no upload');
-
-            location.reload();
-        } catch (err) {
-            console.error('Erro upload:', err);
-            alert('Falha ao enviar fotos: ' + err.message);
-        } finally {
-            mostrarLoading(false);
-            document.querySelectorAll('input[type=file]').forEach(i => i.value = '');
+    function modo(m) { // 'vazio' | 'processando' | 'leitura' | 'edicao'
+        el.skeleton.classList.toggle('d-none', m !== 'processando');
+        secao.classList.toggle('ia-processando', m === 'processando');
+        el.status.classList.toggle('ia-dots', m === 'processando');
+        el.leitura.classList.toggle('d-none', m !== 'leitura');
+        el.edicao.classList.toggle('d-none', m !== 'edicao');
+        el.btnEditar?.classList.toggle('d-none', !(m === 'leitura' && podeEditar));
+        if (el.btnAnalisar) {
+            el.btnAnalisar.disabled = m === 'processando' || m === 'edicao';
+            $('ia-spinner').classList.toggle('d-none', m !== 'processando');
+            $('ia-btn-icone').classList.toggle('d-none', m === 'processando');
+            $('ia-btn-texto').textContent = m === 'processando' ? 'Analisando' : (textoAtual ? 'Nova análise' : 'Solicitar análise');
         }
     }
 
-    async function consultarStatus(inicial = false) {
-        const resposta = await fetch(urlStatus, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        if (!resposta.ok) throw new Error('Não foi possível consultar a análise.');
+    function exibirTexto(d) {
+        textoAtual = d.texto || '';
+        el.texto.textContent = textoAtual;          // textContent evita XSS
+        el.texto.classList.remove('ia-fade'); void el.texto.offsetWidth; el.texto.classList.add('ia-fade');
+        setBadge(d.foi_editado, d.editado_por, d.editado_em);
+        setStatus(`Análise concluída${d.modelo ? ' (' + d.modelo + ')' : ''}.`);
+        modo('leitura');
+    }
 
-        const dados = await resposta.json();
+    async function consultar(inicial = false) {
+        const r = await fetch(urls.status, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!r.ok) throw new Error('Não foi possível consultar a análise.');
+        const d = await r.json();
 
-        if (!dados.existe_analise) {
-            setStatus('Nenhuma análise realizada.');
-            return null;
-        }
-
-        if (inicial && dados.status === 'erro') {
-            setStatus('Nenhuma análise consultada.');
-            return null;
-        }
-
-        const rotulos = { pendente: 'Na fila', processando: 'Analisando as fotos', concluido: 'Análise concluída.', erro: 'Falha na análise.' };
-        setStatus(rotulos[dados.status] || 'Status: ' + dados.status);
-
-        if (dados.status === 'concluido') {
-            mostrarResultado(JSON.stringify(dados.resultado, null, 2));
+        if (!d.existe_analise) { setStatus('Nenhuma análise realizada.'); modo('vazio'); return true; }
+        if (d.status === 'concluido') { exibirTexto(d); return true; }
+        if (d.status === 'erro') {
+            setStatus(inicial ? 'A última análise falhou. Solicite novamente.' : (d.erro || 'Falha na análise.'));
+            modo(textoAtual ? 'leitura' : 'vazio');
             return true;
         }
-        if (dados.status === 'erro') {
-            mostrarResultado(dados.erro || 'Falha na análise.');
-            return true;
-        }
+        setStatus(d.status === 'processando' ? 'Analisando as fotos' : 'Na fila');
+        modo('processando');
         return false;
     }
 
-
-    async function acompanharAnalise() {
-        iaProcessando(true);
-        try {
-            for (let tentativa = 0; tentativa < 120; tentativa++) {
-                await new Promise(resolve => setTimeout(resolve, 5000));
-                try {
-                    if (await consultarStatus()) return;
-                } catch (erro) {
-                    setStatus(erro.message);
-                    return;
-                }
-            }
-            setStatus('A análise continua em processamento. Atualize a página para consultar.');
-        } finally {
-            iaProcessando(false);
+    async function acompanhar() {
+        for (let i = 0; i < 120; i++) {
+            await new Promise(r => setTimeout(r, 5000));
+            try { if (await consultar()) return; }
+            catch (e) { setStatus(e.message); modo('vazio'); return; }
         }
+        setStatus('A análise continua em processamento. Atualize a página mais tarde.');
     }
 
-    if (botao) {
-        botao.addEventListener('click', async function () {
-            iaProcessando(true);
-            setStatus('Solicitando análise');
-
-            try {
-                const resposta = await fetch(botao.dataset.url, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': obterCsrfToken(),
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                const dados = await resposta.json();
-                if (!resposta.ok) throw new Error(dados.erro || 'Erro ao solicitar análise.');
-
-                setStatus('Processando análise, isso pode levar alguns segundos');
-                await acompanharAnalise();
-            } catch (erro) {
-                setStatus(erro.message);
-            } finally {
-                iaProcessando(false);
-            }
+    async function postJSON(url, body) {
+        const r = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify(body || {}),
         });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || d.ok === false) throw new Error(d.erro || 'Erro HTTP ' + r.status);
+        return d;
     }
 
-
-    if (statusEl) {
-        consultarStatus(true)
-            .then(finalizada => { if (finalizada === false) acompanharAnalise(); })
-            .catch(() => setStatus('Não foi possível carregar o histórico.'));
-    }
-
-
-    ['input-galeria', 'input-camera'].forEach(id => {
-        const input = document.getElementById(id);
-        if (!input) return;
-        input.addEventListener('change', (e) => {
-            const files = Array.from(e.target.files);
-            e.target.value = '';
-            enviarArquivos(files);
-        });
+    el.btnAnalisar?.addEventListener('click', async () => {
+        if (textoAtual && !confirm('Uma nova análise substituirá o texto atual (inclusive edições). Continuar?')) return;
+        modo('processando'); setStatus('Solicitando análise');
+        try { await postJSON(urls.analisar); await acompanhar(); }
+        catch (e) { setStatus(e.message); modo(textoAtual ? 'leitura' : 'vazio'); }
     });
 
-    const dropZone = document.getElementById('drop-zone');
-    if (dropZone) {
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            enviarArquivos(e.dataTransfer.files);
-        });
-        dropZone.addEventListener('click', () => document.getElementById('input-galeria')?.click());
-    }
+    el.btnEditar?.addEventListener('click', () => {
+        el.editor.value = textoAtual;
+        el.contador.textContent = textoAtual.length;
+        modo('edicao'); el.editor.focus();
+    });
 
-    function bindEventos() {
-        document.querySelectorAll('.btn-remove-foto').forEach(btn => {
-            btn.onclick = function () { fotoIdParaExcluir = this.dataset.id; };
-        });
+    el.editor?.addEventListener('input', () => { el.contador.textContent = el.editor.value.length; });
 
-        document.querySelectorAll('.legenda-input').forEach(textarea => {
-            let timeout;
-            textarea.addEventListener('input', function () {
-                clearTimeout(timeout);
-                const id = this.dataset.id;
-                const legenda = this.value;
-                timeout = setTimeout(async () => {
-                    await fetch(`/relatorio-fotografico/foto/${id}/editar/`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': obterCsrfToken(),
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `legenda=${encodeURIComponent(legenda)}`,
-                    });
-                }, 600);
-            });
-        });
-    }
+    el.btnCancelar?.addEventListener('click', () => {
+        if (el.editor.value !== textoAtual && !confirm('Descartar alterações?')) return;
+        modo('leitura');
+    });
 
-    const btnExcluir = document.getElementById('btnConfirmarExcluirFoto');
-    if (btnExcluir) {
-        btnExcluir.addEventListener('click', async function () {
-            if (!fotoIdParaExcluir) return;
-            const resp = await fetch(`/relatorio-fotografico/foto/${fotoIdParaExcluir}/excluir/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': obterCsrfToken() },
-            });
-            const data = await resp.json();
-            if (data.ok) {
-                document.querySelector(`.foto-item[data-id="${fotoIdParaExcluir}"]`)?.remove();
-                if (grid && !grid.querySelector('.foto-item') && !document.getElementById('fotos-empty')) {
-                    const div = document.createElement('div');
-                    div.id = 'fotos-empty';
-                    div.className = 'text-center text-muted py-5';
-                    div.innerHTML = '<i class="bi bi-images display-1"></i><p class="mt-3">Nenhuma foto adicionada ainda.</p>';
-                    grid.parentNode.appendChild(div);
-                }
-            }
-            fotoIdParaExcluir = null;
-            bootstrap.Modal.getInstance(document.getElementById('modalExcluirFoto'))?.hide();
-        });
-    }
+    el.btnSalvar?.addEventListener('click', async () => {
+        el.btnSalvar.disabled = true;
+        try { exibirTexto(await postJSON(urls.editar, { texto: el.editor.value })); setStatus('Edição salva.'); }
+        catch (e) { alert(e.message); }
+        finally { el.btnSalvar.disabled = false; }
+    });
 
-    if (grid && typeof Sortable !== 'undefined') {
-        new Sortable(grid, {
-            animation: 150,
-            handle: '.foto-card',
-            onEnd: async function () {
-                const ids = Array.from(grid.querySelectorAll('.foto-item')).map(el => el.dataset.id);
-                await fetch(reorderUrl, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': obterCsrfToken(), 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ordem: ids }),
-                });
-                document.querySelectorAll('.foto-item').forEach((el, idx) => {
-                    const n = el.querySelector('.foto-numero');
-                    if (n) n.textContent = idx + 1;
-                });
-            },
-        });
-    }
+    el.btnRestaurar?.addEventListener('click', async () => {
+        if (!confirm('Descartar suas edições e restaurar o texto original da IA?')) return;
+        try { exibirTexto(await postJSON(urls.editar, { restaurar: true })); setStatus('Texto original restaurado.'); }
+        catch (e) { alert(e.message); }
+    });
 
-    bindEventos();
+    window.addEventListener('beforeunload', e => {
+        if (!el.edicao.classList.contains('d-none') && el.editor.value !== textoAtual) e.preventDefault();
+    });
+
+    consultar(true).then(ok => { if (ok === false) acompanhar(); })
+                   .catch(() => setStatus('Não foi possível carregar a análise.'));
 })();
-
 </script>
 
 {% endblock %}

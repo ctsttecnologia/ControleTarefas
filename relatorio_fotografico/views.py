@@ -23,13 +23,13 @@ from django.utils import timezone
 import cloudinary.uploader
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
 from django.db.models import Max, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import (
@@ -43,7 +43,7 @@ from core.mixins import (
     FilialCreateMixin,
     ViewFilialScopedMixin,
 )
-
+from .services.analise_texto import analise_para_texto
 from .forms import RelatorioFotograficoForm
 from .models import (
     FotoRelatorio,
@@ -53,9 +53,12 @@ from .models import (
 from .services.docx_generator import gerar_docx_relatorio
 from .services.pdf_generator import gerar_pdf_relatorio
 
+
+
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
+LIMITE_TEXTO_IA = 20000
 APP_LABEL = 'relatorio_fotografico'
 
 PERM_VIEW = f'{APP_LABEL}.view_relatoriofotografico'
@@ -420,7 +423,10 @@ class RelatorioAnaliseIACreateView(BaseRelatorioMixin, DetailView):
             'status': analise.status,
             'mensagem': 'Análise solicitada com sucesso.',
         }, status=202)
+    
 
+def _texto_visao(visao):
+    return visao.texto or analise_para_texto(visao.resultado or {})
 
 class RelatorioAnaliseIAStatusView(BaseRelatorioMixin, DetailView):
     """
@@ -462,25 +468,71 @@ class RelatorioAnaliseIAStatusView(BaseRelatorioMixin, DetailView):
                 'existe_analise': False,
             })
 
-        return JsonResponse({
+        resposta = {
             'ok': True,
             'existe_analise': True,
             'analise_id': analise.pk,
             'status': analise.status,
             'resultado': analise.resultado,
             'erro': analise.erro if analise.status == RelatorioVisao.STATUS_ERRO else '',
-            'modelo': analise.modelo,
-            'solicitado_em': (
-                analise.created_at.isoformat()
-                if analise.created_at else None
-            ),
-            'concluido_em': (
-                analise.concluido_em.isoformat()
-                if analise.concluido_em else None
-            ),
+            'modelo': analise.modelo_utilizado,
+            'solicitado_em': analise.created_at.isoformat() if analise.created_at else None,
+            'concluido_em': analise.concluido_em.isoformat() if analise.concluido_em else None,
+        }
+        if analise.status == RelatorioVisao.STATUS_CONCLUIDO:
+            resposta.update({
+                'texto': analise.texto,
+                'foi_editado': analise.foi_editado,
+                'editado_por': _nome(analise.editado_por),
+                'editado_em': _fmt_dt(analise.editado_em),
+            })
+        return JsonResponse(resposta)
+
+
+def _fmt_dt(dt):
+    return timezone.localtime(dt).strftime('%d/%m/%Y %H:%M') if dt else ''
+
+
+def _nome(user):
+    return (user.get_full_name() or user.username) if user else ''
+
+
+class RelatorioAnaliseIAEditarView(BaseRelatorioMixin, SingleObjectMixin, View):
+    """POST JSON: {'texto': '...'} salva | {'restaurar': true} volta ao texto da IA."""
+    permission_required = PERM_CHANGE
+    http_method_names = ['post']
+
+    def post(self, request, *args, **kwargs):
+        relatorio = self.get_object()  # já escopado pelo BaseRelatorioMixin
+        visao = relatorio.analise_ia
+        if not visao:
+            return JsonResponse({'ok': False, 'erro': 'Nenhuma análise concluída.'}, status=404)
+
+        try:
+            dados = json.loads(request.body or '{}')
+        except json.JSONDecodeError:
+            return JsonResponse({'ok': False, 'erro': 'JSON inválido.'}, status=400)
+
+        if dados.get('restaurar'):
+            visao.regenerar_texto()
+        else:
+            texto = (dados.get('texto') or '').strip()
+            if not texto:
+                return JsonResponse({'ok': False, 'erro': 'O texto não pode ficar vazio.'}, status=400)
+            if len(texto) > LIMITE_TEXTO_IA:
+                return JsonResponse({'ok': False, 'erro': f'Máximo de {LIMITE_TEXTO_IA} caracteres.'}, status=400)
+            visao.texto = texto
+            visao.marcar_editado(request.user)
+            visao.save(update_fields=['texto', 'editado_por', 'editado_em', 'updated_at'])
+
+        return JsonResponse({
+            'ok': True,
+            'texto': visao.texto,
+            'modelo': visao.modelo_utilizado,
+            'foi_editado': visao.foi_editado,
+            'editado_por': _nome(visao.editado_por),
+            'editado_em': _fmt_dt(visao.editado_em),
         })
-
-
 
 # -----------------------------------------------------------------------
 # FOTOS (AJAX)

@@ -508,7 +508,7 @@ FORMS_URLFIELD_ASSUME_HTTPS = True
 AI_PROVIDER = config('AI_PROVIDER', default='compatible')
 AI_API_KEY = config('AI_API_KEY', default='')
 AI_BASE_URL = config('AI_BASE_URL', default='https://generativelanguage.googleapis.com/v1beta/openai/')
-AI_MODEL = config('AI_MODEL', default='gemini-3.8-flash')
+AI_MODEL = config('AI_MODEL', default='gemini-3.6-flash')
 AI_MAX_IMAGES = config('AI_MAX_IMAGES', default=100, cast=int)
 AI_TIMEOUT = config('AI_TIMEOUT', default=90, cast=int)
 AI_IMAGE_TIMEOUT = 30
