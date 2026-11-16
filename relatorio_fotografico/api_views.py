@@ -8,7 +8,7 @@ from rest_framework.authentication import SessionAuthentication, TokenAuthentica
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
-
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import FotoRelatorio, RelatorioFotografico, RelatorioVisao
 from .serializers import (
     FotoRelatorioSerializer,
@@ -29,7 +29,7 @@ PERM_VISAO_DELETE = f'{APP_LABEL}.delete_relatoriovisao'
 PERM_VISAO_VIEW = f'{APP_LABEL}.view_relatoriovisao'
 
 PARSERS = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
-AUTH = [TokenAuthentication, SessionAuthentication]  # Token p/ n8n, sessão p/ front
+AUTH = [JWTAuthentication, TokenAuthentication, SessionAuthentication]  # Token p/ n8n, sessão p/ front
 
 
 # -----------------------------------------------------------------------
