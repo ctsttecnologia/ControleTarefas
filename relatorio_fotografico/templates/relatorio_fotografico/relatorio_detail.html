@@ -397,36 +397,38 @@
     </div>
 
     {# ==================== UPLOAD DE FOTOS ==================== #}
-    <div class="card section-card mb-4">
-        <div class="card-body p-4">
-            <h6 class="section-title mb-3"><i class="bi bi-cloud-upload me-1"></i>Adicionar Fotos</h6>
+    {% if relatorio.status != 'finalizado' %}
+        <div class="card section-card mb-4">
+            <div class="card-body p-4">
+                <h6 class="section-title mb-3"><i class="bi bi-cloud-upload me-1"></i>Adicionar Fotos</h6>
 
-            <div class="row g-2 mb-3">
-                <div class="col-md-6">
-                    <label class="btn btn-outline-primary w-100 mb-0">
-                        <i class="bi bi-images me-1"></i> Escolher da Galeria
-                        <input type="file" id="input-galeria" accept="image/*" multiple hidden>
-                    </label>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="btn btn-outline-primary w-100 mb-0">
+                            <i class="bi bi-images me-1"></i> Escolher da Galeria
+                            <input type="file" id="input-galeria" accept="image/*" multiple hidden>
+                        </label>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="btn btn-outline-success w-100 mb-0">
+                            <i class="bi bi-camera me-1"></i> Tirar Foto (Câmera)
+                            <input type="file" id="input-camera" accept="image/*" capture="environment" hidden>
+                        </label>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <label class="btn btn-outline-success w-100 mb-0">
-                        <i class="bi bi-camera me-1"></i> Tirar Foto (Câmera)
-                        <input type="file" id="input-camera" accept="image/*" capture="environment" hidden>
-                    </label>
+
+                <div id="drop-zone" class="drop-zone">
+                    <i class="bi bi-cloud-arrow-up display-6"></i>
+                    <p class="mb-0 mt-2">Ou arraste e solte as imagens aqui</p>
                 </div>
-            </div>
 
-            <div id="drop-zone" class="drop-zone">
-                <i class="bi bi-cloud-arrow-up display-6"></i>
-                <p class="mb-0 mt-2">Ou arraste e solte as imagens aqui</p>
-            </div>
-
-            <div class="spinner-upload text-center mt-3" id="spinner-upload">
-                <div class="spinner-border text-primary" role="status"></div>
-                <span class="ms-2">Enviando fotos...</span>
+                <div class="spinner-upload text-center mt-3" id="spinner-upload">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <span class="ms-2">Enviando fotos...</span>
+                </div>
             </div>
         </div>
-    </div>
+    {% endif %}
 
     {# ==================== DESCRIÇÃO DO RELATÓRIO ==================== #}
     <div class="card section-card mb-4">
@@ -513,12 +515,14 @@
                     <div class="foto-card">
                         <div class="foto-wrapper">
                             <span class="foto-numero">{{ foto.ordem }}</span>
+                            {% if relatorio.status != 'finalizado' %}
                             <button class="btn btn-sm btn-danger foto-remove-btn btn-remove-foto"
                                     data-id="{{ foto.id }}"
                                     data-bs-toggle="modal" data-bs-target="#modalExcluirFoto"
                                     title="Remover">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            {% endif %}
                             <img src="{{ foto.imagem.url }}" alt="Foto {{ foto.ordem }}">
                             {% if foto.tem_geolocalizacao %}
                             <span class="foto-geo-badge" title="{{ foto.coordenadas_formatadas }}">
@@ -576,6 +580,7 @@
     </div>
 </div>
 
+{% if relatorio.status != 'finalizado' %}
 <div class="modal fade" id="modalExcluirFoto" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -595,14 +600,138 @@
         </div>
     </div>
 </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
 
 <script>
 (function () {
-    const secao = document.getElementById('secao-analise-ia');
+    const $ = id => document.getElementById(id);
+
+    // ==================== HELPERS ====================
+    const csrf = () => (document.cookie.split(';').map(c => c.trim())
+        .find(c => c.startsWith('csrftoken=')) || '').split('=')[1] || '{{ csrf_token }}';
+
+    async function post(url, { json, body, headers = {} } = {}) {
+        const h = { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest', ...headers };
+        if (json !== undefined) { h['Content-Type'] = 'application/json'; body = JSON.stringify(json); }
+        const r = await fetch(url, { method: 'POST', credentials: 'same-origin', headers: h, body });
+        if (r.redirected && r.url.includes('/login')) {
+            location.href = r.url;
+            throw new Error('Sessão expirada.');
+        }
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || d.ok === false) throw new Error(d.erro || 'Erro HTTP ' + r.status);
+        return d;
+    }
+
+    // ==================== FOTOS (sempre ativo) ====================
+    const urls = {
+        upload:  "{% url 'relatorio_fotografico:foto_upload' relatorio.pk %}",
+        reorder: "{% url 'relatorio_fotografico:foto_reorder' relatorio.pk %}",
+        excluir: id => `/relatorio-fotografico/foto/${id}/excluir/`,
+        legenda: id => `/relatorio-fotografico/foto/${id}/editar/`,
+    };
+    const grid = $('fotos-grid');
+    let fotoId = null;
+
+    const renumerar = () => grid.querySelectorAll('.foto-item .foto-numero')
+        .forEach((n, i) => n.textContent = i + 1);
+
+    function verificarVazio() {
+        if (grid.querySelector('.foto-item') || $('fotos-empty')) return;
+        const div = document.createElement('div');
+        div.id = 'fotos-empty';
+        div.className = 'text-center text-muted py-5';
+        div.innerHTML = '<i class="bi bi-images display-1"></i><p class="mt-3">Nenhuma foto adicionada ainda.</p>';
+        grid.after(div);
+    }
+
+    // Upload
+    async function enviarArquivos(files) {
+        if (!files?.length) return;
+        const fd = new FormData();
+        for (const f of files) fd.append('imagens', f);
+        if (window.geoAtual) { fd.append('latitude', window.geoAtual.lat); fd.append('longitude', window.geoAtual.lng); }
+
+        const spinner = $('spinner-upload');
+        spinner.style.display = 'block';
+        try { await post(urls.upload, { body: fd }); location.reload(); }
+        catch (e) { alert('Falha ao enviar fotos: ' + e.message); }
+        finally { spinner.style.display = 'none'; }
+    }
+
+    ['input-galeria', 'input-camera'].forEach(id => $(id)?.addEventListener('change', e => {
+        const files = Array.from(e.target.files);
+        e.target.value = '';
+        enviarArquivos(files);
+    }));
+
+    const dz = $('drop-zone');
+    if (dz) {
+        dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+        dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+        dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); enviarArquivos(e.dataTransfer.files); });
+        dz.addEventListener('click', () => $('input-galeria')?.click());
+    }
+
+    // Exclusão
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('.btn-remove-foto');
+        if (btn) fotoId = btn.dataset.id;
+    });
+
+    $('btnConfirmarExcluirFoto')?.addEventListener('click', async function () {
+        if (!fotoId) return;
+        this.disabled = true;
+        try {
+            await post(urls.excluir(fotoId));
+            grid.querySelector(`.foto-item[data-id="${fotoId}"]`)?.remove();
+            renumerar();
+            verificarVazio();
+            bootstrap.Modal.getInstance($('modalExcluirFoto'))?.hide();
+        } catch (e) {
+            alert('Não foi possível excluir: ' + e.message);
+        } finally {
+            this.disabled = false;
+            fotoId = null;
+        }
+    });
+
+    // Legenda (debounce)
+    grid?.addEventListener('input', e => {
+        const t = e.target.closest('.legenda-input');
+        if (!t) return;
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => post(urls.legenda(t.dataset.id), {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'legenda=' + encodeURIComponent(t.value),
+        }).catch(err => console.error('Legenda:', err)), 600);
+    });
+
+    // Reordenação
+    if (grid && typeof Sortable !== 'undefined') {
+        new Sortable(grid, {
+            animation: 150,
+            handle: '.foto-card',
+            filter: 'textarea, button',
+            preventOnFilter: false,
+            onEnd: async () => {
+                const ids = [...grid.querySelectorAll('.foto-item')].map(el => el.dataset.id);
+                renumerar();
+                try { await post(urls.reorder, { json: { ordem: ids } }); }
+                catch (e) { alert('Erro ao reordenar: ' + e.message); }
+            },
+        });
+    }
+
+    // ==================== ANÁLISE DE IA (só se finalizado) ====================
+    const secao = $('secao-analise-ia');
     if (!secao) return;
 
-    const $ = id => document.getElementById(id);
-    const urls = { status: secao.dataset.urlStatus, analisar: secao.dataset.urlAnalisar, editar: secao.dataset.urlEditar };
+    const iaUrls = { status: secao.dataset.urlStatus, analisar: secao.dataset.urlAnalisar, editar: secao.dataset.urlEditar };
     const podeEditar = secao.dataset.podeEditar === '1';
     const el = {
         status: $('ia-status'), badge: $('ia-badge'), skeleton: $('ia-skeleton'),
@@ -612,9 +741,6 @@
         btnSalvar: $('btn-ia-salvar'), btnCancelar: $('btn-ia-cancelar'), btnRestaurar: $('btn-ia-restaurar'),
     };
     let textoAtual = '';
-
-    const csrf = () => (document.cookie.split(';').map(c => c.trim())
-        .find(c => c.startsWith('csrftoken=')) || '').split('=')[1] || '{{ csrf_token }}';
 
     const setStatus = t => { el.status.textContent = t; };
 
@@ -642,7 +768,7 @@
 
     function exibirTexto(d) {
         textoAtual = d.texto || '';
-        el.texto.textContent = textoAtual;          // textContent evita XSS
+        el.texto.textContent = textoAtual;
         el.texto.classList.remove('ia-fade'); void el.texto.offsetWidth; el.texto.classList.add('ia-fade');
         setBadge(d.foi_editado, d.editado_por, d.editado_em);
         setStatus(`Análise concluída${d.modelo ? ' (' + d.modelo + ')' : ''}.`);
@@ -650,7 +776,7 @@
     }
 
     async function consultar(inicial = false) {
-        const r = await fetch(urls.status, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const r = await fetch(iaUrls.status, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
         if (!r.ok) throw new Error('Não foi possível consultar a análise.');
         const d = await r.json();
 
@@ -675,21 +801,10 @@
         setStatus('A análise continua em processamento. Atualize a página mais tarde.');
     }
 
-    async function postJSON(url, body) {
-        const r = await fetch(url, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify(body || {}),
-        });
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok || d.ok === false) throw new Error(d.erro || 'Erro HTTP ' + r.status);
-        return d;
-    }
-
     el.btnAnalisar?.addEventListener('click', async () => {
         if (textoAtual && !confirm('Uma nova análise substituirá o texto atual (inclusive edições). Continuar?')) return;
         modo('processando'); setStatus('Solicitando análise');
-        try { await postJSON(urls.analisar); await acompanhar(); }
+        try { await post(iaUrls.analisar, { json: {} }); await acompanhar(); }
         catch (e) { setStatus(e.message); modo(textoAtual ? 'leitura' : 'vazio'); }
     });
 
@@ -708,14 +823,14 @@
 
     el.btnSalvar?.addEventListener('click', async () => {
         el.btnSalvar.disabled = true;
-        try { exibirTexto(await postJSON(urls.editar, { texto: el.editor.value })); setStatus('Edição salva.'); }
+        try { exibirTexto(await post(iaUrls.editar, { json: { texto: el.editor.value } })); setStatus('Edição salva.'); }
         catch (e) { alert(e.message); }
         finally { el.btnSalvar.disabled = false; }
     });
 
     el.btnRestaurar?.addEventListener('click', async () => {
         if (!confirm('Descartar suas edições e restaurar o texto original da IA?')) return;
-        try { exibirTexto(await postJSON(urls.editar, { restaurar: true })); setStatus('Texto original restaurado.'); }
+        try { exibirTexto(await post(iaUrls.editar, { json: { restaurar: true } })); setStatus('Texto original restaurado.'); }
         catch (e) { alert(e.message); }
     });
 

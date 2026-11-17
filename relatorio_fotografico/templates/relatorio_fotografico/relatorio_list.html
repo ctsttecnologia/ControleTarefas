@@ -67,7 +67,7 @@
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>Título</th>
+                    <th>Nº | Título</th>
                     <th>Obra/Contrato</th>
                     <th>Empresa</th>
                     <th>Data</th>
@@ -82,7 +82,7 @@
                 {% for relatorio in relatorios %}
                 <tr>
                     <td>
-                        <a href="{% url 'relatorio_fotografico:detail' relatorio.pk %}" class="fw-semibold text-decoration-none">
+                        {{ relatorio.pk }} | <a href="{% url 'relatorio_fotografico:detail' relatorio.pk %}" class="fw-semibold text-decoration-none">
                             {{ relatorio.titulo }}
                         </a>
                     </td>
@@ -126,12 +126,14 @@
                             {% endif %}
 
                             {% if perms.relatorio_fotografico.delete_relatoriofotografico or user.is_administrador %}
-                            <button type="button" class="btn btn-sm btn-outline-danger btn-excluir-relatorio"
-                                    data-bs-toggle="modal" data-bs-target="#modalExcluirRelatorio"
-                                    data-url="{% url 'relatorio_fotografico:delete' relatorio.pk %}"
-                                    data-titulo="{{ relatorio.titulo }}" title="Excluir">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                                {% if relatorio.status != 'finalizado' %}
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-excluir-relatorio"
+                                        data-bs-toggle="modal" data-bs-target="#modalExcluirRelatorio"
+                                        data-url="{% url 'relatorio_fotografico:delete' relatorio.pk %}"
+                                        data-titulo="{{ relatorio.titulo }}" title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
                             {% endif %}
                         </div>
                     </td>
