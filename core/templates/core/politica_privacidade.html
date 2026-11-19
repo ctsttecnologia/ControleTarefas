@@ -1,4 +1,3 @@
-
 {# core/templates/core/politica_privacidade.html #}
 {% extends "base.html" %}
 
@@ -6,22 +5,118 @@
 
 {% block content %}
 <div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-6 text-center">
-            <div class="mb-4">
-                <i class="bi bi-cone-striped display-1 text-warning"></i>
-            </div>
-            <h3 class="fw-bold mb-3">Página em Construção</h3>
-            <p class="text-muted mb-4">
-                Estamos preparando nossa Política de Privacidade em conformidade
-                com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).
-                Em breve, esta página estará disponível com todas as informações
-                sobre como tratamos seus dados pessoais.
-            </p>
-            <a href="{{ request.META.HTTP_REFERER|default:'/' }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
-            </a>
-        </div>
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+
+      <h1 class="fw-bold mb-2">Política de Privacidade</h1>
+      <p class="text-muted mb-4">
+        Aplicativo <strong>Relatório Fotográfico</strong> ·
+        Última atualização: 19 de novembro de 2026
+      </p>
+
+      <p>
+        Esta Política de Privacidade descreve como a <strong>CETEST MINAS ENGENHARIA LTDA</strong>,
+        inscrita no CNPJ <strong>24.016.172/0005-45</strong> ("nós"), trata os dados
+        pessoais no aplicativo móvel <strong>Relatório Fotográfico</strong>
+        (<code>com.ctsttecnologia.relatorio_fotografico_mobile</code>), de acordo com a
+        Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018).
+      </p>
+
+      <h4 class="fw-bold mt-4">1. A quem o aplicativo se destina</h4>
+      <p>
+        O aplicativo é uma ferramenta de trabalho de uso <strong>restrito</strong> a
+        colaboradores e prestadores de serviço autorizados. Ele é usado para registrar
+        serviços de manutenção preventiva e corretiva. Não há cadastro público: as
+        contas são criadas e gerenciadas pelo sistema central da empresa.
+      </p>
+
+      <h4 class="fw-bold mt-4">2. Dados tratados</h4>
+      <p><strong>a) Dados de identificação vindos do sistema central</strong></p>
+      <ul>
+        <li>Nome, e-mail e telefone do usuário.</li>
+        <li>Usuário e senha usados para autenticação.</li>
+      </ul>
+      <p>
+        Esses dados <strong>não são cadastrados pelo aplicativo</strong>. Eles já existem
+        no sistema central e são apenas consultados e exibidos após o login.
+      </p>
+
+      <p><strong>b) Dados inseridos no aplicativo</strong></p>
+      <ul>
+        <li>Fotografias dos serviços de manutenção realizados.</li>
+        <li>Descrições e observações técnicas sobre esses serviços.</li>
+        <li>Data e hora do registro e o usuário responsável.</li>
+      </ul>
+      <p>
+        As fotos devem retratar apenas equipamentos, instalações e serviços. Não
+        fotografe pessoas nem documentos pessoais.
+      </p>
+
+      <p><strong>c) Dados que não coletamos</strong></p>
+      <p>
+        O aplicativo não coleta dados sensíveis (como saúde, biometria, religião ou
+        origem racial), contatos da agenda, histórico de navegação nem identificadores
+        de publicidade. O aplicativo não exibe anúncios.
+      </p>
+
+      <h4 class="fw-bold mt-4">3. Permissões do dispositivo</h4>
+      <ul>
+        <li><strong>Câmera:</strong> para fotografar os serviços executados.</li>
+        <li><strong>Fotos/Galeria:</strong> para anexar imagens já existentes ao relatório.</li>
+        <li><strong>Internet:</strong> para autenticar o usuário e enviar os registros ao sistema central.</li>
+      </ul>
+      <p>As permissões são solicitadas somente quando necessárias e podem ser revogadas nas configurações do dispositivo.</p>
+
+      <h4 class="fw-bold mt-4">4. Finalidades e base legal</h4>
+      <ul>
+        <li>Autenticar e identificar o usuário (execução de contrato, art. 7º, V).</li>
+        <li>Registrar, comprovar e gerar relatórios dos serviços de manutenção (execução de contrato e legítimo interesse, art. 7º, V e IX).</li>
+        <li>Cumprir obrigações legais e contratuais (art. 7º, II).</li>
+      </ul>
+
+      <h4 class="fw-bold mt-4">5. Compartilhamento</h4>
+      <p>Não vendemos nem alugamos dados pessoais. Eles podem ser compartilhados apenas com:</p>
+      <ul>
+        <li>Os clientes contratantes dos serviços, por meio dos relatórios fotográficos gerados.</li>
+        <li>Provedores de hospedagem e infraestrutura que operam o sistema central, sob obrigação de confidencialidade.</li>
+        <li>Autoridades públicas, quando exigido por lei ou ordem judicial.</li>
+      </ul>
+
+      <h4 class="fw-bold mt-4">6. Armazenamento e segurança</h4>
+      <p>
+        Os dados são transmitidos por conexão criptografada (HTTPS) e armazenados nos
+        servidores do sistema central, com controle de acesso por usuário. As fotos
+        podem ficar temporariamente no dispositivo até o envio ser concluído.
+      </p>
+
+      <h4 class="fw-bold mt-4">7. Retenção</h4>
+      <p>
+        Os registros de serviço são mantidos enquanto durar a relação contratual e
+        pelos prazos legais aplicáveis. Depois disso, são excluídos ou anonimizados.
+      </p>
+
+      <h4 class="fw-bold mt-4">8. Direitos do titular</h4>
+      <p>
+        Conforme o art. 18 da LGPD, você pode solicitar a confirmação do tratamento, o
+        acesso, a correção, a anonimização, a portabilidade e a exclusão dos seus dados,
+        além de informações sobre compartilhamento. Para pedir a <strong>exclusão da sua
+        conta e dos dados associados</strong>, entre em contato pelo e-mail abaixo.
+      </p>
+
+      <h4 class="fw-bold mt-4">9. Crianças</h4>
+      <p>O aplicativo não se destina a menores de 18 anos.</p>
+
+      <h4 class="fw-bold mt-4">10. Alterações</h4>
+      <p>Esta política pode ser atualizada. A data da última revisão fica indicada no topo desta página.</p>
+
+      <h4 class="fw-bold mt-4">11. Contato do Encarregado (DPO)</h4>
+      <p>
+        <strong>Italo Vieira Neves</strong><br>
+        E-mail: <a href="core:politica_privacidade">politicaprivacidade@cetestsp.com.br</a><br>
+        Rua dos Manacas, 276 - Bairro jardim da Gloria - Cotia/SP - CEP 06.711-500
+      </p>
     </div>
+  </div>
 </div>
 {% endblock %}
+
