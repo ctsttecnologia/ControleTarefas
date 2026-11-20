@@ -23,6 +23,7 @@ from .views import (
     _coord, _destruir_cloudinary, is_admin,
 )
 
+
 PERM_VISAO_ADD = f'{APP_LABEL}.add_relatoriovisao'
 PERM_VISAO_CHANGE = f'{APP_LABEL}.change_relatoriovisao'
 PERM_VISAO_DELETE = f'{APP_LABEL}.delete_relatoriovisao'
@@ -109,24 +110,46 @@ class RelatorioFotograficoViewSet(viewsets.ModelViewSet):
             return RelatorioFotograficoListSerializer
         return RelatorioFotograficoSerializer
 
+    ORDERING_PERMITIDO = {
+    'data': ('data', 'created_at'),
+    '-data': ('-data', '-created_at'),
+    'titulo': ('titulo', '-data'),
+    '-titulo': ('-titulo', '-data'),
+    }
+
     def get_queryset(self):
         qs = relatorios_escopados(self.request)
         p = self.request.query_params
 
-        busca = (p.get('q') or '').strip()
+        # Aceita 'search' (app) e 'q' (compatibilidade com clientes antigos)
+        busca = (p.get('search') or p.get('q') or '').strip()
         status_ = (p.get('status') or '').strip()
+
         if busca:
-            qs = qs.filter(
-                Q(titulo__icontains=busca)
-                | Q(obra_contrato__icontains=busca)
-                | Q(empresa__icontains=busca)
-            )
+            # Cada palavra precisa aparecer em algum campo (ex.: "joao silva")
+            for termo in busca.split()[:5]:
+                qs = qs.filter(
+                    Q(titulo__icontains=termo)
+                    | Q(obra_contrato__icontains=termo)
+                    | Q(empresa__icontains=termo)
+                    | Q(assunto__icontains=termo)
+                    | Q(responsavel__first_name__icontains=termo)
+                    | Q(responsavel__last_name__icontains=termo)
+                    | Q(responsavel__username__icontains=termo)
+                )
+
         if status_ in dict(RelatorioFotografico.STATUS_CHOICES):
             qs = qs.filter(status=status_)
 
         if self.action == 'list':
             qs = qs.select_related('responsavel', 'filial').prefetch_related('fotos')
+            ordem = self.ORDERING_PERMITIDO.get(
+                (p.get('ordering') or '').strip(), ('-data', '-created_at')
+            )
+            return qs.order_by(*ordem)
+
         return qs.order_by('-data', '-created_at')
+
 
     def perform_create(self, serializer):
         filial = _filial_ativa(self.request)

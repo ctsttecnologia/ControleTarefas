@@ -57,6 +57,7 @@ staticfiles/
 
 comandos
 pytest.ini
+pytest
 
 badges.txt
 chart.umd.js.map

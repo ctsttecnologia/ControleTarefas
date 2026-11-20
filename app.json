@@ -1,4 +1,6 @@
 {
+  "name": "ControleTarefas",
+  "slug": "controle-tarefas",
   "android": {
     "package": "com.esgemerson.controletarefas"
   },

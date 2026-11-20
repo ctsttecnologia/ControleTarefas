@@ -4,7 +4,7 @@ from django.urls import path
 
 from core.views_monitoramento import monitoramento_api, monitoramento_view
 from . import views
-from core.views import AssinaturaRemotaView, GerarLinkAssinaturaView, PoliticaPrivacidadeView, sem_funcionario_view
+from core.views import AssinaturaRemotaView, GerarLinkAssinaturaView, PoliticaPrivacidadeView, PoliticaPrivacidadewebView, sem_funcionario_view
 
 app_name = 'core'
 
@@ -27,6 +27,7 @@ urlpatterns = [
     path('monitoramento/dashboard/', monitoramento_view, name='dashboard'),
 
     path("politica-de-privacidade/", PoliticaPrivacidadeView.as_view(), name="politica_privacidade"),
+    path("politica-de-privacidade/web/", PoliticaPrivacidadewebView.as_view(), name="politica_privacidade_web"),
 
     path('core/assinatura-remota/gerar/<str:app_label>/<str:model_name>/<int:object_id>/', GerarLinkAssinaturaView.as_view(), name='gerar_link_assinatura',),
     path('core/assinatura-remota/<uuid:token>/', AssinaturaRemotaView.as_view(), name='assinatura_remota',),

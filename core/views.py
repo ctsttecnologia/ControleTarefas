@@ -309,6 +309,9 @@ def sem_funcionario_view(request):
 class PoliticaPrivacidadeView(TemplateView):
     template_name = "core/politica_privacidade.html"
 
+class PoliticaPrivacidadewebView(TemplateView):
+    template_name = "core/politica_privacidade_web.html"
+
 
 def _obter_token_valido(token):
     """Retorna o token_obj se existir e estiver válido, senão None."""

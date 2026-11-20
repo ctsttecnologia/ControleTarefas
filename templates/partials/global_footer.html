@@ -4,11 +4,14 @@
 <footer id="global-footer">
     <div class="container-fluid text-center">
         <p class="mb-0">
-            &copy; {% now "Y" %} <strong>Cetest Minas</strong> — Gerenciando Tarefas.
-            Todos os direitos reservados.
+            &copy; {% now "Y" %} <strong>Cetest Minas</strong> | Gerenciando Tarefas.
+            Todos os direitos reservados
         </p>
         <p class="mb-0 footer-dev">
-            Desenvolvido por Emerson Gonçalves
+            Desenvolvido por Emerson Gonçalves. | 
+            <a href="{% url 'core:politica_privacidade_web' %}" class="text-decoration-none">
+                Política de Privacidade
+            </a><br>
         </p>
     </div>
 </footer>
